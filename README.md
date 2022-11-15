@@ -35,7 +35,6 @@ easy-readable document format, where this metrics will be analyzed
   - [Contributing Guide](./docs/CONTRIBUTING.md)
   - [Getting Started Guide](./docs/GETTING_STARTED_GUIDE.md)
 - [List of Adopters](./ADOPTERS.md)
-- [Release Notes](./docs/RELEASE_NOTES.md)
 - [Support](./docs/SUPPORT.md)
 - [About](#about)
 
