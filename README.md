@@ -36,11 +36,12 @@ easy-readable document format, where this metrics will be analyzed
   - [Getting Started Guide](./docs/GETTING_STARTED_GUIDE.md)
 - [List of Adopters](./ADOPTERS.md)
 - [Release Notes](./docs/RELEASE_NOTES.md)
-- [Support](#support)
+- [Support](./docs/SUPPORT.md)
 - [About](#about)
 
-## Support
+## About
 
-Don’t hesitate to ask! If you need help, find a bug, or have an enhancement request please open [GitHub
-Issue](https://github.com/dell/cert-csi/issues).
+_CERT_CSI_ is 100% open source and community-driven. All components are available
+under [Apache 2 License](https://www.apache.org/licenses/LICENSE-2.0.html) on
+GitHub.
 
