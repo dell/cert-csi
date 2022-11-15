@@ -41,7 +41,7 @@ easy-readable document format, where this metrics will be analyzed
 
 ## About
 
-_CERT_CSI_ is 100% open source and community-driven. All components are available
+_CERT-CSI_ is 100% open source and community-driven. All components are available
 under [Apache 2 License](https://www.apache.org/licenses/LICENSE-2.0.html) on
 GitHub.
 
