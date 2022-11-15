@@ -1,0 +1,5 @@
+blank_issues_enabled: false
+contact_links:
+  - name: <YOUR_PRODUCT_NAME> mailing list
+    alias: <YOUR_PRODUCT_EMAIL_ADDRESS>
+    about: Please ask and answer usage questions and report security issues here.
