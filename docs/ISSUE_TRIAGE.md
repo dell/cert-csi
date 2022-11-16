@@ -1,10 +1,10 @@
 # Triage issues
 
-The main goal of issue triage is to categorize all incoming <YOUR_PRODUCT_NAME> issues and make sure each issue has all basic information needed for anyone else to understand and be able to start working on it.
+The main goal of issue triage is to categorize all incoming CERT-CSI issues and make sure each issue has all basic information needed for anyone else to understand and be able to start working on it.
 
-> **Note:** This information is for <YOUR_PRODUCT_NAME> project Maintainers, Owners, and Admins. If you are a Contributor, then you will not be able to perform most of the tasks in this topic.
+> **Note:** This information is for CERT-CSI project Maintainers, Owners, and Admins. If you are a Contributor, then you will not be able to perform most of the tasks in this topic.
 
-The core maintainers of the <YOUR_PRODUCT_NAME> project are responsible for categorizing all incoming issues and delegating any critical or important issue to other maintainers. Triage provides an important way to contribute to an open source project. 
+The core maintainers of the CERT-CSI project are responsible for categorizing all incoming issues and delegating any critical or important issue to other maintainers. Triage provides an important way to contribute to an open source project. 
 
 Triage helps ensure issues resolve quickly by:
 
@@ -47,7 +47,7 @@ The easiest way to find issues that haven't been triaged is to search for issues
 
 ## Ensure the issue contains basic information
 
-Make sure that the issue's author provided the standard issue information. The <YOUR_PRODUCT_NAME> project utilizes [GitHub issue templates](https://help.github.com/en/articles/creating-issue-templates-for-your-repository) to guide contributors to provide standard information that must be included for each type of template or type of issue.
+Make sure that the issue's author provided the standard issue information. The CERT-CSI project utilizes [GitHub issue templates](https://help.github.com/en/articles/creating-issue-templates-for-your-repository) to guide contributors to provide standard information that must be included for each type of template or type of issue.
 
 ### Standard issue information that must be included
 
@@ -56,12 +56,12 @@ The following section describes the various issue templates and the expected con
 #### Bug reports
 
 Should explain what happened, what was expected and how to reproduce it together with any additional information that may help to give a complete picture of what happened such as screenshots, output and any environment related information that's applicable and/or maybe related to the reported problem:
-- <YOUR_PRODUCT_NAME> version
+- CERT-CSI version
 - Bug description
 - Expected behavior
 - Logs
 - Screenshots
-- Platform & OS <YOUR_PRODUCT_NAME> is installed on
+- Platform & OS CERT-CSI is installed on
 - Additional environment information
 
 #### Feature requests
