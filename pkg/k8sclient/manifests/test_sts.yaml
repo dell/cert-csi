@@ -1,0 +1,74 @@
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: longevity-ss
+spec:
+  selector:
+    matchLabels:
+      app: powerstoretest
+  serviceName: powerstoretest
+  replicas: 1
+  podManagementPolicy: "Parallel"
+  template:
+    metadata:
+      labels:
+        app: powerstoretest
+    spec:
+      containers:
+        - name: test
+          image: amaas-eos-mw1.cec.lab.emc.com:5028/centos:latest
+          imagePullPolicy: IfNotPresent
+          volumeMounts:
+            - name: pvol-0
+              mountPath: /data0
+            - name: pvol-1
+              mountPath: /data1
+            - name: pvol-2
+              mountPath: /data2
+            - name: pvol-3
+              mountPath: /data3
+            - name: pvol-4
+              mountPath: /data4
+          command: ["/bin/bash"]
+          args: ["-c", "trap 'exit 0' SIGTERM;while true; do sleep 1; done"]
+  volumeClaimTemplates:
+    - metadata:
+        name: pvol-0
+      spec:
+        accessModes: [ "ReadWriteOnce" ]
+        storageClassName: "powerstore"
+        resources:
+          requests:
+            storage: 3Gi
+    - metadata:
+        name: pvol-1
+      spec:
+        accessModes: [ "ReadWriteOnce" ]
+        storageClassName: "powerstore"
+        resources:
+          requests:
+            storage: 3Gi
+    - metadata:
+        name: pvol-2
+      spec:
+        accessModes: [ "ReadWriteOnce" ]
+        storageClassName: "powerstore"
+        resources:
+          requests:
+            storage: 3Gi
+    - metadata:
+        name: pvol-3
+      spec:
+        accessModes: [ "ReadWriteOnce" ]
+        storageClassName: "powerstore"
+        resources:
+          requests:
+            storage: 3Gi
+    - metadata:
+        name: pvol-4
+      spec:
+        accessModes: [ "ReadWriteOnce" ]
+        storageClassName: "powerstore"
+        resources:
+          requests:
+            storage: 3Gi

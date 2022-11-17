@@ -1,0 +1,30 @@
+# IDE
+.idea
+.vscode
+
+# gosec
+gosec.log
+gosecresults.csv
+
+# SQLite
+*.sqlite
+*.db
+!reporter_test.db
+
+# executable
+*.exe
+cert-csi
+
+# folders
+build
+reports
+
+# test directories and artifacts
+c.out
+
+# logs 
+*.log
+report.path
+
+#optional config files
+array-config.properties

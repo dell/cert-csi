@@ -1,0 +1,57 @@
+#!/usr/bin/env zsh
+#compdef $PROG
+
+getscs(){
+ TEST=$(kubectl get sc 2>&1)
+  if [ $? -eq 0 ];then
+    rez=$(echo "$TEST" | tail -n +2 | cut -d" " -f1)
+    echo "$rez"
+  fi
+}
+getvscs(){
+  TEST=$(kubectl get volumesnapshotclass 2>&1)
+  if [ $? -eq 0 ];then
+    rez=$(echo "$TEST" | tail -n +2 | cut -d" " -f1)
+    echo "$rez"
+  fi
+}
+
+_cli_zsh_autocomplete() {
+local -a subcmds
+local -a opts
+local cur
+cur=${words[-1]}
+
+if [[ "$cur" == "-"* ]]; then
+    opts=("${(@f)$(_CLI_ZSH_AUTOCOMPLETE_HACK=1 ${words[@]:0:#words[@]-1} ${cur} --generate-bash-completion)}")
+else
+    opts=("${(@f)$(_CLI_ZSH_AUTOCOMPLETE_HACK=1 ${words[@]:0:#words[@]-1} --generate-bash-completion)}")
+fi
+
+if [[ "${opts[1]}" != "" ]]; then
+   _describe 'values' opts
+
+else
+    if [[ ${words[-2]} == "--sc" || ${words[-2]} == "--storageclass" ]];then
+      res=$(getscs)
+      while read -r line; do array+=("$line"); done <<<"$res"
+      for element in "${array[@]}"
+      do
+        compadd $element
+      done
+    elif [[ ${words[-2]} == "--vsc" || ${words[-2]} == "--volumeSnapshotClass" ]];then
+      ressnap=$(getvscs)
+      while read -r line; do arraysnap+=("$line"); done <<<"$ressnap"
+      for element in "${arraysnap[@]}"
+      do
+        compadd $element
+      done
+    else
+      _files
+    fi
+fi
+
+  return
+}
+
+compdef _cli_zsh_autocomplete $PROG

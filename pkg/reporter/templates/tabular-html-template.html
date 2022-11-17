@@ -1,0 +1,99 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <style>
+        .fontStyle {
+            font-family: "Trebuchet MS", Arial, Helvetica, sans-serif;
+        }
+
+        #report {
+            font-family: "Trebuchet MS", Arial, Helvetica, sans-serif;
+            border-collapse: collapse;
+            width: 100%;
+        }
+
+        #report td, #report th {
+            border: 1px solid #ddd;
+            padding: 8px;
+        }
+
+        #report tr:nth-child(even) {
+            background-color: #f2f2f2;
+        }
+
+        #report tr:hover {
+            background-color: #ddd;
+        }
+
+        #report th {
+            padding-top: 12px;
+            padding-bottom: 12px;
+            text-align: center;
+            background-color: #bba4eb;
+            color: black;
+        }
+
+    </style>
+    <title>Cert-CSI Report</title>
+</head>
+<body>
+
+<table style="width: 100%;" class="fontStyle">
+    <tr>
+        <td style="width: 33%;"></td>
+        <td style="text-align: center; width: 33%;"><h4>Test Run : {{ getCustomReportName }}</h4></td>
+        <td style="text-align: right; width: 33%;">
+            <div>{{ getCurrentDate }}</div>
+        </td>
+    </tr>
+</table>
+
+<div class="fontStyle"><h5>Storage Class: {{ .Run.StorageClass }}</h5></div>
+<div class="fontStyle"><h5>Build Name: {{ getBuildName }}</h5></div>
+<div style="padding-bottom:1.5rem">
+    <table id="report">
+        <tr>
+            <th colspan=2>Summary</th>
+        </tr>
+        <tr>
+            <td>Total number of test cases</td>
+            <td>{{len .TestCasesMetrics}}</td>
+        </tr>
+        <tr>
+            <td>Passed Test Cases</td>
+            <td>{{getPassedCount}}</td>
+        </tr>
+        <tr>
+            <td>Failed Test Cases</td>
+            <td>{{getFailedCount}}</td>
+        </tr>
+        <tr>
+            <td>Skipped Test Cases</td>
+            <td>{{getSkippedCount}}</td>
+        </tr>
+    </table>
+</div>
+
+<table id="report">
+    <tr>
+        <th>Sl.No</th>
+        <th>Name</th>
+        <th>Array</th>
+        <th>Status</th>
+    </tr>
+    {{range $tcIndex, $tcMetrics := .TestCasesMetrics}}
+        <tr>
+            <td>{{getSlNo $tcIndex}}</td>
+            <td>{{$tcMetrics.TestCase.Name}}</td>
+            <td>{{getArrays}}</td>
+            <td>
+                <div style="color:{{getColorResultStatus $tcMetrics.TestCase.Success}}; text-align: center;">
+                    {{getResultStatus $tcMetrics.TestCase.Success}}
+                </div>
+            </td>
+        </tr>
+    {{- end -}}
+</table>
+</body>
+</html>
