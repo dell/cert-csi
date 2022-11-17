@@ -29,7 +29,7 @@ You can contribute to this project in several ways. Here are some examples:
 
 ## Submitting issues
 
-All issues related to <YOUR_PRODUCT_NAME> should be submitted [here](<LINK_TO_GITHUB_ISSUES>). Issues will be triaged and labels will be used to indicate the type of issue. This section outlines the types of issues that can be submitted.  
+All issues related to CERT-CSI should be submitted [here](<LINK_TO_GITHUB_ISSUES>). Issues will be triaged and labels will be used to indicate the type of issue. This section outlines the types of issues that can be submitted.  
 
 ### Report bugs
 
@@ -67,7 +67,7 @@ Triage helps ensure that issues resolve quickly by:
 * Lowering the issue count by preventing duplicate issues.
 * Streamlining the development process by preventing duplicate discussions.
 
-If you don't have the knowledge or time to code, consider helping with _issue triage_. The <YOUR_PRODUCT_NAME> community will thank you for saving them time by spending some of yours.
+If you don't have the knowledge or time to code, consider helping with _issue triage_. The CERT-CSI community will thank you for saving them time by spending some of yours.
 
 Read more about the ways you can [Triage issues](ISSUE_TRIAGE.md).
 
@@ -82,7 +82,7 @@ When you're ready to contribute, it's time to create a pull request.
 
 ## Branching
 
-<YOUR_PRODUCT_NAME> follows a scaled trunk branching strategy where short-lived branches are created off of the main branch. When coding is complete, the branch is merged back into main after being approved in a pull request code review.
+CERT-CSI follows a scaled trunk branching strategy where short-lived branches are created off of the main branch. When coding is complete, the branch is merged back into main after being approved in a pull request code review.
 
 ### Steps for branching and contributing
 
@@ -117,7 +117,7 @@ $ git commit -S -m your commit message
 
 ### Commit message format
 
-<YOUR_PRODUCT_NAME> uses the guidelines for commit messages outlined in [How to Write a Git Commit Message](https://chris.beams.io/posts/git-commit/)
+CERT-CSI uses the guidelines for commit messages outlined in [How to Write a Git Commit Message](https://chris.beams.io/posts/git-commit/)
 
 ## Pull Requests
 
@@ -138,7 +138,7 @@ If the pull request fixes a bug:
 * The pull request description must include `Fixes #<issue number>`.
 * To avoid regressions, the pull request should include tests that replicate the fixed bug.
 
-The <YOUR_PRODUCT_NAME> team _squashes_ all commits into one when we accept a pull request. The title of the pull request becomes the subject line of the squashed commit message. We still encourage contributors to write informative commit messages, as they becomes a part of the Git commit body.
+The CERT-CSI team _squashes_ all commits into one when we accept a pull request. The title of the pull request becomes the subject line of the squashed commit message. We still encourage contributors to write informative commit messages, as they becomes a part of the Git commit body.
 
 We use the pull request title when we generate change logs for releases. As such, we strive to make the title as informative as possible.
 
