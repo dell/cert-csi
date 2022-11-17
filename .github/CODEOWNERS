@@ -7,8 +7,9 @@
 # be requested for review when someone opens a pull request.
 # order is alphabetical for easier maintenance.
 #
-# Full Name 1 (githubid-1)
-# Full Name 2 (githubid-2)
+# Andrey Schipilo (schipa)
+# Maxim Sklyarov (maxim-sklyarov)
+# Harish P (harish-p4)
 
 # for all files:
-*@githubid-1 @hgithubid-2
+* @schipa @maxim-sklyarov @harish-p4 @gillt1
