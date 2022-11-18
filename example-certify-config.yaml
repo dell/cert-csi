@@ -1,0 +1,25 @@
+# Use this file as an example configuration file
+# This example specifies two storage classes and their capabilities
+# 'cert-csi' will parse this file and figure out what suites it should run for each storage class
+storageClasses:
+  - name: powerstore
+    minSize: 1Gi
+    rawBlock: true
+    expansion: true
+    clone: true
+    snapshot: true
+    ephemeral:
+      driver: csi-powerstore.dellemc.com
+      volumeAttributes:
+        size: "1Gi"
+        protocol: "ISCSi"
+  - name: powerstore-nfs
+    minSize: 3Gi
+    RWX: true
+    expansion: true
+    clone: true
+    snapshot: true
+    #Uncomment below if capacity tracking is enabled
+    #capacityTracking:
+      #driverNamespace: csi-powerstore
+      #pollInterval: 5m

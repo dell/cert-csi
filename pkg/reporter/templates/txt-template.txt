@@ -1,0 +1,30 @@
+{{formatName .Run.Name}}:
+Name: {{.Run.Name}}
+Host: {{colorCyan .Run.ClusterAddress}}
+StorageClass: {{colorYellow .Run.StorageClass}}
+Minimum and Maximum EntityOverTime charts:
+{{range $idx, $path := getMinMaxEntityOverTimePaths $.Run.Name}}
+{{colorCyan .Txt}}
+{{end}}
+Tests:
+{{range $tcIndex, $tcMetrics := .TestCasesMetrics}}--------------------------------------------------------------
+{{inc $tcIndex}}. TestCase: {{colorCyan $tcMetrics.TestCase.Name}}
+            Started:   {{$tcMetrics.TestCase.StartTimestamp}}
+            Ended:     {{$tcMetrics.TestCase.EndTimestamp}}
+            Result:    {{getResultStatus $tcMetrics.TestCase.Success}}
+
+            Stage metrics:{{range $stage, $metrics := $tcMetrics.StageMetrics}}
+			{{- if shouldBeIncluded $metrics}}
+		    {{$stage}}:
+			Avg: {{$metrics.Avg}}
+			Min: {{$metrics.Min}}
+			Max: {{$metrics.Max}}
+			Histogram:
+	{{with $hist := getPlotStageMetricHistogramPath $tcMetrics $stage $.Run.Name}}{{colorCyan .Txt}}{{end}}
+			BoxPlot:
+	{{with $box := getPlotStageBoxPath $tcMetrics $stage $.Run.Name}}{{colorCyan .Txt}}{{end}}
+		    {{- end -}}
+            {{- end}}
+			EntityNumberOverTime:
+	{{with $eot := getPlotEntityOverTimePath $tcMetrics $.Run.Name}}{{colorCyan .Txt}}{{end}}
+{{end}}

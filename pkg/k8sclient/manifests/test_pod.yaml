@@ -1,0 +1,32 @@
+---
+kind: PersistentVolumeClaim
+apiVersion: v1
+metadata:
+  name: test-pvc
+spec:
+  accessModes:
+    - ReadWriteOnce
+  volumeMode: Filesystem
+  resources:
+    requests:
+      storage: 100Mi
+  storageClassName: powerstore
+---
+apiVersion: v1
+kind: Pod
+metadata:
+  generateName: test-pod
+spec:
+  volumes:
+    - name: pv-storage
+      persistentVolumeClaim:
+        claimName: test-pvc
+  containers:
+    - name: test
+      image: amaas-eos-mw1.cec.lab.emc.com:5028/centos:latest
+      imagePullPolicy: IfNotPresent
+      volumeMounts:
+        - name: pv-storage
+          mountPath: /data0
+      command: ["/bin/bash"]
+      args: ["-c", "trap 'exit 0' SIGTERM;while true; do sleep 1; done"]

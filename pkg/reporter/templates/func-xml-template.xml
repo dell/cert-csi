@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuites name="{{ getCustomReportName }}">
+    <testsuite name="{{ formatName .Run.Name }}" tests="{{len .TestCasesMetrics}}" skipped="{{getSkippedCount}}"
+               failures="{{getFailedCount}}" errors="0">
+        {{- range $tcIndex, $tcMetrics := .TestCasesMetrics}}
+        {{- if eq $tcMetrics.TestCase.Success true}}
+        <testcase name="{{$tcMetrics.TestCase.Name}} {{$tcMetrics.TestCase.Parameters}}"
+                  time="{{getTestDuration $tcMetrics.TestCase}}"/>
+        {{- end}}
+        {{- if eq $tcMetrics.TestCase.Success false}}
+        <testcase name="{{$tcMetrics.TestCase.Name}} {{$tcMetrics.TestCase.Parameters}}"
+                  time="{{getTestDuration $tcMetrics.TestCase}}">
+            <failure message="{{$tcMetrics.TestCase.ErrorMessage}}" type="FAILURE"/>
+        </testcase>
+        {{- end}}
+        {{- end}}
+    </testsuite>
+</testsuites>

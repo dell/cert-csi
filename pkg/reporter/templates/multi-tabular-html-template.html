@@ -1,0 +1,131 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <style>
+        .bar {
+            align-items: stretch;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            background-color: #2c3e50;
+        }
+
+        .fontStyle {
+            font-family: Cantarell, Helvetica, sans-serif;
+            color: #414a4c;
+        }
+
+        .card {
+            box-shadow: 0 4px 8px 0 rgba(0, 0, 0, 0.1);
+            transition: 0.1s;
+            width: 80%;
+            background-color: #f8f8f8;
+            margin: 1.5rem auto;
+            padding: 1.5rem;
+        }
+
+        .storageclass {
+            font-size: 18px;
+            font-weight: bold;
+        }
+
+        .card:hover {
+            box-shadow: 0 4px 8px 0 rgba(0, 0, 0, 0.2);
+        }
+
+        .container {
+            margin: 0 auto;
+        }
+
+        .suite {
+            border: none;
+            text-align: left;
+            outline: none;
+            font-size: 15px;
+            margin: 0.5rem auto;
+            padding: 1rem;
+            width: 100%;
+        }
+
+        .collapsible {
+            cursor: pointer;
+        }
+
+        .content {
+            padding: 0 18px;
+            display: none;
+            overflow: hidden;
+            background-color: #f1f1f1;
+        }
+    </style>
+    <title>Cert-CSI Report</title>
+    <link href="data:image/x-icon;base64,iVBORw0KGgoAAAANSUhEUgAAACAAAAAgCAYAAABzenr0AAAC60lEQVRYhe2X60vTYRTHf/Tv7Jd0waDbz2VD6TZ/02lbNm/pvKa5bBKOKWjIjFqUYdNuXsAswwWhvjCoRCutlpZREIVRGtYLNTYpcJ9elGOy6bRg64UPnFfP93A+zznPeR6OIAjCOoUkWxSSPCFKMuEwhSRPKCTZIgjCOkEhyZZwBQ4CYhEUUsJkpABEKWFSiFzw37YGsAbw/wOotNkYCk+Sml+OpE4Pqtm6NxV9nhlD4Ul2abL+HWB9jAarrZ73459w9txDZzxBXIqRqtMXeTYyhs5YhijJ7NhvoPtePwNDLg4ay9ijz8N24QojY2/RHiklOl5He1c30zOzTM/MMjjsQqXNXh4gSplIT18/ADe6ugPgHM03OdNwHVGSeToyhtfrZac6bZGmw9mD1VaPKMlkFltYWOccLaEzYL/UAsCPHz/Zvt8Q4LBZlYLJWscBQxEA8/NeNqmSF2mUcgbG41WIkkxGcYUPwH4pBMBmVTIzs98BGHr+ctna6XPNfidrXVK3KgD/dHU4e5cF2BKvx+2Z8+n7Hj5Gn3vi3wAqas/7xJfbboe8wVZbPfPzXvzX46cjqA1Ffwdg8QNoautcURvlmCp5P/5pEYTbM8ehPPPqAbJLrT5xe5AOWMqilIkcs9h492Hc5z/serV6gOg4HZ4/dR0Yci0ZMDpOR5QyMUiHJPN89DUAM7PfVw8gSjJNrZ2+NG6J1wU5rQa7o5V8czWa9OKA/ZqzDgA+fPz8dwAbd2sZGHIB0HD9RoBDSUUtHc5eTNY6+h48CthvbLkFwCl7Y0Bn2VfyEImSzIZdSZxpaGZy6ivX2p0kpB1FqcmkwFzN/cFhCspr0GSU8OLVG9o676I2FBGbmIWl9jxfpr5Rd+Hq71LF6+i404vbM4fbM8eTZ6Ohn2J/Wx+j4cDhQrJLrWQcrSA2KfCj2bbvMKn55eSYKtEeKWVDbNKKL29IgHDYGsAaQOQBIj6aRXw4XRjPxbBmImFyYTz/BTGN27U+4z+lAAAAAElFTkSuQmCC"
+          rel="icon" type="image/x-icon"/>
+</head>
+
+<body style="background-color: white; margin: 0; padding: 0">
+
+<div class="bar">
+    <table style="width: 100%; color: white;" class="fontStyle">
+        <tr>
+            <td style="width: 33%;"></td>
+            <td style="text-align: center; width: 33%;"><h4>CERT-CSI RESULTS</h4></td>
+            <td style="text-align: right; width: 33%; padding-right: 16px">
+                <div>{{ getCurrentDate }}</div>
+            </td>
+        </tr>
+    </table>
+</div>
+
+{{- range $mcIndex, $mc := . }}
+    <div class="card">
+        <div class="container fontStyle storageclass">{{ $mc.Run.StorageClass }}</div>
+        <div class="container fontStyle" style="font-size: 12px;"> 🗙 {{ getFailedCountFromMC $mc }} ✔ {{ getPassedCountFromMC $mc }}  </div>
+        <div class="container">
+            {{range $tcIndex, $tcMetrics := $mc.TestCasesMetrics}}
+                {{- if eq $tcMetrics.TestCase.Success true }}
+                    <button type="button" class="container suite" style="background-color: #33bd41;">
+                        <div class="fontStyle" style="font-weight: bold; color: white;">
+                            ✔ {{ $tcMetrics.TestCase.Name }} {{ $tcMetrics.TestCase.Parameters }}
+                            <div style="font-weight: lighter; display:inline-block;"> time
+                                = {{ getTestDuration $tcMetrics.TestCase }}</div>
+                        </div>
+                    </button>
+                {{- end }}
+                {{- if eq $tcMetrics.TestCase.Success false }}
+                    <button type="button" class="container collapsible suite" style="background-color: #b32010;">
+                        <div class="fontStyle" style="font-weight: bold; color: white;">
+                            🗙 {{ $tcMetrics.TestCase.Name }} {{ $tcMetrics.TestCase.Parameters }}
+                            <div style="font-weight: lighter; display:inline-block;"> time
+                                = {{ getTestDuration $tcMetrics.TestCase }}</div>
+                            <div style="font-weight: bold; display:inline; float: right; text-align: right;">⤵</div>
+                        </div>
+                    </button>
+                    <div class="content">
+                        <p>{{ $tcMetrics.TestCase.ErrorMessage}}</p>
+                    </div>
+                {{- end }}
+            {{- end -}}
+        </div>
+    </div>
+{{- end }}
+
+<script>
+    var coll = document.getElementsByClassName("collapsible");
+    var i;
+
+    for (i = 0; i < coll.length; i++) {
+        coll[i].addEventListener("click", function () {
+            this.classList.toggle("active");
+            var content = this.nextElementSibling;
+            if (content.style.display === "block") {
+                content.style.display = "none";
+            } else {
+                content.style.display = "block";
+            }
+        });
+    }
+</script>
+</body>
+</html>

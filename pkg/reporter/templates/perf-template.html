@@ -1,0 +1,191 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Cert-CSI Driver Performance Report</title>
+    <style>
+        div.ident50 {
+            text-indent: 50px;
+        }
+
+        div.ident70 {
+            text-indent: 70px;
+        }
+
+        div.ident90 {
+            text-indent: 90px;
+        }
+    </style>
+</head>
+<body>
+<h1>{{formatName .Run.Name}}</h1>
+<table>
+    <tr>
+        <td><b>Name:</b></td>
+        <td>{{.Run.Name}}</td>
+    </tr>
+    <tr>
+        <td><b>Host:</b></td>
+        <td>
+            <div style="color:darkcyan;">{{.Run.ClusterAddress}}</div>
+        </td>
+    </tr>
+    <tr>
+        <td><b>StorageClass:</b></td>
+        <td>
+            <div style="color:orange;">{{.Run.StorageClass}}</div>
+        </td>
+    </tr>
+    <tr>
+        <td>
+            <details>
+                <summary><b>EntityNumberOverTime min/max charts:</b></summary>
+                <table>
+                    {{range $idx, $path := getMinMaxEntityOverTimePaths $.Run.Name}}
+                        <tr>
+                            <td>
+                                <img src="{{.Html}}" alt="Entity over time plot">
+                            </td>
+                        </tr>
+                    {{end}}
+                </table>
+            </details>
+        </td>
+    </tr>
+    <tr>
+        <td>
+            <details>
+                <summary><b>Driver Resource Usage:</b></summary>
+                {{ $resUsage := getDriverResourceUsage $.Run.Name}} {{ $length := len $resUsage}} {{ if ne $length 0 }}
+                    <table>
+                        {{range $idx, $path := $resUsage}}
+                            <tr>
+                                <td>
+                                    <img src="{{.Html}}" alt="Resource over time plot">
+                                </td>
+                            </tr>
+                        {{end}}
+                    </table>
+                {{else}}
+                    No driver resource usage data available
+                {{end}}
+            </details>
+        </td>
+    </tr>
+    <tr>
+        <td>
+            <details>
+                <summary><b>Avg stage times over iterations:</b></summary>
+                {{ $avgTime := getAvgStageTimeOverIterations $.Run.Name}} {{ $length := len $avgTime}} {{ if ne $length 0 }}
+                    <table>
+                        {{range $idx, $path := $avgTime}}
+                            <tr>
+                                <td>
+                                    <img src="{{.Html}}" alt="Avg time over iterations plot">
+                                </td>
+                            </tr>
+                        {{end}}
+                    </table>
+                {{else}}
+                    No driver stage time data available
+                {{end}}
+            </details>
+        </td>
+    </tr>
+    <tr>
+        <td>
+            <details>
+                <summary><b>Iteration times:</b></summary>
+                {{with $itTimes := getIterationTimes $.Run.Name}}
+                    <table>
+                        <tr>
+                            <td>
+                                <img src="{{.Html}}" alt="Iteration times">
+                            </td>
+                        </tr>
+                    </table>
+                {{end}}
+            </details>
+        </td>
+    </tr>
+    <tr>
+        <td><b>Tests:</b></td>
+    </tr>
+</table>
+<ol>
+    {{range $tcIndex, $tcMetrics := .TestCasesMetrics}}
+        <li>
+            <details>
+                <summary><b style="color:darkcyan;">{{$tcMetrics.TestCase.Name}}</b></summary>
+                <div class="ident50">
+                    <table>
+                        <tr>
+                            <td>Started:</td>
+                            <td>{{$tcMetrics.TestCase.StartTimestamp}}</td>
+                        </tr>
+                        <tr>
+                            <td>Ended:</td>
+                            <td>{{$tcMetrics.TestCase.EndTimestamp}}</td>
+                        </tr>
+                        <tr>
+                            <td>Result:</td>
+                            <td>
+                                <div style="color:{{getColorResultStatus $tcMetrics.TestCase.Success}};">
+                                    {{getResultStatus $tcMetrics.TestCase.Success}}
+                                </div>
+                            </td>
+                        </tr>
+                    </table>
+                </div>
+                <div class="ident50">
+                    <details>
+                        <summary>Stage metrics:</summary>
+                        {{range $stage, $metrics := $tcMetrics.StageMetrics}}
+                            {{- if shouldBeIncluded $metrics}}
+                                <div class="ident70">{{$stage}}:</div>
+                                <div class="ident90">
+                                    <table>
+                                        <tr>
+                                            <td>Avg:</td>
+                                            <td>{{$metrics.Avg}}</td>
+                                        </tr>
+                                        <tr>
+                                            <td>Min:</td>
+                                            <td>{{$metrics.Min}}</td>
+                                        </tr>
+                                        <tr>
+                                            <td>Max:</td>
+                                            <td>{{$metrics.Max}}</td>
+                                        </tr>
+                                        <tr>
+                                            <td>Histogram:</td>
+                                            <td>
+                                                <img src="{{with getPlotStageMetricHistogramPath $tcMetrics $stage $.Run.Name}}{{.Html}}{{end}}"
+                                                     alt="Metrics histogram"></td>
+                                        </tr>
+                                        <tr>
+                                            <td>BoxPlot:</td>
+                                            <td>
+                                                <img src="{{with getPlotStageBoxPath $tcMetrics $stage $.Run.Name}}{{.Html}}{{end}}"
+                                                     alt="Metrics Box Plot"></td>
+                                        </tr>
+                                    </table>
+                                </div>
+                            {{- end -}}
+                        {{- end}}
+                    </details>
+                    <div class="ident50">
+                        <table>
+                            <tr>
+                                <td>EntityNumberOverTime:</td>
+                                <td><img src="{{with getPlotEntityOverTimePath $tcMetrics $.Run.Name}}{{.Html}}{{end}}"
+                                         alt="Entity over time plot"></td>
+                            </tr>
+                        </table>
+                    </div>
+                </div>
+        </li>
+    {{end}}
+</ol>
+</body>
+</html>

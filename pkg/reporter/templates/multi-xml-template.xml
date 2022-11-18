@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuites name="cert-csi-results">
+    {{- range $mcIndex, $mc := . }}
+    <testsuite name="{{ $mc.Run.StorageClass }}" tests="{{ len $mc.TestCasesMetrics }}" skipped="0"
+               failures="{{ getFailedCountFromMC $mc }}" errors="0">
+        {{- range $tcIndex, $tcMetrics := $mc.TestCasesMetrics }}
+        {{- if eq $tcMetrics.TestCase.Success true }}
+        <testcase name="{{ $tcMetrics.TestCase.Name }} {{ $tcMetrics.TestCase.Parameters}}"
+                  time="{{ getTestDuration $tcMetrics.TestCase }}"/>
+        {{- end }}
+        {{- if eq $tcMetrics.TestCase.Success false }}
+        <testcase name="{{ $tcMetrics.TestCase.Name }} {{ $tcMetrics.TestCase.Parameters }}"
+                  time="{{ getTestDuration $tcMetrics.TestCase }}">
+            <failure message="{{ $tcMetrics.TestCase.ErrorMessage }}" type="FAILURE"/>
+        </testcase>
+        {{- end }}
+        {{- end }}
+    </testsuite>
+    {{- end }}
+</testsuites>
