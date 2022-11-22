@@ -1,19 +1,15 @@
 <!--
-Copyright (c) [YEARS] Dell Inc., or its subsidiaries. All Rights Reserved.
+Copyright (c) 2022 Dell Inc., or its subsidiaries. All Rights Reserved.
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
 You may obtain a copy of the License at
-   
-    http://www.apache.org/licenses/LICENSE-2.0
 
-Unless required by applicable law or agreed to in writing, software
-distributed under the License is distributed on an "AS IS" BASIS,
-WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-See the License for the specific language governing permissions and
-limitations under the License.
+    http://www.apache.org/licenses/LICENSE-2.0
 -->
+
 # CERT-CSI: Test tool for CSI Drivers
+
 [![Contributor Covenant](https://img.shields.io/badge/Contributor%20Covenant-v2.0%20adopted-ff69b4.svg)](docs/CODE_OF_CONDUCT.md) 
 [![License](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](https://www.apache.org/licenses/LICENSE-2.0)
 [![Releases](https://img.shields.io/badge/Releases-green.svg)](https://github.com/dell/cert-csi/releases)
@@ -27,20 +23,21 @@ easy-readable document format, where this metrics will be analyzed
 >
 >Ex: `--sc nfs` will generate `nfs.db` database file
 
-## Table of Content
-- [Code of Conduct](./docs/CODE_OF_CONDUCT.md)
-- Guides
-  - [Maintainer Guide](./docs/MAINTAINER_GUIDE.md)
-  - [Committer Guide](./docs/COMMITTER_GUIDE.md)
-  - [Contributing Guide](./docs/CONTRIBUTING.md)
-  - [Getting Started Guide](./docs/GETTING_STARTED_GUIDE.md)
-- [List of Adopters](./ADOPTERS.md)
-- [Support](./docs/SUPPORT.md)
-- [About](#about)
+## Table of Contents
+
+* [Code of Conduct](./docs/CODE_OF_CONDUCT.md)
+* [Maintainer Guide](./docs/MAINTAINER_GUIDE.md)
+* [Committer Guide](./docs/COMMITTER_GUIDE.md)
+* [Contributing Guide](./docs/CONTRIBUTING.md)
+* [Branching Strategy](./docs/BRANCHING.md)
+* [List of Adopters](./docs/ADOPTERS.md)
+* [Maintainers](./docs/MAINTAINERS.md)
+* [Support](./docs/SUPPORT.md)
+* [Security](./docs/SECURITY.md)
+* [About](#about)
 
 ## About
 
 _CERT-CSI_ is 100% open source and community-driven. All components are available
 under [Apache 2 License](https://www.apache.org/licenses/LICENSE-2.0.html) on
 GitHub.
-
