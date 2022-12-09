@@ -17,14 +17,15 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	storagev1 "k8s.io/api/storage/v1"
-	"k8s.io/apimachinery/pkg/api/resource"
-	"k8s.io/apimachinery/pkg/util/wait"
 	"math"
 	"os"
 	"os/exec"
 	"strconv"
 	"strings"
+
+	storagev1 "k8s.io/api/storage/v1"
+	"k8s.io/apimachinery/pkg/api/resource"
+	"k8s.io/apimachinery/pkg/util/wait"
 
 	snapv1client "cert-csi/pkg/k8sclient/resources/volumesnapshot/v1"
 	snapbetaclient "cert-csi/pkg/k8sclient/resources/volumesnapshot/v1beta1"
@@ -3214,5 +3215,5 @@ func (vms *VolumeMigrateSuite) GetName() string {
 }
 
 func (vms *VolumeMigrateSuite) Parameters() string {
-	return fmt.Sprintf("{Target storageclass: %s, volumes: %s, pods: %s}", vms.TargetSC, vms.VolumeNumber, vms.PodNumber)
+	return fmt.Sprintf("{Target storageclass: %s, volumes: %d, pods: %d}", vms.TargetSC, vms.VolumeNumber, vms.PodNumber)
 }

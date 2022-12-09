@@ -195,7 +195,7 @@ func ExecuteSuite(num int, suites map[string][]suites.Interface, suite suites.In
 	if sr.CoolDownPeriod != 0 {
 		log.Infof("sleeping %d seconds before next iteration", sr.CoolDownPeriod)
 		sleepTimer := time.After(time.Duration(sr.CoolDownPeriod) * time.Second)
-		sigCont := make(chan os.Signal)
+		sigCont := make(chan os.Signal, 1)
 		signal.Notify(sigCont, os.Interrupt,
 			syscall.SIGCONT,
 		)
@@ -325,7 +325,7 @@ func (sr *SuiteRunner) RunSuites(suites map[string][]suites.Interface) {
 
 func (sr *SuiteRunner) runFlowManagementGoroutine() (context.Context, chan os.Signal) {
 	iterCtx, cancelIter := context.WithCancel(context.Background())
-	c := make(chan os.Signal)
+	c := make(chan os.Signal, 1)
 	signal.Notify(c, os.Interrupt,
 		syscall.SIGTERM, // "the normal way to politely ask a program to terminate"
 		syscall.SIGINT,  // Ctrl+C
@@ -413,7 +413,7 @@ func runSuite(ctx context.Context, suite suites.Interface, sr *SuiteRunner, test
 		ctx := context.WithValue(context.Background(), utils.LoggerContextKey, log)
 		ctx, cancel := context.WithCancel(ctx)
 
-		skipCh := make(chan os.Signal)
+		skipCh := make(chan os.Signal, 1)
 		signal.Notify(skipCh, os.Interrupt,
 			syscall.SIGTERM, // "the normal way to politely ask a program to terminate"
 			syscall.SIGINT,  // Ctrl+C

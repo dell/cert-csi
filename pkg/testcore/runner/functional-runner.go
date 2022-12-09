@@ -129,7 +129,7 @@ func runFunctionalSuite(suite suites.Interface, sr *FunctionalSuiteRunner, testC
 
 	sr.runNum++
 
-	c := make(chan os.Signal)
+	c := make(chan os.Signal, 1)
 
 	signal.Notify(c, os.Interrupt,
 		syscall.SIGTERM, // "the normal way to politely ask a program to terminate"

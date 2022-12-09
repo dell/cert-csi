@@ -4,42 +4,59 @@ import (
 	"cert-csi/pkg/store"
 	"errors"
 	"fmt"
+	"time"
+
 	"github.com/cheggaaa/pb/v3"
 	log "github.com/sirupsen/logrus"
-	"time"
 )
 
+// Stage step
 type Stage string
+
+// PVCStage step
 type PVCStage Stage
+
+// PodStage step
 type PodStage Stage
 
 const (
-	PVCBind         PVCStage = "PVCBind"
-	PVCAttachment   PVCStage = "PVCAttachment"
-	PVCCreation     PVCStage = "PVCCreation"
-	PVCDeletion     PVCStage = "PVCDeletion"
+	// PVCBind stage
+	PVCBind PVCStage = "PVCBind"
+	// PVCAttachment stage
+	PVCAttachment PVCStage = "PVCAttachment"
+	// PVCCreation stage
+	PVCCreation PVCStage = "PVCCreation"
+	// PVCDeletion stage
+	PVCDeletion PVCStage = "PVCDeletion"
+	// PVCUnattachment stage
 	PVCUnattachment PVCStage = "PVCUnattachment"
 
+	// PodCreation stage
 	PodCreation PodStage = "PodCreation"
+	// PodDeletion stage
 	PodDeletion PodStage = "PodDeletion"
 )
 
+// DurationOfStage represents staging time
 type DurationOfStage struct {
 	Min time.Duration
 	Max time.Duration
 	Avg time.Duration
 }
 
+// PVCMetrics contains PVC and corresponding metrics
 type PVCMetrics struct {
 	PVC     store.Entity
 	Metrics map[PVCStage]time.Duration
 }
 
+// PodMetrics contains Pod and corresponding metrics
 type PodMetrics struct {
 	Pod     store.Entity
 	Metrics map[PodStage]time.Duration
 }
 
+// TestCaseMetrics contains metrics for each testcase
 type TestCaseMetrics struct {
 	TestCase     store.TestCase
 	Pods         []PodMetrics
@@ -50,21 +67,25 @@ type TestCaseMetrics struct {
 	ResourceUsageMetrics []store.ResourceUsage
 }
 
+// MetricsCollection contains collection of TestCaseMetrics
 type MetricsCollection struct {
 	Run              store.TestRun
 	TestCasesMetrics []TestCaseMetrics
 }
 
+// MetricsCollector contains db store and metrics collection
 type MetricsCollector struct {
 	db           store.Store
 	metricsCache map[string]*MetricsCollection
 }
 
+// NewMetricsCollector creates a MetricsCollector
 func NewMetricsCollector(db store.Store) *MetricsCollector {
 	mc := make(map[string]*MetricsCollection)
 	return &MetricsCollector{db, mc}
 }
 
+// Collect consolidates the metrics and returns MetricsCollection
 func (mc *MetricsCollector) Collect(runName string) (*MetricsCollection, error) {
 	if mc.metricsCache != nil {
 		metrics, ok := mc.metricsCache[runName]
