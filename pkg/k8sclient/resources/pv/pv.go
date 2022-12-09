@@ -6,6 +6,8 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"time"
+
 	"github.com/fatih/color"
 	log "github.com/sirupsen/logrus"
 	v1 "k8s.io/api/core/v1"
@@ -13,7 +15,6 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/wait"
 	tcorev1 "k8s.io/client-go/kubernetes/typed/core/v1"
-	"time"
 )
 
 const (
@@ -143,6 +144,7 @@ func (c *Client) WaitPV(ctx context.Context, newPVName string) error {
 	return nil
 }
 
+// WaitToBeBound waits for PVC to be in Bound state
 func (pv *PersistentVolume) WaitToBeBound(ctx context.Context) error {
 	log.Debugf("Waiting for  PV %s to be %s", pv.Object.Name, color.GreenString("PRESENT"))
 	startTime := time.Now()
@@ -176,6 +178,7 @@ func (pv *PersistentVolume) WaitToBeBound(ctx context.Context) error {
 	return nil
 }
 
+// CheckReplicationAnnotationsForPV checks for replication related annotations and labels on PV
 func (c *Client) CheckReplicationAnnotationsForPV(ctx context.Context, object *v1.PersistentVolume) error {
 	pvName := object.Name
 	log.Infof("Checking Replication Annotations and Labels on  PV %s", pvName)
@@ -222,6 +225,7 @@ func (c *Client) CheckReplicationAnnotationsForPV(ctx context.Context, object *v
 	return nil
 }
 
+// CheckReplicationAnnotationsForRemotePV checks for replication related annotations and labels for remote PV
 func (c *Client) CheckReplicationAnnotationsForRemotePV(ctx context.Context, object *v1.PersistentVolume) error {
 	pvName := object.Name
 	log.Infof("Checking Replication Annotations and labels on  remote PV %s ", pvName)
@@ -327,6 +331,7 @@ func (pv *PersistentVolume) WaitUntilGone(ctx context.Context) error {
 
 }
 
+// Sync waits until PV is deleted or bound
 func (pv *PersistentVolume) Sync(ctx context.Context) *PersistentVolume {
 	if pv.Deleted {
 		pv.error = pv.WaitUntilGone(ctx)
@@ -336,6 +341,7 @@ func (pv *PersistentVolume) Sync(ctx context.Context) *PersistentVolume {
 	return pv
 }
 
+// HasError checks if PV contains error
 func (pv *PersistentVolume) HasError() bool {
 	if pv.error != nil {
 		return true
@@ -343,6 +349,7 @@ func (pv *PersistentVolume) HasError() bool {
 	return false
 }
 
+// GetError returns PV error
 func (pv *PersistentVolume) GetError() error {
 	return pv.error
 }
