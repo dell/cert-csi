@@ -5,6 +5,8 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"time"
+
 	"github.com/fatih/color"
 	"github.com/kubernetes-csi/external-snapshotter/client/v4/apis/volumesnapshot/v1beta1"
 	snapshotv1beta1 "github.com/kubernetes-csi/external-snapshotter/client/v4/clientset/versioned/typed/volumesnapshot/v1beta1"
@@ -12,7 +14,6 @@ import (
 	apierrs "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/wait"
-	"time"
 )
 
 const (
@@ -22,12 +23,14 @@ const (
 	Timeout = 300 * time.Second
 )
 
+// SnapshotContentClient is a client for managing volume snapshot content
 type SnapshotContentClient struct {
 	Interface snapshotv1beta1.VolumeSnapshotContentInterface
 	Namespace string
 	Timeout   int
 }
 
+// SnapshotContent contains parameters needed for managing snapshot content
 type SnapshotContent struct {
 	Client  *SnapshotContentClient
 	Object  *v1beta1.VolumeSnapshotContent
@@ -37,6 +40,7 @@ type SnapshotContent struct {
 	error error
 }
 
+// Delete deletes a volume snapshot content
 func (scc *SnapshotContentClient) Delete(ctx context.Context, snap *v1beta1.VolumeSnapshotContent) *SnapshotContent {
 	var funcErr error
 	err := scc.Interface.Delete(ctx, snap.Name, metav1.DeleteOptions{})
@@ -52,6 +56,7 @@ func (scc *SnapshotContentClient) Delete(ctx context.Context, snap *v1beta1.Volu
 	}
 }
 
+// DeleteAll deletes all snapshot contents for a PVC
 func (scc *SnapshotContentClient) DeleteAll(ctx context.Context) error {
 	log := utils.GetLoggerFromContext(ctx)
 	snapList, snapErr := scc.Interface.List(ctx, metav1.ListOptions{})
@@ -72,6 +77,7 @@ func (scc *SnapshotContentClient) DeleteAll(ctx context.Context) error {
 	return nil
 }
 
+// WaitUntilGone waits until snapshot content is deleted
 func (cont *SnapshotContent) WaitUntilGone(ctx context.Context) error {
 	log := utils.GetLoggerFromContext(ctx)
 	startTime := time.Now()
@@ -167,6 +173,7 @@ func (cont *SnapshotContent) WaitForRunning(ctx context.Context) error {
 	return nil
 }
 
+// HasError checks if snapshot content has error
 func (cont *SnapshotContent) HasError() bool {
 	if cont.error != nil {
 		return true
@@ -174,10 +181,12 @@ func (cont *SnapshotContent) HasError() bool {
 	return false
 }
 
+// GetError returns snapshot content error
 func (cont *SnapshotContent) GetError() error {
 	return cont.error
 }
 
+// Sync updates snapshot content state
 func (cont *SnapshotContent) Sync(ctx context.Context) *SnapshotContent {
 	if cont.Deleted {
 		cont.error = cont.WaitUntilGone(ctx)

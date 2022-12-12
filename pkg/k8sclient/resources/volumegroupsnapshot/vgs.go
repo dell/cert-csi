@@ -4,6 +4,8 @@ import (
 	"cert-csi/pkg/utils"
 	"context"
 	"fmt"
+	"time"
+
 	vgsAlpha "github.com/dell/csi-volumegroup-snapshotter/api/v1"
 	"github.com/fatih/color"
 	"github.com/sirupsen/logrus"
@@ -12,14 +14,14 @@ import (
 	"k8s.io/apimachinery/pkg/util/wait"
 	"k8s.io/client-go/kubernetes"
 	runtimeclient "sigs.k8s.io/controller-runtime/pkg/client"
-	"time"
 )
 
 const (
 	// Poll is a poll interval for Pod
 	Poll = 2 * time.Second
 	// Timeout is a timeout for Pod operations
-	Timeout        = 1800 * time.Second
+	Timeout = 1800 * time.Second
+	// StatusComplete represents Complete status
 	StatusComplete = "Complete"
 )
 
@@ -30,6 +32,7 @@ type Client struct {
 	Timeout   int
 }
 
+// Config contains parameters specific to VGS
 type Config struct {
 	Name          string
 	Namespace     string
@@ -39,6 +42,7 @@ type Config struct {
 	VolumeLabel   string
 }
 
+// VGS is contains information specific to a VG snapshot
 type VGS struct {
 	Client  *Client
 	Object  *vgsAlpha.DellCsiVolumeGroupSnapshot
@@ -48,6 +52,7 @@ type VGS struct {
 	error error
 }
 
+// Create creates a VGS
 func (c *Client) Create(ctx context.Context, vgs *vgsAlpha.DellCsiVolumeGroupSnapshot) *VGS {
 	var funcErr error
 
@@ -64,6 +69,7 @@ func (c *Client) Create(ctx context.Context, vgs *vgsAlpha.DellCsiVolumeGroupSna
 	}
 }
 
+// Delete deletes a VGS
 func (c *Client) Delete(ctx context.Context, vgs *vgsAlpha.DellCsiVolumeGroupSnapshot) *VGS {
 	var funcErr error
 
@@ -80,6 +86,7 @@ func (c *Client) Delete(ctx context.Context, vgs *vgsAlpha.DellCsiVolumeGroupSna
 	}
 }
 
+// Get returns a requested VGS
 func (c *Client) Get(ctx context.Context, name, namespace string) *VGS {
 	var funcErr error
 
@@ -102,6 +109,7 @@ func (c *Client) Get(ctx context.Context, name, namespace string) *VGS {
 	}
 }
 
+// MakeVGS returns a VGS object
 func (c *Client) MakeVGS(cfg *Config) *vgsAlpha.DellCsiVolumeGroupSnapshot {
 	vgObj := &vgsAlpha.DellCsiVolumeGroupSnapshot{
 		ObjectMeta: metav1.ObjectMeta{
@@ -121,6 +129,7 @@ func (c *Client) MakeVGS(cfg *Config) *vgsAlpha.DellCsiVolumeGroupSnapshot {
 	return vgObj
 }
 
+// WaitForComplete waits until VGS is in completed state
 func (c *Client) WaitForComplete(ctx context.Context, name, namespace string) error {
 	log := utils.GetLoggerFromContext(ctx)
 	log.Infof("Waiting for VGS to be in %s state", color.GreenString("COMPLETE"))
@@ -159,10 +168,12 @@ func (c *Client) WaitForComplete(ctx context.Context, name, namespace string) er
 	return nil
 }
 
+// Name return VGS name
 func (vgs *VGS) Name() string {
 	return vgs.Object.Name
 }
 
+// HasError checks whether VGS has error
 func (vgs *VGS) HasError() bool {
 	if vgs.error != nil {
 		return true
@@ -170,6 +181,7 @@ func (vgs *VGS) HasError() bool {
 	return false
 }
 
+// GetError returns VGS error
 func (vgs *VGS) GetError() error {
 	return vgs.error
 }
