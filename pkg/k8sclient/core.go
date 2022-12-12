@@ -97,7 +97,6 @@ type Clients struct {
 	RgClient               *rg.Client
 	VgsClient              *volumegroupsnapshot.Client
 	KubeClient             *KubeClient
-	CSISCClient            *csistoragecapacity.Client
 }
 
 // NewKubeClient is a KubeClient constructor, that creates new instance of KubeClient from provided config
@@ -423,6 +422,20 @@ func (c *KubeClient) DeleteNamespace(ctx context.Context, namespace string) erro
 
 			if _, err := c.ClientSet.CoreV1().Namespaces().Get(ctx, namespace, metav1.GetOptions{}); err != nil {
 				if apierrs.IsNotFound(err) {
+					// c.CreateVaClient()
+					vaClient, err := c.CreateVaClient(namespace)
+					if err != nil {
+						return false, err
+					}
+					// in case if somehow some PVs are left even after namespace got deleted, try to clean them.
+					pvClient, err := c.CreatePVClient()
+					if err != nil {
+						return false, err
+					}
+					err = pvClient.DeleteAllPV(ctx, namespace, vaClient)
+					if err != nil {
+						log.Errorf("Failed to delete some PVs")
+					}
 					return true, nil
 				}
 				log.Errorf("Error while waiting for namespace to be terminated: %v", err)
@@ -480,7 +493,8 @@ func (c *KubeClient) ForceDeleteNamespace(ctx context.Context, namespace string)
 			return err
 		}
 		err = k8sbeta.DeleteAll(ctx)
-		if err != nil {
+		// it is possible that few resources are not found so better to check it before returning error
+		if err != nil && !apierrs.IsNotFound(err) {
 			return err
 		}
 		logrus.Debugf("All VSs are gone")
@@ -489,7 +503,7 @@ func (c *KubeClient) ForceDeleteNamespace(ctx context.Context, namespace string)
 			return err
 		}
 		err = sncont.DeleteAll(ctx)
-		if err != nil {
+		if err != nil && !apierrs.IsNotFound(err) {
 			return err
 		}
 		logrus.Debugf("All VSConts are gone")
@@ -509,7 +523,7 @@ func (c *KubeClient) ForceDeleteNamespace(ctx context.Context, namespace string)
 			return err
 		}
 		err = sncont.DeleteAll(ctx)
-		if err != nil {
+		if err != nil && !apierrs.IsNotFound(err) {
 			return err
 		}
 		logrus.Debugf("All VSConts are gone")
@@ -529,7 +543,11 @@ func (c *KubeClient) ForceDeleteNamespace(ctx context.Context, namespace string)
 	if err != nil {
 		return err
 	}
-	err = pvClient.DeleteAll(ctx)
+	vaClient, err := c.CreateVaClient(namespace)
+	if err != nil {
+		return err
+	}
+	err = pvClient.DeleteAllPV(ctx, namespace, vaClient)
 	if err != nil {
 		return err
 	}

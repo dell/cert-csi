@@ -2,11 +2,12 @@ package va
 
 import (
 	"context"
+	"time"
+
 	log "github.com/sirupsen/logrus"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/wait"
 	v12 "k8s.io/client-go/kubernetes/typed/storage/v1"
-	"time"
 )
 
 const (
@@ -93,4 +94,23 @@ func (c *Client) WaitUntilVaGone(ctx context.Context, pvName string) error {
 	log.Infof("VolumeAttachment deleted")
 	return nil
 
+}
+
+func (c *Client) DeleteVa(ctx context.Context, pvName string) error {
+	vaList, err := c.Interface.List(ctx, metav1.ListOptions{
+		FieldSelector: "",
+	})
+	if err != nil {
+		return err
+	}
+	for _, va := range vaList.Items {
+		if *va.Spec.Source.PersistentVolumeName == pvName {
+			log.Debugf("Waiting for the volume-attachment to be deleted for :%s", pvName)
+			err = c.Interface.Delete(ctx, *va.Spec.Source.PersistentVolumeName, metav1.DeleteOptions{})
+			if err != nil {
+				return err
+			}
+		}
+	}
+	return nil
 }
