@@ -97,6 +97,7 @@ type Clients struct {
 	RgClient               *rg.Client
 	VgsClient              *volumegroupsnapshot.Client
 	KubeClient             *KubeClient
+	CSISCClient            *csistoragecapacity.Client
 }
 
 // NewKubeClient is a KubeClient constructor, that creates new instance of KubeClient from provided config
