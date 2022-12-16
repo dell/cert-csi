@@ -481,7 +481,7 @@ func runSuite(ctx context.Context, suite suites.Interface, sr *SuiteRunner, test
 	// Run the current suite
 	runTime := time.Now()
 	var err error
-	err, delFunc = suite.Run(ctx, storageClass, clients)
+	delFunc, err = suite.Run(ctx, storageClass, clients)
 	if err != nil {
 		sr.runTime += time.Since(runTime)
 		return FAILURE, fmt.Errorf("suite %s failed; error=%s", suite.GetName(), err.Error())
