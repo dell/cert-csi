@@ -43,11 +43,14 @@ import (
 )
 
 const (
-	DefaultSnapPrefix       = "snap"
+	// DefaultSnapPrefix is snapshot prefix
+	DefaultSnapPrefix = "snap"
+	// ControllerLogsSleepTime is controller logs sleep time
 	ControllerLogsSleepTime = 20
 	maxRetryCount           = 30
 )
 
+// VolumeCreationSuite is used to manage volume creation test suite
 type VolumeCreationSuite struct {
 	VolumeNumber int
 	Description  string
@@ -57,6 +60,7 @@ type VolumeCreationSuite struct {
 	RawBlock     bool
 }
 
+// Run executes volume creation test suite
 func (vcs *VolumeCreationSuite) Run(ctx context.Context, storageClass string, clients *k8sclient.Clients) (e error, delFunc func() error) {
 	log := utils.GetLoggerFromContext(ctx)
 	if vcs.VolumeNumber <= 0 {
@@ -116,6 +120,7 @@ func shouldWaitForFirstConsumer(ctx context.Context, storageClass string, pvcCli
 	return *s.VolumeBindingMode == storagev1.VolumeBindingWaitForFirstConsumer, nil
 }
 
+// GetName returns volume creation suite name
 func (vcs *VolumeCreationSuite) GetName() string {
 	if vcs.Description != "" {
 		return vcs.Description
@@ -123,6 +128,7 @@ func (vcs *VolumeCreationSuite) GetName() string {
 	return "VolumeCreationSuite"
 }
 
+// GetObservers returns pvc, entity number, container metrics observers
 func (*VolumeCreationSuite) GetObservers(obsType observer.Type) []observer.Interface {
 	if obsType == observer.EVENT {
 		return []observer.Interface{
@@ -149,6 +155,7 @@ func validateCustomName(name string, volumes int) bool {
 	return false
 }
 
+// GetClients creates and returns pvc and metrics clients
 func (*VolumeCreationSuite) GetClients(namespace string, client *k8sclient.KubeClient) (*k8sclient.Clients, error) {
 	pvcClient, pvcErr := client.CreatePVCClient(namespace)
 	if pvcErr != nil {
@@ -167,14 +174,17 @@ func (*VolumeCreationSuite) GetClients(namespace string, client *k8sclient.KubeC
 	}, nil
 }
 
+// GetNamespace returns volume creation suite name
 func (*VolumeCreationSuite) GetNamespace() string {
 	return "vcs-test"
 }
 
+// Parameters returns formatted string of parameters
 func (vcs *VolumeCreationSuite) Parameters() string {
 	return fmt.Sprintf("{number: %d, size: %s, raw-block: %s}", vcs.VolumeNumber, vcs.VolumeSize, strconv.FormatBool(vcs.RawBlock))
 }
 
+// ProvisioningSuite is used to manage provisioning test suite
 type ProvisioningSuite struct {
 	VolumeNumber  int
 	VolumeSize    string
@@ -186,6 +196,7 @@ type ProvisioningSuite struct {
 	ROFlag        bool
 }
 
+// Run executes provisioning test suite
 func (ps *ProvisioningSuite) Run(ctx context.Context, storageClass string, clients *k8sclient.Clients) (e error, delFunc func() error) {
 	log := utils.GetLoggerFromContext(ctx)
 	pvcClient := clients.PVCClient
@@ -255,10 +266,12 @@ func (ps *ProvisioningSuite) Run(ctx context.Context, storageClass string, clien
 	return nil, delFunc
 }
 
+// GetObservers returns all observers
 func (*ProvisioningSuite) GetObservers(obsType observer.Type) []observer.Interface {
 	return getAllObservers(obsType)
 }
 
+// GetClients returns pvc, pod, va, metrics clients
 func (*ProvisioningSuite) GetClients(namespace string, client *k8sclient.KubeClient) (*k8sclient.Clients, error) {
 	pvcClient, pvcErr := client.CreatePVCClient(namespace)
 	if pvcErr != nil {
@@ -289,10 +302,12 @@ func (*ProvisioningSuite) GetClients(namespace string, client *k8sclient.KubeCli
 	}, nil
 }
 
+// GetNamespace returns provisioning suite namespace
 func (*ProvisioningSuite) GetNamespace() string {
 	return "prov-test"
 }
 
+// GetName returns provisioning suite name
 func (ps *ProvisioningSuite) GetName() string {
 	if ps.Description != "" {
 		return ps.Description
@@ -300,6 +315,7 @@ func (ps *ProvisioningSuite) GetName() string {
 	return "ProvisioningSuite"
 }
 
+// Parameters returns formatted string of parameters
 func (ps *ProvisioningSuite) Parameters() string {
 	return fmt.Sprintf("{pods: %d, volumes: %d, volumeSize: %s}", ps.PodNumber, ps.VolumeNumber, ps.VolumeSize)
 }
@@ -314,6 +330,7 @@ func (ps *ProvisioningSuite) validateCustomPodName() {
 	}
 }
 
+// RemoteReplicationProvisioningSuite is used to manage remote replication provisioning test suite
 type RemoteReplicationProvisioningSuite struct {
 	VolumeNumber     int
 	VolumeSize       string
@@ -323,6 +340,7 @@ type RemoteReplicationProvisioningSuite struct {
 	NoFailover       bool
 }
 
+// Run executes remote replication provisioning test suite
 func (rrps *RemoteReplicationProvisioningSuite) Run(ctx context.Context, storageClass string, clients *k8sclient.Clients) (e error, delFunc func() error) {
 	log := utils.GetLoggerFromContext(ctx)
 	pvcClient := clients.PVCClient
@@ -755,10 +773,12 @@ func (rrps *RemoteReplicationProvisioningSuite) Run(ctx context.Context, storage
 	return nil, delFunc
 }
 
+// GetObservers returns all observers
 func (*RemoteReplicationProvisioningSuite) GetObservers(obsType observer.Type) []observer.Interface {
 	return getAllObservers(obsType)
 }
 
+// GetClients creates and returns pvc, pod, pv, va, metrics, sc, rg clients
 func (*RemoteReplicationProvisioningSuite) GetClients(namespace string, client *k8sclient.KubeClient) (*k8sclient.Clients, error) {
 	pvcClient, pvcErr := client.CreatePVCClient(namespace)
 	if pvcErr != nil {
@@ -804,20 +824,25 @@ func (*RemoteReplicationProvisioningSuite) GetClients(namespace string, client *
 	}, nil
 }
 
+// GetNamespace returns remote replication provisioning suite namespace
 func (*RemoteReplicationProvisioningSuite) GetNamespace() string {
 	return "repl-prov-test"
 }
 
+// GetName returns remote replication provisioning suite name
 func (rrps *RemoteReplicationProvisioningSuite) GetName() string {
 	if rrps.Description != "" {
 		return rrps.Description
 	}
 	return "RemoteReplicationProvisioningSuite"
 }
+
+// Parameters returns formatted string of parameters
 func (rrps *RemoteReplicationProvisioningSuite) Parameters() string {
 	return fmt.Sprintf("{volumes: %d, volumeSize: %s, remoteConfig: %s}", rrps.VolumeNumber, rrps.VolumeSize, rrps.RemoteConfigPath)
 }
 
+// ScalingSuite is used to manage scaling test suite
 type ScalingSuite struct {
 	ReplicaNumber    int
 	VolumeNumber     int
@@ -826,6 +851,7 @@ type ScalingSuite struct {
 	VolumeSize       string
 }
 
+// Run executes scaling test suite
 func (ss *ScalingSuite) Run(ctx context.Context, storageClass string, clients *k8sclient.Clients) (e error, delFunc func() error) {
 	log := utils.GetLoggerFromContext(ctx)
 	stsClient := clients.StatefulSetClient
@@ -889,18 +915,22 @@ func (ss *ScalingSuite) Run(ctx context.Context, storageClass string, clients *k
 	return nil, delFunc
 }
 
+// GetName returns scaling test suite name
 func (ss *ScalingSuite) GetName() string {
 	return "ScalingSuite"
 }
 
+// Parameters returns formatted string of parameters
 func (ss *ScalingSuite) Parameters() string {
 	return fmt.Sprintf("{replicas: %d, volumes: %d, volumeSize: %s}", ss.ReplicaNumber, ss.VolumeNumber, ss.VolumeSize)
 }
 
+// GetObservers returns all observers
 func (ss *ScalingSuite) GetObservers(obsType observer.Type) []observer.Interface {
 	return getAllObservers(obsType)
 }
 
+// GetClients creates and returns pvc, pod, va, statefulset, metrics clients
 func (ss *ScalingSuite) GetClients(namespace string, client *k8sclient.KubeClient) (*k8sclient.Clients, error) {
 	pvcClient, pvcErr := client.CreatePVCClient(namespace)
 	if pvcErr != nil {
@@ -936,10 +966,12 @@ func (ss *ScalingSuite) GetClients(namespace string, client *k8sclient.KubeClien
 	}, nil
 }
 
+// GetNamespace returns scaling test suite namespace
 func (ss *ScalingSuite) GetNamespace() string {
 	return "scale-test"
 }
 
+// VolumeIoSuite is used to manage volume IO test suite
 type VolumeIoSuite struct {
 	VolumeNumber int
 	VolumeSize   string
@@ -947,6 +979,7 @@ type VolumeIoSuite struct {
 	ChainLength  int
 }
 
+// Run executes volume IO test suite
 func (vis *VolumeIoSuite) Run(ctx context.Context, storageClass string, clients *k8sclient.Clients) (e error, delFunc func() error) {
 	log := utils.GetLoggerFromContext(ctx)
 	pvcClient := clients.PVCClient
@@ -1053,10 +1086,12 @@ func (vis *VolumeIoSuite) Run(ctx context.Context, storageClass string, clients 
 	return errs.Wait(), delFunc
 }
 
+// GetObservers returns all observers
 func (*VolumeIoSuite) GetObservers(obsType observer.Type) []observer.Interface {
 	return getAllObservers(obsType)
 }
 
+// GetClients returns pvc, pod, va, metrics clients
 func (*VolumeIoSuite) GetClients(namespace string, client *k8sclient.KubeClient) (*k8sclient.Clients, error) {
 	pvcClient, pvcErr := client.CreatePVCClient(namespace)
 	if pvcErr != nil {
@@ -1087,19 +1122,23 @@ func (*VolumeIoSuite) GetClients(namespace string, client *k8sclient.KubeClient)
 	}, nil
 }
 
+// GetNamespace returns volume IO test suite namespace
 func (*VolumeIoSuite) GetNamespace() string {
 	return "volumeio-test"
 }
 
+// GetName returns volume IO test suite name
 func (*VolumeIoSuite) GetName() string {
 	return "VolumeIoSuite"
 }
 
+// Parameters returns formatted string of parameters
 func (vis *VolumeIoSuite) Parameters() string {
 	return fmt.Sprintf("{volumes: %d, volumeSize: %s chains: %d-%d}", vis.VolumeNumber, vis.VolumeSize,
 		vis.ChainNumber, vis.ChainLength)
 }
 
+// VolumeGroupSnapSuite is used to manage volume group snap test suite
 type VolumeGroupSnapSuite struct {
 	SnapClass       string
 	VolumeSize      string
@@ -1111,6 +1150,7 @@ type VolumeGroupSnapSuite struct {
 	Driver          string
 }
 
+// Run executes volume group snap test suite
 func (vgs *VolumeGroupSnapSuite) Run(ctx context.Context, storageClass string, clients *k8sclient.Clients) (e error, delFunc func() error) {
 	log := utils.GetLoggerFromContext(ctx)
 	var namespace string
@@ -1178,10 +1218,12 @@ func (vgs *VolumeGroupSnapSuite) Run(ctx context.Context, storageClass string, c
 	return nil, delFunc
 }
 
+// GetObservers returns all observers
 func (*VolumeGroupSnapSuite) GetObservers(obsType observer.Type) []observer.Interface {
 	return getAllObservers(obsType)
 }
 
+// GetClients creates and returns pvc, pod, va, vgs clients
 func (vgs *VolumeGroupSnapSuite) GetClients(namespace string, client *k8sclient.KubeClient) (*k8sclient.Clients, error) {
 	if ok, err := client.SnapshotClassExists(vgs.SnapClass); !ok {
 		return nil, fmt.Errorf("snapshotclass class doesn't exist; error = %v", err)
@@ -1215,20 +1257,24 @@ func (vgs *VolumeGroupSnapSuite) GetClients(namespace string, client *k8sclient.
 	}, nil
 }
 
+// GetNamespace returns volume group snap test suite namespace
 func (*VolumeGroupSnapSuite) GetNamespace() string {
 	return "vgs-snap-test"
 }
 
+// GetName returns volume group snap test suite name
 func (vgs *VolumeGroupSnapSuite) GetName() string {
 	return "VolumeGroupSnapSuite"
 }
 
+// Parameters returns formatted string of parameters
 func (vgs *VolumeGroupSnapSuite) Parameters() string {
 	return fmt.Sprintf("{volumes: %d, volumeSize: %s}", vgs.VolumeNumber, vgs.VolumeSize)
 }
 
 // end of VGS
 
+// SnapSuite is used to manage snap test suite
 type SnapSuite struct {
 	SnapAmount         int
 	SnapClass          string
@@ -1239,22 +1285,23 @@ type SnapSuite struct {
 	AccessModeRestored string
 }
 
-func (vis *SnapSuite) Run(ctx context.Context, storageClass string, clients *k8sclient.Clients) (e error, delFunc func() error) {
+// Run executes snap test suite
+func (ss *SnapSuite) Run(ctx context.Context, storageClass string, clients *k8sclient.Clients) (e error, delFunc func() error) {
 	log := utils.GetLoggerFromContext(ctx)
-	if vis.SnapAmount <= 0 {
+	if ss.SnapAmount <= 0 {
 		log.Info("Using default number of snapshots")
-		vis.SnapAmount = 3
+		ss.SnapAmount = 3
 	}
-	if vis.VolumeSize == "" {
+	if ss.VolumeSize == "" {
 		log.Info("Using default volume size : 3Gi")
-		vis.VolumeSize = "3Gi"
+		ss.VolumeSize = "3Gi"
 	}
 
-	result := validateCustomSnapName(vis.CustomSnapName, vis.SnapAmount)
+	result := validateCustomSnapName(ss.CustomSnapName, ss.SnapAmount)
 	if result {
-		log.Infof("using custom snap-name:%s", vis.CustomSnapName)
+		log.Infof("using custom snap-name:%s", ss.CustomSnapName)
 	} else {
-		vis.CustomSnapName = ""
+		ss.CustomSnapName = ""
 	}
 
 	pvcClient := clients.PVCClient
@@ -1263,11 +1310,11 @@ func (vis *SnapSuite) Run(ctx context.Context, storageClass string, clients *k8s
 	snapvolname := ""
 	snappodname := ""
 
-	result1 := validateCustomSnapName(vis.CustomSnapName, vis.SnapAmount)
+	result1 := validateCustomSnapName(ss.CustomSnapName, ss.SnapAmount)
 	if result1 {
-		snapvolname = vis.CustomSnapName + "-pvc"
-		snappodname = vis.CustomSnapName + "-pod"
-		log.Infof("using custom snap-name:%s"+" and PVC name:%s"+" and POD name:%s", vis.CustomSnapName, snapvolname, snappodname)
+		snapvolname = ss.CustomSnapName + "-pvc"
+		snappodname = ss.CustomSnapName + "-pod"
+		log.Infof("using custom snap-name:%s"+" and PVC name:%s"+" and POD name:%s", ss.CustomSnapName, snapvolname, snappodname)
 	} else {
 		snapvolname = ""
 		snappodname = ""
@@ -1280,7 +1327,7 @@ func (vis *SnapSuite) Run(ctx context.Context, storageClass string, clients *k8s
 	log.Info("Creating Snapshot pod")
 	// Create first PVC
 	var pvcNameList []string
-	vcconf := testcore.VolumeCreationConfig(storageClass, vis.VolumeSize, snapvolname, vis.AccessModeOriginal)
+	vcconf := testcore.VolumeCreationConfig(storageClass, ss.VolumeSize, snapvolname, ss.AccessModeOriginal)
 	volTmpl := pvcClient.MakePVC(vcconf)
 	pvc := pvcClient.Create(ctx, volTmpl)
 	if pvc.HasError() {
@@ -1330,13 +1377,13 @@ func (vis *SnapSuite) Run(ctx context.Context, storageClass string, clients *k8s
 
 	snapPrefix := DefaultSnapPrefix
 
-	if vis.CustomSnapName != "" {
-		snapPrefix = vis.CustomSnapName
+	if ss.CustomSnapName != "" {
+		snapPrefix = ss.CustomSnapName
 	}
 
 	var snaps []volumesnapshot.Interface
-	log.Infof("Creating %d snapshots", vis.SnapAmount)
-	for i := 0; i < vis.SnapAmount; i++ {
+	log.Infof("Creating %d snapshots", ss.SnapAmount)
+	for i := 0; i < ss.SnapAmount; i++ {
 		var createSnap volumesnapshot.Interface
 		// Create Interface from PVC using gotPvc name
 		if clients.SnapClientGA != nil {
@@ -1355,7 +1402,7 @@ func (vis *SnapSuite) Run(ctx context.Context, storageClass string, clients *k8s
 						Source: snapv1.VolumeSnapshotSource{
 							PersistentVolumeClaimName: &gotPvc.Name,
 						},
-						VolumeSnapshotClassName: &vis.SnapClass,
+						VolumeSnapshotClassName: &ss.SnapClass,
 					},
 				})
 			if createSnap.HasError() {
@@ -1383,7 +1430,7 @@ func (vis *SnapSuite) Run(ctx context.Context, storageClass string, clients *k8s
 						Source: snapbeta.VolumeSnapshotSource{
 							PersistentVolumeClaimName: &gotPvc.Name,
 						},
-						VolumeSnapshotClassName: &vis.SnapClass,
+						VolumeSnapshotClassName: &ss.SnapClass,
 					},
 				})
 			if createSnap.HasError() {
@@ -1407,7 +1454,7 @@ func (vis *SnapSuite) Run(ctx context.Context, storageClass string, clients *k8s
 	vcconf.SnapName = snaps[n].Name()
 	log.Infof("Restoring from %s", vcconf.SnapName)
 	vcconf.Name = vcconf.SnapName + "-restore"
-	accessModeRestoredVolume := testcore.GetAccessMode(vis.AccessModeRestored)
+	accessModeRestoredVolume := testcore.GetAccessMode(ss.AccessModeRestored)
 	vcconf.AccessModes = accessModeRestoredVolume
 	log.Infof("Creating pvc %s", vcconf.Name)
 	volRestored := pvcClient.MakePVC(vcconf)
@@ -1458,10 +1505,12 @@ func validateCustomSnapName(name string, snapshotAmount int) bool {
 	return false
 }
 
+// GetObservers returns all observers
 func (*SnapSuite) GetObservers(obsType observer.Type) []observer.Interface {
 	return getAllObservers(obsType)
 }
 
+// GetClients creates and returns pvc, pod, va, metrics, snapsnot clients
 func (ss *SnapSuite) GetClients(namespace string, client *k8sclient.KubeClient) (*k8sclient.Clients, error) {
 	if ok, err := client.SnapshotClassExists(ss.SnapClass); !ok {
 		return nil, fmt.Errorf("snapshotclass class doesn't exist; error = %v", err)
@@ -1502,10 +1551,12 @@ func (ss *SnapSuite) GetClients(namespace string, client *k8sclient.KubeClient) 
 	}, nil
 }
 
+// GetNamespace returns snap suite namespaces
 func (*SnapSuite) GetNamespace() string {
 	return "snap-test"
 }
 
+// GetName returns snap suite name
 func (ss *SnapSuite) GetName() string {
 	if ss.Description != "" {
 		return ss.Description
@@ -1513,6 +1564,7 @@ func (ss *SnapSuite) GetName() string {
 	return "SnapSuite"
 }
 
+// Parameters returns formatted string of paramters
 func (ss *SnapSuite) Parameters() string {
 	return fmt.Sprintf("{snapshots: %d, volumeSize; %s}", ss.SnapAmount, ss.VolumeSize)
 }
@@ -1538,6 +1590,7 @@ func getAllObservers(obsType observer.Type) []observer.Interface {
 	return []observer.Interface{}
 }
 
+// ReplicationSuite is used to manage replication test suite
 type ReplicationSuite struct {
 	VolumeNumber int
 	VolumeSize   string
@@ -1545,6 +1598,7 @@ type ReplicationSuite struct {
 	SnapClass    string
 }
 
+// Run executes replication test suite
 func (rs *ReplicationSuite) Run(ctx context.Context, storageClass string, clients *k8sclient.Clients) (e error, delFunc func() error) {
 	log := utils.GetLoggerFromContext(ctx)
 	pvcClient := clients.PVCClient
@@ -1706,10 +1760,12 @@ func (rs *ReplicationSuite) Run(ctx context.Context, storageClass string, client
 	return nil, delFunc
 }
 
+// GetObservers returns all observers
 func (rs *ReplicationSuite) GetObservers(obsType observer.Type) []observer.Interface {
 	return getAllObservers(obsType)
 }
 
+// GetClients creates and returns pvc, pod, va, metrics, snapshot clients
 func (rs *ReplicationSuite) GetClients(namespace string, client *k8sclient.KubeClient) (*k8sclient.Clients, error) {
 	if ok, err := client.SnapshotClassExists(rs.SnapClass); !ok {
 		return nil, fmt.Errorf("snasphot class doesn't exist; error = %v", err)
@@ -1750,18 +1806,22 @@ func (rs *ReplicationSuite) GetClients(namespace string, client *k8sclient.KubeC
 	}, nil
 }
 
+// GetNamespace returns replication suite namespace
 func (*ReplicationSuite) GetNamespace() string {
 	return "replication-suite"
 }
 
+// GetName returns replication suite name
 func (*ReplicationSuite) GetName() string {
 	return "ReplicationSuite"
 }
 
+// Parameters returns formatted string of parameters
 func (rs *ReplicationSuite) Parameters() string {
 	return fmt.Sprintf("{pods: %d, volumes: %d, volumeSize: %s}", rs.PodNumber, rs.VolumeNumber, rs.VolumeSize)
 }
 
+// VolumeExpansionSuite is used to manage volume expansion test suite
 type VolumeExpansionSuite struct {
 	VolumeNumber int
 	PodNumber    int
@@ -1772,6 +1832,7 @@ type VolumeExpansionSuite struct {
 	AccessMode   string
 }
 
+// Run executes volume expansion test suite
 func (ves *VolumeExpansionSuite) Run(ctx context.Context, storageClass string, clients *k8sclient.Clients) (e error, delFunc func() error) {
 	log := utils.GetLoggerFromContext(ctx)
 	pvcClient := clients.PVCClient
@@ -1980,10 +2041,12 @@ func convertSpecSize(specSize string) (int, error) {
 	return wantSize, nil
 }
 
+// GetObservers returns all observers
 func (*VolumeExpansionSuite) GetObservers(obsType observer.Type) []observer.Interface {
 	return getAllObservers(obsType)
 }
 
+// GetClients creates and returns pvc, pod, va, metrics clients
 func (*VolumeExpansionSuite) GetClients(namespace string, client *k8sclient.KubeClient) (*k8sclient.Clients, error) {
 	pvcClient, pvcErr := client.CreatePVCClient(namespace)
 	if pvcErr != nil {
@@ -2014,10 +2077,12 @@ func (*VolumeExpansionSuite) GetClients(namespace string, client *k8sclient.Kube
 	}, nil
 }
 
+// GetNamespace returns volume expansion suite namespace
 func (*VolumeExpansionSuite) GetNamespace() string {
 	return "volume-expansion-suite"
 }
 
+// GetName returns volume expansion suite name
 func (ves *VolumeExpansionSuite) GetName() string {
 	if ves.Description != "" {
 		return ves.Description
@@ -2025,11 +2090,13 @@ func (ves *VolumeExpansionSuite) GetName() string {
 	return "VolumeExpansionSuite"
 }
 
+// Parameters returns formatted string of parameters
 func (ves *VolumeExpansionSuite) Parameters() string {
 	return fmt.Sprintf("{pods: %d, volumes: %d, size: %s, expSize: %s, block: %s}", ves.PodNumber,
 		ves.VolumeNumber, ves.InitialSize, ves.ExpandedSize, strconv.FormatBool(ves.IsBlock))
 }
 
+// VolumeHealthMetricsSuite is used to manage volume health metrics test suite
 type VolumeHealthMetricsSuite struct {
 	VolumeNumber int
 	PodNumber    int
@@ -2039,6 +2106,7 @@ type VolumeHealthMetricsSuite struct {
 	Namespace    string
 }
 
+// FindDriverLogs executes command and returns the output
 func FindDriverLogs(command []string) (string, error) {
 
 	cmd := exec.Command(command[0], command[1:]...) // #nosec G204
@@ -2050,6 +2118,7 @@ func FindDriverLogs(command []string) (string, error) {
 	return str, nil
 }
 
+// Run executes volume health metrics test suite
 func (vh *VolumeHealthMetricsSuite) Run(ctx context.Context, storageClass string, clients *k8sclient.Clients) (e error, delFunc func() error) {
 	log := utils.GetLoggerFromContext(ctx)
 	pvcClient := clients.PVCClient
@@ -2103,11 +2172,11 @@ func (vh *VolumeHealthMetricsSuite) Run(ctx context.Context, storageClass string
 	}
 
 	// Finding the Volume Handle of the PV created
-	var PersistentVolumeId string
+	var PersistentVolumeID string
 	for _, p := range persistentVolumes.Items {
 		if p.Spec.ClaimRef.Namespace == PVCNamespace {
 
-			PersistentVolumeId = p.Spec.CSI.VolumeHandle
+			PersistentVolumeID = p.Spec.CSI.VolumeHandle
 		}
 	}
 
@@ -2157,7 +2226,7 @@ func (vh *VolumeHealthMetricsSuite) Run(ctx context.Context, storageClass string
 		if !ControllerLogs {
 			exe = []string{"bash", "-c", fmt.Sprintf("kubectl logs %s -n %s -c driver | grep ControllerGetVolume ", driverControllerPod, vh.Namespace)}
 			str, err = FindDriverLogs(exe)
-			if err == nil && strings.Contains(str, PersistentVolumeId) {
+			if err == nil && strings.Contains(str, PersistentVolumeID) {
 				ControllerLogs = true
 			}
 		}
@@ -2165,7 +2234,7 @@ func (vh *VolumeHealthMetricsSuite) Run(ctx context.Context, storageClass string
 		if !NodeLogs {
 			exe = []string{"bash", "-c", fmt.Sprintf("kubectl logs %s -n %s -c driver | grep NodeGetVolumeStats ", driverNodePod, vh.Namespace)}
 			str, err = FindDriverLogs(exe)
-			if err == nil && strings.Contains(str, PersistentVolumeId) {
+			if err == nil && strings.Contains(str, PersistentVolumeID) {
 				NodeLogs = true
 			}
 		}
@@ -2181,10 +2250,12 @@ func (vh *VolumeHealthMetricsSuite) Run(ctx context.Context, storageClass string
 	return errors.New("volume health metrics error"), delFunc
 }
 
+// GetObservers returns all observers
 func (*VolumeHealthMetricsSuite) GetObservers(obsType observer.Type) []observer.Interface {
 	return getAllObservers(obsType)
 }
 
+// GetClients creates and returns pvc, pod, pv, va, metrics clients
 func (*VolumeHealthMetricsSuite) GetClients(namespace string, client *k8sclient.KubeClient) (*k8sclient.Clients, error) {
 	pvcClient, pvcErr := client.CreatePVCClient(namespace)
 	if pvcErr != nil {
@@ -2222,10 +2293,12 @@ func (*VolumeHealthMetricsSuite) GetClients(namespace string, client *k8sclient.
 	}, nil
 }
 
+// GetNamespace returns volume health metrics test suite namespace
 func (*VolumeHealthMetricsSuite) GetNamespace() string {
 	return "volume-health-metrics"
 }
 
+// GetName returns volume health metrics suite name
 func (vh *VolumeHealthMetricsSuite) GetName() string {
 	if vh.Description != "" {
 		return vh.Description
@@ -2233,10 +2306,12 @@ func (vh *VolumeHealthMetricsSuite) GetName() string {
 	return "VolumeHealthMetricSuite"
 }
 
+// Parameters returns formatted string of parameters
 func (vh *VolumeHealthMetricsSuite) Parameters() string {
 	return fmt.Sprintf("{pods: %d, volumes: %d, size: %s}", vh.PodNumber, vh.VolumeNumber, vh.VolumeSize)
 }
 
+// CloneVolumeSuite is used to manage clone volume suite test suite
 type CloneVolumeSuite struct {
 	VolumeNumber  int
 	VolumeSize    string
@@ -2247,6 +2322,7 @@ type CloneVolumeSuite struct {
 	AccessMode    string
 }
 
+// Run executes clone volume test suite
 func (cs *CloneVolumeSuite) Run(ctx context.Context, storageClass string, clients *k8sclient.Clients) (e error, delFunc func() error) {
 	log := utils.GetLoggerFromContext(ctx)
 	pvcClient := clients.PVCClient
@@ -2346,10 +2422,12 @@ func (cs *CloneVolumeSuite) Run(ctx context.Context, storageClass string, client
 	return nil, delFunc
 }
 
+// GetObservers returns all observers
 func (cs *CloneVolumeSuite) GetObservers(obsType observer.Type) []observer.Interface {
 	return getAllObservers(obsType)
 }
 
+// GetClients creates and returns pvc, pod, va, metrics clients
 func (cs *CloneVolumeSuite) GetClients(namespace string, client *k8sclient.KubeClient) (*k8sclient.Clients, error) {
 	pvcClient, pvcErr := client.CreatePVCClient(namespace)
 	if pvcErr != nil {
@@ -2381,10 +2459,12 @@ func (cs *CloneVolumeSuite) GetClients(namespace string, client *k8sclient.KubeC
 	}, nil
 }
 
+// GetNamespace returns clone volume suite test namespace
 func (*CloneVolumeSuite) GetNamespace() string {
 	return "clonevolume-suite"
 }
 
+// GetName returns clone volume suite test name
 func (cs *CloneVolumeSuite) GetName() string {
 	if cs.Description != "" {
 		return cs.Description
@@ -2392,10 +2472,12 @@ func (cs *CloneVolumeSuite) GetName() string {
 	return "CloneVolumeSuite"
 }
 
+// Parameters returns formatted string of parameters
 func (cs *CloneVolumeSuite) Parameters() string {
 	return fmt.Sprintf("{pods: %d, volumes: %d, volumeSize: %s}", cs.PodNumber, cs.VolumeNumber, cs.VolumeSize)
 }
 
+// MultiAttachSuite is used to manage multi attach test suite
 type MultiAttachSuite struct {
 	PodNumber   int
 	RawBlock    bool
@@ -2404,6 +2486,7 @@ type MultiAttachSuite struct {
 	VolumeSize  string
 }
 
+// Run executes multi attach test suite
 func (mas *MultiAttachSuite) Run(ctx context.Context, storageClass string, clients *k8sclient.Clients) (e error, delFunc func() error) {
 	log := utils.GetLoggerFromContext(ctx)
 	pvcClient := clients.PVCClient
@@ -2572,12 +2655,13 @@ func (mas *MultiAttachSuite) Run(ctx context.Context, storageClass string, clien
 	return nil, delFunc
 }
 
+// GenerateTopologySpreadConstraints creates and returns topology spread constraints
 func (mas *MultiAttachSuite) GenerateTopologySpreadConstraints(nodeCount int, labels map[string]string) []v1.TopologySpreadConstraint {
 	// Calculate MaxSkew parameter
 	maxSkew, remainder := mas.PodNumber/nodeCount, mas.PodNumber%nodeCount
 	// in case of odd pod/node count - increase the maxSkew
 	if remainder != 0 {
-		maxSkew += 1
+		maxSkew++
 	}
 	spreadConstraints := []v1.TopologySpreadConstraint{{
 		MaxSkew:           int32(maxSkew),
@@ -2591,10 +2675,12 @@ func (mas *MultiAttachSuite) GenerateTopologySpreadConstraints(nodeCount int, la
 	return spreadConstraints
 }
 
+// GetObservers returns all observers
 func (mas *MultiAttachSuite) GetObservers(obsType observer.Type) []observer.Interface {
 	return getAllObservers(obsType)
 }
 
+// GetClients creates and returns pvc, pod, va, metrics (and node) clients
 func (mas *MultiAttachSuite) GetClients(namespace string, client *k8sclient.KubeClient) (*k8sclient.Clients, error) {
 	pvcClient, pvcErr := client.CreatePVCClient(namespace)
 	if pvcErr != nil {
@@ -2637,10 +2723,12 @@ func (mas *MultiAttachSuite) GetClients(namespace string, client *k8sclient.Kube
 	}, nil
 }
 
+// GetNamespace returns multi attach suite namespace
 func (*MultiAttachSuite) GetNamespace() string {
 	return "mas-test"
 }
 
+// GetName returns multi attach suite name
 func (mas *MultiAttachSuite) GetName() string {
 	if mas.Description != "" {
 		return mas.Description
@@ -2648,11 +2736,13 @@ func (mas *MultiAttachSuite) GetName() string {
 	return "MultiAttachSuite"
 }
 
+// Parameters returns formatted string of parameters
 func (mas *MultiAttachSuite) Parameters() string {
 	return fmt.Sprintf("{pods: %d, rawBlock: %s, size: %s, accMode: %s}",
 		mas.PodNumber, strconv.FormatBool(mas.RawBlock), mas.VolumeSize, mas.AccessMode)
 }
 
+// BlockSnapSuite is used to manage block snapshot test suite
 type BlockSnapSuite struct {
 	SnapClass   string
 	VolumeSize  string
@@ -2660,6 +2750,7 @@ type BlockSnapSuite struct {
 	AccessMode  string
 }
 
+// Run executes block snapshot test suite
 func (bss *BlockSnapSuite) Run(ctx context.Context, storageClass string, clients *k8sclient.Clients) (e error, delFunc func() error) {
 	log := utils.GetLoggerFromContext(ctx)
 	if bss.VolumeSize == "" {
@@ -2861,10 +2952,12 @@ func (bss *BlockSnapSuite) Run(ctx context.Context, storageClass string, clients
 	return nil, delFunc
 }
 
+// GetObservers returns all observers
 func (*BlockSnapSuite) GetObservers(obsType observer.Type) []observer.Interface {
 	return getAllObservers(obsType)
 }
 
+// GetClients creates and returns pvc, pod, va, metrics, snapshot clients
 func (bss *BlockSnapSuite) GetClients(namespace string, client *k8sclient.KubeClient) (*k8sclient.Clients, error) {
 	if ok, err := client.SnapshotClassExists(bss.SnapClass); !ok {
 		return nil, fmt.Errorf("snapshotclass class doesn't exist; error = %v", err)
@@ -2905,10 +2998,12 @@ func (bss *BlockSnapSuite) GetClients(namespace string, client *k8sclient.KubeCl
 	}, nil
 }
 
+// GetNamespace returns block snap test suite namespace
 func (*BlockSnapSuite) GetNamespace() string {
 	return "block-snap-test"
 }
 
+// GetName returns block snap test suite name
 func (bss *BlockSnapSuite) GetName() string {
 	if bss.Description != "" {
 		return bss.Description
@@ -2916,10 +3011,12 @@ func (bss *BlockSnapSuite) GetName() string {
 	return "BlockSnapSuite"
 }
 
+// Parameters returns formatted string of parameters
 func (bss *BlockSnapSuite) Parameters() string {
 	return fmt.Sprintf("{size: %s, accMode: %s}", bss.VolumeSize, bss.AccessMode)
 }
 
+// GetSnapshotClient returns snapshot client
 func GetSnapshotClient(namespace string, client *k8sclient.KubeClient) (*snapv1client.SnapshotClient, *snapbetaclient.SnapshotClient, error) {
 	gaClient, snErr := client.CreateSnapshotGAClient(namespace)
 	_, err := gaClient.Interface.List(context.Background(), metav1.ListOptions{})
@@ -2933,6 +3030,7 @@ func GetSnapshotClient(namespace string, client *k8sclient.KubeClient) (*snapv1c
 	return gaClient, nil, nil
 }
 
+// VolumeMigrateSuite is used to manage volume migrate test suite
 type VolumeMigrateSuite struct {
 	TargetSC     string
 	Description  string
@@ -2941,6 +3039,7 @@ type VolumeMigrateSuite struct {
 	Flag         bool
 }
 
+// Run executes volume migrate test suite
 func (vms *VolumeMigrateSuite) Run(ctx context.Context, storageClass string, clients *k8sclient.Clients) (e error, delFunc func() error) {
 	log := utils.GetLoggerFromContext(ctx)
 
@@ -3148,10 +3247,12 @@ func (vms *VolumeMigrateSuite) Run(ctx context.Context, storageClass string, cli
 	return nil, delFunc
 }
 
+// GetObservers returns all observers
 func (*VolumeMigrateSuite) GetObservers(obsType observer.Type) []observer.Interface {
 	return getAllObservers(obsType)
 }
 
+// GetClients creates and returns pvc, pv, sc, pod, statefulset, va, metrics clients
 func (vms *VolumeMigrateSuite) GetClients(namespace string, client *k8sclient.KubeClient) (*k8sclient.Clients, error) {
 	if ok, err := client.StorageClassExists(context.Background(), vms.TargetSC); !ok {
 		return nil, fmt.Errorf("target storage class doesn't exist; error = %v", err)
@@ -3203,10 +3304,12 @@ func (vms *VolumeMigrateSuite) GetClients(namespace string, client *k8sclient.Ku
 	}, nil
 }
 
+// GetNamespace returns volume migrate test suite namespace
 func (*VolumeMigrateSuite) GetNamespace() string {
 	return "migration-test"
 }
 
+// GetName returns volume migrate test suite name
 func (vms *VolumeMigrateSuite) GetName() string {
 	if vms.Description != "" {
 		return vms.Description
@@ -3214,6 +3317,7 @@ func (vms *VolumeMigrateSuite) GetName() string {
 	return "VolumeMigrationSuite"
 }
 
+// Parameters returns formatted string of parameters
 func (vms *VolumeMigrateSuite) Parameters() string {
 	return fmt.Sprintf("{Target storageclass: %s, volumes: %d, pods: %d}", vms.TargetSC, vms.VolumeNumber, vms.PodNumber)
 }
