@@ -201,7 +201,7 @@ func runFunctionalSuite(suite suites.Interface, sr *FunctionalSuiteRunner, testC
 
 	// Run the current suite
 	runTime := time.Now()
-	if err, _ := suite.Run(iterCtx, storageClass, clients); err != nil {
+	if _, err := suite.Run(iterCtx, storageClass, clients); err != nil {
 		sr.runTime += time.Since(runTime)
 		log.Errorf("Suite %s failed; error=%v", suite.GetName(), err)
 		return FAILURE
