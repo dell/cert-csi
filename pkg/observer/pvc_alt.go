@@ -66,9 +66,9 @@ func (obs *PvcListObserver) StartWatching(ctx context.Context, runner *Runner) {
 			if !addedPVCs[pvc.Name] {
 				entity := &store.Entity{
 					Name:   pvc.Name,
-					K8sUid: string(pvc.UID),
+					K8sUID: string(pvc.UID),
 					TcID:   runner.TestCase.ID,
-					Type:   store.PVC,
+					Type:   store.Pvc,
 				}
 				err = runner.Database.SaveEntities([]*store.Entity{entity})
 				if err != nil {
@@ -83,7 +83,7 @@ func (obs *PvcListObserver) StartWatching(ctx context.Context, runner *Runner) {
 					Name:      "event-pvc-added-" + k8sclient.RandomSuffix(),
 					TcID:      runner.TestCase.ID,
 					EntityID:  entity.ID,
-					Type:      store.PVC_ADDED,
+					Type:      store.PvcAdded,
 					Timestamp: time.Now(),
 				})
 				addedPVCs[pvc.Name] = true
@@ -98,7 +98,7 @@ func (obs *PvcListObserver) StartWatching(ctx context.Context, runner *Runner) {
 					Name:      "event-pvc-modified-" + k8sclient.RandomSuffix(),
 					TcID:      runner.TestCase.ID,
 					EntityID:  entities[pvc.Name].ID,
-					Type:      store.PVC_BOUND,
+					Type:      store.PvcBound,
 					Timestamp: time.Now(),
 				})
 
@@ -113,7 +113,7 @@ func (obs *PvcListObserver) StartWatching(ctx context.Context, runner *Runner) {
 					Name:      "event-pvc-modified-" + k8sclient.RandomSuffix(),
 					TcID:      runner.TestCase.ID,
 					EntityID:  entities[pvc.Name].ID,
-					Type:      store.PVC_DELETING_STARTED,
+					Type:      store.PvcDeletingStarted,
 					Timestamp: time.Now(),
 				})
 				continue
@@ -127,7 +127,7 @@ func (obs *PvcListObserver) StartWatching(ctx context.Context, runner *Runner) {
 					Name:      "event-pvc-deleted-" + k8sclient.RandomSuffix(),
 					TcID:      runner.TestCase.ID,
 					EntityID:  entities[name].ID,
-					Type:      store.PVC_DELETING_ENDED,
+					Type:      store.PvcDeletingEnded,
 					Timestamp: time.Now(),
 				})
 				delete(previousState, name)

@@ -2,9 +2,10 @@ package store
 
 import (
 	"fmt"
-	log "github.com/sirupsen/logrus"
 	"testing"
 	"time"
+
+	log "github.com/sirupsen/logrus"
 
 	"github.com/stretchr/testify/suite"
 )
@@ -49,15 +50,15 @@ func (suite *StoreTestSuite) TestAllStores() {
 
 		sourceEntityPVC := &Entity{
 			Name:   "pvc1",
-			K8sUid: "b0dac67e-c9a2-11e9-ad06-00505691819d",
+			K8sUID: "b0dac67e-c9a2-11e9-ad06-00505691819d",
 			TcID:   sourceTestCase.ID,
-			Type:   PVC,
+			Type:   Pvc,
 		}
 		sourceEntityPod := &Entity{
 			Name:   "pod1",
-			K8sUid: "b0db734f-c9a2-11e9-ad06-00505691819d",
+			K8sUID: "b0db734f-c9a2-11e9-ad06-00505691819d",
 			TcID:   sourceTestCase.ID,
-			Type:   POD,
+			Type:   Pod,
 		}
 		err = store.SaveEntities([]*Entity{sourceEntityPVC, sourceEntityPod})
 		suite.NoError(err)
@@ -67,21 +68,21 @@ func (suite *StoreTestSuite) TestAllStores() {
 				Name:      "test event 1",
 				TcID:      sourceTestCase.ID,
 				EntityID:  sourceEntityPVC.ID,
-				Type:      PVC_ADDED,
+				Type:      PvcAdded,
 				Timestamp: time.Now(),
 			},
 			{
 				Name:      "test event 2",
 				TcID:      sourceTestCase.ID,
 				EntityID:  sourceEntityPVC.ID,
-				Type:      PVC_BOUND,
+				Type:      PvcBound,
 				Timestamp: time.Now(),
 			},
 			{
 				Name:      "test event 3",
 				TcID:      sourceTestCase.ID,
 				EntityID:  sourceEntityPod.ID,
-				Type:      POD_ADDED,
+				Type:      PodAdded,
 				Timestamp: time.Now(),
 			},
 		}
@@ -92,9 +93,9 @@ func (suite *StoreTestSuite) TestAllStores() {
 		err = store.SaveEntities([]*Entity{
 			{
 				Name:   "pod2",
-				K8sUid: "b0db734f-c9a2-11e9-ad06-00505691819d",
+				K8sUID: "b0db734f-c9a2-11e9-ad06-00505691819d",
 				TcID:   sourceTestCase.ID,
-				Type:   POD,
+				Type:   Pod,
 			},
 		})
 		suite.EqualError(err, "UNIQUE constraint failed: entities.k8s_uid")
@@ -140,7 +141,7 @@ func (suite *StoreTestSuite) TestAllStores() {
 		suite.Equal(len(entities), 1, fmt.Sprintf("able to get entity relations using %s store", key))
 		suite.Equal(entities[0].Name, "pvc1", fmt.Sprintf("able to get entity name from relation using %s store", key))
 
-		entities, err = store.GetEntities(Conditions{"type": PVC}, "", 0)
+		entities, err = store.GetEntities(Conditions{"type": Pvc}, "", 0)
 		suite.Equal(len(entities), 1)
 
 		nEntities := []*NumberEntities{
@@ -171,7 +172,7 @@ func (suite *StoreTestSuite) TestAllStores() {
 		suite.Equal(len(events), 1)
 		suite.Equal(ne[0].PodsReady, 2)
 
-		podWithEvents, err := store.GetEntitiesWithEventsByTestCaseAndEntityType(&tc, POD)
+		podWithEvents, err := store.GetEntitiesWithEventsByTestCaseAndEntityType(&tc, Pod)
 		suite.NoError(err)
 		suite.Equal(len(podWithEvents), 1)
 		suite.Equal(podWithEvents[*sourceEntityPod][0].Name, "test event 3")

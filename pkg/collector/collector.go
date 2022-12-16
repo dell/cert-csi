@@ -174,7 +174,7 @@ func (mc *MetricsCollector) getPodsMetrics(
 	var podMetrics []PodMetrics
 	stageMetrics := make(map[interface{}][]time.Duration)
 
-	entitiesWithEvents, err := mc.db.GetEntitiesWithEventsByTestCaseAndEntityType(tc, store.POD)
+	entitiesWithEvents, err := mc.db.GetEntitiesWithEventsByTestCaseAndEntityType(tc, store.Pod)
 	if err != nil {
 		return podMetrics, make(map[interface{}]DurationOfStage), err
 	}
@@ -187,8 +187,8 @@ func (mc *MetricsCollector) getPodsMetrics(
 		}
 		metrics := make(map[PodStage]time.Duration)
 
-		metrics[PodCreation] = timestamps[store.POD_READY].Sub(timestamps[store.POD_ADDED])
-		metrics[PodDeletion] = timestamps[store.POD_DELETED].Sub(timestamps[store.POD_TERMINATING])
+		metrics[PodCreation] = timestamps[store.PodReady].Sub(timestamps[store.PodAdded])
+		metrics[PodDeletion] = timestamps[store.PodDeleted].Sub(timestamps[store.PodTerminating])
 
 		stageMetrics[PodCreation] = append(stageMetrics[PodCreation], metrics[PodCreation])
 		stageMetrics[PodDeletion] = append(stageMetrics[PodDeletion], metrics[PodDeletion])
@@ -204,7 +204,7 @@ func (mc *MetricsCollector) getPVCsMetrics(
 	var pvcMetrics []PVCMetrics
 	stageMetrics := make(map[interface{}][]time.Duration)
 
-	entitiesWithEvents, err := mc.db.GetEntitiesWithEventsByTestCaseAndEntityType(tc, store.PVC)
+	entitiesWithEvents, err := mc.db.GetEntitiesWithEventsByTestCaseAndEntityType(tc, store.Pvc)
 	if err != nil {
 		return pvcMetrics, make(map[interface{}]DurationOfStage), err
 	}
@@ -217,11 +217,11 @@ func (mc *MetricsCollector) getPVCsMetrics(
 		}
 		metrics := make(map[PVCStage]time.Duration)
 
-		metrics[PVCBind] = timestamps[store.PVC_BOUND].Sub(timestamps[store.PVC_ADDED])
-		metrics[PVCAttachment] = timestamps[store.PVC_ATTACH_ENDED].Sub(timestamps[store.PVC_ATTACH_STARTED])
-		metrics[PVCCreation] = timestamps[store.PVC_ATTACH_ENDED].Sub(timestamps[store.PVC_ADDED])
-		metrics[PVCDeletion] = timestamps[store.PVC_DELETING_ENDED].Sub(timestamps[store.PVC_DELETING_STARTED])
-		metrics[PVCUnattachment] = timestamps[store.PVC_UNATTACH_ENDED].Sub(timestamps[store.PVC_UNATTACH_STARTED])
+		metrics[PVCBind] = timestamps[store.PvcBound].Sub(timestamps[store.PvcAdded])
+		metrics[PVCAttachment] = timestamps[store.PvcAttachEnded].Sub(timestamps[store.PvcAttachStarted])
+		metrics[PVCCreation] = timestamps[store.PvcAttachEnded].Sub(timestamps[store.PvcAdded])
+		metrics[PVCDeletion] = timestamps[store.PvcDeletingEnded].Sub(timestamps[store.PvcDeletingStarted])
+		metrics[PVCUnattachment] = timestamps[store.PvcUnattachEnded].Sub(timestamps[store.PvcUnattachStarted])
 
 		stageMetrics[PVCBind] = append(stageMetrics[PVCBind], metrics[PVCBind])
 		stageMetrics[PVCAttachment] = append(stageMetrics[PVCAttachment], metrics[PVCAttachment])

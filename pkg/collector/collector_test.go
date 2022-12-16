@@ -2,10 +2,11 @@ package collector
 
 import (
 	"cert-csi/pkg/store"
-	log "github.com/sirupsen/logrus"
-	"github.com/stretchr/testify/suite"
 	"testing"
 	"time"
+
+	log "github.com/sirupsen/logrus"
+	"github.com/stretchr/testify/suite"
 )
 
 type CollectorTestSuit struct {
@@ -35,21 +36,21 @@ func (suite *CollectorTestSuit) SetupSuite() {
 
 	entityPVC1 := &store.Entity{
 		Name:   "pvc1",
-		K8sUid: "b0dac67e-c9a2-11e9-ad06-00505691819d",
+		K8sUID: "b0dac67e-c9a2-11e9-ad06-00505691819d",
 		TcID:   testCase.ID,
-		Type:   store.PVC,
+		Type:   store.Pvc,
 	}
 	entityPVC2 := &store.Entity{
 		Name:   "pvc2",
-		K8sUid: "b0dac67e-c9a2-11e9-ad06-00505691765a",
+		K8sUID: "b0dac67e-c9a2-11e9-ad06-00505691765a",
 		TcID:   testCase.ID,
-		Type:   store.PVC,
+		Type:   store.Pvc,
 	}
 	entityPod := &store.Entity{
 		Name:   "pod1",
-		K8sUid: "b0db734f-c9a2-11e9-ad06-00505691819d",
+		K8sUID: "b0db734f-c9a2-11e9-ad06-00505691819d",
 		TcID:   testCase.ID,
-		Type:   store.POD,
+		Type:   store.Pod,
 	}
 	_ = suite.db.SaveEntities([]*store.Entity{entityPVC1, entityPVC2, entityPod})
 
@@ -61,56 +62,56 @@ func (suite *CollectorTestSuit) SetupSuite() {
 			Name:      "added pvc 1",
 			TcID:      testCase.ID,
 			EntityID:  entityPVC1.ID,
-			Type:      store.PVC_ADDED,
+			Type:      store.PvcAdded,
 			Timestamp: startTime.Add(time.Second * 1),
 		},
 		{
 			Name:      "bound pvc 1",
 			TcID:      testCase.ID,
 			EntityID:  entityPVC1.ID,
-			Type:      store.PVC_BOUND,
+			Type:      store.PvcBound,
 			Timestamp: startTime.Add(time.Second * 3),
 		},
 		{
 			Name:      "attach started pvc 1",
 			TcID:      testCase.ID,
 			EntityID:  entityPVC1.ID,
-			Type:      store.PVC_ATTACH_STARTED,
+			Type:      store.PvcAttachStarted,
 			Timestamp: startTime.Add(time.Second * 4),
 		},
 		{
 			Name:      "attach ended pvc 1",
 			TcID:      testCase.ID,
 			EntityID:  entityPVC1.ID,
-			Type:      store.PVC_ATTACH_ENDED,
+			Type:      store.PvcAttachEnded,
 			Timestamp: startTime.Add(time.Second * 6),
 		},
 		{
 			Name:      "unattach started pvc 1",
 			TcID:      testCase.ID,
 			EntityID:  entityPVC1.ID,
-			Type:      store.PVC_UNATTACH_STARTED,
+			Type:      store.PvcUnattachStarted,
 			Timestamp: startTime.Add(time.Second * 21),
 		},
 		{
 			Name:      "unattach ended pvc 1",
 			TcID:      testCase.ID,
 			EntityID:  entityPVC1.ID,
-			Type:      store.PVC_UNATTACH_ENDED,
+			Type:      store.PvcUnattachEnded,
 			Timestamp: startTime.Add(time.Second * 24),
 		},
 		{
 			Name:      "deleting started pvc 1",
 			TcID:      testCase.ID,
 			EntityID:  entityPVC1.ID,
-			Type:      store.PVC_DELETING_STARTED,
+			Type:      store.PvcDeletingStarted,
 			Timestamp: startTime.Add(time.Second * 20),
 		},
 		{
 			Name:      "deleting ended pvc 1",
 			TcID:      testCase.ID,
 			EntityID:  entityPVC1.ID,
-			Type:      store.PVC_DELETING_ENDED,
+			Type:      store.PvcDeletingEnded,
 			Timestamp: startTime.Add(time.Second * 24),
 		},
 		// PVC2 events
@@ -118,56 +119,56 @@ func (suite *CollectorTestSuit) SetupSuite() {
 			Name:      "added pvc 2",
 			TcID:      testCase.ID,
 			EntityID:  entityPVC2.ID,
-			Type:      store.PVC_ADDED,
+			Type:      store.PvcAdded,
 			Timestamp: startTime.Add(time.Second * 2),
 		},
 		{
 			Name:      "bound pvc 2",
 			TcID:      testCase.ID,
 			EntityID:  entityPVC2.ID,
-			Type:      store.PVC_BOUND,
+			Type:      store.PvcBound,
 			Timestamp: startTime.Add(time.Second * 3),
 		},
 		{
 			Name:      "attach started pvc 2",
 			TcID:      testCase.ID,
 			EntityID:  entityPVC2.ID,
-			Type:      store.PVC_ATTACH_STARTED,
+			Type:      store.PvcAttachStarted,
 			Timestamp: startTime.Add(time.Second * 5),
 		},
 		{
 			Name:      "attach ended pvc 2",
 			TcID:      testCase.ID,
 			EntityID:  entityPVC2.ID,
-			Type:      store.PVC_ATTACH_ENDED,
+			Type:      store.PvcAttachEnded,
 			Timestamp: startTime.Add(time.Second * 7),
 		},
 		{
 			Name:      "unattach started pvc 2",
 			TcID:      testCase.ID,
 			EntityID:  entityPVC2.ID,
-			Type:      store.PVC_UNATTACH_STARTED,
+			Type:      store.PvcUnattachStarted,
 			Timestamp: startTime.Add(time.Second * 22),
 		},
 		{
 			Name:      "unattach ended pvc 2",
 			TcID:      testCase.ID,
 			EntityID:  entityPVC2.ID,
-			Type:      store.PVC_UNATTACH_ENDED,
+			Type:      store.PvcUnattachEnded,
 			Timestamp: startTime.Add(time.Second * 23),
 		},
 		{
 			Name:      "deleting started pvc 2",
 			TcID:      testCase.ID,
 			EntityID:  entityPVC2.ID,
-			Type:      store.PVC_DELETING_STARTED,
+			Type:      store.PvcDeletingStarted,
 			Timestamp: startTime.Add(time.Second * 19),
 		},
 		{
 			Name:      "deleting ended pvc 2",
 			TcID:      testCase.ID,
 			EntityID:  entityPVC2.ID,
-			Type:      store.PVC_DELETING_ENDED,
+			Type:      store.PvcDeletingEnded,
 			Timestamp: startTime.Add(time.Second * 24),
 		},
 		// Pod events
@@ -175,28 +176,28 @@ func (suite *CollectorTestSuit) SetupSuite() {
 			Name:      "added pod",
 			TcID:      testCase.ID,
 			EntityID:  entityPod.ID,
-			Type:      store.POD_ADDED,
+			Type:      store.PodAdded,
 			Timestamp: startTime,
 		},
 		{
 			Name:      "ready pod",
 			TcID:      testCase.ID,
 			EntityID:  entityPod.ID,
-			Type:      store.POD_READY,
+			Type:      store.PodReady,
 			Timestamp: startTime.Add(time.Second * 7),
 		},
 		{
 			Name:      "terminating pod",
 			TcID:      testCase.ID,
 			EntityID:  entityPod.ID,
-			Type:      store.POD_TERMINATING,
+			Type:      store.PodTerminating,
 			Timestamp: startTime.Add(time.Second * 19),
 		},
 		{
 			Name:      "deleted pod",
 			TcID:      testCase.ID,
 			EntityID:  entityPod.ID,
-			Type:      store.POD_DELETED,
+			Type:      store.PodDeleted,
 			Timestamp: startTime.Add(time.Second * 25),
 		},
 	}

@@ -79,7 +79,7 @@ func (vao *VaListObserver) StartWatching(ctx context.Context, runner *Runner) {
 					Name:      "event-va-added-" + k8sclient.RandomSuffix(),
 					TcID:      runner.TestCase.ID,
 					EntityID:  entity.ID,
-					Type:      store.PVC_ATTACH_STARTED,
+					Type:      store.PvcAttachStarted,
 					Timestamp: time.Now(),
 				})
 				addedVAs[va.Name] = true
@@ -93,7 +93,7 @@ func (vao *VaListObserver) StartWatching(ctx context.Context, runner *Runner) {
 					Name:      "event-va-modified-" + k8sclient.RandomSuffix(),
 					TcID:      runner.TestCase.ID,
 					EntityID:  entity.ID,
-					Type:      store.PVC_ATTACH_ENDED,
+					Type:      store.PvcAttachEnded,
 					Timestamp: time.Now(),
 				})
 				continue
@@ -105,7 +105,7 @@ func (vao *VaListObserver) StartWatching(ctx context.Context, runner *Runner) {
 					Name:      "event-va-modified-" + k8sclient.RandomSuffix(),
 					TcID:      runner.TestCase.ID,
 					EntityID:  entity.ID,
-					Type:      store.PVC_UNATTACH_STARTED,
+					Type:      store.PvcUnattachStarted,
 					Timestamp: time.Now(),
 				})
 				continue
@@ -125,7 +125,7 @@ func (vao *VaListObserver) StartWatching(ctx context.Context, runner *Runner) {
 					Name:      "event-va-deleted-" + k8sclient.RandomSuffix(),
 					TcID:      runner.TestCase.ID,
 					EntityID:  entity.ID,
-					Type:      store.PVC_UNATTACH_ENDED,
+					Type:      store.PvcUnattachEnded,
 					Timestamp: time.Now(),
 				})
 				deletedVAs[name] = true

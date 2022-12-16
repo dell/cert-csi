@@ -84,7 +84,7 @@ func (cmo *ContainerMetricsObserver) StartWatching(ctx context.Context, runner *
 					Timestamp:     time.Now(),
 					PodName:       pod.Name,
 					ContainerName: container.Name,
-					Cpu:           container.Usage.Cpu().MilliValue(),
+					CPU:           container.Usage.Cpu().MilliValue(),
 					Mem:           container.Usage.Memory().Value() / (1024 * 1024),
 				}
 				resUsage = append(resUsage, info)

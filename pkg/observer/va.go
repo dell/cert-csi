@@ -85,7 +85,7 @@ func (vao *VaObserver) StartWatching(ctx context.Context, runner *Runner) {
 					Name:      "event-va-added-" + k8sclient.RandomSuffix(),
 					TcID:      runner.TestCase.ID,
 					EntityID:  entity.ID,
-					Type:      store.PVC_ATTACH_STARTED,
+					Type:      store.PvcAttachStarted,
 					Timestamp: time.Now(),
 				})
 				break
@@ -96,7 +96,7 @@ func (vao *VaObserver) StartWatching(ctx context.Context, runner *Runner) {
 						Name:      "event-va-modified-" + k8sclient.RandomSuffix(),
 						TcID:      runner.TestCase.ID,
 						EntityID:  entity.ID,
-						Type:      store.PVC_ATTACH_ENDED,
+						Type:      store.PvcAttachEnded,
 						Timestamp: time.Now(),
 					})
 					break
@@ -108,7 +108,7 @@ func (vao *VaObserver) StartWatching(ctx context.Context, runner *Runner) {
 						Name:      "event-va-modified-" + k8sclient.RandomSuffix(),
 						TcID:      runner.TestCase.ID,
 						EntityID:  entity.ID,
-						Type:      store.PVC_UNATTACH_STARTED,
+						Type:      store.PvcUnattachStarted,
 						Timestamp: time.Now(),
 					})
 					break
@@ -120,7 +120,7 @@ func (vao *VaObserver) StartWatching(ctx context.Context, runner *Runner) {
 					Name:      "event-va-deleted-" + k8sclient.RandomSuffix(),
 					TcID:      runner.TestCase.ID,
 					EntityID:  entity.ID,
-					Type:      store.PVC_UNATTACH_ENDED,
+					Type:      store.PvcUnattachEnded,
 					Timestamp: time.Now(),
 				})
 

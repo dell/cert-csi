@@ -65,9 +65,9 @@ func (po *PodListObserver) StartWatching(ctx context.Context, runner *Runner) {
 			if !addedPods[pod.Name] {
 				entity := &store.Entity{
 					Name:   pod.Name,
-					K8sUid: string(pod.UID),
+					K8sUID: string(pod.UID),
 					TcID:   runner.TestCase.ID,
-					Type:   store.POD,
+					Type:   store.Pod,
 				}
 				err = runner.Database.SaveEntities([]*store.Entity{entity})
 				if err != nil {
@@ -82,7 +82,7 @@ func (po *PodListObserver) StartWatching(ctx context.Context, runner *Runner) {
 					Name:      "event-pod-added-" + k8sclient.RandomSuffix(),
 					TcID:      runner.TestCase.ID,
 					EntityID:  entity.ID,
-					Type:      store.POD_ADDED,
+					Type:      store.PodAdded,
 					Timestamp: time.Now(),
 				})
 				addedPods[pod.Name] = true
@@ -97,7 +97,7 @@ func (po *PodListObserver) StartWatching(ctx context.Context, runner *Runner) {
 					Name:      "event-pod-modified-" + k8sclient.RandomSuffix(),
 					TcID:      runner.TestCase.ID,
 					EntityID:  entities[pod.Name].ID,
-					Type:      store.POD_READY,
+					Type:      store.PodReady,
 					Timestamp: time.Now(),
 				})
 				continue
@@ -110,7 +110,7 @@ func (po *PodListObserver) StartWatching(ctx context.Context, runner *Runner) {
 					Name:      "event-pod-modified-" + k8sclient.RandomSuffix(),
 					TcID:      runner.TestCase.ID,
 					EntityID:  entities[pod.Name].ID,
-					Type:      store.POD_TERMINATING,
+					Type:      store.PodTerminating,
 					Timestamp: time.Now(),
 				})
 				continue
@@ -124,7 +124,7 @@ func (po *PodListObserver) StartWatching(ctx context.Context, runner *Runner) {
 					Name:      "event-pod-deleted-" + k8sclient.RandomSuffix(),
 					TcID:      runner.TestCase.ID,
 					EntityID:  entities[name].ID,
-					Type:      store.POD_DELETED,
+					Type:      store.PodDeleted,
 					Timestamp: time.Now(),
 				})
 				delete(previousState, name)

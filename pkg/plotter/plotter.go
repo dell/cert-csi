@@ -526,7 +526,7 @@ func PlotResourceUsageOverTime(tcMetrics []collector.TestCaseMetrics, reportName
 			}
 			cpuMetrics[name] = append(cpuMetrics[name], plotter.XY{
 				X: X,
-				Y: float64(row.Cpu),
+				Y: float64(row.CPU),
 			})
 		}
 	}
