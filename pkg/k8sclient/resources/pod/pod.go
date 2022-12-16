@@ -320,7 +320,7 @@ func (c *Client) WaitForAllToBeReady(ctx context.Context) error {
 	return nil
 }
 
-// WaitForRunningAndReady stalls until pod is ready
+// WaitForRunning stalls until pod is ready
 func (pod *Pod) WaitForRunning(ctx context.Context) error {
 	log := utils.GetLoggerFromContext(ctx)
 	log.Infof("Waiting for pod %s to be READY", pod.Object.Name)
@@ -458,7 +458,7 @@ func IsPodReadyConditionTrue(status v1.PodStatus) bool {
 	return condition != nil && condition.Status == v1.ConditionTrue
 }
 
-// GetReadyCondition returns Pod status
+// GetPodReadyCondition returns Pod status
 func GetPodReadyCondition(status v1.PodStatus) *v1.PodCondition {
 	_, condition := GetPodCondition(&status, v1.PodReady)
 	return condition

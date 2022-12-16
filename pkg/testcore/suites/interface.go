@@ -6,6 +6,7 @@ import (
 	"context"
 )
 
+// Interface contains common function specifications
 type Interface interface {
 	Run(ctx context.Context, storageClass string, clients *k8sclient.Clients) (e error, delFunc func() error)
 	GetName() string

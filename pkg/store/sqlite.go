@@ -383,7 +383,7 @@ func (ss *SQLiteStore) updateStatusTestCase(ts *TestCase) error {
 	return nil
 }
 
-// SuccessfulTestcase updates testcase status as success
+// SuccessfulTestCase updates testcase status as success
 func (ss *SQLiteStore) SuccessfulTestCase(ts *TestCase, endTimestamp time.Time) error {
 	ts.Success = true
 	ts.EndTimestamp = endTimestamp
@@ -393,7 +393,7 @@ func (ss *SQLiteStore) SuccessfulTestCase(ts *TestCase, endTimestamp time.Time) 
 	return nil
 }
 
-// FailedTestcase updates testcase status as failure
+// FailedTestCase updates testcase status as failure
 func (ss *SQLiteStore) FailedTestCase(ts *TestCase, endTimestamp time.Time, errMsg string) error {
 	ts.Success = false
 	ts.EndTimestamp = endTimestamp

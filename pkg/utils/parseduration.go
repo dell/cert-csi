@@ -2,16 +2,18 @@ package utils
 
 import (
 	"errors"
-	log "github.com/sirupsen/logrus"
 	"regexp"
 	"strconv"
 	"strings"
 	"time"
+
+	log "github.com/sirupsen/logrus"
 )
 
 const hoursinweek = 168
 const hoursinday = 24
 
+// ExtendedDuration in weeks, days, hours, minutes and seconds
 type ExtendedDuration struct {
 	Weeks   int
 	Days    int
@@ -20,6 +22,7 @@ type ExtendedDuration struct {
 	Seconds int
 }
 
+// ParseDuration parse duration string and returns ExtendedDuration struct
 func ParseDuration(str string) (*ExtendedDuration, error) {
 	var r = regexp.MustCompile(`(?P<weeks>\d+[wW])?(?P<days>\d+[dD])?(?P<hours>\d+[hH])?(?P<minutes>\d+[mM])?(?P<seconds>\d+[sS])?`)
 	var result = &ExtendedDuration{}
@@ -63,6 +66,7 @@ func ParseDuration(str string) (*ExtendedDuration, error) {
 	return result, err
 }
 
+// Duration returns time duration
 func (s ExtendedDuration) Duration() time.Duration {
 	var dur time.Duration
 	dur += time.Duration(s.Hours) * time.Hour

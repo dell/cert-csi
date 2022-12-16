@@ -490,7 +490,7 @@ func PlotMinMaxEntityOverTime(tcMetrics []collector.TestCaseMetrics, reportName 
 	return nil
 }
 
-// PlotMinMaxEntityOverTime creates and saves a histogram of time distributions of resource usage
+// PlotResourceUsageOverTime creates and saves a histogram of time distributions of resource usage
 func PlotResourceUsageOverTime(tcMetrics []collector.TestCaseMetrics, reportName string) error {
 	n := 1
 
@@ -533,17 +533,17 @@ func PlotResourceUsageOverTime(tcMetrics []collector.TestCaseMetrics, reportName
 	memMetrics = sortGraphsByKey(memMetrics)
 	cpuMetrics = sortGraphsByKey(cpuMetrics)
 
-	if err := plotMemoryOrCpu(memMetrics, reportName, "MemUsageOverTime"); err != nil {
+	if err := plotMemoryOrCPU(memMetrics, reportName, "MemUsageOverTime"); err != nil {
 		return err
 	}
 
-	if err := plotMemoryOrCpu(cpuMetrics, reportName, "CpuUsageOverTime"); err != nil {
+	if err := plotMemoryOrCPU(cpuMetrics, reportName, "CpuUsageOverTime"); err != nil {
 		return err
 	}
 	return nil
 }
 
-// PlotMinMaxEntityOverTime creates and saves a histogram of time distributions of test iterations
+// PlotIterationTimes creates and saves a histogram of time distributions of test iterations
 func PlotIterationTimes(tcMetrics []collector.TestCaseMetrics, reportName string) (*plot.Plot, error) {
 	iterationTimes := make(plotter.XYs, 1)
 
@@ -601,7 +601,7 @@ func PlotIterationTimes(tcMetrics []collector.TestCaseMetrics, reportName string
 	return p, nil
 }
 
-// PlotMinMaxEntityOverTime creates and saves a histogram of time distributions of average staging time
+// PlotAvgStageTimeOverIterations creates and saves a histogram of time distributions of average staging time
 func PlotAvgStageTimeOverIterations(tcMetrics []collector.TestCaseMetrics, reportName string) error {
 	avgTimes := make(map[interface{}]plotter.XYs)
 	for i, tcMetrics := range tcMetrics {
@@ -669,7 +669,7 @@ func PlotAvgStageTimeOverIterations(tcMetrics []collector.TestCaseMetrics, repor
 	return nil
 }
 
-func plotMemoryOrCpu(metrics map[string]plotter.XYs, reportName string, name string) error {
+func plotMemoryOrCPU(metrics map[string]plotter.XYs, reportName string, name string) error {
 	p, err := plot.New()
 	if err != nil {
 		log.Errorf("Can't create new plot; error=%v", err)

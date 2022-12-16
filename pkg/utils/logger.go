@@ -2,11 +2,14 @@ package utils
 
 import (
 	"context"
+
 	"github.com/sirupsen/logrus"
 )
 
+// LoggerContextKey logger
 const LoggerContextKey = "logger"
 
+// GetLoggerFromContext returns logger
 func GetLoggerFromContext(ctx context.Context) *logrus.Entry {
 	log, ok := ctx.Value(LoggerContextKey).(*logrus.Entry)
 	if !ok {

@@ -116,7 +116,7 @@ func (cmo *ContainerMetricsObserver) GetName() string {
 	return "ContainerMetricsObserver"
 }
 
-// Make channel makes a new channel
+// MakeChannel makes a new channel
 func (cmo *ContainerMetricsObserver) MakeChannel() {
 	cmo.finished = make(chan bool)
 }

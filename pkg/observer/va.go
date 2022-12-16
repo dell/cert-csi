@@ -12,7 +12,7 @@ import (
 	"k8s.io/apimachinery/pkg/watch"
 )
 
-// VaListObserver is used to manage volume attachment observer
+// VaObserver is used to manage volume attachment observer
 type VaObserver struct {
 	finished chan bool
 }
