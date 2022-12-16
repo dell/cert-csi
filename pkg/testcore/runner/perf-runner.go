@@ -151,7 +151,7 @@ func ExecuteSuite(iterCtx context.Context, num int, suites map[string][]suites.I
 		logger = logrus.NewEntry(logrus.StandardLogger())
 	}
 
-	ctx := context.WithValue(iterCtx, utils.LoggerContextKey, logger) // nolint
+	ctx := context.WithValue(iterCtx, utils.LoggerContextKey, logger)
 	log := utils.GetLoggerFromContext(ctx)
 
 	// Create and save current test case
@@ -418,7 +418,7 @@ func runSuite(ctx context.Context, suite suites.Interface, sr *SuiteRunner, test
 
 	defer func() {
 		// So we don't loose log fields when first ctx cancelled
-		ctx := context.WithValue(context.Background(), utils.LoggerContextKey, log) // nolint
+		ctx := context.WithValue(context.Background(), utils.LoggerContextKey, log)
 		ctx, cancel := context.WithCancel(ctx)
 
 		skipCh := make(chan os.Signal, 1)

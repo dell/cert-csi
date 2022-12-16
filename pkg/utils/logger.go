@@ -6,8 +6,12 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
-// LoggerContextKey logger
-const LoggerContextKey = "logger"
+type loggerKey string
+
+const (
+	// LoggerContextKey logger
+	LoggerContextKey loggerKey = "logger"
+)
 
 // GetLoggerFromContext returns logger
 func GetLoggerFromContext(ctx context.Context) *logrus.Entry {
