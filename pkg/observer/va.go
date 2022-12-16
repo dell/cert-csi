@@ -4,17 +4,20 @@ import (
 	"cert-csi/pkg/k8sclient"
 	"cert-csi/pkg/store"
 	"context"
+	"time"
+
 	log "github.com/sirupsen/logrus"
 	storagev1 "k8s.io/api/storage/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/watch"
-	"time"
 )
 
+// VaListObserver is used to manage volume attachment observer
 type VaObserver struct {
 	finished chan bool
 }
 
+// StartWatching starts watching a volume attachment and related events
 func (vao *VaObserver) StartWatching(ctx context.Context, runner *Runner) {
 	defer runner.WaitGroup.Done()
 
@@ -54,11 +57,11 @@ func (vao *VaObserver) StartWatching(ctx context.Context, runner *Runner) {
 				}
 				log.Debugf("%s finished watching", vao.GetName())
 				return
-			} else {
-				// Wait until all deleted
-				log.Info("Waiting for volumeattachments to be deleted")
-				shouldExit = true
 			}
+			// Wait until all deleted
+			log.Info("Waiting for volumeattachments to be deleted")
+			shouldExit = true
+
 		case data := <-w.ResultChan():
 			if data.Object == nil {
 				// ignore nil
@@ -139,14 +142,17 @@ func (vao *VaObserver) StartWatching(ctx context.Context, runner *Runner) {
 	}
 }
 
+// StopWatching stops watching a volume attachment
 func (vao *VaObserver) StopWatching() {
 	vao.finished <- true
 }
 
+// GetName returns name of VA observer
 func (vao *VaObserver) GetName() string {
 	return "VolumeAttachmentObserver"
 }
 
+// MakeChannel creates a new channel
 func (vao *VaObserver) MakeChannel() {
 	vao.finished = make(chan bool)
 }

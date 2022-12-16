@@ -5,18 +5,21 @@ import (
 	kubepod "cert-csi/pkg/k8sclient/resources/pod"
 	"cert-csi/pkg/store"
 	"context"
+	"strings"
+	"time"
+
 	log "github.com/sirupsen/logrus"
 	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/watch"
-	"strings"
-	"time"
 )
 
+// PodObserver is used to manage pod observer
 type PodObserver struct {
 	finished chan bool
 }
 
+// StartWatching starts watching pod
 func (po *PodObserver) StartWatching(ctx context.Context, runner *Runner) {
 	defer runner.WaitGroup.Done()
 
@@ -132,14 +135,17 @@ func (po *PodObserver) StartWatching(ctx context.Context, runner *Runner) {
 	}
 }
 
+// StopWatching stops watching pod
 func (po *PodObserver) StopWatching() {
 	po.finished <- true
 }
 
+// GetName returns name of Pod observer
 func (po *PodObserver) GetName() string {
 	return "Pod Observer"
 }
 
+// MakeChannel creates a new channel
 func (po *PodObserver) MakeChannel() {
 	po.finished = make(chan bool)
 }

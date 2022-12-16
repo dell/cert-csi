@@ -4,18 +4,21 @@ import (
 	"cert-csi/pkg/k8sclient"
 	"cert-csi/pkg/store"
 	"context"
+	"strings"
+	"time"
+
 	log "github.com/sirupsen/logrus"
 	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/watch"
-	"strings"
-	"time"
 )
 
+// PvcObserver is used to manage PVC Observer
 type PvcObserver struct {
 	finished chan bool
 }
 
+// StartWatching starts watching a PVC
 func (obs *PvcObserver) StartWatching(ctx context.Context, runner *Runner) {
 	defer runner.WaitGroup.Done()
 
@@ -134,14 +137,17 @@ func (obs *PvcObserver) StartWatching(ctx context.Context, runner *Runner) {
 	}
 }
 
+// StopWatching stops watching a PVC
 func (obs *PvcObserver) StopWatching() {
 	obs.finished <- true
 }
 
+// GetName returns name of PVC observer
 func (*PvcObserver) GetName() string {
 	return "PersistentVolumeClaimObserver"
 }
 
+// MakeChannel creates a new channel
 func (obs *PvcObserver) MakeChannel() {
 	obs.finished = make(chan bool)
 }

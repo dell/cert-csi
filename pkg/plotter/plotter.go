@@ -21,10 +21,13 @@ import (
 )
 
 var (
-	UserPath   = ""
+	// UserPath is user home directory
+	UserPath = ""
+	// FolderPath of .cert-csi folder
 	FolderPath = "/.cert-csi/"
 )
 
+// GetReportPathDir constructs the report path and returns it
 func GetReportPathDir(reportName string) (string, error) {
 	var curUser string
 	if UserPath == "" {
@@ -419,6 +422,8 @@ func PlotEntityOverTime(tc collector.TestCaseMetrics, reportName string) (*plot.
 	return p, nil
 }
 
+// PlotMinMaxEntityOverTime creates minimum and maximum entities and
+// creates and saves a histogram of time distributions
 func PlotMinMaxEntityOverTime(tcMetrics []collector.TestCaseMetrics, reportName string) error {
 	n := 1
 
@@ -485,6 +490,7 @@ func PlotMinMaxEntityOverTime(tcMetrics []collector.TestCaseMetrics, reportName 
 	return nil
 }
 
+// PlotMinMaxEntityOverTime creates and saves a histogram of time distributions of resource usage
 func PlotResourceUsageOverTime(tcMetrics []collector.TestCaseMetrics, reportName string) error {
 	n := 1
 
@@ -537,6 +543,7 @@ func PlotResourceUsageOverTime(tcMetrics []collector.TestCaseMetrics, reportName
 	return nil
 }
 
+// PlotMinMaxEntityOverTime creates and saves a histogram of time distributions of test iterations
 func PlotIterationTimes(tcMetrics []collector.TestCaseMetrics, reportName string) (*plot.Plot, error) {
 	iterationTimes := make(plotter.XYs, 1)
 
@@ -594,6 +601,7 @@ func PlotIterationTimes(tcMetrics []collector.TestCaseMetrics, reportName string
 	return p, nil
 }
 
+// PlotMinMaxEntityOverTime creates and saves a histogram of time distributions of average staging time
 func PlotAvgStageTimeOverIterations(tcMetrics []collector.TestCaseMetrics, reportName string) error {
 	avgTimes := make(map[interface{}]plotter.XYs)
 	for i, tcMetrics := range tcMetrics {

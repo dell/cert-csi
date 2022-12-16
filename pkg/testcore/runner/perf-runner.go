@@ -534,7 +534,7 @@ func (sr *SuiteRunner) Close() {
 	// Closing all databases
 	if sr.noreport == false {
 		err := reporter.GenerateReportsFromMultipleDBs([]reporter.ReportType{
-			reporter.XmlReport,
+			reporter.XMLReport,
 			reporter.TabularReport,
 		}, sr.ScDBs)
 		if err != nil {

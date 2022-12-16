@@ -4,16 +4,19 @@ import (
 	"cert-csi/pkg/k8sclient"
 	"cert-csi/pkg/store"
 	"context"
+	"time"
+
 	log "github.com/sirupsen/logrus"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/wait"
-	"time"
 )
 
+// VaListObserver is used to manage volume attachment observer
 type VaListObserver struct {
 	finished chan bool
 }
 
+// StartWatching starts watching a volume attachment and related events
 func (vao *VaListObserver) StartWatching(ctx context.Context, runner *Runner) {
 	defer runner.WaitGroup.Done()
 
@@ -153,14 +156,17 @@ func (vao *VaListObserver) StartWatching(ctx context.Context, runner *Runner) {
 	}
 }
 
+// StopWatching stops watching a volume attachment
 func (vao *VaListObserver) StopWatching() {
 	vao.finished <- true
 }
 
+// GetName returns name of VA observer
 func (vao *VaListObserver) GetName() string {
 	return "VolumeAttachmentObserver"
 }
 
+// MakeChannel creates a new channel
 func (vao *VaListObserver) MakeChannel() {
 	vao.finished = make(chan bool)
 }
