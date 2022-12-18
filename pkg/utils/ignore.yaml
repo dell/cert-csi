@@ -1,0 +1,3 @@
+skip:
+  - "Generic Ephemeral-volume"
+  - '\[Feature:|\[Disruptive\]'
