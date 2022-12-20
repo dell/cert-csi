@@ -30,11 +30,11 @@ import (
 )
 
 const (
-	// PodPoll is a poll interval for Pod
+	// Poll is a poll interval for Pod
 	Poll = 2 * time.Second
-	// PodTimeout is a timeout for Pod operations
+	// Timeout is a timeout for Pod operations
 	Timeout = 1800 * time.Second
-	// VolumeMode
+	// Block VolumeMode
 	Block = "Block"
 	// EvictionKind represents the kind of evictions object
 	EvictionKind = "Eviction"
@@ -43,6 +43,7 @@ const (
 	policy              = "policy"
 )
 
+// Config contains volume configuration parameters
 type Config struct {
 	Name            string
 	NamePrefix      string
@@ -61,6 +62,7 @@ type Config struct {
 	ReadOnlyFlag    bool
 }
 
+// Client contains node client information
 type Client struct {
 	Interface v1core.PodInterface
 	ClientSet kubernetes.Interface
@@ -70,6 +72,7 @@ type Client struct {
 	nodeInfos []*resource.Info
 }
 
+// Pod contains pod related information
 type Pod struct {
 	Client  *Client
 	Object  *v1.Pod
@@ -79,6 +82,7 @@ type Pod struct {
 	error error
 }
 
+// MakePod creates pod
 func (c *Client) MakePod(config *Config) *v1.Pod {
 	if len(config.NamePrefix) == 0 {
 		config.NamePrefix = "pod-"
@@ -170,10 +174,12 @@ func (c *Client) MakePod(config *Config) *v1.Pod {
 	}
 }
 
+// MakePodFromYaml creates pod from yaml manifest
 func (c *Client) MakePodFromYaml(filepath string) *v1.Pod {
 	return &v1.Pod{}
 }
 
+// Create creates a new Pod
 func (c *Client) Create(ctx context.Context, pod *v1.Pod) *Pod {
 	log := utils.GetLoggerFromContext(ctx)
 	var funcErr error
@@ -192,6 +198,7 @@ func (c *Client) Create(ctx context.Context, pod *v1.Pod) *Pod {
 	}
 }
 
+// Delete deletes the specified pod
 func (c *Client) Delete(ctx context.Context, pod *v1.Pod) *Pod {
 	var funcErr error
 	err := c.Interface.Delete(ctx, pod.GetName(), metav1.DeleteOptions{})
@@ -207,10 +214,12 @@ func (c *Client) Delete(ctx context.Context, pod *v1.Pod) *Pod {
 	}
 }
 
+// Update updates a pod, to be implemented
 func (c *Client) Update(pod *v1.Pod) {
 	// TODO ?
 }
 
+// DeleteAll deletes all the pods
 func (c *Client) DeleteAll(ctx context.Context) error {
 	podList, podErr := c.Interface.List(ctx, metav1.ListOptions{})
 	if podErr != nil {
@@ -220,6 +229,7 @@ func (c *Client) DeleteAll(ctx context.Context) error {
 	return c.deleteAllFromList(ctx, podList)
 }
 
+// Exec runs the pod
 func (c *Client) Exec(ctx context.Context, pod *v1.Pod, command []string, stdout, stderr io.Writer, quiet bool) error {
 	log := utils.GetLoggerFromContext(ctx)
 	executor := DefaultRemoteExecutor{}
@@ -246,6 +256,7 @@ func (c *Client) Exec(ctx context.Context, pod *v1.Pod, command []string, stdout
 	return executor.Execute("POST", req.URL(), c.Config, nil, stdout, stderr, false, nil)
 }
 
+// ReadyPodsCount returns the number of Pods in Ready state
 func (c *Client) ReadyPodsCount(ctx context.Context) (int, error) {
 	podList, err := c.Interface.List(ctx, metav1.ListOptions{})
 
@@ -263,6 +274,7 @@ func (c *Client) ReadyPodsCount(ctx context.Context) (int, error) {
 	return readyCount, nil
 }
 
+// WaitForAllToBeReady waits for all Pods to be in Ready state
 func (c *Client) WaitForAllToBeReady(ctx context.Context) error {
 	log := utils.GetLoggerFromContext(ctx)
 	log.Infof("Waiting for all pods in %s to be %s", c.Namespace, color.GreenString("READY"))
@@ -308,7 +320,7 @@ func (c *Client) WaitForAllToBeReady(ctx context.Context) error {
 	return nil
 }
 
-// WaitForRunningAndReady stalls until pod is ready
+// WaitForRunning stalls until pod is ready
 func (pod *Pod) WaitForRunning(ctx context.Context) error {
 	log := utils.GetLoggerFromContext(ctx)
 	log.Infof("Waiting for pod %s to be READY", pod.Object.Name)
@@ -412,6 +424,7 @@ func (pod *Pod) WaitUntilGone(ctx context.Context) error {
 
 }
 
+// Sync waits until Pods in expected state
 func (pod *Pod) Sync(ctx context.Context) *Pod {
 	if pod.Deleted {
 		pod.error = pod.WaitUntilGone(ctx)
@@ -421,6 +434,7 @@ func (pod *Pod) Sync(ctx context.Context) *Pod {
 	return pod
 }
 
+// HasError checks whether pod has any error
 func (pod *Pod) HasError() bool {
 	if pod.error != nil {
 		return true
@@ -428,24 +442,29 @@ func (pod *Pod) HasError() bool {
 	return false
 }
 
+// GetError returns pod error
 func (pod *Pod) GetError() error {
 	return pod.error
 }
 
+// IsPodReady checks if Pod is in Ready state
 func IsPodReady(pod *v1.Pod) bool {
 	return IsPodReadyConditionTrue(pod.Status)
 }
 
+// IsPodReadyConditionTrue returns true if Pod is in Ready state
 func IsPodReadyConditionTrue(status v1.PodStatus) bool {
 	condition := GetPodReadyCondition(status)
 	return condition != nil && condition.Status == v1.ConditionTrue
 }
 
+// GetPodReadyCondition returns Pod status
 func GetPodReadyCondition(status v1.PodStatus) *v1.PodCondition {
 	_, condition := GetPodCondition(&status, v1.PodReady)
 	return condition
 }
 
+// GetPodCondition returns pod condition
 func GetPodCondition(status *v1.PodStatus, conditionType v1.PodConditionType) (int, *v1.PodCondition) {
 	if status == nil {
 		return -1, nil
@@ -453,6 +472,7 @@ func GetPodCondition(status *v1.PodStatus, conditionType v1.PodConditionType) (i
 	return GetPodConditionFromList(status.Conditions, conditionType)
 }
 
+// GetPodConditionFromList returns pods and conditions
 func GetPodConditionFromList(conditions []v1.PodCondition, conditionType v1.PodConditionType) (int, *v1.PodCondition) {
 	if conditions == nil {
 		return -1, nil
@@ -465,8 +485,10 @@ func GetPodConditionFromList(conditions []v1.PodCondition, conditionType v1.PodC
 	return -1, nil
 }
 
+// DefaultRemoteExecutor represents default remote executor
 type DefaultRemoteExecutor struct{}
 
+// Execute executes remote command
 func (*DefaultRemoteExecutor) Execute(method string, url *url.URL, config *restclient.Config, stdin io.Reader, stdout, stderr io.Writer, tty bool, terminalSizeQueue remotecommand.TerminalSizeQueue) error {
 	exec, err := remotecommand.NewSPDYExecutor(config, method, url)
 	if err != nil {
@@ -481,6 +503,7 @@ func (*DefaultRemoteExecutor) Execute(method string, url *url.URL, config *restc
 	})
 }
 
+// MakeEphemeralPod creates an ephemeral pod
 func (c *Client) MakeEphemeralPod(config *Config) *v1.Pod {
 	if len(config.NamePrefix) == 0 {
 		config.NamePrefix = "pod-"
@@ -553,6 +576,7 @@ func (c *Client) MakeEphemeralPod(config *Config) *v1.Pod {
 	}
 }
 
+// DeleteOrEvictPods deletes or evicts pod from a node
 func (c *Client) DeleteOrEvictPods(ctx context.Context, nodeName string, gracePeriodSeconds int) error {
 	podList, podErr := c.Interface.List(ctx, metav1.ListOptions{
 		FieldSelector: fields.SelectorFromSet(fields.Set{"spec.nodeName": nodeName}).String()})
@@ -636,6 +660,7 @@ func (c *Client) evictPods(ctx context.Context, podList *v1.PodList, policyGroup
 	return g.Wait()
 }
 
+// EvictPod evicts pod from a node
 func (c *Client) EvictPod(ctx context.Context, pod corev1.Pod, policyGroupVersion string, gracePeriodSeconds int) error {
 	log := utils.GetLoggerFromContext(ctx)
 	log.Debugf("evicting the pod ")
@@ -659,12 +684,13 @@ func (c *Client) EvictPod(ctx context.Context, pod corev1.Pod, policyGroupVersio
 	return c.ClientSet.PolicyV1beta1().Evictions(eviction.Namespace).Evict(ctx, eviction)
 }
 
-func (p *Pod) IsInPendingState(ctx context.Context) error {
-	updatedPod, err := p.Client.Interface.Get(ctx, p.Object.Name, metav1.GetOptions{})
+// IsInPendingState checks whether a pod is in Pending state
+func (pod *Pod) IsInPendingState(ctx context.Context) error {
+	updatedPod, err := pod.Client.Interface.Get(ctx, pod.Object.Name, metav1.GetOptions{})
 	if err != nil {
 		return err
 	}
-	p.Object = updatedPod
+	pod.Object = updatedPod
 	if updatedPod.Status.Phase != v1.PodPending {
 		return fmt.Errorf("%s pod is in %s state", updatedPod.Name, updatedPod.Status.Phase)
 	}

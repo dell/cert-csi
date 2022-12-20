@@ -5,14 +5,15 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"time"
+
 	"github.com/fatih/color"
-	"github.com/kubernetes-csi/external-snapshotter/client/v4/apis/volumesnapshot/v1"
+	v1 "github.com/kubernetes-csi/external-snapshotter/client/v4/apis/volumesnapshot/v1"
 	snapshotv1 "github.com/kubernetes-csi/external-snapshotter/client/v4/clientset/versioned/typed/volumesnapshot/v1"
 	"github.com/sirupsen/logrus"
 	apierrs "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/wait"
-	"time"
 )
 
 const (
@@ -29,6 +30,7 @@ type SnapshotClient struct {
 	Timeout   int
 }
 
+// Snapshot contains parameters needed for managing volume snapshot
 type Snapshot struct {
 	Client  *SnapshotClient
 	Object  *v1.VolumeSnapshot
@@ -38,6 +40,7 @@ type Snapshot struct {
 	error error
 }
 
+// DeleteAll deletes all snapshots
 func (sc *SnapshotClient) DeleteAll(ctx context.Context) error {
 	log := utils.GetLoggerFromContext(ctx)
 	snapList, snapErr := sc.Interface.List(ctx, metav1.ListOptions{})
@@ -57,6 +60,8 @@ func (sc *SnapshotClient) DeleteAll(ctx context.Context) error {
 
 	return nil
 }
+
+// Create creates a snapshot
 func (sc *SnapshotClient) Create(ctx context.Context, snap *v1.VolumeSnapshot) *Snapshot {
 	var funcErr error
 	newSnap, err := sc.Interface.Create(ctx, snap, metav1.CreateOptions{})
@@ -75,6 +80,7 @@ func (sc *SnapshotClient) Create(ctx context.Context, snap *v1.VolumeSnapshot) *
 	}
 }
 
+// Delete deletes a snapshot
 func (sc *SnapshotClient) Delete(ctx context.Context, snap *v1.VolumeSnapshot) *Snapshot {
 	var funcErr error
 
@@ -91,6 +97,7 @@ func (sc *SnapshotClient) Delete(ctx context.Context, snap *v1.VolumeSnapshot) *
 	}
 }
 
+// WaitForAllToBeReady waits until all snapshots are in ReadyToUse state
 func (sc *SnapshotClient) WaitForAllToBeReady(ctx context.Context) error {
 	log := utils.GetLoggerFromContext(ctx)
 	log.Infof("Waiting for the snapshots in %s to be %s", sc.Namespace, color.GreenString("READY"))
@@ -129,6 +136,7 @@ func (sc *SnapshotClient) WaitForAllToBeReady(ctx context.Context) error {
 	return nil
 }
 
+// IsSnapReady checks whether snapshot is in ReadyToUse state
 func IsSnapReady(sn *v1.VolumeSnapshot) bool {
 	var ready bool
 	if sn.Status == nil || sn.Status.ReadyToUse == nil {
@@ -140,6 +148,7 @@ func IsSnapReady(sn *v1.VolumeSnapshot) bool {
 	return ready
 }
 
+// WaitUntilGone waits until snapshot is deleted
 func (snap *Snapshot) WaitUntilGone(ctx context.Context) error {
 	log := utils.GetLoggerFromContext(ctx)
 	startTime := time.Now()
@@ -235,6 +244,7 @@ func (snap *Snapshot) WaitForRunning(ctx context.Context) error {
 	return nil
 }
 
+// HasError checks whether Snapshot has error
 func (snap *Snapshot) HasError() bool {
 	if snap.error != nil {
 		return true
@@ -242,12 +252,17 @@ func (snap *Snapshot) HasError() bool {
 	return false
 }
 
+// GetError returns snapshot error
 func (snap *Snapshot) GetError() error {
 	return snap.error
 }
+
+// Name returns snapshot name
 func (snap *Snapshot) Name() string {
 	return snap.Object.Name
 }
+
+// Sync updates snapshot state
 func (snap *Snapshot) Sync(ctx context.Context) *Snapshot {
 	if snap.Deleted {
 		snap.error = snap.WaitUntilGone(ctx)

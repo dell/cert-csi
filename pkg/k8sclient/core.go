@@ -56,6 +56,7 @@ const (
 	NamespaceTimeout = 1800 * time.Second
 )
 
+// KubeClientInterface contains Kube APIs
 type KubeClientInterface interface {
 	CreateStatefulSetClient(namespace string) (*statefulset.Client, error)
 	CreatePVCClient(namespace string) (*pvc.Client, error)
@@ -83,6 +84,7 @@ type KubeClient struct {
 	Minor       int
 }
 
+// Clients contains client handles for K8s resources
 type Clients struct {
 	PVCClient              *pvc.Client
 	PodClient              *pod.Client
@@ -196,6 +198,7 @@ func (c *KubeClient) CreateSCClient() (*sc.Client, error) {
 	return scc, nil
 }
 
+// CreatePVClient creates a new instance of persistent volume client
 func (c *KubeClient) CreatePVClient() (*pv.Client, error) {
 	pvc := &pv.Client{
 		Interface: c.ClientSet.CoreV1().PersistentVolumes(),
@@ -205,6 +208,7 @@ func (c *KubeClient) CreatePVClient() (*pv.Client, error) {
 	return pvc, nil
 }
 
+// CreateNodeClient creates a new instance of node client
 func (c *KubeClient) CreateNodeClient() (*node.Client, error) {
 	node := &node.Client{
 		Interface: c.ClientSet.CoreV1().Nodes(),
@@ -214,6 +218,7 @@ func (c *KubeClient) CreateNodeClient() (*node.Client, error) {
 	return node, nil
 }
 
+// CreatePodClient creates a new instance of Pod client
 func (c *KubeClient) CreatePodClient(namespace string) (*pod.Client, error) {
 	podc := &pod.Client{
 		Interface: c.ClientSet.CoreV1().Pods(namespace),
@@ -226,6 +231,7 @@ func (c *KubeClient) CreatePodClient(namespace string) (*pod.Client, error) {
 	return podc, nil
 }
 
+// CreateVaClient creates a new instance of volume attachment client
 func (c *KubeClient) CreateVaClient(namespace string) (*va.Client, error) {
 	vac := &va.Client{
 		Interface: c.ClientSet.StorageV1().VolumeAttachments(),
@@ -236,6 +242,7 @@ func (c *KubeClient) CreateVaClient(namespace string) (*va.Client, error) {
 	return vac, nil
 }
 
+// CreateMetricsClient creates a new instance of metrics client
 func (c *KubeClient) CreateMetricsClient(namespace string) (*metrics.Client, error) {
 	cset, err := metricsclientset.NewForConfig(c.Config)
 
@@ -251,6 +258,7 @@ func (c *KubeClient) CreateMetricsClient(namespace string) (*metrics.Client, err
 	return mc, nil
 }
 
+// CreateRGClient creates a new instance of replication group client
 func (c *KubeClient) CreateRGClient() (*rg.Client, error) {
 	scheme := runtime.NewScheme()
 
@@ -273,6 +281,7 @@ func (c *KubeClient) CreateRGClient() (*rg.Client, error) {
 	return rgc, nil
 }
 
+// CreateVGSClient creates a new instance of volume group snapshot client
 func (c *KubeClient) CreateVGSClient() (*volumegroupsnapshot.Client, error) {
 	scheme := runtime.NewScheme()
 
@@ -295,6 +304,7 @@ func (c *KubeClient) CreateVGSClient() (*volumegroupsnapshot.Client, error) {
 	return vgs, nil
 }
 
+// CreateSnapshotGAClient creates a new instance of snapshot client
 func (c *KubeClient) CreateSnapshotGAClient(namespace string) (*snapv1.SnapshotClient, error) {
 	cset, err := snapclient.NewForConfig(c.Config)
 
@@ -312,6 +322,7 @@ func (c *KubeClient) CreateSnapshotGAClient(namespace string) (*snapv1.SnapshotC
 	return sc, nil
 }
 
+// CreateSnapshotBetaClient creates a new instance of beta snapshot client
 func (c *KubeClient) CreateSnapshotBetaClient(namespace string) (*snapbeta.SnapshotClient, error) {
 	cset, err := snapclient.NewForConfig(c.Config)
 
@@ -329,6 +340,7 @@ func (c *KubeClient) CreateSnapshotBetaClient(namespace string) (*snapbeta.Snaps
 	return sc, nil
 }
 
+// CreateSnapshotContentGAClient creates a new instance of snapshot contents client
 func (c *KubeClient) CreateSnapshotContentGAClient() (*contentv1.SnapshotContentClient, error) {
 	cset, err := snapclient.NewForConfig(c.Config)
 
@@ -343,6 +355,8 @@ func (c *KubeClient) CreateSnapshotContentGAClient() (*contentv1.SnapshotContent
 	logrus.Debugf("Created Alpha Snapshot Content client")
 	return sc, nil
 }
+
+// CreateSnapshotContentBetaClient creates a new instance of beta snapshot contents client
 func (c *KubeClient) CreateSnapshotContentBetaClient() (*contentbeta.SnapshotContentClient, error) {
 	cset, err := snapclient.NewForConfig(c.Config)
 
@@ -358,6 +372,7 @@ func (c *KubeClient) CreateSnapshotContentBetaClient() (*contentbeta.SnapshotCon
 	return sc, nil
 }
 
+// CreateCSISCClient creates a new instance of CSI Storage capacity client
 func (c *KubeClient) CreateCSISCClient(namespace string) (*csistoragecapacity.Client, error) {
 	csiscClient := &csistoragecapacity.Client{
 		Interface: c.ClientSet.StorageV1().CSIStorageCapacities(namespace),
@@ -449,6 +464,7 @@ func (c *KubeClient) DeleteNamespace(ctx context.Context, namespace string) erro
 	return nil
 }
 
+// ForceDeleteNamespace force deletes the namespace and its resources
 func (c *KubeClient) ForceDeleteNamespace(ctx context.Context, namespace string) error {
 	// Try to send delete request one more time, ignore errors
 	_ = c.ClientSet.CoreV1().Namespaces().Delete(ctx, namespace, metav1.DeleteOptions{})
@@ -537,6 +553,7 @@ func (c *KubeClient) ForceDeleteNamespace(ctx context.Context, namespace string)
 	return nil
 }
 
+// SnapshotClassExists checks whether snapshot class exists
 func (c *KubeClient) SnapshotClassExists(snapClass string) (bool, error) {
 	cset, err := snapclient.NewForConfig(c.Config)
 
@@ -554,6 +571,7 @@ func (c *KubeClient) SnapshotClassExists(snapClass string) (bool, error) {
 	return true, nil
 }
 
+// StorageClassExists checks whether a storage class exists
 func (c *KubeClient) StorageClassExists(ctx context.Context, storageClass string) (bool, error) {
 	var scExists bool
 	storageClasses, err := c.ClientSet.StorageV1().StorageClasses().List(ctx, metav1.ListOptions{})
@@ -571,6 +589,7 @@ func (c *KubeClient) StorageClassExists(ctx context.Context, storageClass string
 	return scExists, err
 }
 
+// NamespaceExists checks whether a namespace exists
 func (c *KubeClient) NamespaceExists(ctx context.Context, namespace string) (bool, error) {
 	var nsExists bool
 	nsList, err := c.ClientSet.CoreV1().Namespaces().List(ctx, metav1.ListOptions{})
@@ -588,12 +607,14 @@ func (c *KubeClient) NamespaceExists(ctx context.Context, namespace string) (boo
 	return nsExists, nil
 }
 
+// Timeout returns client timeout
 func (c *KubeClient) Timeout() int {
 	c.mutex.Lock()
 	defer c.mutex.Unlock()
 	return c.timeout
 }
 
+// SetTimeout sets client timeout
 func (c *KubeClient) SetTimeout(val int) {
 	c.mutex.Lock()
 	defer c.mutex.Unlock()
@@ -601,6 +622,7 @@ func (c *KubeClient) SetTimeout(val int) {
 
 }
 
+// GetConfig reads and returns rest.config
 func GetConfig(configPath string) (*rest.Config, error) {
 	configPath = strings.ReplaceAll(configPath, `"`, "")
 	if len(configPath) != 0 {

@@ -3,6 +3,9 @@ package helm
 import (
 	"context"
 	"fmt"
+	"io/ioutil"
+	"sync"
+
 	"github.com/pkg/errors"
 	log "github.com/sirupsen/logrus"
 	"helm.sh/helm/v3/pkg/action"
@@ -13,17 +16,17 @@ import (
 	"helm.sh/helm/v3/pkg/getter"
 	"helm.sh/helm/v3/pkg/kube"
 	"helm.sh/helm/v3/pkg/repo"
-	"io/ioutil"
 	"sigs.k8s.io/yaml"
-	"sync"
 
-	"github.com/gofrs/flock"
 	"os"
 	"path/filepath"
 	"strings"
 	"time"
+
+	"github.com/gofrs/flock"
 )
 
+// Client for helm driver
 type Client struct {
 	settings     *cli.EnvSettings
 	actionConfig *action.Configuration
@@ -32,6 +35,7 @@ type Client struct {
 	configPath   string
 }
 
+// NewClient creates new helm driver client
 func NewClient(namespace, configPath string, timeout int) (*Client, error) {
 	actionConfig := new(action.Configuration)
 	if err := actionConfig.Init(kube.GetConfig(configPath, "", namespace), namespace, os.Getenv("HELM_DRIVER"), log.Debugf); err != nil {

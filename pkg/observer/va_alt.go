@@ -4,16 +4,19 @@ import (
 	"cert-csi/pkg/k8sclient"
 	"cert-csi/pkg/store"
 	"context"
+	"time"
+
 	log "github.com/sirupsen/logrus"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/wait"
-	"time"
 )
 
+// VaListObserver is used to manage volume attachment observer
 type VaListObserver struct {
 	finished chan bool
 }
 
+// StartWatching starts watching a volume attachment and related events
 func (vao *VaListObserver) StartWatching(ctx context.Context, runner *Runner) {
 	defer runner.WaitGroup.Done()
 
@@ -76,7 +79,7 @@ func (vao *VaListObserver) StartWatching(ctx context.Context, runner *Runner) {
 					Name:      "event-va-added-" + k8sclient.RandomSuffix(),
 					TcID:      runner.TestCase.ID,
 					EntityID:  entity.ID,
-					Type:      store.PVC_ATTACH_STARTED,
+					Type:      store.PvcAttachStarted,
 					Timestamp: time.Now(),
 				})
 				addedVAs[va.Name] = true
@@ -90,7 +93,7 @@ func (vao *VaListObserver) StartWatching(ctx context.Context, runner *Runner) {
 					Name:      "event-va-modified-" + k8sclient.RandomSuffix(),
 					TcID:      runner.TestCase.ID,
 					EntityID:  entity.ID,
-					Type:      store.PVC_ATTACH_ENDED,
+					Type:      store.PvcAttachEnded,
 					Timestamp: time.Now(),
 				})
 				continue
@@ -102,7 +105,7 @@ func (vao *VaListObserver) StartWatching(ctx context.Context, runner *Runner) {
 					Name:      "event-va-modified-" + k8sclient.RandomSuffix(),
 					TcID:      runner.TestCase.ID,
 					EntityID:  entity.ID,
-					Type:      store.PVC_UNATTACH_STARTED,
+					Type:      store.PvcUnattachStarted,
 					Timestamp: time.Now(),
 				})
 				continue
@@ -122,7 +125,7 @@ func (vao *VaListObserver) StartWatching(ctx context.Context, runner *Runner) {
 					Name:      "event-va-deleted-" + k8sclient.RandomSuffix(),
 					TcID:      runner.TestCase.ID,
 					EntityID:  entity.ID,
-					Type:      store.PVC_UNATTACH_ENDED,
+					Type:      store.PvcUnattachEnded,
 					Timestamp: time.Now(),
 				})
 				deletedVAs[name] = true
@@ -153,14 +156,17 @@ func (vao *VaListObserver) StartWatching(ctx context.Context, runner *Runner) {
 	}
 }
 
+// StopWatching stops watching a volume attachment
 func (vao *VaListObserver) StopWatching() {
 	vao.finished <- true
 }
 
+// GetName returns name of VA observer
 func (vao *VaListObserver) GetName() string {
 	return "VolumeAttachmentObserver"
 }
 
+// MakeChannel creates a new channel
 func (vao *VaListObserver) MakeChannel() {
 	vao.finished = make(chan bool)
 }
