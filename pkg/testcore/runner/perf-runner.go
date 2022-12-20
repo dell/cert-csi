@@ -23,6 +23,7 @@ import (
 	"golang.org/x/sync/errgroup"
 )
 
+// SuiteRunner contains configuration to run performance test suite
 type SuiteRunner struct {
 	*Runner
 	CoolDownPeriod        int
@@ -38,12 +39,16 @@ type SuiteRunner struct {
 	ScDBs                 []*store.StorageClassDB
 }
 
+// TestResult stores test result
 type TestResult string
 
 const (
-	SUCCESS   TestResult = "SUCCESS"
-	FAILURE   TestResult = "FAILURE"
-	Threshold            = 0.9
+	// SUCCESS represent success result
+	SUCCESS TestResult = "SUCCESS"
+	// FAILURE represents failure result
+	FAILURE TestResult = "FAILURE"
+	// Threshold represents threshold value
+	Threshold = 0.9
 )
 
 func checkValidNamespace(driverNs string, runner *Runner) {
@@ -59,6 +64,7 @@ func checkValidNamespace(driverNs string, runner *Runner) {
 	}
 }
 
+// NewSuiteRunner creates and returns SuiteRunner
 func NewSuiteRunner(configPath, driverNs, startHook, readyHook, finishHook, observerType, longevity string, driverNSHealthMetrics string,
 	timeout int, cooldown int, sequentialExecution, noCleanup, noCleanupOnFail, noMetrics bool, noReport bool, scDBs []*store.StorageClassDB) *SuiteRunner {
 
@@ -130,7 +136,8 @@ func NewSuiteRunner(configPath, driverNs, startHook, readyHook, finishHook, obse
 	}
 }
 
-func ExecuteSuite(num int, suites map[string][]suites.Interface, suite suites.Interface, sr *SuiteRunner, scDB *store.StorageClassDB, iterCtx context.Context, c chan os.Signal) {
+// ExecuteSuite runs the test suite
+func ExecuteSuite(iterCtx context.Context, num int, suites map[string][]suites.Interface, suite suites.Interface, sr *SuiteRunner, scDB *store.StorageClassDB, c chan os.Signal) {
 	db := scDB.DB
 
 	var logger *logrus.Entry
@@ -168,7 +175,7 @@ func ExecuteSuite(num int, suites map[string][]suites.Interface, suite suites.In
 
 	var result string
 	if testResult == SUCCESS {
-		sr.SucceededSuites += 1
+		sr.SucceededSuites++
 		if saveErr := db.SuccessfulTestCase(testCase, time.Now()); saveErr != nil {
 			log.Errorf("Can't save test case; error=%v", saveErr)
 		}
@@ -195,7 +202,7 @@ func ExecuteSuite(num int, suites map[string][]suites.Interface, suite suites.In
 	if sr.CoolDownPeriod != 0 {
 		log.Infof("sleeping %d seconds before next iteration", sr.CoolDownPeriod)
 		sleepTimer := time.After(time.Duration(sr.CoolDownPeriod) * time.Second)
-		sigCont := make(chan os.Signal)
+		sigCont := make(chan os.Signal, 1)
 		signal.Notify(sigCont, os.Interrupt,
 			syscall.SIGCONT,
 		)
@@ -210,6 +217,7 @@ func ExecuteSuite(num int, suites map[string][]suites.Interface, suite suites.In
 	}
 }
 
+// RunSuites runs test suites
 func (sr *SuiteRunner) RunSuites(suites map[string][]suites.Interface) {
 	sr.SucceededSuites = 0.0
 	defer func() {
@@ -270,7 +278,7 @@ func (sr *SuiteRunner) RunSuites(suites map[string][]suites.Interface) {
 							num := i
 							suite := suite
 							suiteErr.Go(func() error {
-								ExecuteSuite(num, suites, suite, sr, scDB, iterCtx, c)
+								ExecuteSuite(iterCtx, num, suites, suite, sr, scDB, c)
 								return nil
 							})
 						}
@@ -293,7 +301,7 @@ func (sr *SuiteRunner) RunSuites(suites map[string][]suites.Interface) {
 					for i, suite := range suites[scDB.StorageClass] {
 						num := i
 						suite := suite
-						ExecuteSuite(num, suites, suite, sr, scDB, iterCtx, c)
+						ExecuteSuite(iterCtx, num, suites, suite, sr, scDB, c)
 					}
 				}
 			}
@@ -317,7 +325,7 @@ func (sr *SuiteRunner) RunSuites(suites map[string][]suites.Interface) {
 				}
 			}
 			sr.KubeClient = kubeClient
-			iter += 1
+			iter++
 		}
 	}()
 	sr.IterationNum = iter
@@ -325,7 +333,7 @@ func (sr *SuiteRunner) RunSuites(suites map[string][]suites.Interface) {
 
 func (sr *SuiteRunner) runFlowManagementGoroutine() (context.Context, chan os.Signal) {
 	iterCtx, cancelIter := context.WithCancel(context.Background())
-	c := make(chan os.Signal)
+	c := make(chan os.Signal, 1)
 	signal.Notify(c, os.Interrupt,
 		syscall.SIGTERM, // "the normal way to politely ask a program to terminate"
 		syscall.SIGINT,  // Ctrl+C
@@ -378,7 +386,7 @@ func runSuite(ctx context.Context, suite suites.Interface, sr *SuiteRunner, test
 	startTime := time.Now()
 	defer func() { sr.allTime += time.Since(startTime) }()
 
-	sr.runNum += 1
+	sr.runNum++
 
 	if err := runHook(sr.StartHookPath, "Start Hook"); err != nil {
 		return FAILURE, fmt.Errorf("can't run start hook; error=%s", err.Error())
@@ -413,7 +421,7 @@ func runSuite(ctx context.Context, suite suites.Interface, sr *SuiteRunner, test
 		ctx := context.WithValue(context.Background(), utils.LoggerContextKey, log)
 		ctx, cancel := context.WithCancel(ctx)
 
-		skipCh := make(chan os.Signal)
+		skipCh := make(chan os.Signal, 1)
 		signal.Notify(skipCh, os.Interrupt,
 			syscall.SIGTERM, // "the normal way to politely ask a program to terminate"
 			syscall.SIGINT,  // Ctrl+C
@@ -473,7 +481,7 @@ func runSuite(ctx context.Context, suite suites.Interface, sr *SuiteRunner, test
 	// Run the current suite
 	runTime := time.Now()
 	var err error
-	err, delFunc = suite.Run(ctx, storageClass, clients)
+	delFunc, err = suite.Run(ctx, storageClass, clients)
 	if err != nil {
 		sr.runTime += time.Since(runTime)
 		return FAILURE, fmt.Errorf("suite %s failed; error=%s", suite.GetName(), err.Error())
@@ -503,38 +511,44 @@ func runHook(startHook, hookName string) error {
 	} else {
 		cmd = exec.Command(cmdPath) // #nosec
 	}
-	if c, err := cmd.CombinedOutput(); err != nil {
+	c, err := cmd.CombinedOutput()
+	if err != nil {
 		logrus.Error(err)
 		return err
-	} else {
-		logrus.Infof("%s: %s", hookName, c)
 	}
+	logrus.Infof("%s: %s", hookName, c)
+
 	return nil
 }
 
+// NoCleaning sets noCleaning flag to true
 func (sr *SuiteRunner) NoCleaning() {
 	sr.noCleaning = true
 }
 
+// ShouldClean calls common clean function
 func (sr *SuiteRunner) ShouldClean(suiteRes TestResult) (res bool) {
 	// calling common clean function
 	res = shouldClean(sr.NoCleanupOnFail, suiteRes, sr.noCleaning)
 	return res
 }
 
+// IsStopped returns true if test suite run has stopped
 func (sr *SuiteRunner) IsStopped() bool {
 	return sr.stop
 }
 
+// Stop stops test suite run
 func (sr *SuiteRunner) Stop() {
 	sr.stop = true
 }
 
+// Close closes all databases
 func (sr *SuiteRunner) Close() {
 	// Closing all databases
 	if sr.noreport == false {
 		err := reporter.GenerateReportsFromMultipleDBs([]reporter.ReportType{
-			reporter.XmlReport,
+			reporter.XMLReport,
 			reporter.TabularReport,
 		}, sr.ScDBs)
 		if err != nil {

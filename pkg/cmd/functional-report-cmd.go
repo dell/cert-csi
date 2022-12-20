@@ -36,7 +36,7 @@ func GetFunctionalReportCommand() cli.Command {
 				types = append(types, reporter.TabularReport)
 			}
 			if c.Bool("xml") {
-				types = append(types, reporter.XmlReport)
+				types = append(types, reporter.XMLReport)
 			}
 			if len(types) == 0 {
 				return errors.New("one type of report type is required")

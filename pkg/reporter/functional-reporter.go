@@ -7,9 +7,13 @@ import (
 	log "github.com/sirupsen/logrus"
 )
 
+// TabularReport represents TABLE report type
 const TabularReport ReportType = "TABLE"
-const XmlReport ReportType = "XML"
 
+// XMLReport represents XML report type
+const XMLReport ReportType = "XML"
+
+// GenerateFunctionalReport generates functions reports
 func GenerateFunctionalReport(db store.Store, reportTypes []ReportType) error {
 	mc := collector.NewMetricsCollector(db)
 	log.Infof("Started generating functional reports...")
@@ -19,7 +23,7 @@ func GenerateFunctionalReport(db store.Store, reportTypes []ReportType) error {
 	}
 	funcMap := map[ReportType]Reporter{
 		TabularReport: &TabularReporter{},
-		XmlReport:     &XmlReporter{},
+		XMLReport:     &XMLReporter{},
 	}
 	for _, reportType := range reportTypes {
 		if err := funcMap[reportType].Generate("", metricsCollection); err != nil {

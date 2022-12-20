@@ -7,9 +7,11 @@ import (
 	"time"
 )
 
-type XmlReporter struct{}
+// XMLReporter is used to create and manage XML report
+type XMLReporter struct{}
 
-func (xr *XmlReporter) MultiGenerate(mcs []*collector.MetricsCollection) error {
+// MultiGenerate generates report from multiple metrics collection
+func (xr *XMLReporter) MultiGenerate(mcs []*collector.MetricsCollection) error {
 	var fm = template.FuncMap{
 		"formatName":           formatName,
 		"getResultStatus":      xr.getResultStatus,
@@ -51,7 +53,8 @@ func (xr *XmlReporter) MultiGenerate(mcs []*collector.MetricsCollection) error {
 	return nil
 }
 
-func (xr *XmlReporter) Generate(runName string, mc *collector.MetricsCollection) error {
+// Generate generates report from metrics collection
+func (xr *XMLReporter) Generate(runName string, mc *collector.MetricsCollection) error {
 	var fm = template.FuncMap{
 		"formatName":          formatName,
 		"getResultStatus":     xr.getResultStatus,
@@ -97,22 +100,22 @@ func (xr *XmlReporter) Generate(runName string, mc *collector.MetricsCollection)
 	return nil
 }
 
-func (xr *XmlReporter) getResultStatus(result bool) string {
+func (xr *XMLReporter) getResultStatus(result bool) string {
 	if result {
 		return "PASSED"
 	}
 	return "FAILED"
 }
 
-func (xr *XmlReporter) getCustomReportName() string {
+func (xr *XMLReporter) getCustomReportName() string {
 	return "csi-" + arrayConfig["name"] + "-test-results"
 }
 
-func (xr *XmlReporter) getPassedCount() int {
+func (xr *XMLReporter) getPassedCount() int {
 	return passedCount
 }
 
-func (xr *XmlReporter) getFailedCount() int {
+func (xr *XMLReporter) getFailedCount() int {
 	return failedCount
 }
 
@@ -136,7 +139,7 @@ func getPassedCountFromMC(mc *collector.MetricsCollection) int {
 	return passed
 }
 
-func (xr *XmlReporter) getSkippedCount() int {
+func (xr *XMLReporter) getSkippedCount() int {
 	return skippedCount
 }
 
