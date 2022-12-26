@@ -7,6 +7,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"strings"
 	"time"
 
 	"github.com/fatih/color"
@@ -70,7 +71,7 @@ func (c *Client) DeleteAllPV(ctx context.Context, ns string, vaClient *va.Client
 		if val, ok := pv.Spec.PersistentVolumeSource.CSI.VolumeAttributes["csi.storage.k8s.io/pvc/namespace"]; ok && val == ns {
 			log.Debugf("Deleting pv %s", pv.Name)
 			err := vaClient.DeleteVa(ctx, pv.Name)
-			if err != nil {
+			if err != nil && !strings.Contains(err.Error(), "not found") {
 				log.Errorf("Can't delete VolumeAttachment for %s; error=%v", pv.Name, err)
 				continue
 			}
