@@ -5,8 +5,9 @@ import (
 	"cert-csi/pkg/reporter"
 	"cert-csi/pkg/store"
 	"fmt"
-	log "github.com/sirupsen/logrus"
 	"strings"
+
+	log "github.com/sirupsen/logrus"
 
 	"github.com/urfave/cli"
 )
@@ -86,7 +87,7 @@ func GetReportCommand() cli.Command {
 
 			var multiTypes []reporter.ReportType
 			if c.Bool("xml") {
-				multiTypes = append(multiTypes, reporter.XmlReport)
+				multiTypes = append(multiTypes, reporter.XMLReport)
 			}
 
 			if c.Bool("tabular") {
@@ -102,7 +103,7 @@ func GetReportCommand() cli.Command {
 
 			var types []reporter.ReportType
 			if c.Bool("html") {
-				types = append(types, reporter.HtmlReport)
+				types = append(types, reporter.HTMLReport)
 			}
 			if c.Bool("txt") {
 				types = append(types, reporter.TextReport)

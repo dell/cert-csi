@@ -11,8 +11,11 @@ import (
 )
 
 const (
-	IsReplicationEnabled   = "replication.storage.dell.com/isReplicationEnabled"
-	RemoteClusterID        = "replication.storage.dell.com/remoteClusterID"
+	// IsReplicationEnabled represents if replication is enabled
+	IsReplicationEnabled = "replication.storage.dell.com/isReplicationEnabled"
+	// RemoteClusterID represents remote cluster ID
+	RemoteClusterID = "replication.storage.dell.com/remoteClusterID"
+	// RemoteStorageClassName represents remote sc name
 	RemoteStorageClassName = "replication.storage.dell.com/remoteStorageClassName"
 )
 
@@ -52,6 +55,7 @@ func (c *Client) Get(ctx context.Context, name string) *StorageClass {
 	}
 }
 
+// Create creates a new storage class
 func (c *Client) Create(ctx context.Context, sc *v1.StorageClass) error {
 	log := utils.GetLoggerFromContext(ctx)
 	_, err := c.Interface.Create(ctx, sc, metav1.CreateOptions{})
@@ -62,6 +66,7 @@ func (c *Client) Create(ctx context.Context, sc *v1.StorageClass) error {
 	return nil
 }
 
+// Delete deletes a storage class
 func (c *Client) Delete(ctx context.Context, name string) error {
 	log := utils.GetLoggerFromContext(ctx)
 	err := c.Interface.Delete(ctx, name, *metav1.NewDeleteOptions(0))
@@ -72,6 +77,7 @@ func (c *Client) Delete(ctx context.Context, name string) error {
 	return nil
 }
 
+// MakeStorageClass returns a storage class
 func (c *Client) MakeStorageClass(name string, provisioner string) *v1.StorageClass {
 	WaitForFirstConsumer := v1.VolumeBindingWaitForFirstConsumer
 	return &v1.StorageClass{
@@ -81,12 +87,14 @@ func (c *Client) MakeStorageClass(name string, provisioner string) *v1.StorageCl
 
 }
 
+// DuplicateStorageClass creates a copy of storage class
 func (c *Client) DuplicateStorageClass(name string, sourceSc *v1.StorageClass) *v1.StorageClass {
 	newSc := sourceSc.DeepCopy()
 	newSc.ObjectMeta = metav1.ObjectMeta{Name: name}
 	return newSc
 }
 
+// HasError checks whether storage class has error
 func (sc *StorageClass) HasError() bool {
 	if sc.error != nil {
 		return true
@@ -94,6 +102,7 @@ func (sc *StorageClass) HasError() bool {
 	return false
 }
 
+// GetError returns storage class error
 func (sc *StorageClass) GetError() error {
 	return sc.error
 }

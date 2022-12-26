@@ -3,14 +3,16 @@ package cmd
 import (
 	"cert-csi/pkg/store"
 	"fmt"
-	"github.com/fatih/color"
-	"github.com/urfave/cli"
 	"os"
 	"strings"
 	"text/tabwriter"
 	"time"
+
+	"github.com/fatih/color"
+	"github.com/urfave/cli"
 )
 
+// GetListCommand returns list CLI command
 func GetListCommand() cli.Command {
 
 	listCmd := cli.Command{

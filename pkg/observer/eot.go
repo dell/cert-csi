@@ -5,12 +5,13 @@ import (
 	"cert-csi/pkg/k8sclient/resources/pvc"
 	"cert-csi/pkg/store"
 	"context"
+	"sync"
+	"time"
+
 	log "github.com/sirupsen/logrus"
 	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/wait"
-	"sync"
-	"time"
 )
 
 const (
@@ -21,6 +22,7 @@ const (
 	EntityNumberTimeout = 1800 * time.Second
 )
 
+// EntityNumberObserver is used to manage entity numbers
 type EntityNumberObserver struct {
 	finished chan bool
 
@@ -28,18 +30,21 @@ type EntityNumberObserver struct {
 	mutex       sync.Mutex
 }
 
+// Interrupt interrupts an entity number observer
 func (eno *EntityNumberObserver) Interrupt() {
 	eno.mutex.Lock()
 	defer eno.mutex.Unlock()
 	eno.interrupted = true
 }
 
+// Interrupted checks whether entity number observer is interrupted
 func (eno *EntityNumberObserver) Interrupted() bool {
 	eno.mutex.Lock()
 	defer eno.mutex.Unlock()
 	return eno.interrupted
 }
 
+// StartWatching watches all entities - pods and pvcs
 func (eno *EntityNumberObserver) StartWatching(ctx context.Context, runner *Runner) {
 	defer runner.WaitGroup.Done()
 
@@ -147,16 +152,19 @@ func (eno *EntityNumberObserver) checkPods(
 	return false, nil
 }
 
+// StopWatching terminates watching entities
 func (eno *EntityNumberObserver) StopWatching() {
 	if !eno.Interrupted() {
 		eno.finished <- true
 	}
 }
 
+// GetName returns entity number observer name
 func (eno *EntityNumberObserver) GetName() string {
 	return "ContainerMetricsObserver"
 }
 
+// MakeChannel makes a new channel
 func (eno *EntityNumberObserver) MakeChannel() {
 	eno.finished = make(chan bool)
 }

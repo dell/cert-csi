@@ -5,17 +5,20 @@ import (
 	kubepod "cert-csi/pkg/k8sclient/resources/pod"
 	"cert-csi/pkg/store"
 	"context"
+	"strings"
+	"time"
+
 	log "github.com/sirupsen/logrus"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/wait"
-	"strings"
-	"time"
 )
 
+// PodListObserver is used to manage Pod list observer
 type PodListObserver struct {
 	finished chan bool
 }
 
+// StartWatching watches pods
 func (po *PodListObserver) StartWatching(ctx context.Context, runner *Runner) {
 	defer runner.WaitGroup.Done()
 
@@ -62,9 +65,9 @@ func (po *PodListObserver) StartWatching(ctx context.Context, runner *Runner) {
 			if !addedPods[pod.Name] {
 				entity := &store.Entity{
 					Name:   pod.Name,
-					K8sUid: string(pod.UID),
+					K8sUID: string(pod.UID),
 					TcID:   runner.TestCase.ID,
-					Type:   store.POD,
+					Type:   store.Pod,
 				}
 				err = runner.Database.SaveEntities([]*store.Entity{entity})
 				if err != nil {
@@ -79,7 +82,7 @@ func (po *PodListObserver) StartWatching(ctx context.Context, runner *Runner) {
 					Name:      "event-pod-added-" + k8sclient.RandomSuffix(),
 					TcID:      runner.TestCase.ID,
 					EntityID:  entity.ID,
-					Type:      store.POD_ADDED,
+					Type:      store.PodAdded,
 					Timestamp: time.Now(),
 				})
 				addedPods[pod.Name] = true
@@ -94,7 +97,7 @@ func (po *PodListObserver) StartWatching(ctx context.Context, runner *Runner) {
 					Name:      "event-pod-modified-" + k8sclient.RandomSuffix(),
 					TcID:      runner.TestCase.ID,
 					EntityID:  entities[pod.Name].ID,
-					Type:      store.POD_READY,
+					Type:      store.PodReady,
 					Timestamp: time.Now(),
 				})
 				continue
@@ -107,7 +110,7 @@ func (po *PodListObserver) StartWatching(ctx context.Context, runner *Runner) {
 					Name:      "event-pod-modified-" + k8sclient.RandomSuffix(),
 					TcID:      runner.TestCase.ID,
 					EntityID:  entities[pod.Name].ID,
-					Type:      store.POD_TERMINATING,
+					Type:      store.PodTerminating,
 					Timestamp: time.Now(),
 				})
 				continue
@@ -121,7 +124,7 @@ func (po *PodListObserver) StartWatching(ctx context.Context, runner *Runner) {
 					Name:      "event-pod-deleted-" + k8sclient.RandomSuffix(),
 					TcID:      runner.TestCase.ID,
 					EntityID:  entities[name].ID,
-					Type:      store.POD_DELETED,
+					Type:      store.PodDeleted,
 					Timestamp: time.Now(),
 				})
 				delete(previousState, name)
@@ -141,14 +144,17 @@ func (po *PodListObserver) StartWatching(ctx context.Context, runner *Runner) {
 	}
 }
 
+// StopWatching stops watching pods
 func (po *PodListObserver) StopWatching() {
 	po.finished <- true
 }
 
+// GetName returns name of Pod list observer
 func (po *PodListObserver) GetName() string {
 	return "Pod Observer"
 }
 
+// MakeChannel creates a new channel
 func (po *PodListObserver) MakeChannel() {
 	po.finished = make(chan bool)
 }

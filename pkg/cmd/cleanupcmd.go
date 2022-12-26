@@ -5,14 +5,16 @@ import (
 	"cert-csi/pkg/k8sclient"
 	"context"
 	"fmt"
-	log "github.com/sirupsen/logrus"
-	"github.com/urfave/cli"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"os"
 	"strings"
 	"time"
+
+	log "github.com/sirupsen/logrus"
+	"github.com/urfave/cli"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
+// GetCleanupCommand returns cleanup CLI command
 func GetCleanupCommand() cli.Command {
 	globalFlags := []cli.Flag{
 		cli.StringFlag{
