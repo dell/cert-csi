@@ -27,6 +27,7 @@ type Client struct {
 	CustomTimeout time.Duration
 }
 
+// WaitUntilNoneLeft waits for all volume attachments to be deleted in a namespace
 func (c *Client) WaitUntilNoneLeft(ctx context.Context) error {
 	log.Infof("Waiting until no Volume Attachments left in %s", c.Namespace)
 	timeout := Timeout
@@ -58,6 +59,7 @@ func (c *Client) WaitUntilNoneLeft(ctx context.Context) error {
 	return nil
 }
 
+// WaitUntilVaGone waits until volume attachments for a PV are deleted
 func (c *Client) WaitUntilVaGone(ctx context.Context, pvName string) error {
 	log.Infof("Waiting until no Volume Attachments with PV %s left", pvName)
 	timeout := Timeout

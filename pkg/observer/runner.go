@@ -5,12 +5,14 @@ import (
 	"cert-csi/pkg/store"
 	"context"
 	"fmt"
-	"github.com/sirupsen/logrus"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"sync"
 	"time"
+
+	"github.com/sirupsen/logrus"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
+// Type represents LIST or EVENT
 type Type string
 
 const (
@@ -19,10 +21,13 @@ const (
 	// WatchTimeout to override timeout set in kubeapi-server settings, Default: 24 hours
 	WatchTimeout int64 = 60 * 60 * 24
 
-	LIST  Type = "LIST"
+	// LIST Type
+	LIST Type = "LIST"
+	// EVENT Type
 	EVENT Type = "EVENT"
 )
 
+// Runner contains configuration to run the testcases
 type Runner struct {
 	WaitGroup       sync.WaitGroup
 	Observers       []Interface
@@ -34,6 +39,7 @@ type Runner struct {
 	ShouldClean     bool
 }
 
+// NewObserverRunner returns a Runner instance
 func NewObserverRunner(observers []Interface, clients *k8sclient.Clients,
 	db store.Store, testCase *store.TestCase, driverNs string, shouldClean bool) *Runner {
 	return &Runner{
@@ -46,6 +52,7 @@ func NewObserverRunner(observers []Interface, clients *k8sclient.Clients,
 	}
 }
 
+// Start starts watching all the runners
 func (runner *Runner) Start(ctx context.Context) error {
 	for _, obs := range runner.Observers {
 		runner.WaitGroup.Add(1)
@@ -55,6 +62,7 @@ func (runner *Runner) Start(ctx context.Context) error {
 	return nil
 }
 
+// Stop stops watching all the runners and deletes PVCs
 func (runner *Runner) Stop() error {
 	for _, obs := range runner.Observers {
 		obs.StopWatching()
@@ -117,6 +125,7 @@ func (runner *Runner) waitTimeout(timeout time.Duration) bool {
 	}
 }
 
+// Interface contains common function definitions
 type Interface interface {
 	StartWatching(context.Context, *Runner)
 	StopWatching()

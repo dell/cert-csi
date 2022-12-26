@@ -17,6 +17,7 @@ import (
 	log "github.com/sirupsen/logrus"
 )
 
+// FunctionalSuiteRunner contains configuration for running functional test suite
 type FunctionalSuiteRunner struct {
 	*Runner
 	noreport bool
@@ -55,6 +56,7 @@ func NewFunctionalSuiteRunner(configPath, namespace string, timeout int, noClean
 	}
 }
 
+// RunFunctionalSuites runs functional test suites
 func (sr *FunctionalSuiteRunner) RunFunctionalSuites(suites []suites.Interface) {
 	sr.SucceededSuites = 0.0
 	defer sr.Close()
@@ -129,7 +131,7 @@ func runFunctionalSuite(suite suites.Interface, sr *FunctionalSuiteRunner, testC
 
 	sr.runNum++
 
-	c := make(chan os.Signal)
+	c := make(chan os.Signal, 1)
 
 	signal.Notify(c, os.Interrupt,
 		syscall.SIGTERM, // "the normal way to politely ask a program to terminate"
@@ -199,7 +201,7 @@ func runFunctionalSuite(suite suites.Interface, sr *FunctionalSuiteRunner, testC
 
 	// Run the current suite
 	runTime := time.Now()
-	if err, _ := suite.Run(iterCtx, storageClass, clients); err != nil {
+	if _, err := suite.Run(iterCtx, storageClass, clients); err != nil {
 		sr.runTime += time.Since(runTime)
 		log.Errorf("Suite %s failed; error=%v", suite.GetName(), err)
 		return FAILURE
@@ -209,14 +211,17 @@ func runFunctionalSuite(suite suites.Interface, sr *FunctionalSuiteRunner, testC
 	return SUCCESS
 }
 
+// IsStopped returns true if test suite run has stopped
 func (sr *FunctionalSuiteRunner) IsStopped() bool {
 	return sr.stop
 }
 
+// Stop stops test suite run
 func (sr *FunctionalSuiteRunner) Stop() {
 	sr.stop = true
 }
 
+// Close logs the status of test suite run
 func (sr *FunctionalSuiteRunner) Close() {
 	if sr.SucceededSuites > Threshold {
 		log.Infof("During this run %.1f%% of suites succeeded", sr.SucceededSuites*100)
@@ -224,10 +229,13 @@ func (sr *FunctionalSuiteRunner) Close() {
 		log.Fatalf("During this run %.1f%% of suites succeeded", sr.SucceededSuites*100)
 	}
 }
+
+// NoCleaning sets noCleaning flag to true
 func (sr *FunctionalSuiteRunner) NoCleaning() {
 	sr.noCleaning = true
 }
 
+// ShouldClean calls common clean function
 func (sr *FunctionalSuiteRunner) ShouldClean(suiteRes TestResult) (res bool) {
 	// calling common clean function
 	res = shouldClean(sr.NoCleanupOnFail, suiteRes, sr.noCleaning)

@@ -4,15 +4,17 @@ import (
 	"bufio"
 	"cert-csi/pkg/collector"
 	"errors"
-	log "github.com/sirupsen/logrus"
 	"html/template"
 	"io"
 	"os"
 	"path/filepath"
 	"strings"
 	"time"
+
+	log "github.com/sirupsen/logrus"
 )
 
+// TabularReporter is used to create and manage report in a tabular form
 type TabularReporter struct{}
 
 var arrayConfig map[string]string
@@ -20,6 +22,7 @@ var passedCount int
 var failedCount int
 var skippedCount int
 
+// MultiGenerate generates reports for multiple metrics collections
 func (tr *TabularReporter) MultiGenerate(mcs []*collector.MetricsCollection) error {
 	var fm = template.FuncMap{
 		"formatName":           formatName,
@@ -72,6 +75,7 @@ func (tr *TabularReporter) MultiGenerate(mcs []*collector.MetricsCollection) err
 	return nil
 }
 
+// Generate generates report for a metrics collection
 func (tr *TabularReporter) Generate(runName string, mc *collector.MetricsCollection) error {
 	fm := template.FuncMap{
 		"formatName":           formatName,

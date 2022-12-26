@@ -17,10 +17,13 @@ import (
 	log "github.com/sirupsen/logrus"
 )
 
+// ReportType represent types of report to be generated
 type ReportType string
 
 const (
-	HtmlReport ReportType = "HTML"
+	// HTMLReport represents HTML report
+	HTMLReport ReportType = "HTML"
+	// TextReport represents Text report
 	TextReport ReportType = "TEXT"
 )
 
@@ -28,29 +31,34 @@ const (
 var embedFS embed.FS
 
 var (
+	// PathReport represent path of the report file
 	PathReport string
 )
 
+// Reporter is an interface for generating reports
 type Reporter interface {
 	Generate(runName string, mc *collector.MetricsCollection) error
 }
 
+// MultiReporter is an interface for generating multiple type of reports
 type MultiReporter interface {
 	MultiGenerate(mc []*collector.MetricsCollection) error
 }
 
+// GenerateAllReports generates reports of types HTML and Text
 func GenerateAllReports(testRunNames []string, db store.Store) error {
 	reportTypes := []ReportType{
-		HtmlReport,
+		HTMLReport,
 		TextReport,
 	}
 	return GenerateReports(testRunNames, reportTypes, db)
 }
 
+// GenerateReportsFromMultipleDBs generates reports from multiple DBs
 func GenerateReportsFromMultipleDBs(reportTypes []ReportType, scDBs []*store.StorageClassDB) error {
 	funcMap := map[ReportType]MultiReporter{
 		TabularReport: &TabularReporter{},
-		XmlReport:     &XmlReporter{},
+		XMLReport:     &XMLReporter{},
 	}
 
 	log.Infof("Started generating reports...")
@@ -74,10 +82,11 @@ func GenerateReportsFromMultipleDBs(reportTypes []ReportType, scDBs []*store.Sto
 	return nil
 }
 
+// GenerateReports generates reports of type HTML and Text
 func GenerateReports(testRunNames []string, reportTypes []ReportType, db store.Store) error {
 	mc := collector.NewMetricsCollector(db)
 	funcMap := map[ReportType]Reporter{
-		HtmlReport: &HtmlReporter{},
+		HTMLReport: &HTMLReporter{},
 		TextReport: &TextReporter{},
 	}
 	log.Infof("Started generating reports...")
@@ -147,17 +156,20 @@ func generatePlots(runName string, mc *collector.MetricsCollection) {
 	}
 }
 
+// PlotPath holds report name and path
 type PlotPath struct {
 	Path       string
 	ReportName string
 }
 
+// Txt formats the Text report path
 func (pp *PlotPath) Txt() string {
 	absolutePath := filepath.Join(PathReport, pp.Path)
 	return strings.ReplaceAll(absolutePath, "\\", "/")
 }
 
-func (pp *PlotPath) Html() template.URL {
+// HTML formats HTML report path
+func (pp *PlotPath) HTML() template.URL {
 	return template.URL(strings.ReplaceAll(pp.Path, "\\", "/")) // #nosec G203
 }
 
