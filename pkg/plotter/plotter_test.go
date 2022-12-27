@@ -3,13 +3,14 @@ package plotter
 import (
 	"cert-csi/pkg/collector"
 	"cert-csi/pkg/store"
-	log "github.com/sirupsen/logrus"
-	"github.com/stretchr/testify/suite"
-	"gonum.org/v1/plot"
 	"os"
 	"path/filepath"
 	"testing"
 	"time"
+
+	log "github.com/sirupsen/logrus"
+	"github.com/stretchr/testify/suite"
+	"gonum.org/v1/plot"
 )
 
 type PlotterTestSuite struct {
@@ -38,7 +39,7 @@ func (suite *PlotterTestSuite) SetupSuite() {
 			PVC: store.Entity{
 				ID:     0,
 				Name:   "vol-create-test-kcndz",
-				K8sUid: "d963e450-d2fe-11e9-aa3f-00505691f0f5",
+				K8sUID: "d963e450-d2fe-11e9-aa3f-00505691f0f5",
 				TcID:   0,
 				Type:   "PVC",
 			},
@@ -50,7 +51,7 @@ func (suite *PlotterTestSuite) SetupSuite() {
 			PVC: store.Entity{
 				ID:     1,
 				Name:   "vol-create-test-5l7rq",
-				K8sUid: "5e23cc92-d2ff-11e9-aa3f-00505691f0f5",
+				K8sUID: "5e23cc92-d2ff-11e9-aa3f-00505691f0f5",
 				TcID:   0,
 				Type:   "PVC",
 			},
@@ -62,7 +63,7 @@ func (suite *PlotterTestSuite) SetupSuite() {
 			PVC: store.Entity{
 				ID:     2,
 				Name:   "vol-create-test-cj2h7",
-				K8sUid: "5e3e4e0a-d2ff-11e9-aa3f-00505691f0f5",
+				K8sUID: "5e3e4e0a-d2ff-11e9-aa3f-00505691f0f5",
 				TcID:   0,
 				Type:   "PVC",
 			},
@@ -74,7 +75,7 @@ func (suite *PlotterTestSuite) SetupSuite() {
 			PVC: store.Entity{
 				ID:     3,
 				Name:   "vol-create-test-xj6mk",
-				K8sUid: "a7e9911b-d30b-11e9-aa3f-00505691f0f5",
+				K8sUID: "a7e9911b-d30b-11e9-aa3f-00505691f0f5",
 				TcID:   0,
 				Type:   "PVC",
 			},
@@ -86,7 +87,7 @@ func (suite *PlotterTestSuite) SetupSuite() {
 			PVC: store.Entity{
 				ID:     4,
 				Name:   "vol-create-test-zm6wm",
-				K8sUid: "a8041a6e-d30b-11e9-aa3f-00505691f0f5",
+				K8sUID: "a8041a6e-d30b-11e9-aa3f-00505691f0f5",
 				TcID:   0,
 				Type:   "PVC",
 			},
@@ -273,7 +274,7 @@ func (suite *PlotterTestSuite) TestPlotStageMetricHistogram() {
 							PVC: store.Entity{
 								ID:     0,
 								Name:   "vol-create-test-kcndz",
-								K8sUid: "d963e450-d2fe-11e9-aa3f-00505691f0f5",
+								K8sUID: "d963e450-d2fe-11e9-aa3f-00505691f0f5",
 								TcID:   1,
 								Type:   "PVC",
 							},
@@ -319,7 +320,7 @@ func (suite *PlotterTestSuite) TestPlotStageMetricHistogram() {
 							Pod: store.Entity{
 								ID:     0,
 								Name:   "pod-prov-test-vvvhz",
-								K8sUid: "d9996470-d2fe-11e9-aa3f-00505691f0f5",
+								K8sUID: "d9996470-d2fe-11e9-aa3f-00505691f0f5",
 								TcID:   2,
 								Type:   "POD",
 							},
@@ -333,7 +334,7 @@ func (suite *PlotterTestSuite) TestPlotStageMetricHistogram() {
 							PVC: store.Entity{
 								ID:     1,
 								Name:   "vol-create-test-kcndz",
-								K8sUid: "d963e450-d2fe-11e9-aa3f-00505691f0f5",
+								K8sUID: "d963e450-d2fe-11e9-aa3f-00505691f0f5",
 								TcID:   2,
 								Type:   "PVC",
 							},
@@ -456,7 +457,7 @@ func (suite *PlotterTestSuite) TestPlotStageBoxPlot() {
 							Pod: store.Entity{
 								ID:     0,
 								Name:   "pod-prov-test-vvvhz",
-								K8sUid: "d9996470-d2fe-11e9-aa3f-00505691f0f5",
+								K8sUID: "d9996470-d2fe-11e9-aa3f-00505691f0f5",
 								TcID:   2,
 								Type:   "POD",
 							},
@@ -470,7 +471,7 @@ func (suite *PlotterTestSuite) TestPlotStageBoxPlot() {
 							PVC: store.Entity{
 								ID:     1,
 								Name:   "vol-create-test-kcndz",
-								K8sUid: "d963e450-d2fe-11e9-aa3f-00505691f0f5",
+								K8sUID: "d963e450-d2fe-11e9-aa3f-00505691f0f5",
 								TcID:   2,
 								Type:   "PVC",
 							},
@@ -863,7 +864,7 @@ func (suite *PlotterTestSuite) TestPlotResourceUsageOverTime() {
 								Timestamp:     suite.startTime,
 								PodName:       "csi-powerstore-controller-0",
 								ContainerName: "attacher",
-								Cpu:           2,
+								CPU:           2,
 								Mem:           4,
 							},
 							{
@@ -872,7 +873,7 @@ func (suite *PlotterTestSuite) TestPlotResourceUsageOverTime() {
 								Timestamp:     suite.startTime.Add(1),
 								PodName:       "csi-powerstore-controller-0",
 								ContainerName: "attacher",
-								Cpu:           20,
+								CPU:           20,
 								Mem:           45,
 							},
 							{
@@ -881,7 +882,7 @@ func (suite *PlotterTestSuite) TestPlotResourceUsageOverTime() {
 								Timestamp:     suite.startTime.Add(1),
 								PodName:       "csi-powerstore-controller-0",
 								ContainerName: "attacher",
-								Cpu:           3,
+								CPU:           3,
 								Mem:           35,
 							},
 							{
@@ -890,7 +891,7 @@ func (suite *PlotterTestSuite) TestPlotResourceUsageOverTime() {
 								Timestamp:     suite.startTime.Add(2),
 								PodName:       "csi-powerstore-controller-0",
 								ContainerName: "attacher",
-								Cpu:           10,
+								CPU:           10,
 								Mem:           27,
 							},
 						},

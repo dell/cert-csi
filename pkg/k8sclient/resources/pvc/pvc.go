@@ -8,13 +8,14 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"github.com/fatih/color"
 	"io/ioutil"
-	apierrs "k8s.io/apimachinery/pkg/api/errors"
-	"k8s.io/client-go/kubernetes"
 	"path/filepath"
 	"strings"
 	"time"
+
+	"github.com/fatih/color"
+	apierrs "k8s.io/apimachinery/pkg/api/errors"
+	"k8s.io/client-go/kubernetes"
 
 	"github.com/sirupsen/logrus"
 	v1 "k8s.io/api/core/v1"
@@ -431,13 +432,14 @@ func (c *Client) CreatePVCObject(ctx context.Context, remotePVObject *v1.Persist
 	return pvcObject
 }
 
-func (pvcc *PersistentVolumeClaim) WaitToBeBound(ctx context.Context) error {
+// WaitToBeBound waits until PVC is Bound
+func (pvc *PersistentVolumeClaim) WaitToBeBound(ctx context.Context) error {
 	log := utils.GetLoggerFromContext(ctx)
-	log.Debugf("Waiting for  PVC %s to be %s", pvcc.Object.Name, color.GreenString("BOUND"))
+	log.Debugf("Waiting for  PVC %s to be %s", pvc.Object.Name, color.GreenString("BOUND"))
 	startTime := time.Now()
 	timeout := Timeout
-	if pvcc.Client.Timeout != 0 {
-		timeout = time.Duration(pvcc.Client.Timeout) * time.Second
+	if pvc.Client.Timeout != 0 {
+		timeout = time.Duration(pvc.Client.Timeout) * time.Second
 	}
 	pollErr := wait.PollImmediate(Poll, timeout,
 		func() (bool, error) {
@@ -449,8 +451,8 @@ func (pvcc *PersistentVolumeClaim) WaitToBeBound(ctx context.Context) error {
 				break
 			}
 
-			if pvcc.Object.Status.Phase != v1.ClaimBound {
-				log.Debugf("PVC %s is still not bound", pvcc.Object.Name)
+			if pvc.Object.Status.Phase != v1.ClaimBound {
+				log.Debugf("PVC %s is still not bound", pvc.Object.Name)
 				return false, nil
 			}
 
@@ -461,7 +463,7 @@ func (pvcc *PersistentVolumeClaim) WaitToBeBound(ctx context.Context) error {
 	}
 
 	yellow := color.New(color.FgHiYellow)
-	log.Debugf("All PVCs in %s are bound in %s", pvcc.Object.Namespace, yellow.Sprint(time.Since(startTime)))
+	log.Debugf("All PVCs in %s are bound in %s", pvc.Object.Namespace, yellow.Sprint(time.Since(startTime)))
 	return nil
 }
 
@@ -552,6 +554,7 @@ func (pvc *PersistentVolumeClaim) WaitUntilGone(ctx context.Context) error {
 
 }
 
+// Sync waits until PVC is deleted or bound
 func (pvc *PersistentVolumeClaim) Sync(ctx context.Context) *PersistentVolumeClaim {
 	if pvc.Deleted {
 		pvc.error = pvc.WaitUntilGone(ctx)
@@ -561,6 +564,7 @@ func (pvc *PersistentVolumeClaim) Sync(ctx context.Context) *PersistentVolumeCla
 	return pvc
 }
 
+// HasError checks if PVC contains error
 func (pvc *PersistentVolumeClaim) HasError() bool {
 	if pvc.error != nil {
 		return true
@@ -568,6 +572,7 @@ func (pvc *PersistentVolumeClaim) HasError() bool {
 	return false
 }
 
+// GetError returns PVC error
 func (pvc *PersistentVolumeClaim) GetError() error {
 	return pvc.error
 }

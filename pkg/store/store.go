@@ -1,10 +1,13 @@
 package store
 
 import (
-	_ "github.com/mattn/go-sqlite3"
 	"time"
+
+	// go-sqlite3 import
+	_ "github.com/mattn/go-sqlite3"
 )
 
+// Conditions interface
 type Conditions map[string]interface{}
 
 // Store is a generic interface for stores

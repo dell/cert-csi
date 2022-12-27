@@ -7,9 +7,11 @@ import (
 
 const htmlNameTemplate = "template.html"
 
-type HtmlReporter struct{}
+// HTMLReporter is used to create and manage HTML report
+type HTMLReporter struct{}
 
-func (hr *HtmlReporter) Generate(runName string, mc *collector.MetricsCollection) error {
+// Generate generates a HTML report
+func (hr *HTMLReporter) Generate(runName string, mc *collector.MetricsCollection) error {
 	var fm = template.FuncMap{
 		"formatName":                      formatName,
 		"inc":                             inc,
@@ -52,14 +54,14 @@ func (hr *HtmlReporter) Generate(runName string, mc *collector.MetricsCollection
 	return nil
 }
 
-func (hr *HtmlReporter) getResultStatus(result bool) string {
+func (hr *HTMLReporter) getResultStatus(result bool) string {
 	if result {
 		return "SUCCESS"
 	}
 	return "FAILURE"
 }
 
-func (hr *HtmlReporter) getColorResultStatus(result bool) string {
+func (hr *HTMLReporter) getColorResultStatus(result bool) string {
 	if result {
 		return "green"
 	}

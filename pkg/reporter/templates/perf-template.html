@@ -44,7 +44,7 @@
                     {{range $idx, $path := getMinMaxEntityOverTimePaths $.Run.Name}}
                         <tr>
                             <td>
-                                <img src="{{.Html}}" alt="Entity over time plot">
+                                <img src="{{.HTML}}" alt="Entity over time plot">
                             </td>
                         </tr>
                     {{end}}
@@ -61,7 +61,7 @@
                         {{range $idx, $path := $resUsage}}
                             <tr>
                                 <td>
-                                    <img src="{{.Html}}" alt="Resource over time plot">
+                                    <img src="{{.HTML}}" alt="Resource over time plot">
                                 </td>
                             </tr>
                         {{end}}
@@ -81,7 +81,7 @@
                         {{range $idx, $path := $avgTime}}
                             <tr>
                                 <td>
-                                    <img src="{{.Html}}" alt="Avg time over iterations plot">
+                                    <img src="{{.HTML}}" alt="Avg time over iterations plot">
                                 </td>
                             </tr>
                         {{end}}
@@ -100,7 +100,7 @@
                     <table>
                         <tr>
                             <td>
-                                <img src="{{.Html}}" alt="Iteration times">
+                                <img src="{{.HTML}}" alt="Iteration times">
                             </td>
                         </tr>
                     </table>
@@ -160,13 +160,13 @@
                                         <tr>
                                             <td>Histogram:</td>
                                             <td>
-                                                <img src="{{with getPlotStageMetricHistogramPath $tcMetrics $stage $.Run.Name}}{{.Html}}{{end}}"
+                                                <img src="{{with getPlotStageMetricHistogramPath $tcMetrics $stage $.Run.Name}}{{.HTML}}{{end}}"
                                                      alt="Metrics histogram"></td>
                                         </tr>
                                         <tr>
                                             <td>BoxPlot:</td>
                                             <td>
-                                                <img src="{{with getPlotStageBoxPath $tcMetrics $stage $.Run.Name}}{{.Html}}{{end}}"
+                                                <img src="{{with getPlotStageBoxPath $tcMetrics $stage $.Run.Name}}{{.HTML}}{{end}}"
                                                      alt="Metrics Box Plot"></td>
                                         </tr>
                                     </table>
@@ -178,7 +178,7 @@
                         <table>
                             <tr>
                                 <td>EntityNumberOverTime:</td>
-                                <td><img src="{{with getPlotEntityOverTimePath $tcMetrics $.Run.Name}}{{.Html}}{{end}}"
+                                <td><img src="{{with getPlotEntityOverTimePath $tcMetrics $.Run.Name}}{{.HTML}}{{end}}"
                                          alt="Entity over time plot"></td>
                             </tr>
                         </table>

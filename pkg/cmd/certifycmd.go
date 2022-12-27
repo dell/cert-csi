@@ -17,10 +17,12 @@ import (
 	"k8s.io/apimachinery/pkg/api/resource"
 )
 
+// CertConfig contains StorageClasses
 type CertConfig struct {
 	StorageClasses []Entry
 }
 
+// Entry contains tests to be executed
 type Entry struct {
 	Name             string
 	MinSize          string
@@ -36,6 +38,7 @@ type Entry struct {
 	CapacityTracking *CapacityTracking
 }
 
+// CapacityTracking contains parameters specific to Storage Capacity Tracking tests
 type CapacityTracking struct {
 	DriverNamespace string
 	StorageClass    string
@@ -43,12 +46,14 @@ type CapacityTracking struct {
 	PollInterval    time.Duration
 }
 
+// EphemeralParams contains parameters specific to Ephemeral Volume tests
 type EphemeralParams struct {
 	Driver           string
 	FSType           string
 	VolumeAttributes map[string]string
 }
 
+// GetCertifyCommand returns certify CLI command
 func GetCertifyCommand() cli.Command {
 	certCmd := cli.Command{
 		Name:     "certify",
@@ -150,13 +155,13 @@ func GetCertifyCommand() cli.Command {
 			viper.SetConfigFile(c.String("cert-config"))
 			err := viper.ReadInConfig() // Find and read the config file
 			if err != nil {             // Handle errors reading the config file
-				return fmt.Errorf("can't find config file: %w \n", err)
+				return fmt.Errorf("can't find config file: %w", err)
 			}
 
 			var certConfig CertConfig
 			err = viper.Unmarshal(&certConfig)
 			if err != nil {
-				return fmt.Errorf("unable to decode Config: %s \n", err)
+				return fmt.Errorf("unable to decode Config: %s", err)
 			}
 
 			// Parse timeout

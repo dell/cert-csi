@@ -3,16 +3,19 @@ package reporter
 import (
 	"cert-csi/pkg/collector"
 	"fmt"
-	"github.com/fatih/color"
-	log "github.com/sirupsen/logrus"
 	"os"
 	"text/template"
+
+	"github.com/fatih/color"
+	log "github.com/sirupsen/logrus"
 )
 
 const txtNameTemplate = "template.txt"
 
+// TextReporter is used to create and manage Text report
 type TextReporter struct{}
 
+// Generate text report for metrics collection
 func (tr *TextReporter) Generate(runName string, mc *collector.MetricsCollection) error {
 	fm := template.FuncMap{
 		"formatName":                      formatName,

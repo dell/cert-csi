@@ -4,18 +4,21 @@ import (
 	"cert-csi/pkg/k8sclient"
 	"cert-csi/pkg/store"
 	"context"
+	"strings"
+	"time"
+
 	log "github.com/sirupsen/logrus"
 	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/wait"
-	"strings"
-	"time"
 )
 
+// PvcListObserver is used to manage PVC list observer
 type PvcListObserver struct {
 	finished chan bool
 }
 
+// StartWatching starts watching a list of PVCs
 func (obs *PvcListObserver) StartWatching(ctx context.Context, runner *Runner) {
 	defer runner.WaitGroup.Done()
 
@@ -63,9 +66,9 @@ func (obs *PvcListObserver) StartWatching(ctx context.Context, runner *Runner) {
 			if !addedPVCs[pvc.Name] {
 				entity := &store.Entity{
 					Name:   pvc.Name,
-					K8sUid: string(pvc.UID),
+					K8sUID: string(pvc.UID),
 					TcID:   runner.TestCase.ID,
-					Type:   store.PVC,
+					Type:   store.Pvc,
 				}
 				err = runner.Database.SaveEntities([]*store.Entity{entity})
 				if err != nil {
@@ -80,7 +83,7 @@ func (obs *PvcListObserver) StartWatching(ctx context.Context, runner *Runner) {
 					Name:      "event-pvc-added-" + k8sclient.RandomSuffix(),
 					TcID:      runner.TestCase.ID,
 					EntityID:  entity.ID,
-					Type:      store.PVC_ADDED,
+					Type:      store.PvcAdded,
 					Timestamp: time.Now(),
 				})
 				addedPVCs[pvc.Name] = true
@@ -95,7 +98,7 @@ func (obs *PvcListObserver) StartWatching(ctx context.Context, runner *Runner) {
 					Name:      "event-pvc-modified-" + k8sclient.RandomSuffix(),
 					TcID:      runner.TestCase.ID,
 					EntityID:  entities[pvc.Name].ID,
-					Type:      store.PVC_BOUND,
+					Type:      store.PvcBound,
 					Timestamp: time.Now(),
 				})
 
@@ -110,7 +113,7 @@ func (obs *PvcListObserver) StartWatching(ctx context.Context, runner *Runner) {
 					Name:      "event-pvc-modified-" + k8sclient.RandomSuffix(),
 					TcID:      runner.TestCase.ID,
 					EntityID:  entities[pvc.Name].ID,
-					Type:      store.PVC_DELETING_STARTED,
+					Type:      store.PvcDeletingStarted,
 					Timestamp: time.Now(),
 				})
 				continue
@@ -124,7 +127,7 @@ func (obs *PvcListObserver) StartWatching(ctx context.Context, runner *Runner) {
 					Name:      "event-pvc-deleted-" + k8sclient.RandomSuffix(),
 					TcID:      runner.TestCase.ID,
 					EntityID:  entities[name].ID,
-					Type:      store.PVC_DELETING_ENDED,
+					Type:      store.PvcDeletingEnded,
 					Timestamp: time.Now(),
 				})
 				delete(previousState, name)
@@ -144,14 +147,17 @@ func (obs *PvcListObserver) StartWatching(ctx context.Context, runner *Runner) {
 	}
 }
 
+// StopWatching stops watching a list of PVCs
 func (obs *PvcListObserver) StopWatching() {
 	obs.finished <- true
 }
 
+// GetName returns PVC list observer name
 func (*PvcListObserver) GetName() string {
 	return "PersistentVolumeClaimObserver"
 }
 
+// MakeChannel creates a new channel
 func (obs *PvcListObserver) MakeChannel() {
 	obs.finished = make(chan bool)
 }

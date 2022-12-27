@@ -4,6 +4,9 @@ import (
 	"cert-csi/pkg/utils"
 	"context"
 	"fmt"
+	"strings"
+	"time"
+
 	replalpha "github.com/dell/csm-replication/api/v1alpha1"
 	"github.com/fatih/color"
 	"github.com/sirupsen/logrus"
@@ -11,8 +14,6 @@ import (
 	"k8s.io/apimachinery/pkg/util/wait"
 	"k8s.io/client-go/kubernetes"
 	runtimeclient "sigs.k8s.io/controller-runtime/pkg/client"
-	"strings"
-	"time"
 )
 
 const (
@@ -27,6 +28,7 @@ type Client struct {
 	Timeout   int
 }
 
+// RG represents replication group
 type RG struct {
 	Client  *Client
 	Object  *replalpha.DellCSIReplicationGroup
@@ -36,6 +38,7 @@ type RG struct {
 	error error
 }
 
+// Delete deletes replication group
 func (c *Client) Delete(ctx context.Context, rg *replalpha.DellCSIReplicationGroup) *RG {
 	var funcErr error
 
@@ -52,6 +55,7 @@ func (c *Client) Delete(ctx context.Context, rg *replalpha.DellCSIReplicationGro
 	}
 }
 
+// Get returns a replication group object
 func (c *Client) Get(ctx context.Context, name string) *RG {
 	var funcErr error
 
@@ -71,10 +75,12 @@ func (c *Client) Get(ctx context.Context, name string) *RG {
 	}
 }
 
+// Name returns replication group name
 func (rg *RG) Name() string {
 	return rg.Object.Name
 }
 
+// ExecuteAction executes replication group specific action
 func (rg *RG) ExecuteAction(ctx context.Context, rgAction string) error {
 	var funcErr error
 	log := utils.GetLoggerFromContext(ctx)
@@ -140,6 +146,7 @@ func (rg *RG) ExecuteAction(ctx context.Context, rgAction string) error {
 	return nil
 }
 
+// HasError checks if replication group contains an error
 func (rg *RG) HasError() bool {
 	if rg.error != nil {
 		return true
@@ -147,6 +154,7 @@ func (rg *RG) HasError() bool {
 	return false
 }
 
+// GetError returns replication group error
 func (rg *RG) GetError() error {
 	return rg.error
 }

@@ -3,12 +3,15 @@ package store
 import (
 	"database/sql"
 	"fmt"
-	_ "github.com/mattn/go-sqlite3"
-	"github.com/sirupsen/logrus"
 	"strings"
 	"time"
+
+	// go-sqlite3 import
+	_ "github.com/mattn/go-sqlite3"
+	"github.com/sirupsen/logrus"
 )
 
+// StorageClassDB represents storage class db
 type StorageClassDB struct {
 	StorageClass string
 	DB           *SQLiteStore
@@ -148,6 +151,7 @@ func (ss *SQLiteStore) createTables() error {
 	return nil
 }
 
+// SaveTestRun saves test run result in db
 func (ss *SQLiteStore) SaveTestRun(tr *TestRun) error {
 	result, err := ss.db.Exec(`
 	INSERT INTO test_runs(
@@ -163,8 +167,9 @@ func (ss *SQLiteStore) SaveTestRun(tr *TestRun) error {
 	return nil
 }
 
+// GetTestRuns queries test run information from db
 func (ss *SQLiteStore) GetTestRuns(whereConditions Conditions, orderBy string, limit int) ([]TestRun, error) {
-	sqlStmt := ss.prepareSqlSelectStmt(whereConditions, orderBy, limit, "test_runs")
+	sqlStmt := ss.prepareSQLSelectStmt(whereConditions, orderBy, limit, "test_runs")
 	rows, err := ss.db.Query(sqlStmt)
 	if err != nil {
 		return nil, err
@@ -187,6 +192,7 @@ func (ss *SQLiteStore) GetTestRuns(whereConditions Conditions, orderBy string, l
 	return testRuns, nil
 }
 
+// SaveEvents saves events into db
 func (ss *SQLiteStore) SaveEvents(events []*Event) error {
 	sqlAddEvent := `
 	INSERT INTO events(
@@ -214,7 +220,7 @@ func (ss *SQLiteStore) SaveEvents(events []*Event) error {
 	return nil
 }
 
-func (ss *SQLiteStore) prepareSqlSelectStmt(
+func (ss *SQLiteStore) prepareSQLSelectStmt(
 	whereConditions Conditions,
 	orderBy string,
 	limit int,
@@ -250,8 +256,9 @@ func (ss *SQLiteStore) prepareSqlSelectStmt(
 	return b.String()
 }
 
+// GetEvents queries events from db
 func (ss *SQLiteStore) GetEvents(whereConditions Conditions, orderBy string, limit int) ([]Event, error) {
-	sqlStmt := ss.prepareSqlSelectStmt(whereConditions, orderBy, limit, "events")
+	sqlStmt := ss.prepareSQLSelectStmt(whereConditions, orderBy, limit, "events")
 	rows, err := ss.db.Query(sqlStmt)
 	if err != nil {
 		return nil, err
@@ -274,6 +281,8 @@ func (ss *SQLiteStore) GetEvents(whereConditions Conditions, orderBy string, lim
 	return events, nil
 }
 
+// GetEntitiesWithEventsByTestCaseAndEntityType queries entities with events and
+// returns the results sorted by testcase and entity
 func (ss *SQLiteStore) GetEntitiesWithEventsByTestCaseAndEntityType(
 	tc *TestCase,
 	eType EntityTypeEnum) (map[Entity][]Event, error) {
@@ -301,7 +310,7 @@ func (ss *SQLiteStore) GetEntitiesWithEventsByTestCaseAndEntityType(
 		en := Entity{}
 		ev := Event{}
 		if err = rows.Scan(
-			&en.ID, &en.Name, &en.K8sUid, &en.TcID, &en.Type,
+			&en.ID, &en.Name, &en.K8sUID, &en.TcID, &en.Type,
 			&ev.ID, &ev.Name, &ev.TcID, &ev.EntityID, &ev.Type, &ev.Timestamp); err == nil {
 			if events, ok := ewe[en]; ok {
 				ewe[en] = append(events, ev)
@@ -317,6 +326,7 @@ func (ss *SQLiteStore) GetEntitiesWithEventsByTestCaseAndEntityType(
 	return ewe, nil
 }
 
+// SaveTestCase saves testcases in db
 func (ss *SQLiteStore) SaveTestCase(ts *TestCase) error {
 	sqlStmt := `
 	INSERT INTO test_cases(name, parameters, start_timestamp, end_timestamp, success, error_msg, run_id)
@@ -338,8 +348,9 @@ func (ss *SQLiteStore) SaveTestCase(ts *TestCase) error {
 	return nil
 }
 
+// GetTestCases queries testcases from db
 func (ss *SQLiteStore) GetTestCases(whereConditions Conditions, orderBy string, limit int) ([]TestCase, error) {
-	sqlStmt := ss.prepareSqlSelectStmt(whereConditions, orderBy, limit, "test_cases")
+	sqlStmt := ss.prepareSQLSelectStmt(whereConditions, orderBy, limit, "test_cases")
 	rows, err := ss.db.Query(sqlStmt)
 	if err != nil {
 		return nil, err
@@ -372,6 +383,7 @@ func (ss *SQLiteStore) updateStatusTestCase(ts *TestCase) error {
 	return nil
 }
 
+// SuccessfulTestCase updates testcase status as success
 func (ss *SQLiteStore) SuccessfulTestCase(ts *TestCase, endTimestamp time.Time) error {
 	ts.Success = true
 	ts.EndTimestamp = endTimestamp
@@ -381,6 +393,7 @@ func (ss *SQLiteStore) SuccessfulTestCase(ts *TestCase, endTimestamp time.Time) 
 	return nil
 }
 
+// FailedTestCase updates testcase status as failure
 func (ss *SQLiteStore) FailedTestCase(ts *TestCase, endTimestamp time.Time, errMsg string) error {
 	ts.Success = false
 	ts.EndTimestamp = endTimestamp
@@ -391,6 +404,7 @@ func (ss *SQLiteStore) FailedTestCase(ts *TestCase, endTimestamp time.Time, errM
 	return nil
 }
 
+// SaveEntities saves entities in db
 func (ss *SQLiteStore) SaveEntities(entities []*Entity) error {
 	sqlAddEvent := `
 	INSERT INTO entities(name, k8s_uid, tc_id, type
@@ -405,7 +419,7 @@ func (ss *SQLiteStore) SaveEntities(entities []*Entity) error {
 	defer stmt.Close()
 
 	for _, e := range entities {
-		result, err := stmt.Exec(e.Name, e.K8sUid, e.TcID, e.Type)
+		result, err := stmt.Exec(e.Name, e.K8sUID, e.TcID, e.Type)
 		if err != nil {
 			return err
 		}
@@ -417,8 +431,9 @@ func (ss *SQLiteStore) SaveEntities(entities []*Entity) error {
 	return nil
 }
 
+// GetEntities queries entities from db
 func (ss *SQLiteStore) GetEntities(whereConditions Conditions, orderBy string, limit int) ([]Entity, error) {
-	sqlStmt := ss.prepareSqlSelectStmt(whereConditions, orderBy, limit, "entities")
+	sqlStmt := ss.prepareSQLSelectStmt(whereConditions, orderBy, limit, "entities")
 	rows, err := ss.db.Query(sqlStmt)
 	if err != nil {
 		return nil, err
@@ -430,7 +445,7 @@ func (ss *SQLiteStore) GetEntities(whereConditions Conditions, orderBy string, l
 	for rows.Next() {
 		entity := Entity{}
 		if err = rows.Scan(
-			&entity.ID, &entity.Name, &entity.K8sUid, &entity.TcID, &entity.Type); err == nil {
+			&entity.ID, &entity.Name, &entity.K8sUID, &entity.TcID, &entity.Type); err == nil {
 			entities = append(entities, entity)
 		}
 	}
@@ -441,6 +456,7 @@ func (ss *SQLiteStore) GetEntities(whereConditions Conditions, orderBy string, l
 	return entities, nil
 }
 
+// SaveNumberEntities saves NumberEntities in db
 func (ss *SQLiteStore) SaveNumberEntities(nEntities []*NumberEntities) error {
 	sqlAdd := `
 	INSERT INTO number_entities(
@@ -483,11 +499,12 @@ func (ss *SQLiteStore) SaveNumberEntities(nEntities []*NumberEntities) error {
 	return nil
 }
 
+// GetNumberEntities queries NumberEntities from db
 func (ss *SQLiteStore) GetNumberEntities(
 	whereConditions Conditions,
 	orderBy string,
 	limit int) ([]NumberEntities, error) {
-	sqlStmt := ss.prepareSqlSelectStmt(whereConditions, orderBy, limit, "number_entities")
+	sqlStmt := ss.prepareSQLSelectStmt(whereConditions, orderBy, limit, "number_entities")
 	rows, err := ss.db.Query(sqlStmt)
 	if err != nil {
 		return nil, err
@@ -517,6 +534,7 @@ func (ss *SQLiteStore) GetNumberEntities(
 	return nEntities, nil
 }
 
+// SaveResourceUsage saves resource usage in db
 func (ss *SQLiteStore) SaveResourceUsage(resUsages []*ResourceUsage) error {
 	sqlAdd := `
 	INSERT INTO resource_usage(
@@ -543,7 +561,7 @@ func (ss *SQLiteStore) SaveResourceUsage(resUsages []*ResourceUsage) error {
 			e.Timestamp,
 			e.PodName,
 			e.ContainerName,
-			e.Cpu,
+			e.CPU,
 			e.Mem,
 		)
 		if err != nil {
@@ -559,11 +577,12 @@ func (ss *SQLiteStore) SaveResourceUsage(resUsages []*ResourceUsage) error {
 	return nil
 }
 
+// GetResourceUsage queries resource usage from db
 func (ss *SQLiteStore) GetResourceUsage(
 	whereConditions Conditions,
 	orderBy string,
 	limit int) ([]ResourceUsage, error) {
-	sqlStmt := ss.prepareSqlSelectStmt(whereConditions, orderBy, limit, "resource_usage")
+	sqlStmt := ss.prepareSQLSelectStmt(whereConditions, orderBy, limit, "resource_usage")
 	rows, err := ss.db.Query(sqlStmt)
 	if err != nil {
 		return nil, err
@@ -580,7 +599,7 @@ func (ss *SQLiteStore) GetResourceUsage(
 			&e.Timestamp,
 			&e.PodName,
 			&e.ContainerName,
-			&e.Cpu,
+			&e.CPU,
 			&e.Mem); err == nil {
 			resUsage = append(resUsage, e)
 		}
@@ -591,6 +610,7 @@ func (ss *SQLiteStore) GetResourceUsage(
 	return resUsage, nil
 }
 
+// CreateEntitiesRelation adds EntitiesRelation to db
 func (ss *SQLiteStore) CreateEntitiesRelation(entity1, entity2 Entity) error {
 	_, err := ss.db.Exec(
 		"INSERT INTO entities_relations (entity_id1, entity_id2) VALUES ($1, $2)",
@@ -601,6 +621,7 @@ func (ss *SQLiteStore) CreateEntitiesRelation(entity1, entity2 Entity) error {
 	return nil
 }
 
+// GetEntityRelations queries EntitiesRelation from db
 func (ss *SQLiteStore) GetEntityRelations(entity Entity) ([]Entity, error) {
 	sqlStmt := `
 	SELECT e.*
@@ -625,7 +646,7 @@ func (ss *SQLiteStore) GetEntityRelations(entity Entity) ([]Entity, error) {
 
 	for rows.Next() {
 		entity := Entity{}
-		if err = rows.Scan(&entity.ID, &entity.Name, &entity.K8sUid, &entity.TcID, &entity.Type); err == nil {
+		if err = rows.Scan(&entity.ID, &entity.Name, &entity.K8sUID, &entity.TcID, &entity.Type); err == nil {
 			entities = append(entities, entity)
 		}
 	}
@@ -636,6 +657,7 @@ func (ss *SQLiteStore) GetEntityRelations(entity Entity) ([]Entity, error) {
 	return entities, nil
 }
 
+// Close closes db handle
 func (ss *SQLiteStore) Close() error {
 	if err := ss.db.Close(); err != nil {
 		return err

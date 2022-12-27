@@ -193,6 +193,7 @@ func VolumeMigrateStsConfig(storageclass string, claimSize string, volumeNumber 
 	}
 }
 
+// GetAccessMode returns access mode
 func GetAccessMode(AccessMode string) []v1.PersistentVolumeAccessMode {
 	var accessMode []v1.PersistentVolumeAccessMode
 	switch AccessMode {
