@@ -70,7 +70,7 @@ func (c *Client) DeleteAllPV(ctx context.Context, ns string, vaClient *va.Client
 		// try to delete only those PVs that has namespace matching with the suite's ns
 		if val, ok := pv.Spec.PersistentVolumeSource.CSI.VolumeAttributes["csi.storage.k8s.io/pvc/namespace"]; ok && val == ns {
 			log.Debugf("Deleting pv %s", pv.Name)
-			err := vaClient.DeleteVa(ctx, pv.Name)
+			err := vaClient.DeleteVaBasedOnPVName(ctx, pv.Name)
 			if err != nil && !strings.Contains(err.Error(), "not found") {
 				log.Errorf("Can't delete VolumeAttachment for %s; error=%v", pv.Name, err)
 				continue
