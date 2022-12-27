@@ -4,14 +4,16 @@ import (
 	"cert-csi/pkg/k8sclient"
 	"cert-csi/pkg/observer"
 	"cert-csi/pkg/store"
-	"k8s.io/client-go/rest"
 	"strings"
 	"sync"
 	"time"
 
+	"k8s.io/client-go/rest"
+
 	log "github.com/sirupsen/logrus"
 )
 
+// Runner contains configuration needed to run functional and perf test runners
 type Runner struct {
 	Config          *rest.Config
 	DriverNamespace string

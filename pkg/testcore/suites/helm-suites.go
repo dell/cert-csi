@@ -8,12 +8,14 @@ import (
 	"cert-csi/pkg/testcore"
 	"context"
 	"fmt"
-	log "github.com/sirupsen/logrus"
 	"os"
 	"strconv"
 	"strings"
+
+	log "github.com/sirupsen/logrus"
 )
 
+// PostgresqlSuite configuration struct
 type PostgresqlSuite struct {
 	ConfigPath        string
 	VolumeSize        string
@@ -21,7 +23,8 @@ type PostgresqlSuite struct {
 	SlaveReplicas     int
 }
 
-func (ps *PostgresqlSuite) Run(ctx context.Context, storageClass string, clients *k8sclient.Clients) (e error, delFunc func() error) {
+// Run executes the test suite
+func (ps *PostgresqlSuite) Run(ctx context.Context, storageClass string, clients *k8sclient.Clients) (delFunc func() error, e error) {
 	if ps.VolumeSize == "" {
 		log.Info("Using default volume size : 32Gi")
 		ps.VolumeSize = "32Gi"
@@ -36,15 +39,15 @@ func (ps *PostgresqlSuite) Run(ctx context.Context, storageClass string, clients
 
 	hc, err := helm.NewClient(namespace, ps.ConfigPath, clients.PVCClient.Timeout)
 	if err != nil {
-		return err, delFunc
+		return delFunc, err
 	}
 
 	if err := hc.AddRepository("bitnami", "https://charts.bitnami.com/bitnami"); err != nil {
-		return err, delFunc
+		return delFunc, err
 	}
 
 	if err := hc.UpdateRepositories(); err != nil {
-		return err, delFunc
+		return delFunc, err
 	}
 
 	// define values
@@ -63,7 +66,7 @@ func (ps *PostgresqlSuite) Run(ctx context.Context, storageClass string, clients
 	}
 
 	if err := hc.InstallChart(releaseName, "bitnami", "postgresql", vals); err != nil {
-		return err, delFunc
+		return delFunc, err
 	}
 
 	podconf := testcore.PsqlPodConfig(psqlPass)
@@ -71,20 +74,20 @@ func (ps *PostgresqlSuite) Run(ctx context.Context, storageClass string, clients
 
 	pod := podClient.Create(ctx, podTmpl).Sync(ctx)
 	if pod.HasError() {
-		return pod.GetError(), delFunc
+		return delFunc, pod.GetError()
 	}
 
 	if err := podClient.Exec(ctx, pod.Object, []string{
 		"pgbench", "-i", "-p", "5432", "-d", "postgres", "--host", "cert-csi-psql-postgresql", "-U", "postgres",
 	}, os.Stdout, os.Stderr, false); err != nil {
-		return err, delFunc
+		return delFunc, err
 	}
 
 	res := bytes.NewBufferString("")
 	if err := podClient.Exec(ctx, pod.Object, []string{
 		"pgbench", "-c", "50", "-j", "4", "-p", "5432", "-T", "60", "-d", "postgres", "--host", "cert-csi-psql-postgresql", "-U", "postgres",
 	}, res, os.Stderr, false); err != nil {
-		return err, delFunc
+		return delFunc, err
 	}
 	// Print the output, for some reason there is no verbosity level so we just trim important part
 	sliced := strings.Split(res.String(), "\n")
@@ -100,16 +103,18 @@ func (ps *PostgresqlSuite) Run(ctx context.Context, storageClass string, clients
 	}
 
 	if err := hc.UninstallChart(releaseName); err != nil {
-		return err, delFunc
+		return delFunc, err
 	}
 
-	return nil, delFunc
+	return delFunc, nil
 }
 
+// GetObservers returns all observers
 func (*PostgresqlSuite) GetObservers(obsType observer.Type) []observer.Interface {
 	return getAllObservers(obsType)
 }
 
+// GetClients creates and returns pvc, pod, va, metrics clients
 func (*PostgresqlSuite) GetClients(namespace string, client *k8sclient.KubeClient) (*k8sclient.Clients, error) {
 	pvcClient, pvcErr := client.CreatePVCClient(namespace)
 	if pvcErr != nil {
@@ -140,14 +145,17 @@ func (*PostgresqlSuite) GetClients(namespace string, client *k8sclient.KubeClien
 	}, nil
 }
 
+// GetNamespace returns PostgresqlSuite namespace
 func (*PostgresqlSuite) GetNamespace() string {
 	return "psql-test"
 }
 
+// GetName returns PostgresqlSuite name
 func (ps *PostgresqlSuite) GetName() string {
 	return "PostgresqlSuite"
 }
 
+// Parameters returns formatted string of parameters
 func (ps *PostgresqlSuite) Parameters() string {
 	return fmt.Sprintf("{replicas: %d, volumeSize: %s, replication: %s}", ps.SlaveReplicas, ps.VolumeSize,
 		strconv.FormatBool(ps.EnableReplication))

@@ -242,6 +242,7 @@ func (c *Client) DeleteWithOptions(ctx context.Context, sts *appsv1.StatefulSet,
 	}
 }
 
+// DeleteAll deletes all statefulsets
 func (c *Client) DeleteAll(ctx context.Context) error {
 	log := utils.GetLoggerFromContext(ctx)
 	stsList, stsErr := c.Interface.List(ctx, metav1.ListOptions{})
@@ -319,23 +320,23 @@ func (c *Client) Scale(ctx context.Context, sts *appsv1.StatefulSet, count int32
 				Deleted: false,
 				error:   nil,
 			}
-		} else {
-			log.Warnf("Scale command's been lost by the k8s, retrying.. desired=%d, actual=%d", count, actualState.Spec.Replicas)
-			actualState.Spec.Replicas = count
-			sts.Spec.Replicas = &count
-			_, updateErr := c.Interface.UpdateScale(ctx, sts.GetName(), actualState, metav1.UpdateOptions{})
-			if updateErr != nil {
-				if !strings.Contains(updateErr.Error(), K8sMissScaleError) {
-					return &StatefulSet{
-						Client:  c,
-						Set:     sts,
-						Deleted: false,
-						error:   updateErr,
-					}
+		}
+
+		log.Warnf("Scale command's been lost by the k8s, retrying.. desired=%d, actual=%d", count, actualState.Spec.Replicas)
+		actualState.Spec.Replicas = count
+		sts.Spec.Replicas = &count
+		_, updateErr := c.Interface.UpdateScale(ctx, sts.GetName(), actualState, metav1.UpdateOptions{})
+		if updateErr != nil {
+			if !strings.Contains(updateErr.Error(), K8sMissScaleError) {
+				return &StatefulSet{
+					Client:  c,
+					Set:     sts,
+					Deleted: false,
+					error:   updateErr,
 				}
-			} else {
-				continue
 			}
+		} else {
+			continue
 		}
 	}
 }
@@ -355,7 +356,7 @@ func (sts *StatefulSet) GetPodList(ctx context.Context) (*v1.PodList, error) {
 }
 
 // WaitForRunningAndReady stalls provided number of pods is running and ready
-func (sts *StatefulSet) WaitForRunningAndReady(numPodsRunning, numPodsReady int32, ctx context.Context) error {
+func (sts *StatefulSet) WaitForRunningAndReady(ctx context.Context, numPodsRunning, numPodsReady int32) error {
 	log := utils.GetLoggerFromContext(ctx)
 	log.Infof("Waiting for sts pods to become ready")
 	timeout := Timeout
@@ -474,11 +475,12 @@ func (sts *StatefulSet) Sync(ctx context.Context) *StatefulSet {
 	if sts.Deleted {
 		sts.error = sts.WaitUntilGone(ctx)
 	} else {
-		sts.error = sts.WaitForRunningAndReady(*sts.Set.Spec.Replicas, *sts.Set.Spec.Replicas, ctx)
+		sts.error = sts.WaitForRunningAndReady(ctx, *sts.Set.Spec.Replicas, *sts.Set.Spec.Replicas)
 	}
 	return sts
 }
 
+// HasError checks if statefulset contains error
 func (sts *StatefulSet) HasError() bool {
 	if sts.error != nil {
 		return true
@@ -486,6 +488,7 @@ func (sts *StatefulSet) HasError() bool {
 	return false
 }
 
+// GetError returns statefulset error
 func (sts *StatefulSet) GetError() error {
 	return sts.error
 }

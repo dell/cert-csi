@@ -21,10 +21,13 @@ import (
 )
 
 var (
-	UserPath   = ""
+	// UserPath is user home directory
+	UserPath = ""
+	// FolderPath of .cert-csi folder
 	FolderPath = "/.cert-csi/"
 )
 
+// GetReportPathDir constructs the report path and returns it
 func GetReportPathDir(reportName string) (string, error) {
 	var curUser string
 	if UserPath == "" {
@@ -419,6 +422,8 @@ func PlotEntityOverTime(tc collector.TestCaseMetrics, reportName string) (*plot.
 	return p, nil
 }
 
+// PlotMinMaxEntityOverTime creates minimum and maximum entities and
+// creates and saves a histogram of time distributions
 func PlotMinMaxEntityOverTime(tcMetrics []collector.TestCaseMetrics, reportName string) error {
 	n := 1
 
@@ -485,6 +490,7 @@ func PlotMinMaxEntityOverTime(tcMetrics []collector.TestCaseMetrics, reportName 
 	return nil
 }
 
+// PlotResourceUsageOverTime creates and saves a histogram of time distributions of resource usage
 func PlotResourceUsageOverTime(tcMetrics []collector.TestCaseMetrics, reportName string) error {
 	n := 1
 
@@ -520,23 +526,24 @@ func PlotResourceUsageOverTime(tcMetrics []collector.TestCaseMetrics, reportName
 			}
 			cpuMetrics[name] = append(cpuMetrics[name], plotter.XY{
 				X: X,
-				Y: float64(row.Cpu),
+				Y: float64(row.CPU),
 			})
 		}
 	}
 	memMetrics = sortGraphsByKey(memMetrics)
 	cpuMetrics = sortGraphsByKey(cpuMetrics)
 
-	if err := plotMemoryOrCpu(memMetrics, reportName, "MemUsageOverTime"); err != nil {
+	if err := plotMemoryOrCPU(memMetrics, reportName, "MemUsageOverTime"); err != nil {
 		return err
 	}
 
-	if err := plotMemoryOrCpu(cpuMetrics, reportName, "CpuUsageOverTime"); err != nil {
+	if err := plotMemoryOrCPU(cpuMetrics, reportName, "CpuUsageOverTime"); err != nil {
 		return err
 	}
 	return nil
 }
 
+// PlotIterationTimes creates and saves a histogram of time distributions of test iterations
 func PlotIterationTimes(tcMetrics []collector.TestCaseMetrics, reportName string) (*plot.Plot, error) {
 	iterationTimes := make(plotter.XYs, 1)
 
@@ -594,6 +601,7 @@ func PlotIterationTimes(tcMetrics []collector.TestCaseMetrics, reportName string
 	return p, nil
 }
 
+// PlotAvgStageTimeOverIterations creates and saves a histogram of time distributions of average staging time
 func PlotAvgStageTimeOverIterations(tcMetrics []collector.TestCaseMetrics, reportName string) error {
 	avgTimes := make(map[interface{}]plotter.XYs)
 	for i, tcMetrics := range tcMetrics {
@@ -661,7 +669,7 @@ func PlotAvgStageTimeOverIterations(tcMetrics []collector.TestCaseMetrics, repor
 	return nil
 }
 
-func plotMemoryOrCpu(metrics map[string]plotter.XYs, reportName string, name string) error {
+func plotMemoryOrCPU(metrics map[string]plotter.XYs, reportName string, name string) error {
 	p, err := plot.New()
 	if err != nil {
 		log.Errorf("Can't create new plot; error=%v", err)

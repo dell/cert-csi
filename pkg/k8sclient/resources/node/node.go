@@ -2,6 +2,7 @@ package node
 
 import (
 	"context"
+
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	"k8s.io/apimachinery/pkg/types"
@@ -13,6 +14,7 @@ import (
 	restclient "k8s.io/client-go/rest"
 )
 
+// Client contains node client information
 type Client struct {
 	Interface v1core.NodeInterface
 	ClientSet kubernetes.Interface
@@ -22,12 +24,16 @@ type Client struct {
 	nodeInfos []*resource.Info
 }
 
+// NodeCordon cordons a node
 func (c *Client) NodeCordon(ctx context.Context, nodename string) error {
 	return c.cordonUnCordon(ctx, nodename, true)
 }
+
+// NodeUnCordon uncordons a node
 func (c *Client) NodeUnCordon(ctx context.Context, nodename string) error {
 	return c.cordonUnCordon(ctx, nodename, false)
 }
+
 func (c *Client) cordonUnCordon(ctx context.Context, nodename string, cordon bool) error {
 
 	node, err := c.Interface.Get(ctx, nodename, metav1.GetOptions{})

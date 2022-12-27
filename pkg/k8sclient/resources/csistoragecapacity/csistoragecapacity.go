@@ -18,7 +18,9 @@ import (
 )
 
 const (
-	Poll    = 2 * time.Second
+	// Poll represents poll time interval
+	Poll = 2 * time.Second
+	// Timeout represents timeout
 	Timeout = 5 * time.Minute
 )
 
@@ -53,6 +55,7 @@ func (c *Client) GetByStorageClass(ctx context.Context, scName string) ([]*CSISt
 	return capacities, nil
 }
 
+// SetCapacityToZero sets capacity to 0
 func (c *Client) SetCapacityToZero(ctx context.Context, capacities []*CSIStorageCapacity) ([]*CSIStorageCapacity, error) {
 	var updatedCapacities []*CSIStorageCapacity
 	for _, capacity := range capacities {
@@ -66,6 +69,7 @@ func (c *Client) SetCapacityToZero(ctx context.Context, capacities []*CSIStorage
 	return updatedCapacities, nil
 }
 
+// Update updates storage capacity object
 func (c *Client) Update(ctx context.Context, capacity *storagev1.CSIStorageCapacity) (*CSIStorageCapacity, error) {
 	capacity, err := c.Interface.Update(ctx, capacity, metav1.UpdateOptions{})
 	if err != nil {
@@ -80,6 +84,7 @@ func (c *Client) Update(ctx context.Context, capacity *storagev1.CSIStorageCapac
 
 }
 
+// WaitForAllToBeCreated waits for CSIStorageCapacity objects to be created for a storage class
 func (c *Client) WaitForAllToBeCreated(ctx context.Context, scName string, expectedCount int) error {
 	log.Infof("Waiting for CSIStorageCapacity to be %s for %s storage class in %s namespace", color.GreenString("CREATED"), color.YellowString(scName), color.BlueString(c.Namespace))
 	startTime := time.Now()
@@ -124,6 +129,7 @@ func (c *Client) WaitForAllToBeCreated(ctx context.Context, scName string, expec
 	return nil
 }
 
+// WaitForAllToBeDeleted waits for CSIStorageCapacity objects to be deleted for a storage class
 func (c *Client) WaitForAllToBeDeleted(ctx context.Context, scName string) error {
 	log.Infof("Waiting for CSIStorageCapacity to be %s for %s storage class in %s namespace", color.GreenString("DELETED"), color.YellowString(scName), color.BlueString(c.Namespace))
 	startTime := time.Now()
@@ -168,6 +174,7 @@ func (c *Client) WaitForAllToBeDeleted(ctx context.Context, scName string) error
 	return nil
 }
 
+// WatchUntilUpdated polls till CSIStorageCapacity object is updated
 func (csisc *CSIStorageCapacity) WatchUntilUpdated(ctx context.Context, pollInterval time.Duration) error {
 
 	meta := csisc.Object.ObjectMeta

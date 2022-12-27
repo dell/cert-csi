@@ -3,21 +3,23 @@ package observer
 import (
 	"cert-csi/pkg/store"
 	"context"
+	"sync"
+	"time"
+
 	log "github.com/sirupsen/logrus"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/wait"
-	"sync"
-	"time"
 )
 
 const (
 	// MetricsPoll is a poll interval for StatefulSet tests
 	MetricsPoll = 5 * time.Second
 
-	// MetricsTimeout
+	// MetricsTimeout is metrics timeout
 	MetricsTimeout = 1800 * time.Second
 )
 
+// ContainerMetricsObserver is used to manage container metrics observer
 type ContainerMetricsObserver struct {
 	finished chan bool
 
@@ -25,18 +27,21 @@ type ContainerMetricsObserver struct {
 	mutex       sync.Mutex
 }
 
+// Interrupt interrupts a container metrics observer
 func (cmo *ContainerMetricsObserver) Interrupt() {
 	cmo.mutex.Lock()
 	defer cmo.mutex.Unlock()
 	cmo.interrupted = true
 }
 
+// Interrupted checks whether container metrics observer is interrupted
 func (cmo *ContainerMetricsObserver) Interrupted() bool {
 	cmo.mutex.Lock()
 	defer cmo.mutex.Unlock()
 	return cmo.interrupted
 }
 
+// StartWatching starts watching container metrics
 func (cmo *ContainerMetricsObserver) StartWatching(ctx context.Context, runner *Runner) {
 	defer runner.WaitGroup.Done()
 	if runner.DriverNamespace == "" {
@@ -79,7 +84,7 @@ func (cmo *ContainerMetricsObserver) StartWatching(ctx context.Context, runner *
 					Timestamp:     time.Now(),
 					PodName:       pod.Name,
 					ContainerName: container.Name,
-					Cpu:           container.Usage.Cpu().MilliValue(),
+					CPU:           container.Usage.Cpu().MilliValue(),
 					Mem:           container.Usage.Memory().Value() / (1024 * 1024),
 				}
 				resUsage = append(resUsage, info)
@@ -99,16 +104,19 @@ func (cmo *ContainerMetricsObserver) StartWatching(ctx context.Context, runner *
 	}
 }
 
+// StopWatching stops watching container metrics
 func (cmo *ContainerMetricsObserver) StopWatching() {
 	if !cmo.Interrupted() {
 		cmo.finished <- true
 	}
 }
 
+// GetName returns name of container metrics observer
 func (cmo *ContainerMetricsObserver) GetName() string {
 	return "ContainerMetricsObserver"
 }
 
+// MakeChannel makes a new channel
 func (cmo *ContainerMetricsObserver) MakeChannel() {
 	cmo.finished = make(chan bool)
 }
