@@ -97,3 +97,23 @@ func (c *Client) WaitUntilVaGone(ctx context.Context, pvName string) error {
 	return nil
 
 }
+
+// DeleteVaBasedOnPVName deletes the VA associated with passed PV
+func (c *Client) DeleteVaBasedOnPVName(ctx context.Context, pvName string) error {
+	vaList, err := c.Interface.List(ctx, metav1.ListOptions{
+		FieldSelector: "",
+	})
+	if err != nil {
+		return err
+	}
+	for _, va := range vaList.Items {
+		if *va.Spec.Source.PersistentVolumeName == pvName {
+			log.Debugf("Waiting for the volume-attachment to be deleted for :%s", pvName)
+			err = c.Interface.Delete(ctx, *va.Spec.Source.PersistentVolumeName, metav1.DeleteOptions{})
+			if err != nil {
+				return err
+			}
+		}
+	}
+	return nil
+}

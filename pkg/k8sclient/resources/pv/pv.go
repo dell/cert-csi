@@ -2,10 +2,12 @@ package pv
 
 import (
 	"cert-csi/pkg/k8sclient/resources/commonparams"
+	"cert-csi/pkg/k8sclient/resources/va"
 	"cert-csi/pkg/utils"
 	"context"
 	"errors"
 	"fmt"
+	"strings"
 	"time"
 
 	"github.com/fatih/color"
@@ -57,6 +59,31 @@ func (c *Client) Delete(ctx context.Context, pv *v1.PersistentVolume) *Persisten
 	}
 }
 
+// DeleteAllPV deletes all pvs in timely manner on the basis of namespace
+func (c *Client) DeleteAllPV(ctx context.Context, ns string, vaClient *va.Client) error {
+	podList, podErr := c.Interface.List(ctx, metav1.ListOptions{})
+	if podErr != nil {
+		return podErr
+	}
+	log.Debugf("Deleting all PVs")
+	for i, pv := range podList.Items {
+		// try to delete only those PVs that has namespace matching with the suite's ns
+		if val, ok := pv.Spec.PersistentVolumeSource.CSI.VolumeAttributes["csi.storage.k8s.io/pvc/namespace"]; ok && val == ns {
+			log.Debugf("Deleting pv %s", pv.Name)
+			err := vaClient.DeleteVaBasedOnPVName(ctx, pv.Name)
+			if err != nil && !strings.Contains(err.Error(), "not found") {
+				log.Errorf("Can't delete VolumeAttachment for %s; error=%v", pv.Name, err)
+				continue
+			}
+			err = c.Delete(ctx, &podList.Items[i]).Sync(ctx).GetError()
+			if err != nil {
+				log.Errorf("Can't delete pv %s; error=%v", pv.Name, err)
+			}
+		}
+	}
+	return nil
+}
+
 // DeleteAll deletes all client pvs in timely manner
 func (c *Client) DeleteAll(ctx context.Context) error {
 	podList, podErr := c.Interface.List(ctx, metav1.ListOptions{})
@@ -71,7 +98,6 @@ func (c *Client) DeleteAll(ctx context.Context) error {
 			log.Errorf("Can't delete pv %s; error=%v", pvc.Name, err)
 		}
 	}
-
 	return nil
 }
 
