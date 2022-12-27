@@ -98,6 +98,7 @@ func (c *Client) WaitUntilVaGone(ctx context.Context, pvName string) error {
 
 }
 
+// DeleteVa deletes the VA associated with passed PV
 func (c *Client) DeleteVa(ctx context.Context, pvName string) error {
 	vaList, err := c.Interface.List(ctx, metav1.ListOptions{
 		FieldSelector: "",
