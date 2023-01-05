@@ -87,6 +87,7 @@ func main() {
 		cmd.GetListCommand(),
 		cmd.GetCleanupCommand(),
 		cmd.GetCertifyCommand(),
+		cmd.GetK8sEndToEndCommand(),
 	}
 	if os.Args[len(os.Args)-1] != "--generate-bash-completion" {
 		log.Infof("Starting cert-csi; ver. %v", app.Version)
