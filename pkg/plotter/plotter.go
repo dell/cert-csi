@@ -18,6 +18,7 @@ package plotter
 
 import (
 	"cert-csi/pkg/collector"
+	"errors"
 	"fmt"
 	"image/color"
 	"math"
@@ -112,11 +113,11 @@ func PlotStageMetricHistogram(tc collector.TestCaseMetrics, stage interface{}, r
 		i++
 	}
 
-	p, err := plot.New()
+	p := plot.New()
 
-	if err != nil {
-		log.Errorf("Can't create new plot; error=%v", err)
-		return nil, err
+	if p == nil {
+		log.Errorf("Can't create new plot")
+		return nil, errors.New("Can't create new plot")
 	}
 
 	p.Title.Text = fmt.Sprintf("Distribution of %s times. Pods=%d, PVCs=%d", stage, len(tc.Pods), len(tc.PVCs))
@@ -170,11 +171,11 @@ func PlotStageBoxPlot(tc collector.TestCaseMetrics, stage interface{}, reportNam
 		return nil, fmt.Errorf("can't assert stage type: %v", stage)
 	}
 
-	p, err := plot.New()
+	p := plot.New()
 
-	if err != nil {
-		log.Errorf("Can't create new plot; error=%v", err)
-		return nil, err
+	if p == nil {
+		log.Errorf("Can't create new plot")
+		return nil, errors.New("Can't create new plot")
 	}
 	p.Title.Text = fmt.Sprintf("Box plot of %s times. Pods=%d, PVCs=%d", stage, len(tc.Pods), len(tc.PVCs))
 	p.Y.Label.Text = "times"
@@ -252,11 +253,11 @@ func PlotEntityOverTime(tc collector.TestCaseMetrics, reportName string) (*plot.
 		})
 	}
 
-	p, err := plot.New()
+	p := plot.New()
 
-	if err != nil {
-		log.Errorf("Can't create new plot; error=%v", err)
-		return nil, err
+	if p == nil {
+		log.Errorf("Can't create new plot")
+		return nil, errors.New("Can't create new plot")
 	}
 	p.Title.Text = fmt.Sprintf("EntityNumber over time")
 	p.Y.Label.Text = "number"
@@ -381,11 +382,7 @@ func PlotEntityOverTime(tc collector.TestCaseMetrics, reportName string) (*plot.
 
 	p.Add(podsCreatingLine, podsReadyLine, podsTerminatingLine, pvcCreatingLine, pvcBoundLine, pvcTerminatingLine)
 
-	l, err := plot.NewLegend()
-	if err != nil {
-		log.Error(err)
-		return nil, err
-	}
+	l := plot.NewLegend()
 
 	l.Add("PodsCreating", podsCreatingLine)
 	l.Add("PodsReady", podsReadyLine)
@@ -409,7 +406,7 @@ func PlotEntityOverTime(tc collector.TestCaseMetrics, reportName string) (*plot.
 	// Calculate the width of the legend.
 	r := l.Rectangle(dc)
 	legendWidth := r.Max.X - r.Min.X
-	l.YOffs = -p.Title.Font.Extents().Height // Adjust the legend down a little.
+	l.YOffs = -p.Title.TextStyle.FontExtents().Height // Adjust the legend down a little.
 	l.Draw(dc)
 	dc = draw.Crop(dc, 0, -legendWidth-vg.Millimeter, 0, 0) // Make space for the legend.
 	p.Draw(dc)
@@ -586,17 +583,17 @@ func PlotIterationTimes(tcMetrics []collector.TestCaseMetrics, reportName string
 			Y: duration,
 		})
 	}
-	p, err := plot.New()
-	if err != nil {
-		log.Error(err)
-		return nil, err
+	p := plot.New()
+	if p == nil {
+		log.Error("Can't create a new plot")
+		return nil, errors.New("Can't create new plot")
 	}
 
 	p.Title.Text = "IterationTimes"
 	p.X.Label.Text = "number"
 	p.Y.Label.Text = "duration"
 
-	err = plotutil.AddLinePoints(p, "IterationTimes", iterationTimes)
+	err := plotutil.AddLinePoints(p, "IterationTimes", iterationTimes)
 	if err != nil {
 		log.Error(err)
 		return nil, err
@@ -652,10 +649,10 @@ func PlotAvgStageTimeOverIterations(tcMetrics []collector.TestCaseMetrics, repor
 			return fmt.Errorf("can't assert stage type: %v", stage)
 		}
 
-		p, err := plot.New()
-		if err != nil {
-			log.Error(err)
-			return err
+		p := plot.New()
+		if p == nil {
+			log.Error("Can't create a new plot")
+			return errors.New("Can't create new plot")
 		}
 		p.Title.Text = fmt.Sprintf("Avg time of %s", name)
 		p.Y.Label.Text = "time, s"
@@ -686,21 +683,18 @@ func PlotAvgStageTimeOverIterations(tcMetrics []collector.TestCaseMetrics, repor
 }
 
 func plotMemoryOrCPU(metrics map[string]plotter.XYs, reportName string, name string) error {
-	p, err := plot.New()
-	if err != nil {
-		log.Errorf("Can't create new plot; error=%v", err)
-		return err
+	p := plot.New()
+	if p == nil {
+		log.Errorf("Can't create new plot")
+		return errors.New("Can't create new plot")
 	}
 	p.Title.Text = fmt.Sprintf(name)
 	p.Y.Label.Text = "value"
 	p.X.Label.Text = "time"
 	// Draw a grid behind the data
 	p.Add(plotter.NewGrid())
-	l, err := plot.NewLegend()
-	if err != nil {
-		log.Error(err)
-		return err
-	}
+	l := plot.NewLegend()
+
 	var i int
 	for k, v := range metrics {
 		line, err := plotter.NewLine(v)
@@ -730,7 +724,7 @@ func plotMemoryOrCPU(metrics map[string]plotter.XYs, reportName string, name str
 	// Calculate the width of the legend.
 	r := l.Rectangle(dc)
 	legendWidth := r.Max.X - r.Min.X
-	l.YOffs = -p.Title.Font.Extents().Height
+	l.YOffs = -p.Title.TextStyle.FontExtents().Height
 	// Adjust the legend down a little.
 	l.Draw(dc)
 	dc = draw.Crop(dc, 0, -legendWidth-vg.Millimeter, 0, 0)
@@ -756,10 +750,10 @@ func plotMemoryOrCPU(metrics map[string]plotter.XYs, reportName string, name str
 }
 
 func plotMinMax(minMetrics plotter.XYs, maxMetrics plotter.XYs, reportName string, name string) error {
-	p, err := plot.New()
-	if err != nil {
-		log.Errorf("Can't create new plot; error=%v", err)
-		return err
+	p := plot.New()
+	if p == nil {
+		log.Errorf("Can't create new plot")
+		return errors.New("Can't create new plot")
 	}
 	p.Title.Text = fmt.Sprintf("%s over time", name)
 	p.Y.Label.Text = "number"
@@ -804,11 +798,8 @@ func plotMinMax(minMetrics plotter.XYs, maxMetrics plotter.XYs, reportName strin
 		A: 4,
 	}
 	p.Add(minLine, maxLine)
-	l, err := plot.NewLegend()
-	if err != nil {
-		log.Error(err)
-		return err
-	}
+	l := plot.NewLegend()
+
 	l.Add("Min Line", minLine)
 	l.Add("Max Line", maxLine)
 	l.Top = true
@@ -817,7 +808,7 @@ func plotMinMax(minMetrics plotter.XYs, maxMetrics plotter.XYs, reportName strin
 	// Calculate the width of the legend.
 	r := l.Rectangle(dc)
 	legendWidth := r.Max.X - r.Min.X
-	l.YOffs = -p.Title.Font.Extents().Height
+	l.YOffs = -p.Title.TextStyle.FontExtents().Height
 	// Adjust the legend down a little.
 	l.Draw(dc)
 	dc = draw.Crop(dc, 0, -legendWidth-vg.Millimeter, 0, 0)
