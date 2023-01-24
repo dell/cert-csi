@@ -1,0 +1,71 @@
+<?xml version="1.0" encoding="UTF-8"?>
+  <testsuites tests="7338" disabled="7291" errors="1" failures="0" time="2578.800800763">
+      <testsuite name="Kubernetes e2e suite" package="/root" tests="7338" disabled="0" skipped="7291" errors="0" failures="0" time="2578.800800763" timestamp="2023-01-05T22:56:48">
+          <properties>
+              <property name="SuiteSucceeded" value="true"></property>
+              <property name="SuiteHasProgrammaticFocus" value="false"></property>
+              <property name="SpecialSuiteFailureReason" value=""></property>
+              <property name="SuiteLabels" value="[]"></property>
+              <property name="RandomSeed" value="1672977408"></property>
+              <property name="RandomizeAllSpecs" value="true"></property>
+              <property name="LabelFilter" value=""></property>
+              <property name="FocusStrings" value="External.Storage.*"></property>
+              <property name="SkipStrings" value="Generic Ephemeral-volume|\[Feature:|\[Disruptive\]|pod created with an initial fsgroup, volume contents ownership changed via chgrp in first pod, new pod with same fsgroup skips ownership changes to the volume contents|(block volmode)"></property>
+              <property name="FocusFiles" value=""></property>
+              <property name="SkipFiles" value=""></property>
+              <property name="FailOnPending" value="false"></property>
+              <property name="FailFast" value="false"></property>
+              <property name="FlakeAttempts" value="0"></property>
+              <property name="EmitSpecProgress" value="true"></property>
+              <property name="DryRun" value="false"></property>
+              <property name="ParallelTotal" value="1"></property>
+              <property name="OutputInterceptorMode" value=""></property>
+          </properties>
+          <testcase name="[It] [sig-storage] In-tree Volumes [Driver: local][LocalVolumeType: dir] [Testpattern: Pre-provisioned PV (default fs)] volumes should allow exec of files on the volume" classname="Kubernetes e2e suite" status="skipped" time="0">
+              <skipped message="skipped"></skipped>
+              <system-err>[ReportAfterEach] TOP-LEVEL&#xA;  test/e2e/e2e_test.go:142&#xA;</system-err>
+          </testcase>
+          <testcase name="[It] [sig-storage] In-tree Volumes [Driver: azure-disk] [Testpattern: Dynamic PV (filesystem volmode)] volumeLimits should verify that all csinodes have volume limits" classname="Kubernetes e2e suite" status="skipped" time="0">
+              <skipped message="skipped"></skipped>
+              <system-err>[ReportAfterEach] TOP-LEVEL&#xA;  test/e2e/e2e_test.go:142&#xA;</system-err>
+          </testcase>
+          <testcase name="[It] [sig-network] [Feature:IPv6DualStack] Granular Checks: Services Secondary IP Family [LinuxOnly] should function for pod-Service: udp" classname="Kubernetes e2e suite" status="skipped" time="0">
+              <skipped message="skipped"></skipped>
+              <system-err>[ReportAfterEach] TOP-LEVEL&#xA;  test/e2e/e2e_test.go:142&#xA;</system-err>
+          </testcase>
+          <testcase name="[It] [sig-storage] CSI mock volume CSI attach test using mock driver should preserve attachment policy when no CSIDriver present" classname="Kubernetes e2e suite" status="skipped" time="0">
+              <skipped message="skipped"></skipped>
+              <system-err>[ReportAfterEach] TOP-LEVEL&#xA;  test/e2e/e2e_test.go:142&#xA;</system-err>
+          </testcase>
+          <testcase name="[It] [sig-storage] In-tree Volumes [Driver: rbd][Feature:Volumes][Serial] [Testpattern: Dynamic PV (immediate binding)] topology should fail to schedule a pod which has topologies that conflict with AllowedTopologies" classname="Kubernetes e2e suite" status="skipped" time="0">
+              <skipped message="skipped"></skipped>
+              <system-err>[ReportAfterEach] TOP-LEVEL&#xA;  test/e2e/e2e_test.go:142&#xA;</system-err>
+          </testcase>
+          <testcase name="[It] [sig-storage] In-tree Volumes [Driver: local][LocalVolumeType: block] [Testpattern: Dynamic PV (ntfs)][Feature:Windows] provisioning should provision storage with snapshot data source [Feature:VolumeSnapshotDataSource]" classname="Kubernetes e2e suite" status="skipped" time="0">
+              <skipped message="skipped"></skipped>
+              <system-err>[ReportAfterEach] TOP-LEVEL&#xA;  test/e2e/e2e_test.go:142&#xA;</system-err>
+          </testcase>
+          <testcase name="[It] [sig-storage] In-tree Volumes [Driver: gluster] [Testpattern: Pre-provisioned PV (default fs)] subPath should support file as subpath [LinuxOnly]" classname="Kubernetes e2e suite" status="skipped" time="0">
+              <skipped message="skipped"></skipped>
+              <system-err>[ReportAfterEach] TOP-LEVEL&#xA;  test/e2e/e2e_test.go:142&#xA;</system-err>
+          </testcase>
+          <testcase name="[It] [sig-storage] In-tree Volumes [Driver: hostPathSymlink] [Testpattern: Dynamic PV (default fs)] subPath should support readOnly file specified in the volumeMount [LinuxOnly]" classname="Kubernetes e2e suite" status="skipped" time="0">
+              <skipped message="skipped"></skipped>
+              <system-err>[ReportAfterEach] TOP-LEVEL&#xA;  test/e2e/e2e_test.go:142&#xA;</system-err>
+          </testcase>
+          <testcase name="[It] [sig-node] Variable Expansion should fail substituting values in a volume subpath with backticks [Slow] [Conformance]" classname="Kubernetes e2e suite" status="skipped" time="0">
+              <skipped message="skipped"></skipped>
+              <system-err>[ReportAfterEach] TOP-LEVEL&#xA;  test/e2e/e2e_test.go:142&#xA;</system-err>
+          </testcase>
+          <testcase name="[It] [sig-network] Networking Granular Checks: Services should update endpoints: udp" classname="Kubernetes e2e suite" status="skipped" time="0">
+              <skipped message="skipped"></skipped>
+              <system-err>[ReportAfterEach] TOP-LEVEL&#xA;  test/e2e/e2e_test.go:142&#xA;</system-err>
+          </testcase>
+          <testcase name="[SynchronizedAfterSuite]" classname="Kubernetes e2e suite" status="passed" time="8.4337e-05">
+              <system-err>[SynchronizedAfterSuite] TOP-LEVEL&#xA;  test/e2e/e2e.go:87&#xA;Jan  5 23:40:05.043: INFO: Running AfterSuite actions on all nodes&#xA;Jan  5 23:40:05.043: INFO: Running Cleanup Action: k8s.io/kubernetes/test/e2e/storage.glob..func20.2&#xA;Jan  5 23:40:05.043: INFO: Running Cleanup Action: k8s.io/kubernetes/test/e2e/storage.glob..func10.2&#xA;Jan  5 23:40:05.043: INFO: Running Cleanup Action: k8s.io/kubernetes/test/e2e/storage.glob..func9.2&#xA;Jan  5 23:40:05.043: INFO: Running Cleanup Action: k8s.io/kubernetes/test/e2e/storage/vsphere.glob..func17.3&#xA;Jan  5 23:40:05.043: INFO: Running Cleanup Action: k8s.io/kubernetes/test/e2e/storage/vsphere.glob..func9.2&#xA;Jan  5 23:40:05.043: INFO: Running Cleanup Action: k8s.io/kubernetes/test/e2e/storage/vsphere.glob..func4.2&#xA;Jan  5 23:40:05.043: INFO: Running Cleanup Action: k8s.io/kubernetes/test/e2e/storage/vsphere.glob..func1.3&#xA;[SynchronizedAfterSuite] TOP-LEVEL&#xA;  test/e2e/e2e.go:87&#xA;Jan  5 23:40:05.043: INFO: Running AfterSuite actions on node 1&#xA;</system-err>
+          </testcase>
+          <testcase name="[ReportAfterSuite] Kubernetes e2e suite report" classname="Kubernetes e2e suite" status="passed" time="3.0196e-05">
+              <system-err>[ReportAfterSuite] TOP-LEVEL&#xA;  test/e2e/e2e_test.go:146&#xA;</system-err>
+          </testcase>
+      </testsuite>
+  </testsuites>

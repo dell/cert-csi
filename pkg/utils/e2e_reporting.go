@@ -20,6 +20,7 @@ package utils
 
 import (
 	"encoding/xml"
+	"errors"
 	"fmt"
 	"io/ioutil"
 	"os"
@@ -54,10 +55,11 @@ type Testcase struct {
 }
 
 // E2eReportParser will parse the kubernetes end-to-end report.
-func E2eReportParser(filename string) {
+func E2eReportParser(filename string) ([]map[string]string, error) {
+	var result []map[string]string
 	xmlFile, err := os.Open(filepath.Clean(filename))
 	if err != nil {
-		fmt.Println(err)
+		return result, errors.New("unable open file" + err.Error())
 	}
 	defer func(xmlFile *os.File) {
 		err := xmlFile.Close()
@@ -69,7 +71,7 @@ func E2eReportParser(filename string) {
 	var testsuites Testsuites
 	err = xml.Unmarshal(byteValue, &testsuites)
 	if err != nil {
-		return
+		return result, errors.New("unable parse result" + err.Error())
 	}
 	var totalTestsCount int
 	var skippedTestsCount int
@@ -101,6 +103,10 @@ func E2eReportParser(filename string) {
 			}
 
 		}
+		result = append(result, map[string]string{"TestSuiteName": testsuites.Testsuites[i].Name,
+			"TotalTestsExecuted": strconv.Itoa(testsRun),
+			"TotalTestsPassed":   strconv.Itoa(TestsPassed),
+			"TotalTestsFailed":   strconv.Itoa(failedTestsCount)})
 		if len(failedTests) > 0 {
 			fmt.Println("Failed Tests Are:")
 		}
@@ -110,5 +116,6 @@ func E2eReportParser(filename string) {
 		}
 
 	}
+	return result, nil
 
 }
