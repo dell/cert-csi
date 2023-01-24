@@ -22,9 +22,6 @@ import (
 	"bufio"
 	"bytes"
 	"errors"
-	log "github.com/sirupsen/logrus"
-	"github.com/urfave/cli"
-	"gopkg.in/yaml.v2"
 	"io"
 	"io/ioutil"
 	"net/http"
@@ -35,6 +32,10 @@ import (
 	"strings"
 	"syscall"
 	"time"
+
+	log "github.com/sirupsen/logrus"
+	"github.com/urfave/cli"
+	"gopkg.in/yaml.v2"
 )
 
 var (
@@ -126,7 +127,7 @@ func CheckKubeConfigEnv() string {
 		log.Infof("KUBECONFIG env varibale is not set switching to default kube config '~/.kube/config'")
 		return filepath.Clean(defaultKubeConfig)
 	}
-	return ""
+	return kubeConfig
 }
 
 // FileExists will check the file existence and return true if it exists otherwise return false
@@ -152,8 +153,6 @@ func Prechecks(c *cli.Context) bool {
 // GetURL will return the URL by including the given version
 func GetURL(version string) (string, error) {
 	switch version {
-	case "v1.24.0":
-		return BinaryPrefix + version + BinarySuffix, nil
 	case "v1.25.0":
 		return BinaryPrefix + version + BinarySuffix, nil
 	case "v1.26.0":
@@ -277,7 +276,7 @@ func BuildE2eCommand(ctx *cli.Context) ([]string, error) {
 		args = append(args, driverConfig)
 	} else {
 		log.Errorf("Driver config file not found: %s", driverConfig)
-		return nil, errors.New("driver config file not found")
+		return args, errors.New("driver config file not found")
 	}
 	if focusString != "" {
 		args = append(args, focusStringKey)
@@ -323,7 +322,7 @@ func BuildE2eCommand(ctx *cli.Context) ([]string, error) {
 
 // GenerateReport will call parser function and generates the report
 func GenerateReport(report string) {
-	E2eReportParser(report)
+	_, _ = E2eReportParser(report)
 }
 
 // ExecuteE2ECommand will execute the ./e2e.test command and generates the reports

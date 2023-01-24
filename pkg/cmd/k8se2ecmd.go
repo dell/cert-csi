@@ -22,11 +22,12 @@ import (
 	"cert-csi/pkg/utils"
 	"errors"
 	"fmt"
-	log "github.com/sirupsen/logrus"
-	"github.com/urfave/cli"
 	"os"
 	"os/signal"
 	"syscall"
+
+	log "github.com/sirupsen/logrus"
+	"github.com/urfave/cli"
 )
 
 // GetK8sEndToEndCommand returns k8s-e2e CLI command by executing kubernetes tests
