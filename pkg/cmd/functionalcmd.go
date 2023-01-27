@@ -91,12 +91,10 @@ func GetFunctionalTestCommand() cli.Command {
 			getFunctionalVolumeCreateCommand(globalFlags),
 			getFunctionalProvisioningCommand(globalFlags),
 			getFunctionalCloneVolumeCommand(globalFlags),
-			getFunctionalVolumeExpansionCommand(globalFlags),
 			getFunctionalSnapCreationCommand(globalFlags),
 			getFunctionalSnapDeletionCommand(globalFlags),
 			getFunctionalMultiAttachVolCommand(globalFlags),
 			getFunctionalEphemeralCreationCommand(globalFlags),
-			getFunctionalRawBlockSnapCreationCommand(globalFlags),
 			getNodeDrainCommand(globalFlags),
 			getNodeUnCordonCommand(globalFlags),
 			getCapacityTrackingCommand(globalFlags),
@@ -509,75 +507,6 @@ func getFunctionalProvisioningCommand(globalFlags []cli.Flag) cli.Command {
 	}
 }
 
-func getFunctionalVolumeExpansionCommand(globalFlags []cli.Flag) cli.Command {
-	return cli.Command{
-		Name:     "expansion",
-		Usage:    "creates a specific number of volumes on the specific number of pods and then expands the volumes",
-		Category: "functional-test",
-		Flags: append(
-			[]cli.Flag{
-				cli.StringFlag{
-					Name:     "sc, storage, storageclass",
-					Usage:    "storage csi",
-					Required: true,
-				},
-				cli.IntFlag{
-					Name:  "volumeNumber, volNum, vn, v",
-					Usage: "number of volumes to attach to each pod",
-				},
-				cli.IntFlag{
-					Name:  "podNumber, podNum, pn, p",
-					Usage: "number of pod to create",
-				},
-				cli.StringFlag{
-					Name:  "intialSize, iSize",
-					Usage: "Initial size of the volumes to be created",
-					Value: "3Gi",
-				},
-				cli.StringFlag{
-					Name:  "expandedSize, expSize",
-					Usage: "Size to expand the volumes to",
-					Value: "6Gi",
-				},
-				cli.BoolFlag{
-					Name:  "block, b",
-					Usage: "create a block device",
-				},
-				cli.StringFlag{
-					Name:  "access-mode, am",
-					Usage: "volume access mode",
-				},
-			},
-			globalFlags...,
-		),
-		Action: func(c *cli.Context) error {
-			volNum := c.Int("volumeNumber")
-			podNum := c.Int("podNumber")
-			isBlock := c.Bool("block")
-			initialSize := c.String("intialSize")
-			expandedSize := c.String("expandedSize")
-			desc := c.String("description")
-			accessMode := c.String("access-mode")
-			s := []suites.Interface{
-				&suites.VolumeExpansionSuite{
-					VolumeNumber: volNum,
-					PodNumber:    podNum,
-					IsBlock:      isBlock,
-					InitialSize:  initialSize,
-					ExpandedSize: expandedSize,
-					Description:  desc,
-					AccessMode:   accessMode,
-				},
-			}
-
-			sr := createFunctionalSuiteRunner(c)
-			sr.RunFunctionalSuites(s)
-
-			return nil
-		},
-	}
-}
-
 func getFunctionalSnapCreationCommand(globalFlags []cli.Flag) cli.Command {
 	return cli.Command{
 		Name:      "snapshot",
@@ -636,57 +565,6 @@ func getFunctionalSnapCreationCommand(globalFlags []cli.Flag) cli.Command {
 					CustomSnapName:     snapName,
 					AccessModeOriginal: accessModeOriginal,
 					AccessModeRestored: accessModeRestored,
-				},
-			}
-
-			sr := createFunctionalSuiteRunner(c)
-			sr.RunFunctionalSuites(s)
-
-			return nil
-		},
-	}
-}
-
-func getFunctionalRawBlockSnapCreationCommand(globalFlags []cli.Flag) cli.Command {
-	return cli.Command{
-		Name:      "raw-block-snapshot",
-		ShortName: "block-snap",
-		Usage:     "test full snapshot pipeline for raw block volumes",
-		Category:  "functional-test",
-		Flags: append(
-			[]cli.Flag{
-				cli.StringFlag{
-					Name:     "sc, storage, storageclass",
-					Usage:    "storage csi",
-					Required: true,
-				},
-				cli.StringFlag{
-					Name:  "volumeSnapshotClass, vsc",
-					Usage: "define your volumeSnapshotClass",
-				},
-				cli.StringFlag{
-					Name:  "size, s",
-					Usage: "volume size to be created",
-				},
-				cli.StringFlag{
-					Name:  "access-mode, am",
-					Usage: "volume access mode",
-				},
-			},
-			globalFlags...,
-		),
-		Action: func(c *cli.Context) error {
-			snapClass := c.String("volumeSnapshotClass")
-			VolumeSize := c.String("size")
-			desc := c.String("description")
-			accessMode := c.String("access-mode")
-
-			s := []suites.Interface{
-				&suites.BlockSnapSuite{
-					SnapClass:   snapClass,
-					VolumeSize:  VolumeSize,
-					Description: desc,
-					AccessMode:  accessMode,
 				},
 			}
 
