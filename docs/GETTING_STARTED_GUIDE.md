@@ -66,8 +66,6 @@ limitations under the License.
             * [Running custom hooks from program](#running-custom-hooks-from-program)
          * [Screenshots](#screenshots-1)
 
-<!-- Added by: andrew, at: Wed 14 Apr 2021 04:31:27 PM MSK -->
-
 <!--te-->
 
 ## Installing
@@ -108,9 +106,6 @@ then you will also receive dynamically formatted suggestion right from your clus
 For example if you press TAB while passing --storageclass (or --sc) argument, 
 the tool will parse all existing Storage Classes from your cluster and suggest them as an input for you. 
 
-Example: 
-
-![2xspeed](https://media.eos2git.cec.lab.emc.com/user/7419/files/58ac5700-5fde-11eb-82fe-cd1b61ad3473)
 > To run a docker container your command should look something like this
 > `docker run --rm -it -v ~/.kube/config:/root/.kube/config -v $(pwd):/app/cert-csi cert-csi <usual program arguments>`
 

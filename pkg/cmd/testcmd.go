@@ -813,14 +813,26 @@ func getBlockSnapCommand(globalFlags []cli.Flag) cli.Command {
 					Name:  "volumeSnapshotClass, vsc",
 					Usage: "define your volumeSnapshotClass",
 				},
+				cli.StringFlag{
+					Name:  "size, s",
+					Usage: "volume size to be created",
+				},
+				cli.StringFlag{
+					Name:  "access-mode, am",
+					Usage: "volume access mode",
+				},
 			},
 			globalFlags...,
 		),
 		Before: updatePath,
 		Action: func(c *cli.Context) error {
 			snapClass := c.String("volumeSnapshotClass")
+			size := c.String("size")
+			accessMode := c.String("access-mode")
 			s := []suites.Interface{
-				&suites.BlockSnapSuite{SnapClass: snapClass},
+				&suites.BlockSnapSuite{SnapClass: snapClass,
+					VolumeSize: size,
+					AccessMode: accessMode},
 			}
 
 			sr, ss := createSuiteRunner(c, s)
