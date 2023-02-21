@@ -25,6 +25,7 @@ easy-readable document format, where this metrics will be analyzed
 
 ## Table of Contents
 
+* [About](#about)
 * [Code of Conduct](https://github.com/dell/csm/blob/main/docs/CODE_OF_CONDUCT.md)
 * [Maintainer Guide](https://github.com/dell/csm/blob/main/docs/MAINTAINER_GUIDE.md)
 * [Committer Guide](https://github.com/dell/csm/blob/main/docs/COMMITTER_GUIDE.md)
@@ -32,7 +33,6 @@ easy-readable document format, where this metrics will be analyzed
 * [List of Adopters](https://github.com/dell/csm/blob/main/docs/ADOPTERS.md)
 * [Support](https://github.com/dell/csm/blob/main/docs/SUPPORT.md)
 * [Security](https://github.com/dell/csm/blob/main/docs/SECURITY.md)
-* [About](#about)
 
 ## About
 
