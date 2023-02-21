@@ -85,7 +85,11 @@ func DownloadBinary(version string) error {
 		return err
 	}
 
-	defer resp.Body.Close()
+	defer func() {
+		if err := resp.Body.Close(); err != nil {
+			log.Errorf("Error closing HTTP response: %s", err.Error())
+		}
+	}()
 
 	// Create the file
 	out, err := os.Create(BinaryFile)
