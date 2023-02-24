@@ -39,7 +39,7 @@ spec:
         claimName: test-pvc
   containers:
     - name: test
-      image: amaas-eos-mw1.cec.lab.emc.com:5028/centos:latest
+      image: docker.io/centos:latest
       imagePullPolicy: IfNotPresent
       volumeMounts:
         - name: pv-storage
