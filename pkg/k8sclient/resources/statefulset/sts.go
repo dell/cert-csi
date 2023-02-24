@@ -123,7 +123,7 @@ func (c *Client) MakeStatefulSet(config *Config) *appsv1.StatefulSet {
 	}
 
 	if len(config.ContainerImage) == 0 {
-		config.ContainerImage = "amaas-eos-mw1.cec.lab.emc.com:5028/centos:latest"
+		config.ContainerImage = "docker.io/centos:latest"
 	}
 
 	if len(config.Command) == 0 {

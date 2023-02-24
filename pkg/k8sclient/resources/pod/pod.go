@@ -113,7 +113,7 @@ func (c *Client) MakePod(config *Config) *v1.Pod {
 	}
 
 	if len(config.ContainerImage) == 0 {
-		config.ContainerImage = "amaas-eos-mw1.cec.lab.emc.com:5028/centos:latest"
+		config.ContainerImage = "docker.io/centos:latest"
 	}
 
 	if len(config.Command) == 0 {
@@ -534,7 +534,7 @@ func (c *Client) MakeEphemeralPod(config *Config) *v1.Pod {
 	}
 
 	if len(config.ContainerImage) == 0 {
-		config.ContainerImage = "amaas-eos-mw1.cec.lab.emc.com:5028/centos:latest"
+		config.ContainerImage = "docker.io/centos:latest"
 	}
 
 	if len(config.Command) == 0 {
