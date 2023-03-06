@@ -304,6 +304,10 @@ func getRemoteReplicationProvisioningCommand(globalFlags []cli.Flag) cli.Command
 					Name:  "no-failover",
 					Usage: "set to `true` if you don't want to execute failover/reprotect actions",
 				},
+				cli.StringFlag{
+					Name:  "volumeSize, volSize",
+					Usage: "volume size to be created",
+				},
 			},
 			globalFlags...,
 		),
@@ -312,11 +316,13 @@ func getRemoteReplicationProvisioningCommand(globalFlags []cli.Flag) cli.Command
 			volNum := c.Int("volumeNumber")
 			remoteConfigPath := c.String("remote-config-path")
 			noFailover := c.Bool("no-failover")
+			volSize := c.String("volumeSize")
 			s := []suites.Interface{
 				&suites.RemoteReplicationProvisioningSuite{
 					VolumeNumber:     volNum,
 					RemoteConfigPath: remoteConfigPath,
 					NoFailover:       noFailover,
+					VolumeSize:       volSize,
 				},
 			}
 
@@ -346,6 +352,10 @@ func getReplicationCommand(globalFlags []cli.Flag) cli.Command {
 					Name:  "volumeSnapshotClass, vsc",
 					Usage: "define your volumeSnapshotClass",
 				},
+				cli.StringFlag{
+					Name:  "volumeSize, volSize",
+					Usage: "volume size to be created",
+				},
 			}, globalFlags...,
 		),
 		Before: updatePath,
@@ -353,10 +363,12 @@ func getReplicationCommand(globalFlags []cli.Flag) cli.Command {
 			volNum := c.Int("volumeNumber")
 			podNum := c.Int("podNumber")
 			snapClass := c.String("volumeSnapshotClass")
+			volSize := c.String("volumeSize")
 			s := []suites.Interface{
 				&suites.ReplicationSuite{
 					VolumeNumber: volNum,
 					PodNumber:    podNum,
+					VolumeSize:   volSize,
 					SnapClass:    snapClass,
 				},
 			}

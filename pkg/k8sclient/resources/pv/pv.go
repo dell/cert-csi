@@ -83,6 +83,11 @@ func (c *Client) DeleteAllPV(ctx context.Context, ns string, vaClient *va.Client
 	}
 	log.Debugf("Deleting all PVs")
 	for i, pv := range podList.Items {
+		if pv.Spec.PersistentVolumeSource.CSI == nil {
+			log.Debugf("CSI is nil, continuing")
+			continue
+		}
+
 		// try to delete only those PVs that has namespace matching with the suite's ns
 		if val, ok := pv.Spec.PersistentVolumeSource.CSI.VolumeAttributes["csi.storage.k8s.io/pvc/namespace"]; ok && val == ns {
 			log.Debugf("Deleting pv %s", pv.Name)

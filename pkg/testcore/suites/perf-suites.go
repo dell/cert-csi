@@ -368,16 +368,18 @@ func (rrps *RemoteReplicationProvisioningSuite) Run(ctx context.Context, storage
 	if err != nil {
 		return delFunc, err
 	}
-	isSingle := false
-	if storClass.Parameters["replication.storage.dell.com/remoteClusterID"] == "self" {
-		isSingle = true
-	}
+
 	var (
 		remotePVCObject  v1.PersistentVolumeClaim
 		remotePVClient   *pv.Client
 		remoteRGClient   *replicationgroup.Client
 		remoteKubeClient *k8sclient.KubeClient
 	)
+
+	isSingle := false
+	if storClass.Parameters["replication.storage.dell.com/remoteClusterID"] == "self" {
+		isSingle = true
+	}
 
 	if rrps.VolumeNumber <= 0 {
 		log.Info("Using default number of volumes")
@@ -388,7 +390,7 @@ func (rrps *RemoteReplicationProvisioningSuite) Run(ctx context.Context, storage
 		rrps.VolumeSize = "3Gi"
 	}
 
-	if rrps.RemoteConfigPath != "" {
+	if rrps.RemoteConfigPath != "" && !isSingle {
 		// Loading config
 		remoteConfig, err := k8sclient.GetConfig(rrps.RemoteConfigPath)
 		if err != nil {
@@ -414,6 +416,7 @@ func (rrps *RemoteReplicationProvisioningSuite) Run(ctx context.Context, storage
 	} else {
 		remotePVClient = pvClient
 		remoteRGClient = rgClient
+		remoteKubeClient = clients.KubeClient
 	}
 
 	scObject, scErr := scClient.Interface.Get(ctx, storageClass, metav1.GetOptions{})
@@ -704,7 +707,7 @@ func (rrps *RemoteReplicationProvisioningSuite) Run(ctx context.Context, storage
 		for _, pvc := range pvcList.Items {
 			log.Infof("Creating remote pvc %s", pvc.Name)
 
-			remotePvName := "replicated" + pvc.Spec.VolumeName
+			remotePvName := "replicated-" + pvc.Spec.VolumeName
 			remotePVObject, remotePVErr := pvClient.Interface.Get(ctx, remotePvName, metav1.GetOptions{})
 			if remotePVErr != nil {
 				return delFunc, remotePVErr
@@ -1619,6 +1622,7 @@ func (rs *ReplicationSuite) Run(ctx context.Context, storageClass string, client
 	log := utils.GetLoggerFromContext(ctx)
 	pvcClient := clients.PVCClient
 	podClient := clients.PodClient
+	rgClient := clients.RgClient
 
 	if rs.VolumeNumber <= 0 {
 		log.Info("Using default number of volumes")
@@ -1773,6 +1777,33 @@ func (rs *ReplicationSuite) Run(ctx context.Context, storageClass string, client
 	if readyErr != nil {
 		return delFunc, readyErr
 	}
+
+	// TODO: List PVCs once again, since here we can be sure that all annotations will be correctly set
+	pvcList, err := pvcClient.Interface.List(ctx, metav1.ListOptions{})
+	if err != nil {
+		return delFunc, err
+	}
+
+	rgName := pvcList.Items[0].Annotations[commonparams.ReplicationGroupName]
+	log.Infof("The replication group name from pvc is %s ", rgName)
+
+	// Add remote RG deletion step to deletion callback function
+	delFunc = func(f func() error) func() error {
+		return func() error {
+			log.Info("Deleting local RG")
+			rgObject := rgClient.Get(context.Background(), rgName)
+			deletedLocalRG := rgClient.Delete(context.Background(), rgObject.Object)
+			if deletedLocalRG.HasError() {
+				log.Warnf("error when deleting local RG: %s", deletedLocalRG.GetError().Error())
+			}
+
+			log.Info("Sleeping for 1 minute...")
+			time.Sleep(1 * time.Minute)
+
+			return nil
+		}
+	}(nil)
+
 	return delFunc, nil
 }
 
@@ -1811,6 +1842,12 @@ func (rs *ReplicationSuite) GetClients(namespace string, client *k8sclient.KubeC
 	if snErr != nil {
 		return nil, snErr
 	}
+
+	rgClient, rgErr := client.CreateRGClient()
+	if rgErr != nil {
+		return nil, rgErr
+	}
+
 	return &k8sclient.Clients{
 		PVCClient:         pvcClient,
 		PodClient:         podClient,
@@ -1819,6 +1856,7 @@ func (rs *ReplicationSuite) GetClients(namespace string, client *k8sclient.KubeC
 		MetricsClient:     metricsClient,
 		SnapClientGA:      snapGA,
 		SnapClientBeta:    snapBeta,
+		RgClient:          rgClient,
 	}, nil
 }
 

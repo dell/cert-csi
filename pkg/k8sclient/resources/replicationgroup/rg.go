@@ -23,7 +23,7 @@ import (
 	"strings"
 	"time"
 
-	replalpha "github.com/dell/csm-replication/api/v1alpha1"
+	replv1 "github.com/dell/csm-replication/api/v1"
 	"github.com/fatih/color"
 	"github.com/sirupsen/logrus"
 	"k8s.io/apimachinery/pkg/types"
@@ -47,7 +47,7 @@ type Client struct {
 // RG represents replication group
 type RG struct {
 	Client  *Client
-	Object  *replalpha.DellCSIReplicationGroup
+	Object  *replv1.DellCSIReplicationGroup
 	Deleted bool
 
 	// Used when error arises in syncable methods
@@ -55,7 +55,7 @@ type RG struct {
 }
 
 // Delete deletes replication group
-func (c *Client) Delete(ctx context.Context, rg *replalpha.DellCSIReplicationGroup) *RG {
+func (c *Client) Delete(ctx context.Context, rg *replv1.DellCSIReplicationGroup) *RG {
 	var funcErr error
 
 	err := c.Interface.Delete(ctx, rg)
@@ -75,7 +75,7 @@ func (c *Client) Delete(ctx context.Context, rg *replalpha.DellCSIReplicationGro
 func (c *Client) Get(ctx context.Context, name string) *RG {
 	var funcErr error
 
-	rgObject := &replalpha.DellCSIReplicationGroup{}
+	rgObject := &replv1.DellCSIReplicationGroup{}
 
 	err := c.Interface.Get(ctx, types.NamespacedName{Name: name}, rgObject)
 	if err != nil {
@@ -98,39 +98,96 @@ func (rg *RG) Name() string {
 
 // ExecuteAction executes replication group specific action
 func (rg *RG) ExecuteAction(ctx context.Context, rgAction string) error {
-	var funcErr error
 	log := utils.GetLoggerFromContext(ctx)
 	startTime := time.Now()
+
+	driverName := rg.Object.Labels["replication.storage.dell.com/driverName"]
+
+	expectedState := rg.getPreDesiredState(rgAction, driverName)
+
+	log.Infof("Action %s, Pre Expected State: %s", rgAction, expectedState)
+
+	err := rg.stablelize(ctx, rgAction, expectedState)
+	if err != nil {
+		return err
+	}
+
+	rgName := rg.Object.Name
+	rg.Object = rg.Client.Get(ctx, rgName).Object
+
+	rg.Object.Spec.Action = rgAction
+
+	err = rg.Client.Interface.Update(ctx, rg.Object)
+	if err != nil {
+		log.Infof("Unable to update: %s", err.Error())
+		return err
+	}
+
+	expectedState = rg.selectDesiredState(rgAction, driverName)
+
+	log.Infof("Action %s, Post Expected State: %s", rgAction, expectedState)
+
+	err = rg.stablelize(ctx, rgAction, expectedState)
+	if err != nil {
+		return err
+	}
+
+	yellow := color.New(color.FgHiYellow)
+	log.Infof("RG is reached to expected state %s in  %s", expectedState, yellow.Sprint(time.Since(startTime)))
+	return nil
+}
+
+// HasError checks to see if the given RG contains an error.
+func (rg *RG) HasError() bool {
+	return rg.error != nil
+}
+
+// GetError retrieves the error on the RG.
+func (rg *RG) GetError() error {
+	return rg.error
+}
+
+func (rg *RG) selectDesiredState(rgAction, driverName string) string {
+	if rgAction == "FAILOVER_REMOTE" || rgAction == "FAILOVER_LOCAL" {
+		if strings.Contains(driverName, "powermax") {
+			return "SUSPENDED"
+		}
+		return "FAILEDOVER"
+	} else if strings.Contains(rgAction, "REPROTECT") {
+		return "SYNCHRONIZED"
+	} else {
+		return "SYNCHRONIZED"
+	}
+}
+
+func (rg *RG) getPreDesiredState(rgAction, driverName string) string {
+	if rgAction == "FAILOVER_REMOTE" || rgAction == "FAILOVER_LOCAL" {
+		return "SYNCHRONIZED"
+	} else if strings.Contains(rgAction, "REPROTECT") {
+		if strings.Contains(driverName, "powermax") {
+			return "SUSPENDED"
+		}
+		return "FAILEDOVER"
+	} else {
+		return "SYNCHRONIZED"
+	}
+}
+
+func (rg *RG) stablelize(ctx context.Context, rgAction, expectedState string) error {
+	log := utils.GetLoggerFromContext(ctx)
 	timeout := Timeout
 	if rg.Client.Timeout != 0 {
 		timeout = time.Duration(rg.Client.Timeout) * time.Second
 	}
 
-	driverName := rg.Object.Labels["replication.storage.dell.com/driverName"]
 	rgName := rg.Object.Name
 	rg.Object.Spec.Action = rgAction
-	err := rg.Client.Interface.Update(ctx, rg.Object)
-	if err != nil {
-		funcErr = err
-	}
 
 	rgObject := &RG{
 		Client:  rg.Client,
 		Object:  rg.Object,
 		Deleted: false,
-		error:   funcErr,
-	}
-	expectedState := ""
-	if rgAction == "FAILOVER_REMOTE" || rgAction == "FAILOVER_LOCAL" {
-		if strings.Contains(driverName, "powermax") {
-			expectedState = "SUSPENDED"
-		} else {
-			expectedState = "FAILEDOVER"
-		}
-	} else if strings.Contains(rgAction, "REPROTECT") {
-		expectedState = "SYNCHRONIZED"
-	} else {
-		return fmt.Errorf("given action is invalid")
+		error:   nil,
 	}
 
 	pollErr := wait.PollImmediate(10*time.Second, timeout,
@@ -142,35 +199,16 @@ func (rg *RG) ExecuteAction(ctx context.Context, rgAction string) error {
 			default:
 				break
 			}
-			found := true
+
 			rgObject = rg.Client.Get(ctx, rgName)
-			log.Infof("current  RG state is %s and expected is %s", rgObject.Object.Status.ReplicationLinkState.State, expectedState)
+			log.Infof("current RG state is %s and expected is %s", rgObject.Object.Status.ReplicationLinkState.State, expectedState)
 			if rgObject.Object.Status.ReplicationLinkState.State != expectedState {
 				log.Debugf("RG is not reached to expected state %s", expectedState)
-				found = false
-			}
-			if !found {
 				return false, nil
 			}
+
 			return true, nil
 		})
-	if pollErr != nil {
-		return pollErr
-	}
-	yellow := color.New(color.FgHiYellow)
-	log.Infof("RG is reached to expected state %s in  %s", expectedState, yellow.Sprint(time.Since(startTime)))
-	return nil
-}
 
-// HasError checks if replication group contains an error
-func (rg *RG) HasError() bool {
-	if rg.error != nil {
-		return true
-	}
-	return false
-}
-
-// GetError returns replication group error
-func (rg *RG) GetError() error {
-	return rg.error
+	return pollErr
 }
