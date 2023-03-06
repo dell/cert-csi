@@ -43,7 +43,7 @@ import (
 	"time"
 
 	vgsAlpha "github.com/dell/csi-volumegroup-snapshotter/api/v1"
-	replalpha "github.com/dell/csm-replication/api/v1alpha1"
+	replv1 "github.com/dell/csm-replication/api/v1"
 	"github.com/fatih/color"
 	apiExtensionsv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
 	apierrs "k8s.io/apimachinery/pkg/api/errors"
@@ -280,7 +280,7 @@ func (c *KubeClient) CreateRGClient() (*rg.Client, error) {
 
 	utilruntime.Must(clientgoscheme.AddToScheme(scheme))
 	utilruntime.Must(apiExtensionsv1.AddToScheme(scheme))
-	utilruntime.Must(replalpha.AddToScheme(scheme))
+	utilruntime.Must(replv1.AddToScheme(scheme))
 
 	k8sClient, err := client.New(c.Config, client.Options{Scheme: scheme})
 	if err != nil {

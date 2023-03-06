@@ -23,7 +23,7 @@ import (
 	"strings"
 	"time"
 
-	replalpha "github.com/dell/csm-replication/api/v1alpha1"
+	replv1"github.com/dell/csm-replication/api/v1"
 	"github.com/fatih/color"
 	"github.com/sirupsen/logrus"
 	"k8s.io/apimachinery/pkg/types"
@@ -47,7 +47,7 @@ type Client struct {
 // RG represents replication group
 type RG struct {
 	Client  *Client
-	Object  *replalpha.DellCSIReplicationGroup
+	Object  *replv1.DellCSIReplicationGroup
 	Deleted bool
 
 	// Used when error arises in syncable methods
@@ -55,7 +55,7 @@ type RG struct {
 }
 
 // Delete deletes replication group
-func (c *Client) Delete(ctx context.Context, rg *replalpha.DellCSIReplicationGroup) *RG {
+func (c *Client) Delete(ctx context.Context, rg *replv1.DellCSIReplicationGroup) *RG {
 	var funcErr error
 
 	err := c.Interface.Delete(ctx, rg)
@@ -75,7 +75,7 @@ func (c *Client) Delete(ctx context.Context, rg *replalpha.DellCSIReplicationGro
 func (c *Client) Get(ctx context.Context, name string) *RG {
 	var funcErr error
 
-	rgObject := &replalpha.DellCSIReplicationGroup{}
+	rgObject := &replv1.DellCSIReplicationGroup{}
 
 	err := c.Interface.Get(ctx, types.NamespacedName{Name: name}, rgObject)
 	if err != nil {
