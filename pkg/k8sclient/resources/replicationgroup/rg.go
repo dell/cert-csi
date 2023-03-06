@@ -23,7 +23,7 @@ import (
 	"strings"
 	"time"
 
-	replv1"github.com/dell/csm-replication/api/v1"
+	replv1 "github.com/dell/csm-replication/api/v1"
 	"github.com/fatih/color"
 	"github.com/sirupsen/logrus"
 	"k8s.io/apimachinery/pkg/types"
