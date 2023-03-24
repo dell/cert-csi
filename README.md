@@ -33,9 +33,13 @@ easy-readable document format, where this metrics will be analyzed
 * [List of Adopters](https://github.com/dell/csm/blob/main/docs/ADOPTERS.md)
 * [Support](https://github.com/dell/csm/blob/main/docs/SUPPORT.md)
 * [Security](https://github.com/dell/csm/blob/main/docs/SECURITY.md)
+* [Certification Tool to Validate Drivers](#certification-tool-to-validate-drivers)
 
 ## About
 
 _CERT-CSI_ is 100% open source and community-driven. All components are available
 under [Apache 2 License](https://www.apache.org/licenses/LICENSE-2.0.html) on
 GitHub.
+
+## Certification Tool to Validate Drivers
+Please refer [Cert-CSI Documentation](https://dell.github.io/csm-docs/docs/csidriver/installation/test/certcsi/)
