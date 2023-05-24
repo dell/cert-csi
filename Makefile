@@ -40,15 +40,20 @@ gocover:
 	go tool cover -html=c.out
 
 build:
-	CGO_ENABLED=0 go build ./cmd/cert-csi
+	go build -ldflags "-s -w" ./cmd/cert-csi
+
+# build-statically-linked : used for building a standalone binary with statically linked glibc
+# this command should be used when building the binary for distributing it to customer/user
+build-statically-linked:
+	CGO_ENABLED=1 CGO_LDFLAGS="-static" go build ./cmd/cert-csi
 
 install-nix:
-	CGO_ENABLED=0 go build ./cmd/cert-csi
+	go build -ldflags "-s -w" ./cmd/cert-csi
 	./autocomplete.sh
 
 distribute:
-	GOOS=windows GOARCH=amd64 CGO_ENABLED=0 go build -o build/cert-csi.exe ./cmd/cert-csi
-	GOOS=linux GOARCH=amd64 CGO_ENABLED=0 go build -o build/cert-csi ./cmd/cert-csi
+	GOOS=windows GOARCH=amd64 go build -o build/cert-csi.exe -ldflags "-s -w" ./cmd/cert-csi
+	GOOS=linux GOARCH=amd64 go build -o build/cert-csi -ldflags "-s -w" ./cmd/cert-csi
 
 install-ms:
 	kubectl create -f ./pkg/k8sclient/manifests/metrics-server
