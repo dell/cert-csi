@@ -42,6 +42,11 @@ gocover:
 build:
 	go build -ldflags "-s -w" ./cmd/cert-csi
 
+# build-statically-linked : used for building a standalone binary with statically linked glibc
+# this command should be used when building the binary for distributing it to customer/user
+build-statically-linked:
+	CGO_ENABLED=1 CGO_LDFLAGS="-static" go build ./cmd/cert-csi
+
 install-nix:
 	go build -ldflags "-s -w" ./cmd/cert-csi
 	./autocomplete.sh
