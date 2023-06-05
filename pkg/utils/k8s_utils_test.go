@@ -160,6 +160,7 @@ func TestGetURL(t *testing.T) {
 		want    string
 		wantErr bool
 	}{
+		{"valid version27", args{"v1.27.0"}, BinaryPrefix + "v1.27.0" + BinarySuffix, false},
 		{"valid version26", args{"v1.26.0"}, BinaryPrefix + "v1.26.0" + BinarySuffix, false},
 		{"valid version25", args{"v1.25.0"}, BinaryPrefix + "v1.25.0" + BinarySuffix, false},
 		{"invalid version", args{"v1.2.0"}, "", true},
