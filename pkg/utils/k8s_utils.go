@@ -161,6 +161,8 @@ func GetURL(version string) (string, error) {
 		return BinaryPrefix + version + BinarySuffix, nil
 	case "v1.26.0":
 		return BinaryPrefix + version + BinarySuffix, nil
+	case "v1.27.0":
+		return BinaryPrefix + version + BinarySuffix, nil
 	default:
 		return "", errors.New("Unable to build URL with the given version:" + version)
 	}
