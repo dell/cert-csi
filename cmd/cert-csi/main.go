@@ -49,7 +49,7 @@ func init() {
 
 func main() {
 	app := cli.NewApp()
-	app.Name = "csi-cert"
+	app.Name = "cert-csi"
 	app.Version = "0.8.1"
 	app.Usage = "unified method of benchmarking and certification of csi drivers"
 	app.EnableBashCompletion = true
