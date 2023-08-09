@@ -22,7 +22,6 @@ import (
 	"cert-csi/pkg/testcore/runner"
 	"cert-csi/pkg/testcore/suites"
 	"fmt"
-	"strings"
 	"time"
 
 	log "github.com/sirupsen/logrus"
@@ -934,9 +933,9 @@ func getEphemeralCreationCommand(globalFlags []cli.Flag) cli.Command {
 					Name:  "pod-name, pname",
 					Usage: "custom name for pod and cloned volume pod to create",
 				},
-				cli.StringSliceFlag{
-					Name:     "volumeAttributes, attr",
-					Usage:    "CSI attributes for volume. Could be several.",
+				cli.StringFlag{
+					Name:     "csi-attributes, attr",
+					Usage:    "CSI attributes properties file for the ephemeral volume",
 					Required: true,
 				},
 			},
@@ -948,16 +947,12 @@ func getEphemeralCreationCommand(globalFlags []cli.Flag) cli.Command {
 			desc := c.String("description")
 			fsType := c.String("fs-type")
 			podName := c.String("pod-name")
-			attr := c.StringSlice("attr")
+			attributesFile := c.String("csi-attributes")
 
-			var volAttributes = map[string]string{}
-
-			for _, param := range attr {
-				values := strings.Split(param, "=")
-				if len(values) != 2 {
-					log.Errorf("Parameter %s incorrect.", param)
-				}
-				volAttributes[values[0]] = values[1]
+			// We will generate volumeAttributes by reading the properties file
+			volAttributes, err := readEphemeralConfig(attributesFile)
+			if err != nil {
+				return err
 			}
 			log.Debugf("Volume Attributes:%+v", volAttributes)
 
