@@ -62,12 +62,12 @@ type MultiReporter interface {
 }
 
 // GenerateAllReports generates reports of types HTML and Text
-func GenerateAllReports(testRunNames []string, db store.Store) error {
+func GenerateAllReports(testRunNames []string, dbs []*store.StorageClassDB) error {
 	reportTypes := []ReportType{
 		HTMLReport,
 		TextReport,
 	}
-	return GenerateReports(testRunNames, reportTypes, db)
+	return GenerateReports(testRunNames, reportTypes, dbs)
 }
 
 // GenerateReportsFromMultipleDBs generates reports from multiple DBs
@@ -99,27 +99,40 @@ func GenerateReportsFromMultipleDBs(reportTypes []ReportType, scDBs []*store.Sto
 }
 
 // GenerateReports generates reports of type HTML and Text
-func GenerateReports(testRunNames []string, reportTypes []ReportType, db store.Store) error {
-	mc := collector.NewMetricsCollector(db)
+func GenerateReports(testRunNames []string, reportTypes []ReportType, dbs []*store.StorageClassDB) error {
 	funcMap := map[ReportType]Reporter{
 		HTMLReport: &HTMLReporter{},
 		TextReport: &TextReporter{},
 	}
 	log.Infof("Started generating reports...")
 
+	invalidTestRuns := []string{}
+	// Checking availability of all the test runs in every database
 	for _, testRun := range testRunNames {
-		metricsCollection, err := mc.Collect(testRun)
-		if err != nil {
-			return err
-		}
+		testRunFound := false
+		for _, db := range dbs {
+			mc := collector.NewMetricsCollector(db.DB)
+			metricsCollection, err := mc.Collect(testRun)
+			if err != nil {
+				continue
+			}
 
-		generatePlots(testRun, metricsCollection)
+			testRunFound = true
+			generatePlots(testRun, metricsCollection)
 
-		for _, reportType := range reportTypes {
-			if err := funcMap[reportType].Generate(testRun, metricsCollection); err != nil {
-				return err
+			for _, reportType := range reportTypes {
+				if err := funcMap[reportType].Generate(testRun, metricsCollection); err != nil {
+					return err
+				}
 			}
 		}
+		// Collecting the testRuns which are not found in any of the databases
+		if !testRunFound {
+			invalidTestRuns = append(invalidTestRuns, testRun)
+		}
+	}
+	if len(invalidTestRuns) != 0 {
+		return fmt.Errorf("test runs: %v not found", invalidTestRuns)
 	}
 	return nil
 }

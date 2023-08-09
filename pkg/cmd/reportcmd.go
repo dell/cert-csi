@@ -127,9 +127,9 @@ func GetReportCommand() cli.Command {
 
 			var err error
 			if len(types) == 0 {
-				err = reporter.GenerateAllReports(convertedNames, scDBs[0].DB)
+				err = reporter.GenerateAllReports(convertedNames, scDBs)
 			} else {
-				err = reporter.GenerateReports(convertedNames, types, scDBs[0].DB)
+				err = reporter.GenerateReports(convertedNames, types, scDBs)
 			}
 
 			if err != nil {
