@@ -59,11 +59,14 @@ type ReporterTestSuite struct {
 	db       store.Store
 	runName  string
 	filepath string
+	dbs      []*store.StorageClassDB
 }
 
 func (suite *ReporterTestSuite) SetupSuite() {
 	plotter.FolderPath = "/.cert-csi/tmp/report-tests/"
 	suite.db = store.NewSQLiteStore("file:testdata/reporter_test.db")
+	db := &store.StorageClassDB{DB: store.NewSQLiteStore("file:testdata/reporter_test.db")}
+	suite.dbs = []*store.StorageClassDB{db}
 	suite.runName = "test-run-d6d1f7c8"
 	curUser, err := os.UserHomeDir()
 	if err != nil {
@@ -114,7 +117,7 @@ func (suite *ReporterTestSuite) TestGenerateAllReports() {
 
 	type args struct {
 		testRunNames []string
-		db           store.Store
+		dbs          []*store.StorageClassDB
 	}
 	tests := []struct {
 		name    string
@@ -125,7 +128,7 @@ func (suite *ReporterTestSuite) TestGenerateAllReports() {
 			name: "all nil",
 			args: args{
 				testRunNames: nil,
-				db:           nil,
+				dbs:          nil,
 			},
 			wantErr: false,
 		},
@@ -133,7 +136,7 @@ func (suite *ReporterTestSuite) TestGenerateAllReports() {
 			name: "nil db",
 			args: args{
 				testRunNames: []string{"test-run-d6d1f7c8"},
-				db:           nil,
+				dbs:          nil,
 			},
 			wantErr: true,
 		},
@@ -141,7 +144,7 @@ func (suite *ReporterTestSuite) TestGenerateAllReports() {
 			name: "nil name",
 			args: args{
 				testRunNames: nil,
-				db:           suite.db,
+				dbs:          suite.dbs,
 			},
 			wantErr: false,
 		},
@@ -149,7 +152,7 @@ func (suite *ReporterTestSuite) TestGenerateAllReports() {
 			name: "no run in db",
 			args: args{
 				testRunNames: []string{"non-existent-name"},
-				db:           suite.db,
+				dbs:          suite.dbs,
 			},
 			wantErr: true,
 		},
@@ -157,7 +160,7 @@ func (suite *ReporterTestSuite) TestGenerateAllReports() {
 			name: "single successful test run",
 			args: args{
 				testRunNames: []string{"test-run-d6d1f7c8"},
-				db:           suite.db,
+				dbs:          suite.dbs,
 			},
 			wantErr: false,
 		},
@@ -165,14 +168,14 @@ func (suite *ReporterTestSuite) TestGenerateAllReports() {
 			name: "successful and unsuccessful test run",
 			args: args{
 				testRunNames: []string{"test-run-d6d1f7c8", "test-run-e47deecc"},
-				db:           suite.db,
+				dbs:          suite.dbs,
 			},
 			wantErr: false,
 		},
 	}
 	for _, tt := range tests {
 		suite.Run(tt.name, func() {
-			err := GenerateAllReports(tt.args.testRunNames, tt.args.db)
+			err := GenerateAllReports(tt.args.testRunNames, tt.args.dbs)
 			if tt.wantErr {
 				suite.Error(err)
 			} else {
