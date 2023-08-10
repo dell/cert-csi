@@ -62,12 +62,12 @@ type MultiReporter interface {
 }
 
 // GenerateAllReports generates reports of types HTML and Text
-func GenerateAllReports(testRunNames []string, dbs []*store.StorageClassDB) error {
+func GenerateAllReports(dbs []*store.StorageClassDB) error {
 	reportTypes := []ReportType{
 		HTMLReport,
 		TextReport,
 	}
-	return GenerateReports(testRunNames, reportTypes, dbs)
+	return GenerateReports(reportTypes, dbs)
 }
 
 // GenerateReportsFromMultipleDBs generates reports from multiple DBs
@@ -99,7 +99,7 @@ func GenerateReportsFromMultipleDBs(reportTypes []ReportType, scDBs []*store.Sto
 }
 
 // GenerateReports generates reports of type HTML and Text
-func GenerateReports(testRunNames []string, reportTypes []ReportType, dbs []*store.StorageClassDB) error {
+func GenerateReports(reportTypes []ReportType, dbs []*store.StorageClassDB) error {
 	funcMap := map[ReportType]Reporter{
 		HTMLReport: &HTMLReporter{},
 		TextReport: &TextReporter{},
@@ -108,27 +108,21 @@ func GenerateReports(testRunNames []string, reportTypes []ReportType, dbs []*sto
 
 	invalidTestRuns := []string{}
 	// Checking availability of all the test runs in every database
-	for _, testRun := range testRunNames {
-		testRunFound := false
-		for _, db := range dbs {
-			mc := collector.NewMetricsCollector(db.DB)
-			metricsCollection, err := mc.Collect(testRun)
-			if err != nil {
-				continue
-			}
-
-			testRunFound = true
-			generatePlots(testRun, metricsCollection)
-
-			for _, reportType := range reportTypes {
-				if err := funcMap[reportType].Generate(testRun, metricsCollection); err != nil {
-					return err
-				}
-			}
+	for i := 0; i < len(dbs); i++ {
+		mc := collector.NewMetricsCollector(dbs[i].DB)
+		metricsCollection, err := mc.Collect(dbs[i].TestRun.Name)
+		if err != nil {
+			log.Warnf("unable to collect metrics for the test run: %s", dbs[i].TestRun.Name)
+			invalidTestRuns = append(invalidTestRuns, dbs[i].TestRun.Name)
+			continue
 		}
-		// Collecting the testRuns which are not found in any of the databases
-		if !testRunFound {
-			invalidTestRuns = append(invalidTestRuns, testRun)
+
+		generatePlots(dbs[i].TestRun.Name, metricsCollection)
+
+		for _, reportType := range reportTypes {
+			if err := funcMap[reportType].Generate(dbs[i].TestRun.Name, metricsCollection); err != nil {
+				return err
+			}
 		}
 	}
 	if len(invalidTestRuns) != 0 {

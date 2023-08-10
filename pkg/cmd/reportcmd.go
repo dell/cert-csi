@@ -70,15 +70,12 @@ func GetReportCommand() cli.Command {
 		Flags:    append([]cli.Flag{testRunNamesFlag}, reportTypeFlags...),
 		Action: func(c *cli.Context) error {
 			var scDBs []*store.StorageClassDB
-			var convertedNames []string
 			for _, testRun := range testRunNames {
 				db, name := parseTestRun(testRun)
 				if db == "" {
 					db = c.GlobalString("db")
 				}
 				log.Info(db, ":", name)
-
-				convertedNames = append(convertedNames, name)
 
 				pathToDb := fmt.Sprintf("file:%s", db)
 				DB := store.NewSQLiteStore(pathToDb)
@@ -127,9 +124,9 @@ func GetReportCommand() cli.Command {
 
 			var err error
 			if len(types) == 0 {
-				err = reporter.GenerateAllReports(convertedNames, scDBs)
+				err = reporter.GenerateAllReports(scDBs)
 			} else {
-				err = reporter.GenerateReports(convertedNames, types, scDBs)
+				err = reporter.GenerateReports(types, scDBs)
 			}
 
 			if err != nil {
