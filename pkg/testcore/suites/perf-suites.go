@@ -1268,11 +1268,17 @@ func (vgs *VolumeGroupSnapSuite) GetClients(namespace string, client *k8sclient.
 		return nil, vaErr
 	}
 
+	metricsClient, mcErr := client.CreateMetricsClient(namespace)
+	if mcErr != nil {
+		return nil, mcErr
+	}
+
 	return &k8sclient.Clients{
-		PVCClient: pvcClient,
-		PodClient: podClient,
-		VaClient:  vaClient,
-		VgsClient: vgsClient,
+		PVCClient:     pvcClient,
+		PodClient:     podClient,
+		VaClient:      vaClient,
+		VgsClient:     vgsClient,
+		MetricsClient: metricsClient,
 	}, nil
 }
 
