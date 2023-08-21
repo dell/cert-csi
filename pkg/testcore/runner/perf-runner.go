@@ -574,7 +574,7 @@ func (sr *SuiteRunner) Close() {
 
 	for _, scDB := range sr.ScDBs {
 		if sr.NoMetrics == false && sr.noreport == false {
-			err := reporter.GenerateAllReports([]string{scDB.TestRun.Name}, scDB.DB)
+			err := reporter.GenerateAllReports(sr.ScDBs)
 			if err != nil {
 				logrus.Errorf("Can't generate reports; error=%v", err)
 			}

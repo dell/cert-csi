@@ -56,14 +56,40 @@ func (sc *StdoutCapture) StopCapture() (string, error) {
 
 type ReporterTestSuite struct {
 	suite.Suite
-	db       store.Store
-	runName  string
-	filepath string
+	db                   store.Store
+	runName              string
+	filepath             string
+	noRunIndbs           []*store.StorageClassDB
+	successRunIndbs      []*store.StorageClassDB
+	unsuccessfulRunIndbs []*store.StorageClassDB
 }
 
 func (suite *ReporterTestSuite) SetupSuite() {
 	plotter.FolderPath = "/.cert-csi/tmp/report-tests/"
 	suite.db = store.NewSQLiteStore("file:testdata/reporter_test.db")
+
+	// When the test run is not present in the database
+	noRunIndbsdbs := &store.StorageClassDB{DB: store.NewSQLiteStore("file:testdata/reporter_test.db")}
+
+	// When a test run is present in the database
+	successRunIndbs := &store.StorageClassDB{
+		DB: store.NewSQLiteStore("file:testdata/reporter_test.db"),
+		TestRun: store.TestRun{
+			Name: "test-run-d6d1f7c8",
+		},
+	}
+
+	// When unsuccessful test run is found in the database
+	unsuccessfulRunIndbs := &store.StorageClassDB{
+		DB: store.NewSQLiteStore("file:testdata/reporter_test.db"),
+		TestRun: store.TestRun{
+			Name: "unsuccessful-test-run",
+		},
+	}
+
+	suite.noRunIndbs = []*store.StorageClassDB{noRunIndbsdbs}
+	suite.successRunIndbs = []*store.StorageClassDB{successRunIndbs}
+	suite.unsuccessfulRunIndbs = []*store.StorageClassDB{unsuccessfulRunIndbs}
 	suite.runName = "test-run-d6d1f7c8"
 	curUser, err := os.UserHomeDir()
 	if err != nil {
@@ -113,8 +139,7 @@ func (suite *ReporterTestSuite) TestGenerateTextReporter() {
 func (suite *ReporterTestSuite) TestGenerateAllReports() {
 
 	type args struct {
-		testRunNames []string
-		db           store.Store
+		dbs []*store.StorageClassDB
 	}
 	tests := []struct {
 		name    string
@@ -122,65 +147,45 @@ func (suite *ReporterTestSuite) TestGenerateAllReports() {
 		wantErr bool
 	}{
 		{
-			name: "all nil",
+			name: "nil dbs",
 			args: args{
-				testRunNames: nil,
-				db:           nil,
+				dbs: nil,
 			},
 			wantErr: false,
 		},
 		{
-			name: "nil db",
+			name: "no run in dbs",
 			args: args{
-				testRunNames: []string{"test-run-d6d1f7c8"},
-				db:           nil,
+				dbs: suite.noRunIndbs,
 			},
 			wantErr: true,
 		},
 		{
-			name: "nil name",
+			name: "successful test run",
 			args: args{
-				testRunNames: nil,
-				db:           suite.db,
+				dbs: suite.successRunIndbs,
 			},
 			wantErr: false,
 		},
 		{
-			name: "no run in db",
+			name: "unsuccessful test run",
 			args: args{
-				testRunNames: []string{"non-existent-name"},
-				db:           suite.db,
+				dbs: suite.unsuccessfulRunIndbs,
 			},
 			wantErr: true,
-		},
-		{
-			name: "single successful test run",
-			args: args{
-				testRunNames: []string{"test-run-d6d1f7c8"},
-				db:           suite.db,
-			},
-			wantErr: false,
-		},
-		{
-			name: "successful and unsuccessful test run",
-			args: args{
-				testRunNames: []string{"test-run-d6d1f7c8", "test-run-e47deecc"},
-				db:           suite.db,
-			},
-			wantErr: false,
 		},
 	}
 	for _, tt := range tests {
 		suite.Run(tt.name, func() {
-			err := GenerateAllReports(tt.args.testRunNames, tt.args.db)
+			err := GenerateAllReports(tt.args.dbs)
 			if tt.wantErr {
 				suite.Error(err)
 			} else {
 				suite.NoError(err)
-				for _, run := range tt.args.testRunNames {
-					name := fmt.Sprintf("report-%s", run)
-					htmlPath := fmt.Sprintf(suite.filepath+"/reports/%s/%s.html", run, name)
-					txtPath := fmt.Sprintf(suite.filepath+"/reports/%s/%s.txt", run, name)
+				for _, run := range tt.args.dbs {
+					name := fmt.Sprintf("report-%s", run.TestRun.Name)
+					htmlPath := fmt.Sprintf(suite.filepath+"/reports/%s/%s.html", run.TestRun.Name, name)
+					txtPath := fmt.Sprintf(suite.filepath+"/reports/%s/%s.txt", run.TestRun.Name, name)
 					suite.FileExists(htmlPath)
 					suite.FileExists(txtPath)
 				}

@@ -62,12 +62,12 @@ type MultiReporter interface {
 }
 
 // GenerateAllReports generates reports of types HTML and Text
-func GenerateAllReports(testRunNames []string, db store.Store) error {
+func GenerateAllReports(dbs []*store.StorageClassDB) error {
 	reportTypes := []ReportType{
 		HTMLReport,
 		TextReport,
 	}
-	return GenerateReports(testRunNames, reportTypes, db)
+	return GenerateReports(reportTypes, dbs)
 }
 
 // GenerateReportsFromMultipleDBs generates reports from multiple DBs
@@ -99,27 +99,34 @@ func GenerateReportsFromMultipleDBs(reportTypes []ReportType, scDBs []*store.Sto
 }
 
 // GenerateReports generates reports of type HTML and Text
-func GenerateReports(testRunNames []string, reportTypes []ReportType, db store.Store) error {
-	mc := collector.NewMetricsCollector(db)
+func GenerateReports(reportTypes []ReportType, dbs []*store.StorageClassDB) error {
 	funcMap := map[ReportType]Reporter{
 		HTMLReport: &HTMLReporter{},
 		TextReport: &TextReporter{},
 	}
 	log.Infof("Started generating reports...")
 
-	for _, testRun := range testRunNames {
-		metricsCollection, err := mc.Collect(testRun)
+	invalidTestRuns := []string{}
+	// Checking availability of all the test runs in every database
+	for i := 0; i < len(dbs); i++ {
+		mc := collector.NewMetricsCollector(dbs[i].DB)
+		metricsCollection, err := mc.Collect(dbs[i].TestRun.Name)
 		if err != nil {
-			return err
+			log.Warnf("unable to collect metrics for the test run: %s", dbs[i].TestRun.Name)
+			invalidTestRuns = append(invalidTestRuns, dbs[i].TestRun.Name)
+			continue
 		}
 
-		generatePlots(testRun, metricsCollection)
+		generatePlots(dbs[i].TestRun.Name, metricsCollection)
 
 		for _, reportType := range reportTypes {
-			if err := funcMap[reportType].Generate(testRun, metricsCollection); err != nil {
+			if err := funcMap[reportType].Generate(dbs[i].TestRun.Name, metricsCollection); err != nil {
 				return err
 			}
 		}
+	}
+	if len(invalidTestRuns) != 0 {
+		return fmt.Errorf("test runs: %v not found", invalidTestRuns)
 	}
 	return nil
 }
