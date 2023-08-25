@@ -23,7 +23,6 @@ import (
 	"embed"
 	"fmt"
 	"html/template"
-	"io/ioutil"
 	"os"
 	"path/filepath"
 	"strconv"
@@ -359,7 +358,7 @@ func addPathToFile(fileName string, exportVar string, path string) error {
 		return err
 	}
 
-	input, err := ioutil.ReadFile(f.Name())
+	input, err := os.ReadFile(f.Name())
 	if err != nil {
 		panic(err)
 	}
@@ -379,7 +378,7 @@ func addPathToFile(fileName string, exportVar string, path string) error {
 	}
 
 	output := strings.Join(lines, "\n")
-	err = ioutil.WriteFile(f.Name(), []byte(output), 0600)
+	err = os.WriteFile(f.Name(), []byte(output), 0600)
 	if err != nil {
 		panic(err)
 	}

@@ -23,7 +23,6 @@ import (
 	"bytes"
 	"errors"
 	"io"
-	"io/ioutil"
 	"net/http"
 	"os"
 	"os/exec"
@@ -218,7 +217,7 @@ type DriverConfig struct {
 
 // ReadTestDriverConfig will read the driver config
 func ReadTestDriverConfig(driverconfig string) string {
-	file, err := ioutil.ReadFile(filepath.Clean(driverconfig))
+	file, err := os.ReadFile(filepath.Clean(driverconfig))
 	var DriverConfig DriverConfig
 	err = yaml.Unmarshal(file, &DriverConfig)
 	if err != nil {
@@ -238,7 +237,7 @@ func SkipTests(skipFile string) (string, error) {
 	if skipFile == "" {
 		skipFile = IgnoreFile
 	}
-	file, err := ioutil.ReadFile(filepath.Clean(skipFile))
+	file, err := os.ReadFile(filepath.Clean(skipFile))
 	var tests SkippedTests
 	err = yaml.Unmarshal(file, &tests)
 	if err != nil {
