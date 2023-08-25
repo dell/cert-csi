@@ -22,7 +22,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"io/ioutil"
+	"os"
 	"path/filepath"
 	"strconv"
 	"strings"
@@ -197,7 +197,7 @@ func (c *Client) MakeStatefulSet(config *Config) *appsv1.StatefulSet {
 func (c *Client) MakeStatefulSetFromYaml(filePath string) *appsv1.StatefulSet {
 	sts := &appsv1.StatefulSet{}
 
-	file, _ := ioutil.ReadFile(filepath.Clean(filePath))
+	file, _ := os.ReadFile(filepath.Clean(filePath))
 	fmt.Printf("%s \n", string(file))
 
 	errUnmarshal := yaml.Unmarshal(file, sts)
