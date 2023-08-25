@@ -22,7 +22,7 @@ import (
 	"cert-csi/pkg/store"
 	"errors"
 	"fmt"
-	"io/ioutil"
+	"io"
 	"os"
 	"path/filepath"
 	"testing"
@@ -47,7 +47,7 @@ func (sc *StdoutCapture) StopCapture() (string, error) {
 	}
 	_ = os.Stdout.Close()
 	os.Stdout = sc.oldStdout
-	bytes, err := ioutil.ReadAll(sc.readPipe)
+	bytes, err := io.ReadAll(sc.readPipe)
 	if err != nil {
 		return "", err
 	}

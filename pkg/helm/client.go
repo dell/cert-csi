@@ -19,7 +19,6 @@ package helm
 import (
 	"context"
 	"fmt"
-	"io/ioutil"
 	"sync"
 
 	"github.com/pkg/errors"
@@ -88,7 +87,7 @@ func (c *Client) AddRepository(name, url string) error {
 		return err
 	}
 
-	b, err := ioutil.ReadFile(filepath.Clean(repoFile))
+	b, err := os.ReadFile(filepath.Clean(repoFile))
 	if err != nil && !os.IsNotExist(err) {
 		return err
 	}

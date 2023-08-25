@@ -24,7 +24,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"io/ioutil"
+	"os"
 	"path/filepath"
 	"strings"
 	"time"
@@ -172,7 +172,7 @@ func (c *Client) MakePVCFromYaml(ctx context.Context, filePath string) (*v1.Pers
 	log.Infof("Making PVC from yaml file at %s", filePath)
 	pvc := &v1.PersistentVolumeClaim{}
 
-	file, _ := ioutil.ReadFile(filepath.Clean(filePath))
+	file, _ := os.ReadFile(filepath.Clean(filePath))
 	log.Debugf("%s \n", string(file))
 
 	errUnmarshal := yaml.Unmarshal(file, pvc)
@@ -582,10 +582,7 @@ func (pvc *PersistentVolumeClaim) Sync(ctx context.Context) *PersistentVolumeCla
 
 // HasError checks if PVC contains error
 func (pvc *PersistentVolumeClaim) HasError() bool {
-	if pvc.error != nil {
-		return true
-	}
-	return false
+	return pvc.error != nil
 }
 
 // GetError returns PVC error

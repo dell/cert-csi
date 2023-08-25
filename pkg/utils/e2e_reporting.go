@@ -22,7 +22,7 @@ import (
 	"encoding/xml"
 	"errors"
 	"fmt"
-	"io/ioutil"
+	"io"
 	"os"
 	"path/filepath"
 	"strconv"
@@ -67,7 +67,7 @@ func E2eReportParser(filename string) ([]map[string]string, error) {
 			fmt.Printf("Unable to close %s", filename)
 		}
 	}(xmlFile)
-	byteValue, _ := ioutil.ReadAll(xmlFile)
+	byteValue, _ := io.ReadAll(xmlFile)
 	var testsuites Testsuites
 	err = xml.Unmarshal(byteValue, &testsuites)
 	if err != nil {
