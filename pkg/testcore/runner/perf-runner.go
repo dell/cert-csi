@@ -247,8 +247,8 @@ func (sr *SuiteRunner) RunSuites(suites map[string][]suites.Interface) {
 	}()
 
 	for _, scDB := range sr.ScDBs {
-		tempTestRun := scDB.TestRun
-		trErr := scDB.DB.SaveTestRun(&tempTestRun)
+		tempTestRun := &scDB.TestRun
+		trErr := scDB.DB.SaveTestRun(tempTestRun)
 		if trErr != nil {
 			logrus.Errorf("Can't save test run; error=%v", trErr)
 		}
