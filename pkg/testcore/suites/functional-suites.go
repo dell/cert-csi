@@ -18,16 +18,17 @@ package suites
 
 import (
 	"bytes"
-	"cert-csi/pkg/k8sclient"
-	"cert-csi/pkg/k8sclient/resources/pod"
-	"cert-csi/pkg/observer"
-	"cert-csi/pkg/testcore"
 	"context"
 	"fmt"
 	"os"
 	"strconv"
 	"strings"
 	"time"
+
+	"cert-csi/pkg/k8sclient"
+	"cert-csi/pkg/k8sclient/resources/pod"
+	"cert-csi/pkg/observer"
+	"cert-csi/pkg/testcore"
 
 	"github.com/fatih/color"
 	log "github.com/sirupsen/logrus"
@@ -235,7 +236,7 @@ func (pds *ClonedVolDeletionSuite) Run(ctx context.Context, storageClass string,
 		return delFunc, err
 	}
 
-	//Deleting corresponding pod attached to cloned volume
+	// Deleting corresponding pod attached to cloned volume
 	cPodObj, _ := podClient.Interface.Get(ctx, pds.PodName+"-cloned", metav1.GetOptions{})
 	log.Infof("Deleting pod with name:%s", color.YellowString(cPodObj.GetName()))
 	err = podClient.Delete(ctx, cPodObj).Sync(ctx).GetError()
@@ -252,14 +253,14 @@ func (pds *ClonedVolDeletionSuite) Run(ctx context.Context, storageClass string,
 		return delFunc, err
 	}
 
-	//Deleting corresponding cloned volume
+	// Deleting corresponding cloned volume
 	cPvcObj, _ := pvcClient.Interface.Get(ctx, pds.Name+"-cloned", metav1.GetOptions{})
 	log.Infof("Deleting volume with name:%s", color.YellowString(cPvcObj.GetName()))
 	err = pvcClient.Delete(ctx, cPvcObj).Sync(ctx).GetError()
 	if err != nil {
 		return delFunc, err
 	}
-	//wait for volume attachments to be deleted
+	// wait for volume attachments to be deleted
 	vaClient := clients.VaClient
 	err = vaClient.WaitUntilVaGone(ctx, pvcObj.Spec.VolumeName)
 	if err != nil {
@@ -352,7 +353,7 @@ func (sds *SnapshotDeletionSuite) Run(ctx context.Context, storageClass string, 
 	}
 	pvcClient := clients.PVCClient
 	podClient := clients.PodClient
-	//Deleting pod attached to restored volume
+	// Deleting pod attached to restored volume
 	sPodObj, _ := podClient.Interface.Get(ctx, sds.Name+"-restore-pod", metav1.GetOptions{})
 	log.Infof("Deleting restored pod with name:%s", color.YellowString(sPodObj.GetName()))
 	err = podClient.Delete(ctx, sPodObj).Sync(ctx).GetError()
@@ -360,28 +361,28 @@ func (sds *SnapshotDeletionSuite) Run(ctx context.Context, storageClass string, 
 		return delFunc, err
 	}
 
-	//Deleting restored volume from snapshot
+	// Deleting restored volume from snapshot
 	sPvcObj, _ := pvcClient.Interface.Get(ctx, sds.Name+"-restore", metav1.GetOptions{})
 	log.Infof("Deleting restored volume from snapshot with name:%s", color.YellowString(sPvcObj.GetName()))
 	err = pvcClient.Delete(ctx, sPvcObj).Sync(ctx).GetError()
 	if err != nil {
 		return delFunc, err
 	}
-	//wait for volume attachments to be deleted
+	// wait for volume attachments to be deleted
 	vaClient := clients.VaClient
 	err = vaClient.WaitUntilVaGone(ctx, sPvcObj.Spec.VolumeName)
 	if err != nil {
 		return delFunc, err
 	}
 
-	//Deleting volume created using custom snapname before Snapshot creation
+	// Deleting volume created using custom snapname before Snapshot creation
 	sPvcObj1, _ := pvcClient.Interface.Get(ctx, sds.Name+"-pvc", metav1.GetOptions{})
 	log.Infof("Deleting volume created using custom snapname before Snapshot creation:%s", color.YellowString(sPvcObj1.GetName()))
 	err = pvcClient.Delete(ctx, sPvcObj1).Sync(ctx).GetError()
 	if err != nil {
 		return delFunc, err
 	}
-	//wait for volume attachments to be deleted
+	// wait for volume attachments to be deleted
 	err = vaClient.WaitUntilVaGone(ctx, sPvcObj1.Spec.VolumeName)
 	if err != nil {
 		return delFunc, err
@@ -645,7 +646,8 @@ func (nds *NodeDrainSuite) Run(ctx context.Context, storageClass string, clients
 	}
 
 	podList, podErr := podClient.Interface.List(ctx, metav1.ListOptions{
-		FieldSelector: fields.SelectorFromSet(fields.Set{"spec.nodeName": nds.Name}).String()})
+		FieldSelector: fields.SelectorFromSet(fields.Set{"spec.nodeName": nds.Name}).String(),
+	})
 	if podErr != nil {
 		return delFunc, podErr
 	}
@@ -935,7 +937,6 @@ func (cts *CapacityTrackingSuite) checkIfGetCapacityIsPolled(ctx context.Context
 	log.Infof("Waiting for provisioner to %s GetCapacity for %s storage class in %s", color.GreenString("POLL"), color.YellowString(storageClass), color.HiYellowString(cts.PollInterval.String()))
 
 	capacities, err := clients.CSISCClient.GetByStorageClass(ctx, storageClass)
-
 	if err != nil {
 		return err
 	}

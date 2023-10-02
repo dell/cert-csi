@@ -18,16 +18,17 @@ package runner
 
 import (
 	"bufio"
-	"cert-csi/pkg/k8sclient"
-	"cert-csi/pkg/observer"
-	"cert-csi/pkg/store"
-	"cert-csi/pkg/testcore/suites"
 	"context"
 	"fmt"
 	"os"
 	"os/signal"
 	"syscall"
 	"time"
+
+	"cert-csi/pkg/k8sclient"
+	"cert-csi/pkg/observer"
+	"cert-csi/pkg/store"
+	"cert-csi/pkg/testcore/suites"
 
 	"github.com/fatih/color"
 	log "github.com/sirupsen/logrus"
@@ -42,8 +43,8 @@ type FunctionalSuiteRunner struct {
 
 // NewFunctionalSuiteRunner creates functional suite runner instance
 func NewFunctionalSuiteRunner(configPath, namespace string, timeout int, noCleanup, noCleanupOnFail bool, noreport bool,
-	scDB *store.StorageClassDB) *FunctionalSuiteRunner {
-
+	scDB *store.StorageClassDB,
+) *FunctionalSuiteRunner {
 	const observerType = "event"
 	r := getSuiteRunner(
 		configPath,

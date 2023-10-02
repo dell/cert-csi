@@ -17,12 +17,13 @@
 package observer
 
 import (
-	"cert-csi/pkg/k8sclient/resources/pod"
-	"cert-csi/pkg/k8sclient/resources/pvc"
-	"cert-csi/pkg/store"
 	"context"
 	"sync"
 	"time"
+
+	"cert-csi/pkg/k8sclient/resources/pod"
+	"cert-csi/pkg/k8sclient/resources/pvc"
+	"cert-csi/pkg/store"
 
 	log "github.com/sirupsen/logrus"
 	v1 "k8s.io/api/core/v1"
@@ -110,12 +111,12 @@ func (eno *EntityNumberObserver) StartWatching(ctx context.Context, runner *Runn
 	if err != nil {
 		log.Errorf("Can't save number of entities; error=%v", pollErr)
 	}
-
 }
 
 func (eno *EntityNumberObserver) checkPvcs(
 	pvcClient *pvc.Client,
-	info *store.NumberEntities) (bool, error) {
+	info *store.NumberEntities,
+) (bool, error) {
 	if pvcClient == nil {
 		return false, nil
 	}
@@ -143,7 +144,8 @@ func (eno *EntityNumberObserver) checkPvcs(
 
 func (eno *EntityNumberObserver) checkPods(
 	podClient *pod.Client,
-	info *store.NumberEntities) (bool, error) {
+	info *store.NumberEntities,
+) (bool, error) {
 	if podClient == nil {
 		return false, nil
 	}

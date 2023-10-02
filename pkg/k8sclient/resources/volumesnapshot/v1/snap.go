@@ -17,11 +17,12 @@
 package v1
 
 import (
-	"cert-csi/pkg/utils"
 	"context"
 	"errors"
 	"fmt"
 	"time"
+
+	"cert-csi/pkg/utils"
 
 	"github.com/fatih/color"
 	v1 "github.com/kubernetes-csi/external-snapshotter/client/v4/apis/volumesnapshot/v1"
@@ -203,7 +204,6 @@ func (snap *Snapshot) WaitUntilGone(ctx context.Context) error {
 	yellow := color.New(color.FgHiYellow)
 	log.Debugf("snap %s was deleted in %s", snap.Object.Name, yellow.Sprint(time.Since(startTime)))
 	return nil
-
 }
 
 func (snap *Snapshot) pollWait(ctx context.Context) (bool, error) {

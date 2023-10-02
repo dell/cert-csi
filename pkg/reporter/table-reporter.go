@@ -18,7 +18,6 @@ package reporter
 
 import (
 	"bufio"
-	"cert-csi/pkg/collector"
 	"errors"
 	"html/template"
 	"io"
@@ -27,20 +26,24 @@ import (
 	"strings"
 	"time"
 
+	"cert-csi/pkg/collector"
+
 	log "github.com/sirupsen/logrus"
 )
 
 // TabularReporter is used to create and manage report in a tabular form
 type TabularReporter struct{}
 
-var arrayConfig map[string]string
-var passedCount int
-var failedCount int
-var skippedCount int
+var (
+	arrayConfig  map[string]string
+	passedCount  int
+	failedCount  int
+	skippedCount int
+)
 
 // MultiGenerate generates reports for multiple metrics collections
 func (tr *TabularReporter) MultiGenerate(mcs []*collector.MetricsCollection) error {
-	var fm = template.FuncMap{
+	fm := template.FuncMap{
 		"formatName":           formatName,
 		"getResultStatus":      tr.getResultStatus,
 		"getColorResultStatus": tr.getColorResultStatus,
@@ -176,6 +179,7 @@ func (tr *TabularReporter) getSlNo(index int) int {
 func (tr *TabularReporter) getCurrentDate() string {
 	return time.Now().Format("2006-01-02 15:04:05")
 }
+
 func (tr *TabularReporter) getCustomReportName() string {
 	return "csi-" + arrayConfig["name"] + "-test-results"
 }

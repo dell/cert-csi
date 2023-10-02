@@ -17,11 +17,12 @@
 package reporter
 
 import (
-	"cert-csi/pkg/collector"
-	"cert-csi/pkg/plotter"
 	"fmt"
 	"os"
 	"path/filepath"
+
+	"cert-csi/pkg/collector"
+	"cert-csi/pkg/plotter"
 )
 
 func formatName(runName string) string {
@@ -45,7 +46,7 @@ func getReportFile(runName, format string) (*os.File, string, error) {
 	if err != nil {
 		return nil, "", err
 	}
-	if err = os.MkdirAll(pathReportsDir, 0750); err != nil {
+	if err = os.MkdirAll(pathReportsDir, 0o750); err != nil {
 		return nil, "", err
 	}
 

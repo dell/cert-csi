@@ -17,12 +17,13 @@
 package plotter
 
 import (
-	"cert-csi/pkg/collector"
-	"cert-csi/pkg/store"
 	"os"
 	"path/filepath"
 	"testing"
 	"time"
+
+	"cert-csi/pkg/collector"
+	"cert-csi/pkg/store"
 
 	log "github.com/sirupsen/logrus"
 	"github.com/stretchr/testify/suite"
@@ -385,7 +386,6 @@ func (suite *PlotterTestSuite) TestPlotStageMetricHistogram() {
 			}
 			tt.assertFunc(p)
 		})
-
 	}
 }
 
@@ -520,7 +520,6 @@ func (suite *PlotterTestSuite) TestPlotStageBoxPlot() {
 			}
 			tt.assertFunc(p)
 		})
-
 	}
 }
 
@@ -586,7 +585,6 @@ func (suite *PlotterTestSuite) TestPlotEntityOverTime() {
 			}
 			tt.assertFunc(p)
 		})
-
 	}
 }
 
@@ -803,7 +801,6 @@ func (suite *PlotterTestSuite) TestPlotMinMaxEntityOverTime() {
 			}
 			tt.assertFunc()
 		})
-
 	}
 }
 
@@ -932,7 +929,6 @@ func (suite *PlotterTestSuite) TestPlotResourceUsageOverTime() {
 			}
 			tt.assertFunc()
 		})
-
 	}
 }
 
@@ -1140,7 +1136,6 @@ func (suite *PlotterTestSuite) TestPlotIterationTimes() {
 			}
 			tt.assertFunc(p)
 		})
-
 	}
 }
 
@@ -1309,7 +1304,6 @@ func (suite *PlotterTestSuite) TestPlotAvgStageTimeOverIterations() {
 			}
 			tt.assertFunc()
 		})
-
 	}
 }
 

@@ -17,15 +17,16 @@
 package reporter
 
 import (
-	"cert-csi/pkg/collector"
-	"cert-csi/pkg/plotter"
-	"cert-csi/pkg/store"
 	"errors"
 	"fmt"
 	"io"
 	"os"
 	"path/filepath"
 	"testing"
+
+	"cert-csi/pkg/collector"
+	"cert-csi/pkg/plotter"
+	"cert-csi/pkg/store"
 
 	log "github.com/sirupsen/logrus"
 	"github.com/stretchr/testify/suite"
@@ -137,7 +138,6 @@ func (suite *ReporterTestSuite) TestGenerateTextReporter() {
 }
 
 func (suite *ReporterTestSuite) TestGenerateAllReports() {
-
 	type args struct {
 		dbs []*store.StorageClassDB
 	}

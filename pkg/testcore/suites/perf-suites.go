@@ -18,6 +18,17 @@ package suites
 
 import (
 	"bytes"
+	"context"
+	"errors"
+	"fmt"
+	"math"
+	"math/rand"
+	"os"
+	"os/exec"
+	"strconv"
+	"strings"
+	"time"
+
 	"cert-csi/pkg/k8sclient"
 	"cert-csi/pkg/k8sclient/resources/commonparams"
 	"cert-csi/pkg/k8sclient/resources/node"
@@ -30,14 +41,6 @@ import (
 	"cert-csi/pkg/observer"
 	"cert-csi/pkg/testcore"
 	"cert-csi/pkg/utils"
-	"context"
-	"errors"
-	"fmt"
-	"math"
-	"os"
-	"os/exec"
-	"strconv"
-	"strings"
 
 	storagev1 "k8s.io/api/storage/v1"
 	"k8s.io/apimachinery/pkg/api/resource"
@@ -45,9 +48,6 @@ import (
 
 	snapv1client "cert-csi/pkg/k8sclient/resources/volumesnapshot/v1"
 	snapbetaclient "cert-csi/pkg/k8sclient/resources/volumesnapshot/v1beta1"
-
-	"math/rand"
-	"time"
 
 	"github.com/fatih/color"
 	snapv1 "github.com/kubernetes-csi/external-snapshotter/client/v4/apis/volumesnapshot/v1"
@@ -2168,7 +2168,6 @@ type VolumeHealthMetricsSuite struct {
 
 // FindDriverLogs executes command and returns the output
 func FindDriverLogs(command []string) (string, error) {
-
 	cmd := exec.Command(command[0], command[1:]...) // #nosec G204
 	output, err := cmd.Output()
 	if err != nil {
@@ -2194,7 +2193,7 @@ func (vh *VolumeHealthMetricsSuite) Run(ctx context.Context, storageClass string
 		vh.PodNumber = 1
 	}
 
-	//Create a PVC
+	// Create a PVC
 	vcconf := testcore.VolumeCreationConfig(storageClass, vh.VolumeSize, "", vh.AccessMode)
 	volTmpl := pvcClient.MakePVC(vcconf)
 	pvc := pvcClient.Create(ctx, volTmpl)
@@ -2235,7 +2234,6 @@ func (vh *VolumeHealthMetricsSuite) Run(ctx context.Context, storageClass string
 	var PersistentVolumeID string
 	for _, p := range persistentVolumes.Items {
 		if p.Spec.ClaimRef.Namespace == PVCNamespace {
-
 			PersistentVolumeID = p.Spec.CSI.VolumeHandle
 		}
 	}
@@ -2277,10 +2275,10 @@ func (vh *VolumeHealthMetricsSuite) Run(ctx context.Context, storageClass string
 	log.Info("Driver Node Pod ", driverNodePod)
 	log.Info("Driver Controller Pod ", driverControllerPod)
 
-	var NodeLogs = false
-	var ControllerLogs = false
+	NodeLogs := false
+	ControllerLogs := false
 
-	var retryCount = 1
+	retryCount := 1
 	for i := 0; i < maxRetryCount; i++ {
 
 		if !ControllerLogs {
@@ -2622,7 +2620,6 @@ func (mas *MultiAttachSuite) Run(ctx context.Context, storageClass string, clien
 	if mas.AccessMode == "ReadWriteOncePod" {
 		time.Sleep(1 * time.Minute)
 		readyPodCount, err := podClient.ReadyPodsCount(ctx)
-
 		if err != nil {
 			return delFunc, err
 		}
@@ -2723,14 +2720,15 @@ func (mas *MultiAttachSuite) GenerateTopologySpreadConstraints(nodeCount int, la
 	if remainder != 0 {
 		maxSkew++
 	}
-	spreadConstraints := []v1.TopologySpreadConstraint{{
-		MaxSkew:           int32(maxSkew),
-		TopologyKey:       "kubernetes.io/hostname",
-		WhenUnsatisfiable: v1.ScheduleAnyway,
-		LabelSelector: &metav1.LabelSelector{
-			MatchLabels: labels,
+	spreadConstraints := []v1.TopologySpreadConstraint{
+		{
+			MaxSkew:           int32(maxSkew),
+			TopologyKey:       "kubernetes.io/hostname",
+			WhenUnsatisfiable: v1.ScheduleAnyway,
+			LabelSelector: &metav1.LabelSelector{
+				MatchLabels: labels,
+			},
 		},
-	},
 	}
 	return spreadConstraints
 }

@@ -17,10 +17,11 @@
 package reporter
 
 import (
-	"cert-csi/pkg/collector"
-	"cert-csi/pkg/store"
 	"text/template"
 	"time"
+
+	"cert-csi/pkg/collector"
+	"cert-csi/pkg/store"
 )
 
 // XMLReporter is used to create and manage XML report
@@ -28,7 +29,7 @@ type XMLReporter struct{}
 
 // MultiGenerate generates report from multiple metrics collection
 func (xr *XMLReporter) MultiGenerate(mcs []*collector.MetricsCollection) error {
-	var fm = template.FuncMap{
+	fm := template.FuncMap{
 		"formatName":           formatName,
 		"getResultStatus":      xr.getResultStatus,
 		"getCustomReportName":  xr.getCustomReportName,
@@ -71,7 +72,7 @@ func (xr *XMLReporter) MultiGenerate(mcs []*collector.MetricsCollection) error {
 
 // Generate generates report from metrics collection
 func (xr *XMLReporter) Generate(runName string, mc *collector.MetricsCollection) error {
-	var fm = template.FuncMap{
+	fm := template.FuncMap{
 		"formatName":          formatName,
 		"getResultStatus":     xr.getResultStatus,
 		"getCustomReportName": xr.getCustomReportName,

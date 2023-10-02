@@ -17,12 +17,13 @@
 package runner
 
 import (
-	"cert-csi/pkg/k8sclient"
-	"cert-csi/pkg/observer"
-	"cert-csi/pkg/store"
 	"strings"
 	"sync"
 	"time"
+
+	"cert-csi/pkg/k8sclient"
+	"cert-csi/pkg/observer"
+	"cert-csi/pkg/store"
 
 	"k8s.io/client-go/rest"
 
@@ -51,7 +52,6 @@ type Runner struct {
 }
 
 func getSuiteRunner(configPath, driverNs, observerType string, timeout int, noCleanup, noCleanupOnFail bool, noreport bool) *Runner {
-
 	t := strings.ToUpper(observerType)
 	correctType := (t == string(observer.EVENT)) || (t == string(observer.LIST))
 	if !correctType {
