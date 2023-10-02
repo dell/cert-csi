@@ -192,7 +192,7 @@ func (c *Client) MakePod(config *Config) *v1.Pod {
 }
 
 // MakePodFromYaml creates pod from yaml manifest
-func (c *Client) MakePodFromYaml(filepath string) *v1.Pod {
+func (c *Client) MakePodFromYaml(_ string) *v1.Pod {
 	return &v1.Pod{}
 }
 
@@ -232,7 +232,7 @@ func (c *Client) Delete(ctx context.Context, pod *v1.Pod) *Pod {
 }
 
 // Update updates a pod, to be implemented
-func (c *Client) Update(pod *v1.Pod) {
+func (c *Client) Update(_ *v1.Pod) {
 	// TODO ?
 }
 
@@ -280,7 +280,7 @@ func (c *Client) ReadyPodsCount(ctx context.Context) (int, error) {
 		return 0, err
 	}
 
-	var readyCount int = 0
+	var readyCount int
 	for i, p := range podList.Items {
 		isReady := IsPodReady(&podList.Items[i])
 		if p.Status.Phase == v1.PodRunning || isReady {
@@ -415,7 +415,7 @@ func (pod *Pod) WaitUntilGone(ctx context.Context) error {
 		if er != nil {
 			return er
 		}
-		var graceper int64 = 0
+		var graceper int64
 		err = pod.Client.Interface.Delete(ctx, gotpod.GetName(), metav1.DeleteOptions{
 			GracePeriodSeconds: &graceper,
 		})

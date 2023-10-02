@@ -497,7 +497,7 @@ func PlotMinMaxEntityOverTime(tcMetrics []collector.TestCaseMetrics, reportName 
 	if err := plotMinMax(minPvcsBound, maxPvcsBound, reportName, "PvcsBound"); err != nil {
 		return err
 	}
-	if err := plotMinMax(minPvcsTerminating, maxPvcsTerminating, reportName, "PvcsTerminating"); err != nil {
+	if err := plotMinMax(minPvcsTerminating, maxPvcsTerminating, reportName, "PvcsTerminating") {
 		return err
 	}
 	return nil

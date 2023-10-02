@@ -87,15 +87,17 @@ func (tr *TabularReporter) MultiGenerate(mcs []*collector.MetricsCollection) err
 		}
 	}()
 
-	if err := report.Execute(htmlFile, mcs); err != nil {
-		return err
-	}
+	// if err := report.Execute(htmlFile, mcs); err != nil {
+	// 	return err
+	// }
 
-	return nil
+	// return nil
+
+	return report.Execute(htmlFile, mcs)
 }
 
 // Generate generates report for a metrics collection
-func (tr *TabularReporter) Generate(runName string, mc *collector.MetricsCollection) error {
+func (tr *TabularReporter) Generate(_ string, mc *collector.MetricsCollection) error {
 	fm := template.FuncMap{
 		"formatName":           formatName,
 		"getResultStatus":      tr.getResultStatus,
@@ -139,11 +141,12 @@ func (tr *TabularReporter) Generate(runName string, mc *collector.MetricsCollect
 		}
 	}()
 
-	if err := report.Execute(htmFile, mc); err != nil {
-		return err
-	}
+	// if err := report.Execute(htmFile, mc); err != nil {
+	// 	return err
+	// }
 
-	return nil
+	// return nil
+	return report.Execute(htmFile, mc)
 }
 
 func updateTestCounts(mc *collector.MetricsCollection) {

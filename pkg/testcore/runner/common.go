@@ -85,7 +85,7 @@ func getSuiteRunner(configPath, driverNs, observerType string, timeout int, noCl
 	}
 }
 
-func generateTestRunDetails(scDB *store.StorageClassDB, kubeClient *k8sclient.KubeClient, host string) {
+func generateTestRunDetails(scDB *store.StorageClassDB, _ *k8sclient.KubeClient, host string) {
 	scDB.TestRun = store.TestRun{
 		Name:           "test-run-" + k8sclient.RandomSuffix(),
 		StartTimestamp: time.Now(),

@@ -404,10 +404,11 @@ func (ss *SQLiteStore) updateStatusTestCase(ts *TestCase) error {
 func (ss *SQLiteStore) SuccessfulTestCase(ts *TestCase, endTimestamp time.Time) error {
 	ts.Success = true
 	ts.EndTimestamp = endTimestamp
-	if err := ss.updateStatusTestCase(ts); err != nil {
-		return err
-	}
-	return nil
+	// if err := ss.updateStatusTestCase(ts); err != nil {
+	// 	return err
+	// }
+	// return nil
+	return ss.updateStatusTestCase(ts)
 }
 
 // FailedTestCase updates testcase status as failure
@@ -415,10 +416,11 @@ func (ss *SQLiteStore) FailedTestCase(ts *TestCase, endTimestamp time.Time, errM
 	ts.Success = false
 	ts.EndTimestamp = endTimestamp
 	ts.ErrorMessage = errMsg
-	if err := ss.updateStatusTestCase(ts); err != nil {
-		return err
-	}
-	return nil
+	// if err := ss.updateStatusTestCase(ts); err != nil {
+	// 	return err
+	// }
+	// return nil
+	return ss.updateStatusTestCase(ts)
 }
 
 // SaveEntities saves entities in db
@@ -675,8 +677,9 @@ func (ss *SQLiteStore) GetEntityRelations(entity Entity) ([]Entity, error) {
 
 // Close closes db handle
 func (ss *SQLiteStore) Close() error {
-	if err := ss.db.Close(); err != nil {
-		return err
-	}
-	return nil
+	// if err := ss.db.Close(); err != nil {
+	// 	return err
+	// }
+	// return nil
+	return ss.db.Close()
 }

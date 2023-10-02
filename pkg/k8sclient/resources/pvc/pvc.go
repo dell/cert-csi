@@ -185,7 +185,7 @@ func (c *Client) MakePVCFromYaml(ctx context.Context, filePath string) (*v1.Pers
 }
 
 // Create uses client interface to make API call for creating provided PersistentVolumeClaim
-func (c *Client) Create(ctx context.Context, pvc *v1.PersistentVolumeClaim, pvcNum ...int) *PersistentVolumeClaim {
+func (c *Client) Create(ctx context.Context, pvc *v1.PersistentVolumeClaim, _ ...int) *PersistentVolumeClaim {
 	log := utils.GetLoggerFromContext(ctx)
 	var funcErr error
 	newPVC, err := c.Interface.Create(ctx, pvc, metav1.CreateOptions{})
@@ -390,7 +390,7 @@ func (c *Client) CheckAnnotationsForVolumes(ctx context.Context, scObject *v2.St
 }
 
 // CreatePVCObject will read the remotepvobject and return pvc object for the same
-func (c *Client) CreatePVCObject(ctx context.Context, remotePVObject *v1.PersistentVolume, remoteNamespace string) v1.PersistentVolumeClaim {
+func (c *Client) CreatePVCObject(_ context.Context, remotePVObject *v1.PersistentVolume, remoteNamespace string) v1.PersistentVolumeClaim {
 	var (
 		pvcName        string
 		accessMode     []v1.PersistentVolumeAccessMode

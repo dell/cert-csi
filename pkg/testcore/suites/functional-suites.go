@@ -297,7 +297,7 @@ func (*ClonedVolDeletionSuite) GetObservers(obsType observer.Type) []observer.In
 }
 
 // GetClients creates and returns pod, pvc, metrics, va clients
-func (pds *ClonedVolDeletionSuite) GetClients(namespace string, client *k8sclient.KubeClient) (*k8sclient.Clients, error) {
+func (pds *ClonedVolDeletionSuite) GetClients(_ string, client *k8sclient.KubeClient) (*k8sclient.Clients, error) {
 	podClient, pvcErr := client.CreatePodClient(pds.Namespace)
 	if pvcErr != nil {
 		return nil, pvcErr
@@ -339,7 +339,7 @@ type SnapshotDeletionSuite struct {
 }
 
 // Run to snaphot the volume created by name and namespace as cli params
-func (sds *SnapshotDeletionSuite) Run(ctx context.Context, storageClass string, clients *k8sclient.Clients) (delFunc func() error, e error) {
+func (sds *SnapshotDeletionSuite) Run(ctx context.Context, _ string, clients *k8sclient.Clients) (delFunc func() error, e error) {
 	if sds.Name == "" {
 		log.Fatalf("Error snap name is required parameter")
 	}
@@ -486,7 +486,7 @@ type EphemeralVolumeSuite struct {
 }
 
 // Run runs ephemeral volume test suite
-func (ep *EphemeralVolumeSuite) Run(ctx context.Context, storageClass string, clients *k8sclient.Clients) (delFunc func() error, e error) {
+func (ep *EphemeralVolumeSuite) Run(ctx context.Context, _ string, clients *k8sclient.Clients) (delFunc func() error, e error) {
 	podClient := clients.PodClient
 
 	if ep.PodNumber <= 0 {
@@ -625,7 +625,7 @@ type NodeDrainSuite struct {
 }
 
 // Run to delete the volume created by name and namespace as cli params
-func (nds *NodeDrainSuite) Run(ctx context.Context, storageClass string, clients *k8sclient.Clients) (delFunc func() error, e error) {
+func (nds *NodeDrainSuite) Run(ctx context.Context, _ string, clients *k8sclient.Clients) (delFunc func() error, e error) {
 	if nds.Name == "" {
 		log.Fatalf("Error Node name is required parameter")
 	}
@@ -681,7 +681,7 @@ func (*NodeDrainSuite) GetObservers(obsType observer.Type) []observer.Interface 
 }
 
 // GetClients creates and returns node, pod, pvc, va, statefulset, metrics clients
-func (nds *NodeDrainSuite) GetClients(namespace string, client *k8sclient.KubeClient) (*k8sclient.Clients, error) {
+func (nds *NodeDrainSuite) GetClients(_ string, client *k8sclient.KubeClient) (*k8sclient.Clients, error) {
 	nodeClient, nodeErr := client.CreateNodeClient()
 	if nodeErr != nil {
 		return nil, nodeErr
@@ -735,7 +735,7 @@ type NodeUncordonSuite struct {
 }
 
 // Run to delete the volume created by name and namespace as cli params
-func (nds *NodeUncordonSuite) Run(ctx context.Context, storageClass string, clients *k8sclient.Clients) (delFunc func() error, e error) {
+func (nds *NodeUncordonSuite) Run(ctx context.Context, _ string, clients *k8sclient.Clients) (delFunc func() error, e error) {
 	if nds.Name == "" {
 		log.Fatalf("Error Node name is required parameter")
 	}
@@ -773,7 +773,7 @@ func (*NodeUncordonSuite) GetObservers(obsType observer.Type) []observer.Interfa
 }
 
 // GetClients creates and returns node, pod, pvc, va, metrics clients
-func (nds *NodeUncordonSuite) GetClients(namespace string, client *k8sclient.KubeClient) (*k8sclient.Clients, error) {
+func (nds *NodeUncordonSuite) GetClients(_ string, client *k8sclient.KubeClient) (*k8sclient.Clients, error) {
 	nodeClient, nodeErr := client.CreateNodeClient()
 	if nodeErr != nil {
 		return nil, nodeErr
@@ -933,7 +933,7 @@ func getTopologyCount() (int, error) {
 	return topologiesCount, nil
 }
 
-func (cts *CapacityTrackingSuite) checkIfGetCapacityIsPolled(ctx context.Context, clients *k8sclient.Clients, storageClass string, topologyCount int) error {
+func (cts *CapacityTrackingSuite) checkIfGetCapacityIsPolled(ctx context.Context, clients *k8sclient.Clients, storageClass string, _ int) error {
 	log.Infof("Waiting for provisioner to %s GetCapacity for %s storage class in %s", color.GreenString("POLL"), color.YellowString(storageClass), color.HiYellowString(cts.PollInterval.String()))
 
 	capacities, err := clients.CSISCClient.GetByStorageClass(ctx, storageClass)

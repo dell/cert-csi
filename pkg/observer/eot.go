@@ -62,7 +62,7 @@ func (eno *EntityNumberObserver) Interrupted() bool {
 }
 
 // StartWatching watches all entities - pods and pvcs
-func (eno *EntityNumberObserver) StartWatching(ctx context.Context, runner *Runner) {
+func (eno *EntityNumberObserver) StartWatching(_ context.Context, runner *Runner) {
 	defer runner.WaitGroup.Done()
 
 	var nEntities []*store.NumberEntities

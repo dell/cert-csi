@@ -63,11 +63,12 @@ func (xr *XMLReporter) MultiGenerate(mcs []*collector.MetricsCollection) error {
 		}
 	}()
 
-	if err := report.Execute(xmlFile, mcs); err != nil {
-		return err
-	}
+	// if err := report.Execute(xmlFile, mcs); err != nil {
+	// 	return err
+	// }
 
-	return nil
+	// return nil
+	return report.Execute(xmlFile, mcs)
 }
 
 // Generate generates report from metrics collection
@@ -110,11 +111,12 @@ func (xr *XMLReporter) Generate(runName string, mc *collector.MetricsCollection)
 		}
 	}()
 
-	if err := report.Execute(xmlFile, mc); err != nil {
-		return err
-	}
+	// if err := report.Execute(xmlFile, mc); err != nil {
+	// 	return err
+	// }
 
-	return nil
+	// return nil
+	return report.Execute(xmlFile, mc)
 }
 
 func (xr *XMLReporter) getResultStatus(result bool) string {
