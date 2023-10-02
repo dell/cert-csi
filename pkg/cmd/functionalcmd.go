@@ -18,15 +18,16 @@ package cmd
 
 import (
 	"bufio"
-	"cert-csi/pkg/store"
-	"cert-csi/pkg/testcore/runner"
-	"cert-csi/pkg/testcore/suites"
 	"fmt"
 	"io"
 	"os"
 	"path/filepath"
 	"strings"
 	"time"
+
+	"cert-csi/pkg/store"
+	"cert-csi/pkg/testcore/runner"
+	"cert-csi/pkg/testcore/suites"
 
 	log "github.com/sirupsen/logrus"
 	"github.com/urfave/cli"
@@ -126,13 +127,13 @@ func createFunctionalSuiteRunner(c *cli.Context) *runner.FunctionalSuiteRunner {
 	logDir := "logs"
 	path := logDir + "/" + description + ".txt"
 	if _, err := os.Stat(logDir); os.IsNotExist(err) {
-		createErr := os.Mkdir(logDir, 0750)
+		createErr := os.Mkdir(logDir, 0o750)
 		if createErr != nil {
 			log.Errorf("Error creating log directory")
 		}
 	}
 	// enable logging for each suite in a separate file.
-	logFile, err := os.OpenFile(filepath.Clean(path), os.O_RDWR|os.O_CREATE|os.O_APPEND, 0600)
+	logFile, err := os.OpenFile(filepath.Clean(path), os.O_RDWR|os.O_CREATE|os.O_APPEND, 0o600)
 	if err != nil {
 		log.Errorf("Error creating log file:%s", err)
 	}

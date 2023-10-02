@@ -17,9 +17,10 @@
 package utils
 
 import (
-	"github.com/stretchr/testify/assert"
 	"testing"
 	"time"
+
+	"github.com/stretchr/testify/assert"
 )
 
 func TestParse(t *testing.T) {
@@ -29,7 +30,7 @@ func TestParse(t *testing.T) {
 		wantErr  bool
 	}
 
-	var parseTests = []parseTest{
+	parseTests := []parseTest{
 		{"2w3d4m14h", time.Duration(1519440000000000), false},
 		{"1w", time.Duration(604800000000000), false},
 		{"1H3w2M5s", time.Duration(1818125000000000), false},

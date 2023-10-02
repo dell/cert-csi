@@ -17,8 +17,9 @@
 package sc
 
 import (
-	"cert-csi/pkg/utils"
 	"context"
+
+	"cert-csi/pkg/utils"
 
 	v1 "k8s.io/api/storage/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -99,8 +100,8 @@ func (c *Client) MakeStorageClass(name string, provisioner string) *v1.StorageCl
 	return &v1.StorageClass{
 		ObjectMeta:        metav1.ObjectMeta{Name: name},
 		Provisioner:       provisioner,
-		VolumeBindingMode: &WaitForFirstConsumer}
-
+		VolumeBindingMode: &WaitForFirstConsumer,
+	}
 }
 
 // DuplicateStorageClass creates a copy of storage class

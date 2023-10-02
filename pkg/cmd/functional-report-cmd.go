@@ -17,9 +17,10 @@
 package cmd
 
 import (
+	"errors"
+
 	"cert-csi/pkg/reporter"
 	"cert-csi/pkg/store"
-	"errors"
 
 	log "github.com/sirupsen/logrus"
 	"github.com/urfave/cli"
@@ -65,7 +66,6 @@ func GetFunctionalReportCommand() cli.Command {
 			defer db.Close()
 
 			err := reporter.GenerateFunctionalReport(db, types)
-
 			if err != nil {
 				log.Errorf("Can't generate reports; error=%v", err)
 				return err

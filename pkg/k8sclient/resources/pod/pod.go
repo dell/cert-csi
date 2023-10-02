@@ -17,7 +17,6 @@
 package pod
 
 import (
-	"cert-csi/pkg/utils"
 	"context"
 	"errors"
 	"fmt"
@@ -25,6 +24,8 @@ import (
 	"net/url"
 	"strconv"
 	"time"
+
+	"cert-csi/pkg/utils"
 
 	"golang.org/x/sync/errgroup"
 	policyv1beta1 "k8s.io/api/policy/v1beta1"
@@ -275,7 +276,6 @@ func (c *Client) Exec(ctx context.Context, pod *v1.Pod, command []string, stdout
 // ReadyPodsCount returns the number of Pods in Ready state
 func (c *Client) ReadyPodsCount(ctx context.Context) (int, error) {
 	podList, err := c.Interface.List(ctx, metav1.ListOptions{})
-
 	if err != nil {
 		return 0, err
 	}
@@ -311,7 +311,6 @@ func (c *Client) WaitForAllToBeReady(ctx context.Context) error {
 			}
 
 			podList, err := c.Interface.List(ctx, metav1.ListOptions{})
-
 			if err != nil {
 				return false, err
 			}
@@ -437,7 +436,6 @@ func (pod *Pod) WaitUntilGone(ctx context.Context) error {
 	yellow := color.New(color.FgHiYellow)
 	log.Debugf("Pod %s was deleted in %s", pod.Object.Name, yellow.Sprint(time.Since(startTime)))
 	return nil
-
 }
 
 // Sync waits until Pods in expected state
@@ -595,7 +593,8 @@ func (c *Client) MakeEphemeralPod(config *Config) *v1.Pod {
 // DeleteOrEvictPods deletes or evicts pod from a node
 func (c *Client) DeleteOrEvictPods(ctx context.Context, nodeName string, gracePeriodSeconds int) error {
 	podList, podErr := c.Interface.List(ctx, metav1.ListOptions{
-		FieldSelector: fields.SelectorFromSet(fields.Set{"spec.nodeName": nodeName}).String()})
+		FieldSelector: fields.SelectorFromSet(fields.Set{"spec.nodeName": nodeName}).String(),
+	})
 
 	if podErr != nil {
 		return podErr
@@ -628,7 +627,6 @@ func (c *Client) deleteAllFromList(ctx context.Context, podList *v1.PodList) err
 }
 
 func checkEvictionSupport(clientSet kubernetes.Interface) (string, error) {
-
 	discoveryClient := clientSet.Discovery()
 	groupList, err := discoveryClient.ServerGroups()
 	if err != nil {

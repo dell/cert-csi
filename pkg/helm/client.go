@@ -19,7 +19,11 @@ package helm
 import (
 	"context"
 	"fmt"
+	"os"
+	"path/filepath"
+	"strings"
 	"sync"
+	"time"
 
 	"github.com/pkg/errors"
 	log "github.com/sirupsen/logrus"
@@ -32,11 +36,6 @@ import (
 	"helm.sh/helm/v3/pkg/kube"
 	"helm.sh/helm/v3/pkg/repo"
 	"sigs.k8s.io/yaml"
-
-	"os"
-	"path/filepath"
-	"strings"
-	"time"
 
 	"github.com/gofrs/flock"
 )
@@ -119,7 +118,7 @@ func (c *Client) AddRepository(name, url string) error {
 
 	f.Update(&chartRepo)
 
-	if err := f.WriteFile(repoFile, 0644); err != nil {
+	if err := f.WriteFile(repoFile, 0o644); err != nil {
 		return err
 	}
 	log.Infof("%q has been added to your repositories", name)

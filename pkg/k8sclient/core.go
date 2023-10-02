@@ -17,6 +17,15 @@
 package k8sclient
 
 import (
+	"context"
+	"fmt"
+	"path/filepath"
+	"regexp"
+	"strconv"
+	"strings"
+	"sync"
+	"time"
+
 	"cert-csi/pkg/k8sclient/resources/csistoragecapacity"
 	"cert-csi/pkg/k8sclient/resources/metrics"
 	"cert-csi/pkg/k8sclient/resources/node"
@@ -33,14 +42,6 @@ import (
 	contentv1 "cert-csi/pkg/k8sclient/resources/volumesnapshotcontent/v1"
 	contentbeta "cert-csi/pkg/k8sclient/resources/volumesnapshotcontent/v1beta1"
 	"cert-csi/pkg/utils"
-	"context"
-	"fmt"
-	"path/filepath"
-	"regexp"
-	"strconv"
-	"strings"
-	"sync"
-	"time"
 
 	vgsAlpha "github.com/dell/csi-volumegroup-snapshotter/api/v1"
 	replv1 "github.com/dell/csm-replication/api/v1"
@@ -261,7 +262,6 @@ func (c *KubeClient) CreateVaClient(namespace string) (*va.Client, error) {
 // CreateMetricsClient creates a new instance of metrics client
 func (c *KubeClient) CreateMetricsClient(namespace string) (*metrics.Client, error) {
 	cset, err := metricsclientset.NewForConfig(c.Config)
-
 	if err != nil {
 		return nil, err
 	}
@@ -323,7 +323,6 @@ func (c *KubeClient) CreateVGSClient() (*volumegroupsnapshot.Client, error) {
 // CreateSnapshotGAClient creates a new instance of snapshot client
 func (c *KubeClient) CreateSnapshotGAClient(namespace string) (*snapv1.SnapshotClient, error) {
 	cset, err := snapclient.NewForConfig(c.Config)
-
 	if err != nil {
 		return nil, err
 	}
@@ -341,7 +340,6 @@ func (c *KubeClient) CreateSnapshotGAClient(namespace string) (*snapv1.SnapshotC
 // CreateSnapshotBetaClient creates a new instance of beta snapshot client
 func (c *KubeClient) CreateSnapshotBetaClient(namespace string) (*snapbeta.SnapshotClient, error) {
 	cset, err := snapclient.NewForConfig(c.Config)
-
 	if err != nil {
 		return nil, err
 	}
@@ -359,7 +357,6 @@ func (c *KubeClient) CreateSnapshotBetaClient(namespace string) (*snapbeta.Snaps
 // CreateSnapshotContentGAClient creates a new instance of snapshot contents client
 func (c *KubeClient) CreateSnapshotContentGAClient() (*contentv1.SnapshotContentClient, error) {
 	cset, err := snapclient.NewForConfig(c.Config)
-
 	if err != nil {
 		return nil, err
 	}
@@ -375,7 +372,6 @@ func (c *KubeClient) CreateSnapshotContentGAClient() (*contentv1.SnapshotContent
 // CreateSnapshotContentBetaClient creates a new instance of beta snapshot contents client
 func (c *KubeClient) CreateSnapshotContentBetaClient() (*contentbeta.SnapshotContentClient, error) {
 	cset, err := snapclient.NewForConfig(c.Config)
-
 	if err != nil {
 		return nil, err
 	}
@@ -591,7 +587,6 @@ func (c *KubeClient) ForceDeleteNamespace(ctx context.Context, namespace string)
 // SnapshotClassExists checks whether snapshot class exists
 func (c *KubeClient) SnapshotClassExists(snapClass string) (bool, error) {
 	cset, err := snapclient.NewForConfig(c.Config)
-
 	if err != nil {
 		return false, err
 	}
@@ -654,7 +649,6 @@ func (c *KubeClient) SetTimeout(val int) {
 	c.mutex.Lock()
 	defer c.mutex.Unlock()
 	c.timeout = val
-
 }
 
 // GetConfig reads and returns rest.config

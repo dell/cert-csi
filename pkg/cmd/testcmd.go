@@ -17,12 +17,13 @@
 package cmd
 
 import (
+	"fmt"
+	"time"
+
 	"cert-csi/pkg/plotter"
 	"cert-csi/pkg/store"
 	"cert-csi/pkg/testcore/runner"
 	"cert-csi/pkg/testcore/suites"
-	"fmt"
-	"time"
 
 	log "github.com/sirupsen/logrus"
 	"github.com/urfave/cli"
@@ -332,6 +333,7 @@ func getRemoteReplicationProvisioningCommand(globalFlags []cli.Flag) cli.Command
 		},
 	}
 }
+
 func getReplicationCommand(globalFlags []cli.Flag) cli.Command {
 	return cli.Command{
 		Name:     "replication",
@@ -689,7 +691,6 @@ func getVolumeIoCommand(globalFlags []cli.Flag) cli.Command {
 			return nil
 		},
 	}
-
 }
 
 func getSnapCommand(globalFlags []cli.Flag) cli.Command {
@@ -841,9 +842,11 @@ func getBlockSnapCommand(globalFlags []cli.Flag) cli.Command {
 			size := c.String("size")
 			accessMode := c.String("access-mode")
 			s := []suites.Interface{
-				&suites.BlockSnapSuite{SnapClass: snapClass,
+				&suites.BlockSnapSuite{
+					SnapClass:  snapClass,
 					VolumeSize: size,
-					AccessMode: accessMode},
+					AccessMode: accessMode,
+				},
 			}
 
 			sr, ss := createSuiteRunner(c, s)

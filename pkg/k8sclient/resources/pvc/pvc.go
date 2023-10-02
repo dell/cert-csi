@@ -17,9 +17,6 @@
 package pvc
 
 import (
-	"cert-csi/pkg/k8sclient/resources/commonparams"
-	"cert-csi/pkg/k8sclient/resources/sc"
-	"cert-csi/pkg/utils"
 	"context"
 	"encoding/json"
 	"errors"
@@ -28,6 +25,10 @@ import (
 	"path/filepath"
 	"strings"
 	"time"
+
+	"cert-csi/pkg/k8sclient/resources/commonparams"
+	"cert-csi/pkg/k8sclient/resources/sc"
+	"cert-csi/pkg/utils"
 
 	"github.com/fatih/color"
 	apierrs "k8s.io/apimachinery/pkg/api/errors"
@@ -386,7 +387,6 @@ func (c *Client) CheckAnnotationsForVolumes(ctx context.Context, scObject *v2.St
 	yellow := color.New(color.FgHiYellow)
 	log.Infof("Annotations and labels are added for all PVC's in  %s in %s", c.Namespace, yellow.Sprint(time.Since(startTime)))
 	return nil
-
 }
 
 // CreatePVCObject will read the remotepvobject and return pvc object for the same
@@ -567,7 +567,6 @@ func (pvc *PersistentVolumeClaim) WaitUntilGone(ctx context.Context) error {
 	yellow := color.New(color.FgHiYellow)
 	log.Debugf("Pvc %s was deleted in %s", pvc.Object.Name, yellow.Sprint(time.Since(startTime)))
 	return nil
-
 }
 
 // Sync waits until PVC is deleted or bound

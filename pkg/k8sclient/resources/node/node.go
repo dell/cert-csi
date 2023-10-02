@@ -51,7 +51,6 @@ func (c *Client) NodeUnCordon(ctx context.Context, nodename string) error {
 }
 
 func (c *Client) cordonUnCordon(ctx context.Context, nodename string, cordon bool) error {
-
 	node, err := c.Interface.Get(ctx, nodename, metav1.GetOptions{})
 	if err != nil {
 		return err
