@@ -77,11 +77,12 @@ func (tr *TextReporter) Generate(runName string, mc *collector.MetricsCollection
 		return err
 	}
 
-	if err := report.Execute(txtFile, mc); err != nil {
-		return err
-	}
+	// if err := report.Execute(txtFile, mc); err != nil {
+	// 	return err
+	// }
 
-	return nil
+	// return nil
+	return report.Execute(txtFile, mc)
 }
 
 func (tr *TextReporter) getResultStatus(result bool) string {

@@ -51,7 +51,7 @@ type VolumeDeletionSuite struct {
 }
 
 // Run to delete the volume created by name and namespace as cli params
-func (vds *VolumeDeletionSuite) Run(ctx context.Context, storageClass string, clients *k8sclient.Clients) (delFunc func() error, e error) {
+func (vds *VolumeDeletionSuite) Run(ctx context.Context, _ string, clients *k8sclient.Clients) (delFunc func() error, e error) {
 	if vds.Name == "" {
 		log.Fatalf("Error PVC name is required parameter")
 	}
@@ -87,7 +87,7 @@ func (*VolumeDeletionSuite) GetObservers(obsType observer.Type) []observer.Inter
 }
 
 // GetClients creates and returns PVC and Metrics clients
-func (vds *VolumeDeletionSuite) GetClients(namespace string, client *k8sclient.KubeClient) (*k8sclient.Clients, error) {
+func (vds *VolumeDeletionSuite) GetClients(_ string, client *k8sclient.KubeClient) (*k8sclient.Clients, error) {
 	pvcClient, pvcErr := client.CreatePVCClient(vds.Namespace)
 	if pvcErr != nil {
 		return nil, pvcErr
@@ -119,7 +119,7 @@ type PodDeletionSuite struct {
 }
 
 // Run to delete the volume created by name and namespace as cli params
-func (pds *PodDeletionSuite) Run(ctx context.Context, storageClass string, clients *k8sclient.Clients) (delFunc func() error, e error) {
+func (pds *PodDeletionSuite) Run(ctx context.Context, _ string, clients *k8sclient.Clients) (delFunc func() error, e error) {
 	if pds.Name == "" {
 		log.Fatalf("Error Pod name is required parameter")
 	}
@@ -176,7 +176,7 @@ func (*PodDeletionSuite) GetObservers(obsType observer.Type) []observer.Interfac
 }
 
 // GetClients creates and returns pod, pvc, va, metrics clients
-func (pds *PodDeletionSuite) GetClients(namespace string, client *k8sclient.KubeClient) (*k8sclient.Clients, error) {
+func (pds *PodDeletionSuite) GetClients(_ string, client *k8sclient.KubeClient) (*k8sclient.Clients, error) {
 	podClient, podErr := client.CreatePodClient(pds.Namespace)
 	if podErr != nil {
 		return nil, podErr
@@ -220,7 +220,7 @@ type ClonedVolDeletionSuite struct {
 }
 
 // Run to delete the volume created by name and namespace as cli params
-func (pds *ClonedVolDeletionSuite) Run(ctx context.Context, storageClass string, clients *k8sclient.Clients) (delFunc func() error, e error) {
+func (pds *ClonedVolDeletionSuite) Run(ctx context.Context, _ string, clients *k8sclient.Clients) (delFunc func() error, e error) {
 	if pds.Name == "" {
 		log.Fatalf("Error PVC name is required parameter")
 	}

@@ -63,11 +63,13 @@ func (hr *HTMLReporter) Generate(runName string, mc *collector.MetricsCollection
 		return err
 	}
 
-	if err := report.Execute(htmlFile, mc); err != nil {
-		return err
-	}
+	// if err := report.Execute(htmlFile, mc); err != nil {
+	// 	return err
+	// }
 
-	return nil
+	// return nil
+
+	return report.Execute(htmlFile, mc)
 }
 
 func (hr *HTMLReporter) getResultStatus(result bool) string {

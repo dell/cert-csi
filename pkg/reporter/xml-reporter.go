@@ -72,7 +72,7 @@ func (xr *XMLReporter) MultiGenerate(mcs []*collector.MetricsCollection) error {
 }
 
 // Generate generates report from metrics collection
-func (xr *XMLReporter) Generate(runName string, mc *collector.MetricsCollection) error {
+func (xr *XMLReporter) Generate(_ string, mc *collector.MetricsCollection) error {
 	fm := template.FuncMap{
 		"formatName":          formatName,
 		"getResultStatus":     xr.getResultStatus,

@@ -497,10 +497,11 @@ func PlotMinMaxEntityOverTime(tcMetrics []collector.TestCaseMetrics, reportName 
 	if err := plotMinMax(minPvcsBound, maxPvcsBound, reportName, "PvcsBound"); err != nil {
 		return err
 	}
-	if err := plotMinMax(minPvcsTerminating, maxPvcsTerminating, reportName, "PvcsTerminating"); err != nil {
-		return err
-	}
-	return nil
+	// if err := plotMinMax(minPvcsTerminating, maxPvcsTerminating, reportName, "PvcsTerminating"); err != nil {
+	// 	return err
+	// }
+	// return nil
+	return plotMinMax(minPvcsTerminating, maxPvcsTerminating, reportName, "PvcsTerminating")
 }
 
 // PlotResourceUsageOverTime creates and saves a histogram of time distributions of resource usage
@@ -550,10 +551,12 @@ func PlotResourceUsageOverTime(tcMetrics []collector.TestCaseMetrics, reportName
 		return err
 	}
 
-	if err := plotMemoryOrCPU(cpuMetrics, reportName, "CpuUsageOverTime"); err != nil {
-		return err
-	}
-	return nil
+	// if err := plotMemoryOrCPU(cpuMetrics, reportName, "CpuUsageOverTime"); err != nil {
+	// 	return err
+	// }
+	// return nil
+
+	return plotMemoryOrCPU(cpuMetrics, reportName, "CpuUsageOverTime")
 }
 
 // PlotIterationTimes creates and saves a histogram of time distributions of test iterations

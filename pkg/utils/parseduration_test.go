@@ -46,7 +46,7 @@ func TestParse(t *testing.T) {
 		if tt.wantErr {
 			assert.Error(t, err, "Wrong formatted")
 			continue
-		} //else {
+		} // else {
 		// 	assert.NoError(t, err)
 		// }
 		if actual != tt.expected {
