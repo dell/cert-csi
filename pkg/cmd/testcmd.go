@@ -17,13 +17,12 @@
 package cmd
 
 import (
-	"fmt"
-	"time"
-
 	"cert-csi/pkg/plotter"
 	"cert-csi/pkg/store"
 	"cert-csi/pkg/testcore/runner"
 	"cert-csi/pkg/testcore/suites"
+	"fmt"
+	"time"
 
 	log "github.com/sirupsen/logrus"
 	"github.com/urfave/cli"

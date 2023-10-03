@@ -18,16 +18,15 @@ package cmd
 
 import (
 	"bufio"
+	"cert-csi/pkg/store"
+	"cert-csi/pkg/testcore/runner"
+	"cert-csi/pkg/testcore/suites"
 	"fmt"
 	"io"
 	"os"
 	"path/filepath"
 	"strings"
 	"time"
-
-	"cert-csi/pkg/store"
-	"cert-csi/pkg/testcore/runner"
-	"cert-csi/pkg/testcore/suites"
 
 	log "github.com/sirupsen/logrus"
 	"github.com/urfave/cli"
