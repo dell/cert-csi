@@ -17,6 +17,7 @@
 package pod
 
 import (
+	"cert-csi/pkg/utils"
 	"context"
 	"errors"
 	"fmt"
@@ -24,8 +25,6 @@ import (
 	"net/url"
 	"strconv"
 	"time"
-
-	"cert-csi/pkg/utils"
 
 	"golang.org/x/sync/errgroup"
 	policyv1beta1 "k8s.io/api/policy/v1beta1"

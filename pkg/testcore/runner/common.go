@@ -17,13 +17,12 @@
 package runner
 
 import (
-	"strings"
-	"sync"
-	"time"
-
 	"cert-csi/pkg/k8sclient"
 	"cert-csi/pkg/observer"
 	"cert-csi/pkg/store"
+	"strings"
+	"sync"
+	"time"
 
 	"k8s.io/client-go/rest"
 

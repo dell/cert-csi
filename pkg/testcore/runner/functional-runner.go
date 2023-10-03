@@ -18,17 +18,16 @@ package runner
 
 import (
 	"bufio"
+	"cert-csi/pkg/k8sclient"
+	"cert-csi/pkg/observer"
+	"cert-csi/pkg/store"
+	"cert-csi/pkg/testcore/suites"
 	"context"
 	"fmt"
 	"os"
 	"os/signal"
 	"syscall"
 	"time"
-
-	"cert-csi/pkg/k8sclient"
-	"cert-csi/pkg/observer"
-	"cert-csi/pkg/store"
-	"cert-csi/pkg/testcore/suites"
 
 	"github.com/fatih/color"
 	log "github.com/sirupsen/logrus"

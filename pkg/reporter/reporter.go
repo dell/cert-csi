@@ -17,6 +17,9 @@
 package reporter
 
 import (
+	"cert-csi/pkg/collector"
+	"cert-csi/pkg/plotter"
+	"cert-csi/pkg/store"
 	"embed"
 	"fmt"
 	"html/template"
@@ -24,10 +27,6 @@ import (
 	"path/filepath"
 	"strconv"
 	"strings"
-
-	"cert-csi/pkg/collector"
-	"cert-csi/pkg/plotter"
-	"cert-csi/pkg/store"
 
 	"github.com/cheggaaa/pb/v3"
 	log "github.com/sirupsen/logrus"

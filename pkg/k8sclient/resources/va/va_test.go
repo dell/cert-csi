@@ -17,11 +17,10 @@
 package va_test
 
 import (
+	"cert-csi/pkg/k8sclient"
 	"context"
 	"testing"
 	"time"
-
-	"cert-csi/pkg/k8sclient"
 
 	"github.com/stretchr/testify/suite"
 	storagev1 "k8s.io/api/storage/v1"

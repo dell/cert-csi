@@ -17,9 +17,8 @@
 package sc
 
 import (
-	"context"
-
 	"cert-csi/pkg/utils"
+	"context"
 
 	v1 "k8s.io/api/storage/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"

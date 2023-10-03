@@ -17,15 +17,6 @@
 package k8sclient
 
 import (
-	"context"
-	"fmt"
-	"path/filepath"
-	"regexp"
-	"strconv"
-	"strings"
-	"sync"
-	"time"
-
 	"cert-csi/pkg/k8sclient/resources/csistoragecapacity"
 	"cert-csi/pkg/k8sclient/resources/metrics"
 	"cert-csi/pkg/k8sclient/resources/node"
@@ -42,6 +33,14 @@ import (
 	contentv1 "cert-csi/pkg/k8sclient/resources/volumesnapshotcontent/v1"
 	contentbeta "cert-csi/pkg/k8sclient/resources/volumesnapshotcontent/v1beta1"
 	"cert-csi/pkg/utils"
+	"context"
+	"fmt"
+	"path/filepath"
+	"regexp"
+	"strconv"
+	"strings"
+	"sync"
+	"time"
 
 	vgsAlpha "github.com/dell/csi-volumegroup-snapshotter/api/v1"
 	replv1 "github.com/dell/csm-replication/api/v1"

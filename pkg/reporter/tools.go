@@ -17,12 +17,11 @@
 package reporter
 
 import (
+	"cert-csi/pkg/collector"
+	"cert-csi/pkg/plotter"
 	"fmt"
 	"os"
 	"path/filepath"
-
-	"cert-csi/pkg/collector"
-	"cert-csi/pkg/plotter"
 )
 
 func formatName(runName string) string {
