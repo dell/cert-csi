@@ -17,10 +17,9 @@
 package cmd
 
 import (
-	"errors"
-
 	"cert-csi/pkg/reporter"
 	"cert-csi/pkg/store"
+	"errors"
 
 	log "github.com/sirupsen/logrus"
 	"github.com/urfave/cli"
