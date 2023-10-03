@@ -17,15 +17,14 @@
 package pv
 
 import (
+	"cert-csi/pkg/k8sclient/resources/commonparams"
+	"cert-csi/pkg/k8sclient/resources/va"
+	"cert-csi/pkg/utils"
 	"context"
 	"errors"
 	"fmt"
 	"strings"
 	"time"
-
-	"cert-csi/pkg/k8sclient/resources/commonparams"
-	"cert-csi/pkg/k8sclient/resources/va"
-	"cert-csi/pkg/utils"
 
 	"github.com/fatih/color"
 	log "github.com/sirupsen/logrus"
