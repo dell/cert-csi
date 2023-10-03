@@ -17,9 +17,8 @@
 package reporter
 
 import (
-	"html/template"
-
 	"cert-csi/pkg/collector"
+	"html/template"
 )
 
 const htmlNameTemplate = "template.html"

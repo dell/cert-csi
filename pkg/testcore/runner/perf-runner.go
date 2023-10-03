@@ -82,8 +82,8 @@ func checkValidNamespace(driverNs string, runner *Runner) {
 
 // NewSuiteRunner creates and returns SuiteRunner
 func NewSuiteRunner(configPath, driverNs, startHook, readyHook, finishHook, observerType, longevity string, driverNSHealthMetrics string,
-	timeout int, cooldown int, sequentialExecution, noCleanup, noCleanupOnFail, noMetrics bool, noReport bool, scDBs []*store.StorageClassDB) *SuiteRunner {
-
+	timeout int, cooldown int, sequentialExecution, noCleanup, noCleanupOnFail, noMetrics bool, noReport bool, scDBs []*store.StorageClassDB,
+) *SuiteRunner {
 	runner := getSuiteRunner(
 		configPath,
 		driverNs,
@@ -392,7 +392,6 @@ func (sr *SuiteRunner) runFlowManagementGoroutine() (context.Context, chan os.Si
 			signal.Stop(c)
 			close(c)
 		}
-
 	}(sr)
 	return iterCtx, c
 }
