@@ -18,17 +18,16 @@ package suites
 
 import (
 	"bytes"
+	"cert-csi/pkg/k8sclient"
+	"cert-csi/pkg/k8sclient/resources/pod"
+	"cert-csi/pkg/observer"
+	"cert-csi/pkg/testcore"
 	"context"
 	"fmt"
 	"os"
 	"strconv"
 	"strings"
 	"time"
-
-	"cert-csi/pkg/k8sclient"
-	"cert-csi/pkg/k8sclient/resources/pod"
-	"cert-csi/pkg/observer"
-	"cert-csi/pkg/testcore"
 
 	"github.com/fatih/color"
 	log "github.com/sirupsen/logrus"

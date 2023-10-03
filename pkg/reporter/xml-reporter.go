@@ -17,11 +17,10 @@
 package reporter
 
 import (
-	"text/template"
-	"time"
-
 	"cert-csi/pkg/collector"
 	"cert-csi/pkg/store"
+	"text/template"
+	"time"
 )
 
 // XMLReporter is used to create and manage XML report

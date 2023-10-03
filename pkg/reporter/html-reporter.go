@@ -17,8 +17,9 @@
 package reporter
 
 import (
-	"cert-csi/pkg/collector"
 	"html/template"
+
+	"cert-csi/pkg/collector"
 )
 
 const htmlNameTemplate = "template.html"
@@ -28,7 +29,7 @@ type HTMLReporter struct{}
 
 // Generate generates a HTML report
 func (hr *HTMLReporter) Generate(runName string, mc *collector.MetricsCollection) error {
-	var fm = template.FuncMap{
+	fm := template.FuncMap{
 		"formatName":                      formatName,
 		"inc":                             inc,
 		"getResultStatus":                 hr.getResultStatus,
