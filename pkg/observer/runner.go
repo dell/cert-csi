@@ -17,13 +17,12 @@
 package observer
 
 import (
+	"cert-csi/pkg/k8sclient"
+	"cert-csi/pkg/store"
 	"context"
 	"fmt"
 	"sync"
 	"time"
-
-	"cert-csi/pkg/k8sclient"
-	"cert-csi/pkg/store"
 
 	"github.com/sirupsen/logrus"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"

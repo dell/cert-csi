@@ -17,13 +17,12 @@
 package observer
 
 import (
-	"context"
-	"sync"
-	"time"
-
 	"cert-csi/pkg/k8sclient/resources/pod"
 	"cert-csi/pkg/k8sclient/resources/pvc"
 	"cert-csi/pkg/store"
+	"context"
+	"sync"
+	"time"
 
 	log "github.com/sirupsen/logrus"
 	v1 "k8s.io/api/core/v1"

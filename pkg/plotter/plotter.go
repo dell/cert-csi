@@ -17,6 +17,7 @@
 package plotter
 
 import (
+	"cert-csi/pkg/collector"
 	"errors"
 	"fmt"
 	"image/color"
@@ -26,8 +27,6 @@ import (
 	"sort"
 	"strconv"
 	"time"
-
-	"cert-csi/pkg/collector"
 
 	log "github.com/sirupsen/logrus"
 	"gonum.org/v1/plot"

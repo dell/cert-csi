@@ -17,13 +17,12 @@
 package plotter
 
 import (
+	"cert-csi/pkg/collector"
+	"cert-csi/pkg/store"
 	"os"
 	"path/filepath"
 	"testing"
 	"time"
-
-	"cert-csi/pkg/collector"
-	"cert-csi/pkg/store"
 
 	log "github.com/sirupsen/logrus"
 	"github.com/stretchr/testify/suite"
