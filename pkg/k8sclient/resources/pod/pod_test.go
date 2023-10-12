@@ -17,14 +17,15 @@
 package pod_test
 
 import (
-	"cert-csi/pkg/k8sclient"
-	"cert-csi/pkg/k8sclient/resources/pod"
 	"context"
+	"testing"
+
+	"github.com/dell/cert-csi/pkg/k8sclient"
+	"github.com/dell/cert-csi/pkg/k8sclient/resources/pod"
 	"github.com/stretchr/testify/suite"
 	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes/fake"
-	"testing"
 )
 
 type PodTestSuite struct {

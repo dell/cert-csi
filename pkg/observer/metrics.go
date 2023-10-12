@@ -17,10 +17,11 @@
 package observer
 
 import (
-	"cert-csi/pkg/store"
 	"context"
 	"sync"
 	"time"
+
+	"github.com/dell/cert-csi/pkg/store"
 
 	log "github.com/sirupsen/logrus"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"

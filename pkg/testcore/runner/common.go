@@ -17,12 +17,13 @@
 package runner
 
 import (
-	"cert-csi/pkg/k8sclient"
-	"cert-csi/pkg/observer"
-	"cert-csi/pkg/store"
 	"strings"
 	"sync"
 	"time"
+
+	"github.com/dell/cert-csi/pkg/k8sclient"
+	"github.com/dell/cert-csi/pkg/observer"
+	"github.com/dell/cert-csi/pkg/store"
 
 	"k8s.io/client-go/rest"
 

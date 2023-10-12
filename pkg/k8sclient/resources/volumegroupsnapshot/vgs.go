@@ -17,10 +17,11 @@
 package volumegroupsnapshot
 
 import (
-	"cert-csi/pkg/utils"
 	"context"
 	"fmt"
 	"time"
+
+	"github.com/dell/cert-csi/pkg/utils"
 
 	vgsAlpha "github.com/dell/csi-volumegroup-snapshotter/api/v1"
 	"github.com/fatih/color"

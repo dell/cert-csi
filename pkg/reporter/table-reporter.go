@@ -18,7 +18,6 @@ package reporter
 
 import (
 	"bufio"
-	"cert-csi/pkg/collector"
 	"errors"
 	"html/template"
 	"io"
@@ -26,6 +25,8 @@ import (
 	"path/filepath"
 	"strings"
 	"time"
+
+	"github.com/dell/cert-csi/pkg/collector"
 
 	log "github.com/sirupsen/logrus"
 )

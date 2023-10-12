@@ -17,9 +17,10 @@
 package suites
 
 import (
-	"cert-csi/pkg/k8sclient"
-	"cert-csi/pkg/observer"
 	"context"
+
+	"github.com/dell/cert-csi/pkg/k8sclient"
+	"github.com/dell/cert-csi/pkg/observer"
 )
 
 // Interface contains common function specifications

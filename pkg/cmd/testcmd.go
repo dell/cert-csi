@@ -17,12 +17,13 @@
 package cmd
 
 import (
-	"cert-csi/pkg/plotter"
-	"cert-csi/pkg/store"
-	"cert-csi/pkg/testcore/runner"
-	"cert-csi/pkg/testcore/suites"
 	"fmt"
 	"time"
+
+	"github.com/dell/cert-csi/pkg/plotter"
+	"github.com/dell/cert-csi/pkg/store"
+	"github.com/dell/cert-csi/pkg/testcore/runner"
+	"github.com/dell/cert-csi/pkg/testcore/suites"
 
 	log "github.com/sirupsen/logrus"
 	"github.com/urfave/cli"
@@ -92,7 +93,7 @@ func GetTestCommand() cli.Command {
 		},
 		cli.StringFlag{
 			Name:  "reportPath, path",
-			Usage: "path to folder where reports will be created (if not specified `~/.cert-csi/` will be used)",
+			Usage: "path to folder where reports will be created (if not specified `~/.github.com/dell/cert-csi` will be used)",
 		},
 		cli.StringFlag{
 			Name:  "cooldown, cd",

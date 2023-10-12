@@ -17,8 +17,6 @@
 package statefulset
 
 import (
-	"cert-csi/pkg/k8sclient/resources/pod"
-	"cert-csi/pkg/utils"
 	"context"
 	"errors"
 	"fmt"
@@ -27,6 +25,9 @@ import (
 	"strconv"
 	"strings"
 	"time"
+
+	"github.com/dell/cert-csi/pkg/k8sclient/resources/pod"
+	"github.com/dell/cert-csi/pkg/utils"
 
 	"github.com/fatih/color"
 	apierrs "k8s.io/apimachinery/pkg/api/errors"

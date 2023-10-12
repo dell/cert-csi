@@ -17,14 +17,15 @@
 package va_test
 
 import (
-	"cert-csi/pkg/k8sclient"
 	"context"
+	"testing"
+	"time"
+
+	"github.com/dell/cert-csi/pkg/k8sclient"
 	"github.com/stretchr/testify/suite"
 	storagev1 "k8s.io/api/storage/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes/fake"
-	"testing"
-	"time"
 )
 
 type VaTestSuite struct {

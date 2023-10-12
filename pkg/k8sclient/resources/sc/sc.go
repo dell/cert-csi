@@ -17,8 +17,9 @@
 package sc
 
 import (
-	"cert-csi/pkg/utils"
 	"context"
+
+	"github.com/dell/cert-csi/pkg/utils"
 
 	v1 "k8s.io/api/storage/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"

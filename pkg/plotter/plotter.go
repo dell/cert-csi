@@ -17,7 +17,6 @@
 package plotter
 
 import (
-	"cert-csi/pkg/collector"
 	"errors"
 	"fmt"
 	"image/color"
@@ -27,6 +26,8 @@ import (
 	"sort"
 	"strconv"
 	"time"
+
+	"github.com/dell/cert-csi/pkg/collector"
 
 	log "github.com/sirupsen/logrus"
 	"gonum.org/v1/plot"
@@ -41,7 +42,7 @@ var (
 	// UserPath is user home directory
 	UserPath = ""
 	// FolderPath of .cert-csi folder
-	FolderPath = "/.cert-csi/"
+	FolderPath = "/.github.com/dell/cert-csi"
 )
 
 // GetReportPathDir constructs the report path and returns it

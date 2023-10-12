@@ -17,10 +17,11 @@
 package reporter
 
 import (
-	"cert-csi/pkg/collector"
-	"cert-csi/pkg/store"
 	"text/template"
 	"time"
+
+	"github.com/dell/cert-csi/pkg/collector"
+	"github.com/dell/cert-csi/pkg/store"
 )
 
 // XMLReporter is used to create and manage XML report
