@@ -50,7 +50,7 @@ func GetReportCommand() cli.Command {
 		},
 		cli.StringFlag{
 			Name:  "reportPath, path",
-			Usage: "path to folder where reports will be created (if not specified `~/.github.com/dell/cert-csi` will be used)",
+			Usage: "path to folder where reports will be created (if not specified `~/.cert-csi/` will be used)",
 		},
 	}
 
