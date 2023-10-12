@@ -66,7 +66,7 @@ type ReporterTestSuite struct {
 }
 
 func (suite *ReporterTestSuite) SetupSuite() {
-	plotter.FolderPath = "/.github.com/dell/cert-csitmp/report-tests/"
+	plotter.FolderPath = "/.cert-csi/tmp/report-tests/"
 	suite.db = store.NewSQLiteStore("file:testdata/reporter_test.db")
 
 	// When the test run is not present in the database
