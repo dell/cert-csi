@@ -18,12 +18,6 @@ package runner
 
 import (
 	"bufio"
-	"cert-csi/pkg/k8sclient"
-	"cert-csi/pkg/observer"
-	"cert-csi/pkg/reporter"
-	"cert-csi/pkg/store"
-	"cert-csi/pkg/testcore/suites"
-	"cert-csi/pkg/utils"
 	"context"
 	"fmt"
 	"os"
@@ -33,6 +27,13 @@ import (
 	"strconv"
 	"syscall"
 	"time"
+
+	"github.com/dell/cert-csi/pkg/k8sclient"
+	"github.com/dell/cert-csi/pkg/observer"
+	"github.com/dell/cert-csi/pkg/reporter"
+	"github.com/dell/cert-csi/pkg/store"
+	"github.com/dell/cert-csi/pkg/testcore/suites"
+	"github.com/dell/cert-csi/pkg/utils"
 
 	"github.com/fatih/color"
 	"github.com/sirupsen/logrus"

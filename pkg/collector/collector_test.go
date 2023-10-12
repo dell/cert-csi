@@ -17,9 +17,10 @@
 package collector
 
 import (
-	"cert-csi/pkg/store"
 	"testing"
 	"time"
+
+	"github.com/dell/cert-csi/pkg/store"
 
 	log "github.com/sirupsen/logrus"
 	"github.com/stretchr/testify/suite"

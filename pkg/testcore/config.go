@@ -17,12 +17,13 @@
 package testcore
 
 import (
-	"cert-csi/pkg/k8sclient/resources/pod"
-	"cert-csi/pkg/k8sclient/resources/pvc"
-	"cert-csi/pkg/k8sclient/resources/statefulset"
-	"cert-csi/pkg/k8sclient/resources/volumegroupsnapshot"
 	"crypto/rand"
 	"fmt"
+
+	"github.com/dell/cert-csi/pkg/k8sclient/resources/pod"
+	"github.com/dell/cert-csi/pkg/k8sclient/resources/pvc"
+	"github.com/dell/cert-csi/pkg/k8sclient/resources/statefulset"
+	"github.com/dell/cert-csi/pkg/k8sclient/resources/volumegroupsnapshot"
 
 	v1 "k8s.io/api/core/v1"
 )

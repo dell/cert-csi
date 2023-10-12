@@ -17,11 +17,12 @@
 package cmd
 
 import (
-	"cert-csi/pkg/plotter"
-	"cert-csi/pkg/reporter"
-	"cert-csi/pkg/store"
 	"fmt"
 	"strings"
+
+	"github.com/dell/cert-csi/pkg/plotter"
+	"github.com/dell/cert-csi/pkg/reporter"
+	"github.com/dell/cert-csi/pkg/store"
 
 	log "github.com/sirupsen/logrus"
 
@@ -49,7 +50,7 @@ func GetReportCommand() cli.Command {
 		},
 		cli.StringFlag{
 			Name:  "reportPath, path",
-			Usage: "path to folder where reports will be created (if not specified `~/.cert-csi/` will be used)",
+			Usage: "path to folder where reports will be created (if not specified `~/.github.com/dell/cert-csi` will be used)",
 		},
 	}
 

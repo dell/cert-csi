@@ -17,15 +17,16 @@
 package reporter
 
 import (
-	"cert-csi/pkg/collector"
-	"cert-csi/pkg/plotter"
-	"cert-csi/pkg/store"
 	"errors"
 	"fmt"
 	"io"
 	"os"
 	"path/filepath"
 	"testing"
+
+	"github.com/dell/cert-csi/pkg/collector"
+	"github.com/dell/cert-csi/pkg/plotter"
+	"github.com/dell/cert-csi/pkg/store"
 
 	log "github.com/sirupsen/logrus"
 	"github.com/stretchr/testify/suite"
@@ -65,7 +66,7 @@ type ReporterTestSuite struct {
 }
 
 func (suite *ReporterTestSuite) SetupSuite() {
-	plotter.FolderPath = "/.cert-csi/tmp/report-tests/"
+	plotter.FolderPath = "/.github.com/dell/cert-csitmp/report-tests/"
 	suite.db = store.NewSQLiteStore("file:testdata/reporter_test.db")
 
 	// When the test run is not present in the database

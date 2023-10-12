@@ -18,13 +18,14 @@ package cmd
 
 import (
 	"bufio"
-	"cert-csi/pkg/store"
-	"cert-csi/pkg/testcore/runner"
-	"cert-csi/pkg/testcore/suites"
 	"errors"
 	"fmt"
 	"os"
 	"time"
+
+	"github.com/dell/cert-csi/pkg/store"
+	"github.com/dell/cert-csi/pkg/testcore/runner"
+	"github.com/dell/cert-csi/pkg/testcore/suites"
 
 	"github.com/fatih/color"
 	log "github.com/sirupsen/logrus"
@@ -145,7 +146,7 @@ func GetCertifyCommand() cli.Command {
 				},
 				cli.StringFlag{
 					Name:  "reportPath, path",
-					Usage: "path to folder where reports will be created (if not specified `~/.cert-csi/` will be used)",
+					Usage: "path to folder where reports will be created (if not specified `~/.github.com/dell/cert-csi` will be used)",
 				},
 				cli.StringFlag{
 					Name:  "driver-namespace, driver-ns",

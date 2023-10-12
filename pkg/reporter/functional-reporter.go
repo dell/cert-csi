@@ -17,8 +17,8 @@
 package reporter
 
 import (
-	"cert-csi/pkg/collector"
-	"cert-csi/pkg/store"
+	"github.com/dell/cert-csi/pkg/collector"
+	"github.com/dell/cert-csi/pkg/store"
 
 	log "github.com/sirupsen/logrus"
 )

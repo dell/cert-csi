@@ -17,12 +17,13 @@
 package plotter
 
 import (
-	"cert-csi/pkg/collector"
-	"cert-csi/pkg/store"
 	"os"
 	"path/filepath"
 	"testing"
 	"time"
+
+	"github.com/dell/cert-csi/pkg/collector"
+	"github.com/dell/cert-csi/pkg/store"
 
 	log "github.com/sirupsen/logrus"
 	"github.com/stretchr/testify/suite"
@@ -38,7 +39,7 @@ type PlotterTestSuite struct {
 }
 
 func (suite *PlotterTestSuite) SetupSuite() {
-	FolderPath = "/.cert-csi/tmp/plotter-tests/"
+	FolderPath = "/.github.com/dell/cert-csitmp/plotter-tests/"
 	curUser, err := os.UserHomeDir()
 	if err != nil {
 		log.Panic(err)
