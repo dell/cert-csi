@@ -42,7 +42,7 @@ var (
 	// UserPath is user home directory
 	UserPath = ""
 	// FolderPath of .cert-csi folder
-	FolderPath = "/.github.com/dell/cert-csi"
+	FolderPath = "/.cert-csi/"
 )
 
 // GetReportPathDir constructs the report path and returns it

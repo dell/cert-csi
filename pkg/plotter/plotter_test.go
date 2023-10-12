@@ -39,7 +39,7 @@ type PlotterTestSuite struct {
 }
 
 func (suite *PlotterTestSuite) SetupSuite() {
-	FolderPath = "/.github.com/dell/cert-csitmp/plotter-tests/"
+	FolderPath = "/.cert-csi/tmp/plotter-tests/"
 	curUser, err := os.UserHomeDir()
 	if err != nil {
 		log.Panic(err)
