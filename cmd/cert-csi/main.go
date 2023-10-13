@@ -17,8 +17,9 @@
 package main
 
 import (
-	"cert-csi/pkg/cmd"
 	"os"
+
+	"github.com/dell/cert-csi/pkg/cmd"
 
 	"github.com/rifflock/lfshook"
 
@@ -50,7 +51,7 @@ func init() {
 func main() {
 	app := cli.NewApp()
 	app.Name = "cert-csi"
-	app.Version = "0.8.1"
+	app.Version = "1.3.0"
 	app.Usage = "unified method of benchmarking and certification of csi drivers"
 	app.EnableBashCompletion = true
 	app.Flags = []cli.Flag{

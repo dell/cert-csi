@@ -18,12 +18,13 @@ package cmd
 
 import (
 	"bufio"
-	"cert-csi/pkg/k8sclient"
 	"context"
 	"fmt"
 	"os"
 	"strings"
 	"time"
+
+	"github.com/dell/cert-csi/pkg/k8sclient"
 
 	log "github.com/sirupsen/logrus"
 	"github.com/urfave/cli"

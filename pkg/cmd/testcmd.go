@@ -17,12 +17,13 @@
 package cmd
 
 import (
-	"cert-csi/pkg/plotter"
-	"cert-csi/pkg/store"
-	"cert-csi/pkg/testcore/runner"
-	"cert-csi/pkg/testcore/suites"
 	"fmt"
 	"time"
+
+	"github.com/dell/cert-csi/pkg/plotter"
+	"github.com/dell/cert-csi/pkg/store"
+	"github.com/dell/cert-csi/pkg/testcore/runner"
+	"github.com/dell/cert-csi/pkg/testcore/suites"
 
 	log "github.com/sirupsen/logrus"
 	"github.com/urfave/cli"

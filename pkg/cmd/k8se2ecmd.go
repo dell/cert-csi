@@ -19,12 +19,13 @@
 package cmd
 
 import (
-	"cert-csi/pkg/utils"
 	"errors"
 	"fmt"
 	"os"
 	"os/signal"
 	"syscall"
+
+	"github.com/dell/cert-csi/pkg/utils"
 
 	log "github.com/sirupsen/logrus"
 	"github.com/urfave/cli"

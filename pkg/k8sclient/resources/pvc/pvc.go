@@ -17,9 +17,6 @@
 package pvc
 
 import (
-	"cert-csi/pkg/k8sclient/resources/commonparams"
-	"cert-csi/pkg/k8sclient/resources/sc"
-	"cert-csi/pkg/utils"
 	"context"
 	"encoding/json"
 	"errors"
@@ -28,6 +25,10 @@ import (
 	"path/filepath"
 	"strings"
 	"time"
+
+	"github.com/dell/cert-csi/pkg/k8sclient/resources/commonparams"
+	"github.com/dell/cert-csi/pkg/k8sclient/resources/sc"
+	"github.com/dell/cert-csi/pkg/utils"
 
 	"github.com/fatih/color"
 	apierrs "k8s.io/apimachinery/pkg/api/errors"
