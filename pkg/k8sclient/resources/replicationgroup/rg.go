@@ -17,11 +17,12 @@
 package replicationgroup
 
 import (
-	"cert-csi/pkg/utils"
 	"context"
 	"fmt"
 	"strings"
 	"time"
+
+	"github.com/dell/cert-csi/pkg/utils"
 
 	replv1 "github.com/dell/csm-replication/api/v1"
 	"github.com/fatih/color"

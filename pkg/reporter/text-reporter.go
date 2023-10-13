@@ -17,10 +17,11 @@
 package reporter
 
 import (
-	"cert-csi/pkg/collector"
 	"fmt"
 	"os"
 	"text/template"
+
+	"github.com/dell/cert-csi/pkg/collector"
 
 	"github.com/fatih/color"
 	log "github.com/sirupsen/logrus"

@@ -17,15 +17,16 @@
 package reporter
 
 import (
-	"cert-csi/pkg/collector"
-	"cert-csi/pkg/plotter"
-	"cert-csi/pkg/store"
 	"errors"
 	"fmt"
 	"io"
 	"os"
 	"path/filepath"
 	"testing"
+
+	"github.com/dell/cert-csi/pkg/collector"
+	"github.com/dell/cert-csi/pkg/plotter"
+	"github.com/dell/cert-csi/pkg/store"
 
 	log "github.com/sirupsen/logrus"
 	"github.com/stretchr/testify/suite"

@@ -17,12 +17,13 @@
 package cmd
 
 import (
-	"cert-csi/pkg/store"
 	"fmt"
 	"os"
 	"strings"
 	"text/tabwriter"
 	"time"
+
+	"github.com/dell/cert-csi/pkg/store"
 
 	"github.com/fatih/color"
 	"github.com/urfave/cli"

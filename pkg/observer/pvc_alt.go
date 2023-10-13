@@ -17,11 +17,12 @@
 package observer
 
 import (
-	"cert-csi/pkg/k8sclient"
-	"cert-csi/pkg/store"
 	"context"
 	"strings"
 	"time"
+
+	"github.com/dell/cert-csi/pkg/k8sclient"
+	"github.com/dell/cert-csi/pkg/store"
 
 	log "github.com/sirupsen/logrus"
 	v1 "k8s.io/api/core/v1"

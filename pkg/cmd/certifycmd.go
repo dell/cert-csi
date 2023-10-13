@@ -18,13 +18,14 @@ package cmd
 
 import (
 	"bufio"
-	"cert-csi/pkg/store"
-	"cert-csi/pkg/testcore/runner"
-	"cert-csi/pkg/testcore/suites"
 	"errors"
 	"fmt"
 	"os"
 	"time"
+
+	"github.com/dell/cert-csi/pkg/store"
+	"github.com/dell/cert-csi/pkg/testcore/runner"
+	"github.com/dell/cert-csi/pkg/testcore/suites"
 
 	"github.com/fatih/color"
 	log "github.com/sirupsen/logrus"

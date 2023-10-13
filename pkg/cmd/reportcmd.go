@@ -17,11 +17,12 @@
 package cmd
 
 import (
-	"cert-csi/pkg/plotter"
-	"cert-csi/pkg/reporter"
-	"cert-csi/pkg/store"
 	"fmt"
 	"strings"
+
+	"github.com/dell/cert-csi/pkg/plotter"
+	"github.com/dell/cert-csi/pkg/reporter"
+	"github.com/dell/cert-csi/pkg/store"
 
 	log "github.com/sirupsen/logrus"
 

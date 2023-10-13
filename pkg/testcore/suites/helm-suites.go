@@ -18,15 +18,16 @@ package suites
 
 import (
 	"bytes"
-	"cert-csi/pkg/helm"
-	"cert-csi/pkg/k8sclient"
-	"cert-csi/pkg/observer"
-	"cert-csi/pkg/testcore"
 	"context"
 	"fmt"
 	"os"
 	"strconv"
 	"strings"
+
+	"github.com/dell/cert-csi/pkg/helm"
+	"github.com/dell/cert-csi/pkg/k8sclient"
+	"github.com/dell/cert-csi/pkg/observer"
+	"github.com/dell/cert-csi/pkg/testcore"
 
 	log "github.com/sirupsen/logrus"
 )

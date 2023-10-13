@@ -17,9 +17,10 @@
 package cmd
 
 import (
-	"cert-csi/pkg/reporter"
-	"cert-csi/pkg/store"
 	"errors"
+
+	"github.com/dell/cert-csi/pkg/reporter"
+	"github.com/dell/cert-csi/pkg/store"
 
 	log "github.com/sirupsen/logrus"
 	"github.com/urfave/cli"

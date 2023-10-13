@@ -1,4 +1,4 @@
-module cert-csi
+module github.com/dell/cert-csi
 
 go 1.21
 

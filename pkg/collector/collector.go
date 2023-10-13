@@ -17,10 +17,11 @@
 package collector
 
 import (
-	"cert-csi/pkg/store"
 	"errors"
 	"fmt"
 	"time"
+
+	"github.com/dell/cert-csi/pkg/store"
 
 	"github.com/cheggaaa/pb/v3"
 	log "github.com/sirupsen/logrus"
