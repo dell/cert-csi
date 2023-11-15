@@ -14,6 +14,8 @@
 #
 #
 
+ARG BASEIMAGE
+
 FROM golang:1.20 as build-env
 
 WORKDIR /app/cert-csi/
@@ -30,7 +32,7 @@ COPY ./Makefile .
 
 RUN make build
 
-FROM frolvlad/alpine-glibc
+FROM $BASEIMAGE
 COPY --from=build-env /app/cert-csi/cert-csi .
 
 ENTRYPOINT [ "./cert-csi" ]
