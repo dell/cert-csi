@@ -14,6 +14,13 @@
 #
 #
 
+# determine if podman or docker should be used (use podman if found)
+ifneq (, $(shell which podman 2>/dev/null))
+export BUILDER=podman
+else
+export BUILDER=docker
+endif
+
 .PHONY: clean check gosec gocyclo test gocover build distribute install-ms
 
 all: clean build
@@ -42,6 +49,10 @@ gocover:
 build:
 	go build -ldflags "-s -w" ./cmd/cert-csi
 
+docker: download-csm-common
+	$(eval include csm-common.mk)
+	$(BUILDER) build -t cert-csi:latest --build-arg BASEIMAGE=$(DEFAULT_BASEIMAGE) .
+
 # build-statically-linked : used for building a standalone binary with statically linked glibc
 # this command should be used when building the binary for distributing it to customer/user
 build-statically-linked:
@@ -60,3 +71,6 @@ install-ms:
 
 delete-ms:
 	kubectl delete -f ./pkg/k8sclient/manifests/metrics-server
+
+download-csm-common:
+	curl -O -L https://raw.githubusercontent.com/dell/csm/main/config/csm-common.mk
