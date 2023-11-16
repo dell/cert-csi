@@ -207,6 +207,13 @@ func GetCertifyCommand() cli.Command {
 					minSize = sc.MinSize
 				}
 
+				s = append(s, &suites.VolumeIoSuite{
+					VolumeNumber: 2,
+					VolumeSize:   minSize,
+					ChainNumber:  2,
+					ChainLength:  2,
+				})
+
 				s = append(s, &suites.ScalingSuite{
 					ReplicaNumber:    2,
 					VolumeNumber:     5,
@@ -222,12 +229,6 @@ func GetCertifyCommand() cli.Command {
 						VolumeSize:   minSize,
 					})
 
-					s = append(s, &suites.VolumeIoSuite{
-						VolumeNumber: 2,
-						VolumeSize:   minSize,
-						ChainNumber:  2,
-						ChainLength:  2,
-					})
 				}
 
 				if sc.Expansion {
