@@ -37,6 +37,7 @@ type PostgresqlSuite struct {
 	ConfigPath        string
 	VolumeSize        string
 	EnableReplication bool
+	Image             string
 	SlaveReplicas     int
 }
 
@@ -45,6 +46,11 @@ func (ps *PostgresqlSuite) Run(ctx context.Context, storageClass string, clients
 	if ps.VolumeSize == "" {
 		log.Info("Using default volume size : 32Gi")
 		ps.VolumeSize = "32Gi"
+	}
+
+	if ps.Image == "" {
+		log.Info("Using default image")
+		ps.Image = "docker.io/bitnami/postgresql:11.8.0-debian-10-r72"
 	}
 
 	pvcClient := clients.PVCClient
@@ -86,7 +92,7 @@ func (ps *PostgresqlSuite) Run(ctx context.Context, storageClass string, clients
 		return delFunc, err
 	}
 
-	podconf := testcore.PsqlPodConfig(psqlPass)
+	podconf := testcore.PsqlPodConfig(psqlPass, ps.Image)
 	podTmpl := podClient.MakePod(podconf)
 
 	pod := podClient.Create(ctx, podTmpl).Sync(ctx)
