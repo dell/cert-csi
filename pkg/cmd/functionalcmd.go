@@ -62,6 +62,10 @@ func GetFunctionalTestCommand() cli.Command {
 			Name:  "description, de",
 			Usage: "To provide test case description",
 		},
+		cli.StringFlag{
+			Name:  "image-config",
+			Usage: "path to images config file",
+		},
 	}
 
 	listCmd := cli.Command{
@@ -421,6 +425,10 @@ func getFunctionalCloneVolumeCommand(globalFlags []cli.Flag) cli.Command {
 			pvcName := c.String("pvc-name")
 			podName := c.String("pod-name")
 			accessMode := c.String("access-mode")
+			image, err := readImageConfig(c.String("image-config"))
+			if err != nil {
+				return fmt.Errorf("failed to find image Config: %s", err)
+			}
 
 			s := []suites.Interface{
 				&suites.CloneVolumeSuite{
@@ -430,6 +438,7 @@ func getFunctionalCloneVolumeCommand(globalFlags []cli.Flag) cli.Command {
 					CustomPvcName: pvcName,
 					CustomPodName: podName,
 					AccessMode:    accessMode,
+					Image:         image.CentOSImage,
 				},
 			}
 
@@ -488,6 +497,10 @@ func getFunctionalProvisioningCommand(globalFlags []cli.Flag) cli.Command {
 			desc := c.String("description")
 			volAccessMode := c.String("vol-access-mode")
 			roFlag := c.Bool("roFlag")
+			image, err := readImageConfig(c.String("image-config"))
+			if err != nil {
+				return fmt.Errorf("failed to find image Config: %s", err)
+			}
 			s := []suites.Interface{
 				&suites.ProvisioningSuite{
 					VolumeNumber:  volNum,
@@ -497,6 +510,7 @@ func getFunctionalProvisioningCommand(globalFlags []cli.Flag) cli.Command {
 					RawBlock:      blockVol,
 					VolAccessMode: volAccessMode,
 					ROFlag:        roFlag,
+					Image:         image.CentOSImage,
 				},
 			}
 
@@ -557,6 +571,10 @@ func getFunctionalSnapCreationCommand(globalFlags []cli.Flag) cli.Command {
 			desc := c.String("description")
 			snapName := c.String("snap-name")
 			accessModeRestored := c.String("access-mode-restored-volume")
+			image, err := readImageConfig(c.String("image-config"))
+			if err != nil {
+				return fmt.Errorf("failed to find image Config: %s", err)
+			}
 			s := []suites.Interface{
 				&suites.SnapSuite{
 					SnapClass:          snapClass,
@@ -566,6 +584,7 @@ func getFunctionalSnapCreationCommand(globalFlags []cli.Flag) cli.Command {
 					CustomSnapName:     snapName,
 					AccessModeOriginal: accessModeOriginal,
 					AccessModeRestored: accessModeRestored,
+					Image:              image.CentOSImage,
 				},
 			}
 
@@ -611,6 +630,10 @@ func getFunctionalMultiAttachVolCommand(globalFlags []cli.Flag) cli.Command {
 			desc := c.String("description")
 			isRawBlock := c.Bool("block")
 			accessMode := c.String("access-mode")
+			image, err := readImageConfig(c.String("image-config"))
+			if err != nil {
+				return fmt.Errorf("failed to find image Config: %s", err)
+			}
 
 			s := []suites.Interface{
 				&suites.MultiAttachSuite{
@@ -618,6 +641,7 @@ func getFunctionalMultiAttachVolCommand(globalFlags []cli.Flag) cli.Command {
 					RawBlock:    isRawBlock,
 					Description: desc,
 					AccessMode:  accessMode,
+					Image:       image.CentOSImage,
 				},
 			}
 
@@ -669,6 +693,10 @@ func getFunctionalEphemeralCreationCommand(globalFlags []cli.Flag) cli.Command {
 			fsType := c.String("fs-type")
 			attributesFile := c.String("csi-attributes")
 			podName := c.String("pod-name")
+			image, err := readImageConfig(c.String("image-config"))
+			if err != nil {
+				return fmt.Errorf("failed to find image Config: %s", err)
+			}
 
 			// We will generate volumeAttributes by reading the properties file
 			volAttributes, err := readEphemeralConfig(attributesFile)
@@ -685,6 +713,7 @@ func getFunctionalEphemeralCreationCommand(globalFlags []cli.Flag) cli.Command {
 					VolumeAttributes: volAttributes,
 					Description:      desc,
 					PodCustomName:    podName,
+					Image:            image.CentOSImage,
 				},
 			}
 
@@ -850,12 +879,17 @@ func getCapacityTrackingCommand(globalFlags []cli.Flag) cli.Command {
 			storageClass := c.String("sc")
 			volumeSize := c.String("volSize")
 			pollInterval := c.Duration("poll-interval")
+			image, err := readImageConfig(c.String("image-config"))
+			if err != nil {
+				return fmt.Errorf("failed to find image Config: %s", err)
+			}
 			s := []suites.Interface{
 				&suites.CapacityTrackingSuite{
 					DriverNamespace: driverns,
 					StorageClass:    storageClass,
 					VolumeSize:      volumeSize,
 					PollInterval:    pollInterval,
+					Image:           image.CentOSImage,
 				},
 			}
 
