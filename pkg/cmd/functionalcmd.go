@@ -425,9 +425,16 @@ func getFunctionalCloneVolumeCommand(globalFlags []cli.Flag) cli.Command {
 			pvcName := c.String("pvc-name")
 			podName := c.String("pod-name")
 			accessMode := c.String("access-mode")
-			image, err := readImageConfig(c.String("image-config"))
-			if err != nil {
-				return fmt.Errorf("failed to find image Config: %s", err)
+			imageConfigPath := c.String("image-config")
+			var testImage string
+			if imageConfigPath != "" {
+				img, err := readImageConfig(imageConfigPath)
+				if err != nil {
+					return fmt.Errorf("failed to find image Config: %s", err)
+				}
+				for _, img := range img.Images {
+					testImage = img.Test
+				}
 			}
 
 			s := []suites.Interface{
@@ -438,7 +445,7 @@ func getFunctionalCloneVolumeCommand(globalFlags []cli.Flag) cli.Command {
 					CustomPvcName: pvcName,
 					CustomPodName: podName,
 					AccessMode:    accessMode,
-					Image:         image.CentOSImage,
+					Image:         testImage,
 				},
 			}
 
@@ -497,9 +504,16 @@ func getFunctionalProvisioningCommand(globalFlags []cli.Flag) cli.Command {
 			desc := c.String("description")
 			volAccessMode := c.String("vol-access-mode")
 			roFlag := c.Bool("roFlag")
-			image, err := readImageConfig(c.String("image-config"))
-			if err != nil {
-				return fmt.Errorf("failed to find image Config: %s", err)
+			imageConfigPath := c.String("image-config")
+			var testImage string
+			if imageConfigPath != "" {
+				img, err := readImageConfig(imageConfigPath)
+				if err != nil {
+					return fmt.Errorf("failed to find image Config: %s", err)
+				}
+				for _, img := range img.Images {
+					testImage = img.Test
+				}
 			}
 			s := []suites.Interface{
 				&suites.ProvisioningSuite{
@@ -510,7 +524,7 @@ func getFunctionalProvisioningCommand(globalFlags []cli.Flag) cli.Command {
 					RawBlock:      blockVol,
 					VolAccessMode: volAccessMode,
 					ROFlag:        roFlag,
-					Image:         image.CentOSImage,
+					Image:         testImage,
 				},
 			}
 
@@ -571,9 +585,16 @@ func getFunctionalSnapCreationCommand(globalFlags []cli.Flag) cli.Command {
 			desc := c.String("description")
 			snapName := c.String("snap-name")
 			accessModeRestored := c.String("access-mode-restored-volume")
-			image, err := readImageConfig(c.String("image-config"))
-			if err != nil {
-				return fmt.Errorf("failed to find image Config: %s", err)
+			imageConfigPath := c.String("image-config")
+			var testImage string
+			if imageConfigPath != "" {
+				img, err := readImageConfig(imageConfigPath)
+				if err != nil {
+					return fmt.Errorf("failed to find image Config: %s", err)
+				}
+				for _, img := range img.Images {
+					testImage = img.Test
+				}
 			}
 			s := []suites.Interface{
 				&suites.SnapSuite{
@@ -584,7 +605,7 @@ func getFunctionalSnapCreationCommand(globalFlags []cli.Flag) cli.Command {
 					CustomSnapName:     snapName,
 					AccessModeOriginal: accessModeOriginal,
 					AccessModeRestored: accessModeRestored,
-					Image:              image.CentOSImage,
+					Image:              testImage,
 				},
 			}
 
@@ -630,18 +651,24 @@ func getFunctionalMultiAttachVolCommand(globalFlags []cli.Flag) cli.Command {
 			desc := c.String("description")
 			isRawBlock := c.Bool("block")
 			accessMode := c.String("access-mode")
-			image, err := readImageConfig(c.String("image-config"))
-			if err != nil {
-				return fmt.Errorf("failed to find image Config: %s", err)
+			imageConfigPath := c.String("image-config")
+			var testImage string
+			if imageConfigPath != "" {
+				img, err := readImageConfig(imageConfigPath)
+				if err != nil {
+					return fmt.Errorf("failed to find image Config: %s", err)
+				}
+				for _, img := range img.Images {
+					testImage = img.Test
+				}
 			}
-
 			s := []suites.Interface{
 				&suites.MultiAttachSuite{
 					PodNumber:   pods,
 					RawBlock:    isRawBlock,
 					Description: desc,
 					AccessMode:  accessMode,
-					Image:       image.CentOSImage,
+					Image:       testImage,
 				},
 			}
 
@@ -693,11 +720,17 @@ func getFunctionalEphemeralCreationCommand(globalFlags []cli.Flag) cli.Command {
 			fsType := c.String("fs-type")
 			attributesFile := c.String("csi-attributes")
 			podName := c.String("pod-name")
-			image, err := readImageConfig(c.String("image-config"))
-			if err != nil {
-				return fmt.Errorf("failed to find image Config: %s", err)
+			imageConfigPath := c.String("image-config")
+			var testImage string
+			if imageConfigPath != "" {
+				img, err := readImageConfig(imageConfigPath)
+				if err != nil {
+					return fmt.Errorf("failed to find image Config: %s", err)
+				}
+				for _, img := range img.Images {
+					testImage = img.Test
+				}
 			}
-
 			// We will generate volumeAttributes by reading the properties file
 			volAttributes, err := readEphemeralConfig(attributesFile)
 			if err != nil {
@@ -713,7 +746,7 @@ func getFunctionalEphemeralCreationCommand(globalFlags []cli.Flag) cli.Command {
 					VolumeAttributes: volAttributes,
 					Description:      desc,
 					PodCustomName:    podName,
-					Image:            image.CentOSImage,
+					Image:            testImage,
 				},
 			}
 
@@ -879,9 +912,16 @@ func getCapacityTrackingCommand(globalFlags []cli.Flag) cli.Command {
 			storageClass := c.String("sc")
 			volumeSize := c.String("volSize")
 			pollInterval := c.Duration("poll-interval")
-			image, err := readImageConfig(c.String("image-config"))
-			if err != nil {
-				return fmt.Errorf("failed to find image Config: %s", err)
+			imageConfigPath := c.String("image-config")
+			var testImage string
+			if imageConfigPath != "" {
+				img, err := readImageConfig(imageConfigPath)
+				if err != nil {
+					return fmt.Errorf("failed to find image Config: %s", err)
+				}
+				for _, img := range img.Images {
+					testImage = img.Test
+				}
 			}
 			s := []suites.Interface{
 				&suites.CapacityTrackingSuite{
@@ -889,7 +929,7 @@ func getCapacityTrackingCommand(globalFlags []cli.Flag) cli.Command {
 					StorageClass:    storageClass,
 					VolumeSize:      volumeSize,
 					PollInterval:    pollInterval,
-					Image:           image.CentOSImage,
+					Image:           testImage,
 				},
 			}
 

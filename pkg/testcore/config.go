@@ -28,9 +28,13 @@ import (
 	v1 "k8s.io/api/core/v1"
 )
 
-type ImageConfig struct {
-	CentOSImage   string
-	PostgresImage string
+type Image struct {
+	Test     string
+	Postgres string
+}
+
+type Images struct {
+	Images []Image `yaml:"images"`
 }
 
 // VolumeCreationConfig config to use in volumecreation suite
