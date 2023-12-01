@@ -28,11 +28,13 @@ import (
 	v1 "k8s.io/api/core/v1"
 )
 
+// Image represents an image configuration.
 type Image struct {
 	Test     string
 	Postgres string
 }
 
+// Images represents an array of images.
 type Images struct {
 	Images []Image `yaml:"images"`
 }
