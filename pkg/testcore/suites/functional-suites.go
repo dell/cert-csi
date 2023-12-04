@@ -482,6 +482,7 @@ type EphemeralVolumeSuite struct {
 	PodNumber        int
 	Driver           string
 	FSType           string
+	Image            string
 	VolumeAttributes map[string]string
 }
 
@@ -492,6 +493,11 @@ func (ep *EphemeralVolumeSuite) Run(ctx context.Context, storageClass string, cl
 	if ep.PodNumber <= 0 {
 		log.Info("Using default number of pods")
 		ep.PodNumber = 3
+	}
+
+	if ep.Image == "" {
+		ep.Image = "docker.io/centos:latest"
+		log.Infof("Using default image: %s", ep.Image)
 	}
 
 	log.Infof("Creating %s pods, each with 1 volumes", color.YellowString(strconv.Itoa(ep.PodNumber)))
@@ -510,7 +516,7 @@ func (ep *EphemeralVolumeSuite) Run(ctx context.Context, storageClass string, cl
 			name = ep.PodCustomName + "-" + strconv.Itoa(i)
 		}
 		// Create pod with ephemeral inline volume
-		podConf = testcore.EphemeralPodConfig(name, csiVolSrc)
+		podConf = testcore.EphemeralPodConfig(name, csiVolSrc, ep.Image)
 		podTmpl := podClient.MakeEphemeralPod(podConf)
 
 		pod := podClient.Create(ctx, podTmpl)
@@ -819,6 +825,7 @@ type CapacityTrackingSuite struct {
 	DriverNamespace string
 	StorageClass    string
 	VolumeSize      string
+	Image           string
 	PollInterval    time.Duration
 }
 
@@ -835,6 +842,12 @@ func (cts *CapacityTrackingSuite) Run(ctx context.Context, storageClass string, 
 	if sc.HasError() {
 		return delFunc, sc.GetError()
 	}
+
+	if cts.Image == "" {
+		cts.Image = "docker.io/centos:latest"
+		log.Infof("Using default image: %s", cts.Image)
+	}
+
 	if *sc.Object.VolumeBindingMode != storagev1.VolumeBindingWaitForFirstConsumer {
 		return delFunc, fmt.Errorf("%s storage class does not use late binding", color.YellowString(storageClass))
 	}
@@ -892,7 +905,7 @@ func (cts *CapacityTrackingSuite) Run(ctx context.Context, storageClass string, 
 		return delFunc, pvc.GetError()
 	}
 
-	podConf := testcore.CapacityTrackingPodConfig([]string{pvc.Object.Name}, podName)
+	podConf := testcore.CapacityTrackingPodConfig([]string{pvc.Object.Name}, podName, cts.Image)
 	podTmpl := clients.PodClient.MakePod(podConf)
 	pod := clients.PodClient.Create(ctx, podTmpl)
 	if pod.HasError() {

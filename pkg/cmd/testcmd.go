@@ -22,8 +22,10 @@ import (
 
 	"github.com/dell/cert-csi/pkg/plotter"
 	"github.com/dell/cert-csi/pkg/store"
+	"github.com/dell/cert-csi/pkg/testcore"
 	"github.com/dell/cert-csi/pkg/testcore/runner"
 	"github.com/dell/cert-csi/pkg/testcore/suites"
+	"github.com/spf13/viper"
 
 	log "github.com/sirupsen/logrus"
 	"github.com/urfave/cli"
@@ -103,6 +105,10 @@ func GetTestCommand() cli.Command {
 		cli.StringFlag{
 			Name:  "driver-namespace, driver-ns",
 			Usage: "specify the driver namespace to find the driver resources for the volume health metrics suite",
+		},
+		cli.StringFlag{
+			Name:  "image-config",
+			Usage: "path to images config file",
 		},
 	}
 
@@ -187,6 +193,38 @@ func updatePath(c *cli.Context) error {
 	return nil
 }
 
+func readImageConfig(configFilePath string) (testcore.Images, error) {
+	viper.SetConfigType("yaml")
+	viper.SetConfigFile(configFilePath)
+
+	err := viper.ReadInConfig()
+	if err != nil {
+		return testcore.Images{}, fmt.Errorf("can't find image config file: %w", err)
+	}
+
+	var imageConfig testcore.Images
+	err = viper.Unmarshal(&imageConfig)
+	if err != nil {
+		return testcore.Images{}, fmt.Errorf("unable to decode image Config: %s", err)
+	}
+
+	return imageConfig, nil
+}
+
+func getTestImage(imageConfigPath string) (string, error) {
+	var testImage string
+	if imageConfigPath != "" {
+		img, err := readImageConfig(imageConfigPath)
+		if err != nil {
+			return "", fmt.Errorf("failed to find image Config: %s", err)
+		}
+		for _, img := range img.Images {
+			testImage = img.Test
+		}
+	}
+	return testImage, nil
+}
+
 // *************
 // Test commands
 // *************
@@ -266,13 +304,17 @@ func getVolumeMigrateCommand(globalFlags []cli.Flag) cli.Command {
 			volNum := c.Int("volumeNumber")
 			podNum := c.Int("podNumber")
 			flag := c.Bool("short")
-
+			testImage, err := getTestImage(c.String("image-config"))
+			if err != nil {
+				return fmt.Errorf("failed to get test image: %s", err)
+			}
 			s := []suites.Interface{
 				&suites.VolumeMigrateSuite{
 					TargetSC:     targetSC,
 					VolumeNumber: volNum,
 					PodNumber:    podNum,
 					Flag:         flag,
+					Image:        testImage,
 				},
 			}
 
@@ -317,12 +359,17 @@ func getRemoteReplicationProvisioningCommand(globalFlags []cli.Flag) cli.Command
 			remoteConfigPath := c.String("remote-config-path")
 			noFailover := c.Bool("no-failover")
 			volSize := c.String("volumeSize")
+			testImage, err := getTestImage(c.String("image-config"))
+			if err != nil {
+				return fmt.Errorf("failed to get test image: %s", err)
+			}
 			s := []suites.Interface{
 				&suites.RemoteReplicationProvisioningSuite{
 					VolumeNumber:     volNum,
 					RemoteConfigPath: remoteConfigPath,
 					NoFailover:       noFailover,
 					VolumeSize:       volSize,
+					Image:            testImage,
 				},
 			}
 
@@ -364,12 +411,17 @@ func getReplicationCommand(globalFlags []cli.Flag) cli.Command {
 			podNum := c.Int("podNumber")
 			snapClass := c.String("volumeSnapshotClass")
 			volSize := c.String("volumeSize")
+			testImage, err := getTestImage(c.String("image-config"))
+			if err != nil {
+				return fmt.Errorf("failed to get test image: %s", err)
+			}
 			s := []suites.Interface{
 				&suites.ReplicationSuite{
 					VolumeNumber: volNum,
 					PodNumber:    podNum,
 					VolumeSize:   volSize,
 					SnapClass:    snapClass,
+					Image:        testImage,
 				},
 			}
 
@@ -401,11 +453,15 @@ func getCloneVolumeCommand(globalFlags []cli.Flag) cli.Command {
 		Action: func(c *cli.Context) error {
 			volNum := c.Int("volumeNumber")
 			podNum := c.Int("podNumber")
-
+			testImage, err := getTestImage(c.String("image-config"))
+			if err != nil {
+				return fmt.Errorf("failed to get test image: %s", err)
+			}
 			s := []suites.Interface{
 				&suites.CloneVolumeSuite{
 					VolumeNumber: volNum,
 					PodNumber:    podNum,
+					Image:        testImage,
 				},
 			}
 
@@ -444,11 +500,16 @@ func getMultiAttachVolCommand(globalFlags []cli.Flag) cli.Command {
 			podNum := c.Int("podNumber")
 			rawBlock := c.Bool("block")
 			accessMode := c.String("access-mode")
+			testImage, err := getTestImage(c.String("image-config"))
+			if err != nil {
+				return fmt.Errorf("failed to get test image: %s", err)
+			}
 			s := []suites.Interface{
 				&suites.MultiAttachSuite{
 					PodNumber:  podNum,
 					RawBlock:   rawBlock,
 					AccessMode: accessMode,
+					Image:      testImage,
 				},
 			}
 
@@ -499,6 +560,10 @@ func getVolumeExpansionCommand(globalFlags []cli.Flag) cli.Command {
 			isBlock := c.Bool("block")
 			initialSize := c.String("intialSize")
 			expandedSize := c.String("expandedSize")
+			testImage, err := getTestImage(c.String("image-config"))
+			if err != nil {
+				return fmt.Errorf("failed to get test image: %s", err)
+			}
 
 			s := []suites.Interface{
 				&suites.VolumeExpansionSuite{
@@ -507,6 +572,7 @@ func getVolumeExpansionCommand(globalFlags []cli.Flag) cli.Command {
 					IsBlock:      isBlock,
 					InitialSize:  initialSize,
 					ExpandedSize: expandedSize,
+					Image:        testImage,
 				},
 			}
 
@@ -546,13 +612,17 @@ func getVolumeHealthMetricsCommand(globalFlags []cli.Flag) cli.Command {
 			volNum := c.Int("volumeNumber")
 			podNum := c.Int("podNumber")
 			volSize := c.String("volumeSize")
-
+			testImage, err := getTestImage(c.String("image-config"))
+			if err != nil {
+				return fmt.Errorf("failed to get test image: %s", err)
+			}
 			s := []suites.Interface{
 				&suites.VolumeHealthMetricsSuite{
 					VolumeNumber: volNum,
 					PodNumber:    podNum,
 					VolumeSize:   volSize,
 					Namespace:    c.String("driver-namespace"),
+					Image:        testImage,
 				},
 			}
 
@@ -586,11 +656,15 @@ func getProvisioningCommand(globalFlags []cli.Flag) cli.Command {
 		Action: func(c *cli.Context) error {
 			volNum := c.Int("volumeNumber")
 			podNum := c.Int("podNumber")
-
+			testImage, err := getTestImage(c.String("image-config"))
+			if err != nil {
+				return fmt.Errorf("failed to get test image: %s", err)
+			}
 			s := []suites.Interface{
 				&suites.ProvisioningSuite{
 					VolumeNumber: volNum,
 					PodNumber:    podNum,
+					Image:        testImage,
 				},
 			}
 
@@ -637,12 +711,17 @@ func getScalingCommand(globalFlags []cli.Flag) cli.Command {
 			volNum := c.Int("volumeNumber")
 			gradual := c.Bool("gradual")
 			podPolicy := c.String("podPolicy")
+			testImage, err := getTestImage(c.String("image-config"))
+			if err != nil {
+				return fmt.Errorf("failed to get test image: %s", err)
+			}
 			s := []suites.Interface{
 				&suites.ScalingSuite{
 					ReplicaNumber:    repNum,
 					VolumeNumber:     volNum,
 					GradualScaleDown: gradual,
 					PodPolicy:        podPolicy,
+					Image:            testImage,
 				},
 			}
 
@@ -677,10 +756,15 @@ func getVolumeIoCommand(globalFlags []cli.Flag) cli.Command {
 		Action: func(c *cli.Context) error {
 			chNumber := c.Int("chainNumber")
 			chLength := c.Int("chainLength")
+			testImage, err := getTestImage(c.String("image-config"))
+			if err != nil {
+				return fmt.Errorf("failed to get test image: %s", err)
+			}
 			s := []suites.Interface{
 				&suites.VolumeIoSuite{
 					ChainNumber: chNumber,
 					ChainLength: chLength,
+					Image:       testImage,
 				},
 			}
 
@@ -722,12 +806,16 @@ func getSnapCommand(globalFlags []cli.Flag) cli.Command {
 			snapClass := c.String("volumeSnapshotClass")
 			snapshotAmount := c.Int("snapshotAmount")
 			size := c.String("size")
-
+			testImage, err := getTestImage(c.String("image-config"))
+			if err != nil {
+				return fmt.Errorf("failed to get test image: %s", err)
+			}
 			s := []suites.Interface{
 				&suites.SnapSuite{
 					SnapClass:  snapClass,
 					SnapAmount: snapshotAmount,
 					VolumeSize: size,
+					Image:      testImage,
 				},
 			}
 
@@ -792,6 +880,10 @@ func getVolumeGroupSnapCommand(globalFlags []cli.Flag) cli.Command {
 			accessMode := c.String("accessMode")
 			numberOfVols := c.Int("volumeNumber")
 			driver := c.String("driver")
+			testImage, err := getTestImage(c.String("image-config"))
+			if err != nil {
+				return fmt.Errorf("failed to get test image: %s", err)
+			}
 			s := []suites.Interface{
 				&suites.VolumeGroupSnapSuite{
 					SnapClass:       snapClass,
@@ -802,6 +894,7 @@ func getVolumeGroupSnapCommand(globalFlags []cli.Flag) cli.Command {
 					ReclaimPolicy:   reclaimPolicy,
 					VolumeNumber:    numberOfVols,
 					Driver:          driver,
+					Image:           testImage,
 				},
 			}
 
@@ -841,10 +934,15 @@ func getBlockSnapCommand(globalFlags []cli.Flag) cli.Command {
 			snapClass := c.String("volumeSnapshotClass")
 			size := c.String("size")
 			accessMode := c.String("access-mode")
+			testImage, err := getTestImage(c.String("image-config"))
+			if err != nil {
+				return fmt.Errorf("failed to get test image: %s", err)
+			}
 			s := []suites.Interface{
 				&suites.BlockSnapSuite{SnapClass: snapClass,
 					VolumeSize: size,
-					AccessMode: accessMode},
+					AccessMode: accessMode,
+					Image:      testImage},
 			}
 
 			sr, ss := createSuiteRunner(c, s)
@@ -883,12 +981,24 @@ func getPostgresCommand(globalFlags []cli.Flag) cli.Command {
 			size := c.String("size")
 			replication := c.Bool("replication")
 			slaves := c.Int("slave-replicas")
+			imageConfigPath := c.String("image-config")
+			var postgresImage string
+			if imageConfigPath != "" {
+				img, err := readImageConfig(imageConfigPath)
+				if err != nil {
+					return fmt.Errorf("failed to find image Config: %s", err)
+				}
+				for _, img := range img.Images {
+					postgresImage = img.Postgres
+				}
+			}
 			s := []suites.Interface{
 				&suites.PostgresqlSuite{
 					ConfigPath:        c.String("config"),
 					VolumeSize:        size,
 					EnableReplication: replication,
 					SlaveReplicas:     slaves,
+					Image:             postgresImage,
 				},
 			}
 
@@ -949,6 +1059,10 @@ func getEphemeralCreationCommand(globalFlags []cli.Flag) cli.Command {
 			fsType := c.String("fs-type")
 			podName := c.String("pod-name")
 			attributesFile := c.String("csi-attributes")
+			testImage, err := getTestImage(c.String("image-config"))
+			if err != nil {
+				return fmt.Errorf("failed to get test image: %s", err)
+			}
 
 			// We will generate volumeAttributes by reading the properties file
 			volAttributes, err := readEphemeralConfig(attributesFile)
@@ -965,6 +1079,7 @@ func getEphemeralCreationCommand(globalFlags []cli.Flag) cli.Command {
 					VolumeAttributes: volAttributes,
 					Description:      desc,
 					PodCustomName:    podName,
+					Image:            testImage,
 				},
 			}
 

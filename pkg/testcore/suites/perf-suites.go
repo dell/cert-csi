@@ -211,6 +211,7 @@ type ProvisioningSuite struct {
 	RawBlock      bool
 	VolAccessMode string
 	ROFlag        bool
+	Image         string
 }
 
 // Run executes provisioning test suite
@@ -229,6 +230,10 @@ func (ps *ProvisioningSuite) Run(ctx context.Context, storageClass string, clien
 	if ps.VolumeSize == "" {
 		log.Info("Using default volume size 3Gi")
 		ps.VolumeSize = "3Gi"
+	}
+	if ps.Image == "" {
+		ps.Image = "docker.io/centos:latest"
+		log.Infof("Using default image: %s", ps.Image)
 	}
 	ps.validateCustomPodName()
 
@@ -260,7 +265,7 @@ func (ps *ProvisioningSuite) Run(ctx context.Context, storageClass string, clien
 		}
 
 		// Create Pod, and attach PVC
-		podconf := testcore.ProvisioningPodConfig(pvcNameList, ps.PodCustomName)
+		podconf := testcore.ProvisioningPodConfig(pvcNameList, ps.PodCustomName, ps.Image)
 		if ps.RawBlock {
 			podconf.VolumeMode = pod.Block
 		}
@@ -355,6 +360,7 @@ type RemoteReplicationProvisioningSuite struct {
 	VolAccessMode    string
 	RemoteConfigPath string
 	NoFailover       bool
+	Image            string
 }
 
 // Run executes remote replication provisioning test suite
@@ -389,6 +395,10 @@ func (rrps *RemoteReplicationProvisioningSuite) Run(ctx context.Context, storage
 	if rrps.VolumeSize == "" {
 		log.Info("Using default volume size 3Gi")
 		rrps.VolumeSize = "3Gi"
+	}
+	if rrps.Image == "" {
+		rrps.Image = "docker.io/centos:latest"
+		log.Infof("Using default image: %s", rrps.Image)
 	}
 
 	if rrps.RemoteConfigPath != "" && !isSingle {
@@ -462,7 +472,7 @@ func (rrps *RemoteReplicationProvisioningSuite) Run(ctx context.Context, storage
 	log.Info("Creating pod for each volume")
 	for _, name := range pvcNames {
 		// Create Pod, and attach PVC
-		podconf := testcore.ProvisioningPodConfig([]string{name}, "")
+		podconf := testcore.ProvisioningPodConfig([]string{name}, "", rrps.Image)
 		podTmpl := podClient.MakePod(podconf)
 
 		pod := podClient.Create(ctx, podTmpl).Sync(ctx)
@@ -665,7 +675,7 @@ func (rrps *RemoteReplicationProvisioningSuite) Run(ctx context.Context, storage
 		for _, pvcName := range pvcNameList {
 			log.Infof("Verifying data from pvc %s", pvcName)
 
-			podConf := testcore.ProvisioningPodConfig([]string{pvcName}, "")
+			podConf := testcore.ProvisioningPodConfig([]string{pvcName}, "", rrps.Image)
 			podTemp := remotePodClient.MakePod(podConf)
 
 			remotePod := remotePodClient.Create(ctx, podTemp).Sync(ctx)
@@ -726,7 +736,7 @@ func (rrps *RemoteReplicationProvisioningSuite) Run(ctx context.Context, storage
 		for _, pvcName := range pvcNameList {
 			log.Infof("Verifying data from pvc %s", pvcName)
 
-			podConf := testcore.ProvisioningPodConfig([]string{pvcName}, "")
+			podConf := testcore.ProvisioningPodConfig([]string{pvcName}, "", rrps.Image)
 			podTemp := remotePodClient.MakePod(podConf)
 
 			remotePod := remotePodClient.Create(ctx, podTemp).Sync(ctx)
@@ -869,6 +879,7 @@ type ScalingSuite struct {
 	GradualScaleDown bool
 	PodPolicy        string
 	VolumeSize       string
+	Image            string
 }
 
 // Run executes scaling test suite
@@ -892,8 +903,12 @@ func (ss *ScalingSuite) Run(ctx context.Context, storageClass string, clients *k
 		log.Info("Using default volume size 3Gi")
 		ss.VolumeSize = "3Gi"
 	}
+	if ss.Image == "" {
+		ss.Image = "docker.io/centos:latest"
+		log.Infof("Using default image: %s", ss.Image)
+	}
 
-	stsconf := testcore.ScalingStsConfig(storageClass, ss.VolumeSize, ss.VolumeNumber, ss.PodPolicy)
+	stsconf := testcore.ScalingStsConfig(storageClass, ss.VolumeSize, ss.VolumeNumber, ss.PodPolicy, ss.Image)
 	stsTmpl := stsClient.MakeStatefulSet(stsconf)
 
 	// Creating new statefulset
@@ -997,6 +1012,7 @@ type VolumeIoSuite struct {
 	VolumeSize   string
 	ChainNumber  int
 	ChainLength  int
+	Image        string
 }
 
 // Run executes volume IO test suite
@@ -1019,6 +1035,11 @@ func (vis *VolumeIoSuite) Run(ctx context.Context, storageClass string, clients 
 	if vis.ChainLength <= 0 {
 		log.Info("Using default length of chains")
 		vis.ChainLength = 5
+	}
+
+	if vis.Image == "" {
+		vis.Image = "docker.io/centos:latest"
+		log.Infof("Using default image: %s", vis.Image)
 	}
 
 	firstConsumer, err := shouldWaitForFirstConsumer(ctx, storageClass, pvcClient)
@@ -1056,7 +1077,7 @@ func (vis *VolumeIoSuite) Run(ctx context.Context, storageClass string, clients 
 
 		pvName := gotPvc.Spec.VolumeName
 		// Create Pod, and attach PVC
-		podconf := testcore.IoWritePodConfig(pvcNameList, "")
+		podconf := testcore.IoWritePodConfig(pvcNameList, "", vis.Image)
 		podTmpl := podClient.MakePod(podconf)
 		errs.Go(func() error {
 			for i := 0; i < vis.ChainLength; i++ {
@@ -1168,6 +1189,7 @@ type VolumeGroupSnapSuite struct {
 	ReclaimPolicy   string
 	VolumeNumber    int
 	Driver          string
+	Image           string
 }
 
 // Run executes volume group snap test suite
@@ -1178,6 +1200,11 @@ func (vgs *VolumeGroupSnapSuite) Run(ctx context.Context, storageClass string, c
 	if vgs.VolumeSize == "" {
 		log.Info("Using default volume size : 3Gi")
 		vgs.VolumeSize = "3Gi"
+	}
+
+	if vgs.Image == "" {
+		vgs.Image = "docker.io/centos:latest"
+		log.Infof("Using default image: %s", vgs.Image)
 	}
 
 	pvcClient := clients.PVCClient
@@ -1214,7 +1241,7 @@ func (vgs *VolumeGroupSnapSuite) Run(ctx context.Context, storageClass string, c
 	}
 
 	// Create Pod, and attach PVC
-	podconf := testcore.IoWritePodConfig(pvcNameList, "")
+	podconf := testcore.IoWritePodConfig(pvcNameList, "", vgs.Image)
 	podTmpl := podClient.MakePod(podconf)
 
 	writerPod := podClient.Create(ctx, podTmpl).Sync(ctx)
@@ -1309,6 +1336,7 @@ type SnapSuite struct {
 	CustomSnapName     string
 	AccessModeOriginal string
 	AccessModeRestored string
+	Image              string
 }
 
 // Run executes snap test suite
@@ -1321,6 +1349,10 @@ func (ss *SnapSuite) Run(ctx context.Context, storageClass string, clients *k8sc
 	if ss.VolumeSize == "" {
 		log.Info("Using default volume size : 3Gi")
 		ss.VolumeSize = "3Gi"
+	}
+	if ss.Image == "" {
+		ss.Image = "docker.io/centos:latest"
+		log.Infof("Using default image: %s", ss.Image)
 	}
 
 	result := validateCustomSnapName(ss.CustomSnapName, ss.SnapAmount)
@@ -1368,7 +1400,7 @@ func (ss *SnapSuite) Run(ctx context.Context, storageClass string, clients *k8sc
 	}
 
 	// Create Pod, and attach PVC
-	podconf := testcore.IoWritePodConfig(pvcNameList, snappodname)
+	podconf := testcore.IoWritePodConfig(pvcNameList, snappodname, ss.Image)
 	podTmpl := podClient.MakePod(podconf)
 
 	file := fmt.Sprintf("%s0/writer-%d.data", podconf.MountPath, 0)
@@ -1498,7 +1530,7 @@ func (ss *SnapSuite) Run(ctx context.Context, storageClass string, clients *k8sc
 
 	// Create Pod, and attach PVC from snapshot
 
-	podRestored := testcore.IoWritePodConfig(pvcFromSnapNameList, pvcRestored.Object.Name+"-pod")
+	podRestored := testcore.IoWritePodConfig(pvcFromSnapNameList, pvcRestored.Object.Name+"-pod", ss.Image)
 	podTmplRestored := podClient.MakePod(podRestored)
 
 	writerPod = podClient.Create(ctx, podTmplRestored).Sync(ctx)
@@ -1622,6 +1654,7 @@ type ReplicationSuite struct {
 	VolumeSize   string
 	PodNumber    int
 	SnapClass    string
+	Image        string
 }
 
 // Run executes replication test suite
@@ -1642,6 +1675,10 @@ func (rs *ReplicationSuite) Run(ctx context.Context, storageClass string, client
 	if rs.VolumeSize == "" {
 		log.Info("Using default volume size : 3Gi")
 		rs.VolumeSize = "3Gi"
+	}
+	if rs.Image == "" {
+		rs.Image = "docker.io/centos:latest"
+		log.Infof("Using default image: %s", rs.Image)
 	}
 
 	log.Infof("Creating %s pods, each with %s volumes", color.YellowString(strconv.Itoa(rs.PodNumber)),
@@ -1664,7 +1701,7 @@ func (rs *ReplicationSuite) Run(ctx context.Context, storageClass string, client
 		}
 
 		// Create Pod, and attach PVC
-		podconf := testcore.ProvisioningPodConfig(pvcNameList, "")
+		podconf := testcore.ProvisioningPodConfig(pvcNameList, "", rs.Image)
 		podTmpl := podClient.MakePod(podconf)
 
 		pod := podClient.Create(ctx, podTmpl)
@@ -1772,7 +1809,7 @@ func (rs *ReplicationSuite) Run(ctx context.Context, storageClass string, client
 			pvcNameList[j] = pvc.Object.Name
 		}
 		// Create Pod, and attach restored PVC
-		podconf := testcore.ProvisioningPodConfig(pvcNameList, "")
+		podconf := testcore.ProvisioningPodConfig(pvcNameList, "", rs.Image)
 		podTmpl := podClient.MakePod(podconf)
 
 		pod := podClient.Create(ctx, podTmpl)
@@ -1891,6 +1928,7 @@ type VolumeExpansionSuite struct {
 	ExpandedSize string
 	Description  string
 	AccessMode   string
+	Image        string
 }
 
 // Run executes volume expansion test suite
@@ -1905,6 +1943,10 @@ func (ves *VolumeExpansionSuite) Run(ctx context.Context, storageClass string, c
 	if ves.PodNumber <= 0 {
 		log.Info("Using default number of volumes")
 		ves.PodNumber = 1
+	}
+	if ves.Image == "" {
+		ves.Image = "docker.io/centos:latest"
+		log.Infof("Using default image: %s", ves.Image)
 	}
 
 	log.Infof("Creating %s pods, each with %s volumes of size (%s)", color.YellowString(strconv.Itoa(ves.PodNumber)),
@@ -1930,7 +1972,7 @@ func (ves *VolumeExpansionSuite) Run(ctx context.Context, storageClass string, c
 		}
 
 		// Create Pod, and attach PVC
-		podconf := testcore.ProvisioningPodConfig(pvcNameList, "")
+		podconf := testcore.ProvisioningPodConfig(pvcNameList, "", ves.Image)
 		if ves.IsBlock {
 			podconf.VolumeMode = pod.Block
 		}
@@ -2165,6 +2207,7 @@ type VolumeHealthMetricsSuite struct {
 	Description  string
 	AccessMode   string
 	Namespace    string
+	Image        string
 }
 
 // FindDriverLogs executes command and returns the output
@@ -2194,6 +2237,10 @@ func (vh *VolumeHealthMetricsSuite) Run(ctx context.Context, storageClass string
 		log.Info("Using default number of pods")
 		vh.PodNumber = 1
 	}
+	if vh.Image == "" {
+		vh.Image = "docker.io/centos:latest"
+		log.Infof("Using default image: %s", vh.Image)
+	}
 
 	//Create a PVC
 	vcconf := testcore.VolumeCreationConfig(storageClass, vh.VolumeSize, "", vh.AccessMode)
@@ -2205,7 +2252,7 @@ func (vh *VolumeHealthMetricsSuite) Run(ctx context.Context, storageClass string
 	PVCNamespace := pvcClient.Namespace
 
 	// Create Pod, and attach PVC
-	podconf := testcore.VolumeHealthPodConfig([]string{pvc.Object.Name}, "")
+	podconf := testcore.VolumeHealthPodConfig([]string{pvc.Object.Name}, "", vh.Image)
 	podTmpl := podClient.MakePod(podconf)
 
 	pod := podClient.Create(ctx, podTmpl)
@@ -2381,6 +2428,7 @@ type CloneVolumeSuite struct {
 	CustomPodName string
 	Description   string
 	AccessMode    string
+	Image         string
 }
 
 // Run executes clone volume test suite
@@ -2399,6 +2447,10 @@ func (cs *CloneVolumeSuite) Run(ctx context.Context, storageClass string, client
 	if cs.VolumeSize == "" {
 		log.Info("Using default volume size:3Gi")
 		cs.VolumeSize = "3Gi"
+	}
+	if cs.Image == "" {
+		cs.Image = "docker.io/centos:latest"
+		log.Infof("Using default image: %s", cs.Image)
 	}
 	clonedVolName := ""
 	result := validateCustomName(cs.CustomPvcName, cs.VolumeNumber)
@@ -2438,7 +2490,7 @@ func (cs *CloneVolumeSuite) Run(ctx context.Context, storageClass string, client
 		}
 
 		// Create Pod, and attach PVC
-		podconf := testcore.ProvisioningPodConfig(pvcNameList, cs.CustomPodName)
+		podconf := testcore.ProvisioningPodConfig(pvcNameList, cs.CustomPodName, cs.Image)
 		podTmpl := podClient.MakePod(podconf)
 
 		pod := podClient.Create(ctx, podTmpl)
@@ -2468,7 +2520,7 @@ func (cs *CloneVolumeSuite) Run(ctx context.Context, storageClass string, client
 			pvcNameList[j] = pvc.Object.Name
 		}
 		// Create Pod, and attach restored PVC
-		podconf := testcore.ProvisioningPodConfig(pvcNameList, clonedPodName)
+		podconf := testcore.ProvisioningPodConfig(pvcNameList, clonedPodName, cs.Image)
 		podTmpl := podClient.MakePod(podconf)
 
 		pod := podClient.Create(ctx, podTmpl)
@@ -2545,6 +2597,7 @@ type MultiAttachSuite struct {
 	Description string
 	AccessMode  string
 	VolumeSize  string
+	Image       string
 }
 
 // Run executes multi attach test suite
@@ -2557,6 +2610,10 @@ func (mas *MultiAttachSuite) Run(ctx context.Context, storageClass string, clien
 	if mas.PodNumber <= 0 {
 		log.Info("Using default number of pods")
 		mas.PodNumber = 2
+	}
+	if mas.Image == "" {
+		mas.Image = "docker.io/centos:latest"
+		log.Infof("Using default image: %s", mas.Image)
 	}
 
 	log.Info("Creating Volume")
@@ -2576,7 +2633,7 @@ func (mas *MultiAttachSuite) Run(ctx context.Context, storageClass string, clien
 
 	log.Info("Attaching Volume to original pod")
 	// Create Pod, and attach PVC
-	podconf := testcore.MultiAttachPodConfig([]string{pvc.Object.Name})
+	podconf := testcore.MultiAttachPodConfig([]string{pvc.Object.Name}, mas.Image)
 
 	if mas.RawBlock {
 		podconf.VolumeMode = pod.Block
@@ -2809,6 +2866,7 @@ type BlockSnapSuite struct {
 	VolumeSize  string
 	Description string
 	AccessMode  string
+	Image       string
 }
 
 // Run executes block snapshot test suite
@@ -2817,6 +2875,10 @@ func (bss *BlockSnapSuite) Run(ctx context.Context, storageClass string, clients
 	if bss.VolumeSize == "" {
 		log.Info("Using default volume size : 3Gi")
 		bss.VolumeSize = "3Gi"
+	}
+	if bss.Image == "" {
+		bss.Image = "docker.io/centos:latest"
+		log.Infof("Using default image: %s", bss.Image)
 	}
 	pvcClient := clients.PVCClient
 	podClient := clients.PodClient
@@ -2842,7 +2904,7 @@ func (bss *BlockSnapSuite) Run(ctx context.Context, storageClass string, clients
 	}
 
 	// Create Pod, and attach PVC
-	podconf := testcore.BlockSnapPodConfig(pvcNameList)
+	podconf := testcore.BlockSnapPodConfig(pvcNameList, bss.Image)
 	podTmpl := podClient.MakePod(podconf)
 
 	file := fmt.Sprintf("%s0/writer-%d.data", podconf.MountPath, 0)
@@ -2948,7 +3010,7 @@ func (bss *BlockSnapSuite) Run(ctx context.Context, storageClass string, clients
 	}
 
 	// Create Pod, and attach PVC from snapshot
-	podRestored := testcore.BlockSnapPodConfig([]string{pvcRestored.Object.Name})
+	podRestored := testcore.BlockSnapPodConfig([]string{pvcRestored.Object.Name}, bss.Image)
 	podRestored.VolumeMode = pod.Block
 	podTmplRestored := podClient.MakePod(podRestored)
 
@@ -3098,6 +3160,7 @@ type VolumeMigrateSuite struct {
 	VolumeNumber int
 	PodNumber    int
 	Flag         bool
+	Image        string
 }
 
 // Run executes volume migrate test suite
@@ -3111,6 +3174,10 @@ func (vms *VolumeMigrateSuite) Run(ctx context.Context, storageClass string, cli
 	if vms.PodNumber <= 0 {
 		log.Println("Using default number of pods")
 		vms.PodNumber = 3
+	}
+	if vms.Image == "" {
+		vms.Image = "docker.io/centos:latest"
+		log.Infof("Using default image: %s", vms.Image)
 	}
 
 	log.Println("Volumes:", vms.VolumeNumber, "pods:", vms.PodNumber)
@@ -3130,7 +3197,7 @@ func (vms *VolumeMigrateSuite) Run(ctx context.Context, storageClass string, cli
 		return delFunc, targetSC.GetError()
 	}
 
-	stsConf := testcore.VolumeMigrateStsConfig(storageClass, "1Gi", vms.VolumeNumber, int32(vms.PodNumber), "")
+	stsConf := testcore.VolumeMigrateStsConfig(storageClass, "1Gi", vms.VolumeNumber, int32(vms.PodNumber), "", vms.Image)
 	stsTmpl := stsClient.MakeStatefulSet(stsConf)
 	// Creating Statefulset
 	log.Println("Creating Statefulset")
@@ -3271,7 +3338,7 @@ func (vms *VolumeMigrateSuite) Run(ctx context.Context, storageClass string, cli
 		podClient.Delete(ctx, &pod)
 	}
 
-	newStsConf := testcore.VolumeMigrateStsConfig(vms.TargetSC, "1Gi", vms.VolumeNumber, int32(vms.PodNumber), "")
+	newStsConf := testcore.VolumeMigrateStsConfig(vms.TargetSC, "1Gi", vms.VolumeNumber, int32(vms.PodNumber), "", vms.Image)
 	newStsTmpl := stsClient.MakeStatefulSet(newStsConf)
 	// Creating new Statefulset
 	log.Println("Creating new Statefulset")

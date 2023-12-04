@@ -84,6 +84,10 @@ func GetCertifyCommand() cli.Command {
 					Required: true,
 				},
 				cli.StringFlag{
+					Name:  "image-config",
+					Usage: "path to images config file",
+				},
+				cli.StringFlag{
 					Name:   "config, conf, c",
 					Usage:  "config for connecting to kubernetes",
 					EnvVar: "KUBECONFIG",
@@ -181,6 +185,10 @@ func GetCertifyCommand() cli.Command {
 				return fmt.Errorf("unable to decode Config: %s", err)
 			}
 
+			testImage, err := getTestImage(c.String("image-config"))
+			if err != nil {
+				return fmt.Errorf("failed to get test image: %s", err)
+			}
 			// Parse timeout
 			timeout, err := time.ParseDuration(c.String("timeout"))
 			if err != nil {
@@ -212,6 +220,7 @@ func GetCertifyCommand() cli.Command {
 					VolumeSize:   minSize,
 					ChainNumber:  2,
 					ChainLength:  2,
+					Image:        testImage,
 				})
 
 				s = append(s, &suites.ScalingSuite{
@@ -220,6 +229,7 @@ func GetCertifyCommand() cli.Command {
 					GradualScaleDown: false,
 					PodPolicy:        "Parallel",
 					VolumeSize:       minSize,
+					Image:            testImage,
 				})
 
 				if sc.Clone {
@@ -227,6 +237,7 @@ func GetCertifyCommand() cli.Command {
 						VolumeNumber: 1,
 						PodNumber:    2,
 						VolumeSize:   minSize,
+						Image:        testImage,
 					})
 
 				}
@@ -239,6 +250,7 @@ func GetCertifyCommand() cli.Command {
 						PodNumber:    1,
 						InitialSize:  minSize,
 						ExpandedSize: expSize.String(),
+						Image:        testImage,
 					})
 
 					if sc.RawBlock {
@@ -248,6 +260,7 @@ func GetCertifyCommand() cli.Command {
 							IsBlock:      true,
 							InitialSize:  minSize,
 							ExpandedSize: expSize.String(),
+							Image:        testImage,
 						})
 					}
 				}
@@ -261,6 +274,7 @@ func GetCertifyCommand() cli.Command {
 						SnapAmount: 3,
 						SnapClass:  snapClass,
 						VolumeSize: minSize,
+						Image:      testImage,
 					})
 
 					s = append(s, &suites.ReplicationSuite{
@@ -268,6 +282,7 @@ func GetCertifyCommand() cli.Command {
 						VolumeSize:   minSize,
 						PodNumber:    2,
 						SnapClass:    snapClass,
+						Image:        testImage,
 					})
 				}
 
@@ -277,6 +292,7 @@ func GetCertifyCommand() cli.Command {
 						RawBlock:   true,
 						AccessMode: "ReadWriteMany",
 						VolumeSize: minSize,
+						Image:      testImage,
 					})
 				}
 
@@ -286,6 +302,7 @@ func GetCertifyCommand() cli.Command {
 						RawBlock:   false,
 						AccessMode: "ReadWriteMany",
 						VolumeSize: minSize,
+						Image:      testImage,
 					})
 				}
 
@@ -295,6 +312,7 @@ func GetCertifyCommand() cli.Command {
 						VolumeNumber: 1,
 						VolumeSize:   minSize,
 						Namespace:    c.String("driver-namespace"),
+						Image:        testImage,
 					})
 				}
 
@@ -304,6 +322,7 @@ func GetCertifyCommand() cli.Command {
 						RawBlock:   false,
 						AccessMode: "ReadWriteOncePod",
 						VolumeSize: minSize,
+						Image:      testImage,
 					})
 				}
 
@@ -313,6 +332,7 @@ func GetCertifyCommand() cli.Command {
 						FSType:           sc.Ephemeral.FSType,
 						PodNumber:        2,
 						VolumeAttributes: sc.Ephemeral.VolumeAttributes,
+						Image:            testImage,
 					})
 				}
 				if sc.VGS {
@@ -341,6 +361,7 @@ func GetCertifyCommand() cli.Command {
 						VolumeNumber:    2,
 						Driver:          driverName,
 						VolumeGroupName: vgsName,
+						Image:           testImage,
 					})
 				}
 				if sc.CapacityTracking != nil {
@@ -349,6 +370,7 @@ func GetCertifyCommand() cli.Command {
 						StorageClass:    sc.Name,
 						VolumeSize:      minSize,
 						PollInterval:    sc.CapacityTracking.PollInterval,
+						Image:           testImage,
 					})
 				}
 				log.Infof("Suites to run with %s storage class:", color.CyanString(sc.Name))
