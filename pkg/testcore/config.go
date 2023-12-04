@@ -28,6 +28,17 @@ import (
 	v1 "k8s.io/api/core/v1"
 )
 
+// Image represents an image configuration.
+type Image struct {
+	Test     string
+	Postgres string
+}
+
+// Images represents an array of images.
+type Images struct {
+	Images []Image `yaml:"images"`
+}
+
 // VolumeCreationConfig config to use in volumecreation suite
 func VolumeCreationConfig(storageclass string, claimSize string, Name string, AccessMode string) *pvc.Config {
 	accessMode := GetAccessMode(AccessMode)
@@ -53,7 +64,7 @@ func MultiAttachVolumeConfig(storageclass string, claimSize string, AccessMode s
 }
 
 // CapacityTrackingPodConfig config to use in capacity-tracking suite
-func CapacityTrackingPodConfig(pvcNames []string, podName string) *pod.Config {
+func CapacityTrackingPodConfig(pvcNames []string, podName string, containerImage string) *pod.Config {
 	return &pod.Config{
 		Name:           podName,
 		NamePrefix:     "pod-capacity-tracking-test-",
@@ -61,14 +72,14 @@ func CapacityTrackingPodConfig(pvcNames []string, podName string) *pod.Config {
 		VolumeName:     "vol",
 		MountPath:      "/data",
 		ContainerName:  "capacity-tracking-test",
-		ContainerImage: "docker.io/centos:latest",
+		ContainerImage: containerImage,
 		Command:        []string{`/bin/bash`},
 		Args:           []string{"-c", "trap 'exit 0' SIGTERM;while true; do sleep 1; done"},
 	}
 }
 
 // ProvisioningPodConfig config to use in provisioning suite
-func ProvisioningPodConfig(pvcNames []string, podName string) *pod.Config {
+func ProvisioningPodConfig(pvcNames []string, podName string, containerImage string) *pod.Config {
 	return &pod.Config{
 		Name:           podName,
 		NamePrefix:     "pod-prov-test-",
@@ -76,14 +87,14 @@ func ProvisioningPodConfig(pvcNames []string, podName string) *pod.Config {
 		VolumeName:     "vol",
 		MountPath:      "/data",
 		ContainerName:  "prov-test",
-		ContainerImage: "docker.io/centos:latest",
+		ContainerImage: containerImage,
 		Command:        []string{`/bin/bash`},
 		Args:           []string{"-c", "trap 'exit 0' SIGTERM;while true; do sleep 1; done"},
 	}
 }
 
 // VolumeHealthPodConfig config to use in provisioning suite
-func VolumeHealthPodConfig(pvcNames []string, podName string) *pod.Config {
+func VolumeHealthPodConfig(pvcNames []string, podName string, containerImage string) *pod.Config {
 	return &pod.Config{
 		Name:           podName,
 		NamePrefix:     "pod-volume-health-test-",
@@ -91,14 +102,14 @@ func VolumeHealthPodConfig(pvcNames []string, podName string) *pod.Config {
 		VolumeName:     "vol",
 		MountPath:      "/data",
 		ContainerName:  "volume-health-test",
-		ContainerImage: "docker.io/centos:latest",
+		ContainerImage: containerImage,
 		Command:        []string{`/bin/bash`},
 		Args:           []string{"-c", "trap 'exit 0' SIGTERM;while true; do sleep 1; done"},
 	}
 }
 
 // IoWritePodConfig config to use in io suite
-func IoWritePodConfig(pvcNames []string, podName string) *pod.Config {
+func IoWritePodConfig(pvcNames []string, podName string, containerImage string) *pod.Config {
 	return &pod.Config{
 		Name:           podName,
 		NamePrefix:     "iowriter-test-",
@@ -106,20 +117,20 @@ func IoWritePodConfig(pvcNames []string, podName string) *pod.Config {
 		VolumeName:     "vol",
 		MountPath:      "/data",
 		ContainerName:  "iowriter",
-		ContainerImage: "docker.io/centos:latest",
+		ContainerImage: containerImage,
 		Command:        []string{`/bin/bash`},
 		Args:           []string{"-c", " trap 'exit 0' SIGTERM;while true; do sleep 1; done"},
 	}
 }
 
 // BlockSnapPodConfig config to use in blocksnap suite
-func BlockSnapPodConfig(pvcNames []string) *pod.Config {
+func BlockSnapPodConfig(pvcNames []string, containerImage string) *pod.Config {
 	return &pod.Config{
 		NamePrefix:     "bs-test-",
 		VolumeName:     "vol",
 		MountPath:      "/data",
 		ContainerName:  "iowriter",
-		ContainerImage: "docker.io/centos:latest",
+		ContainerImage: containerImage,
 		PvcNames:       pvcNames,
 		Command:        []string{`/bin/bash`},
 		Args:           []string{"-c", " trap 'exit 0' SIGTERM;while true; do sleep 1; done"},
@@ -128,14 +139,14 @@ func BlockSnapPodConfig(pvcNames []string) *pod.Config {
 }
 
 // MultiAttachPodConfig config to use in MultiAttachSuite
-func MultiAttachPodConfig(pvcNames []string) *pod.Config {
+func MultiAttachPodConfig(pvcNames []string, containerImage string) *pod.Config {
 	return &pod.Config{
 		NamePrefix:     "iowriter-test-",
 		PvcNames:       pvcNames,
 		VolumeName:     "vol",
 		MountPath:      "/data",
 		ContainerName:  "iowriter",
-		ContainerImage: "docker.io/centos:latest",
+		ContainerImage: containerImage,
 		Command:        []string{`/bin/bash`},
 		Args:           []string{"-c", " trap 'exit 0' SIGTERM;while true; do sleep 1; done"},
 		Capabilities:   []v1.Capability{"SYS_ADMIN"},
@@ -143,7 +154,7 @@ func MultiAttachPodConfig(pvcNames []string) *pod.Config {
 }
 
 // ScalingStsConfig config to use in scaling suite
-func ScalingStsConfig(storageclass string, claimSize string, volumeNumber int, podPolicy string) *statefulset.Config {
+func ScalingStsConfig(storageclass string, claimSize string, volumeNumber int, podPolicy string, containerImage string) *statefulset.Config {
 	return &statefulset.Config{
 		VolumeNumber:        volumeNumber,
 		Replicas:            1,
@@ -153,7 +164,7 @@ func ScalingStsConfig(storageclass string, claimSize string, volumeNumber int, p
 		PodManagementPolicy: podPolicy,
 		ClaimSize:           claimSize,
 		ContainerName:       "scale-test",
-		ContainerImage:      "docker.io/centos:latest",
+		ContainerImage:      containerImage,
 		NamePrefix:          "sts-scale-test",
 		Command:             []string{`/bin/bash`},
 		Args:                []string{"-c", "trap 'exit 0' SIGTERM;while true; do sleep 1; done"},
@@ -162,11 +173,11 @@ func ScalingStsConfig(storageclass string, claimSize string, volumeNumber int, p
 }
 
 // PsqlPodConfig config to use for psql suite
-func PsqlPodConfig(password string) *pod.Config {
+func PsqlPodConfig(password string, containerImage string) *pod.Config {
 	return &pod.Config{
 		NamePrefix:     "psql-client-pod-",
 		ContainerName:  "psql-client",
-		ContainerImage: "docker.io/bitnami/postgresql:11.8.0-debian-10-r72",
+		ContainerImage: containerImage,
 		Command:        []string{`/bin/bash`},
 		Args:           []string{"-c", " trap 'exit 0' SIGTERM;while true; do sleep 1; done"},
 		EnvVars: []v1.EnvVar{{
@@ -177,14 +188,14 @@ func PsqlPodConfig(password string) *pod.Config {
 }
 
 // EphemeralPodConfig config to use in ephemeral inline volume suite
-func EphemeralPodConfig(podName string, csiVolSrc v1.CSIVolumeSource) *pod.Config {
+func EphemeralPodConfig(podName string, csiVolSrc v1.CSIVolumeSource, containerImage string) *pod.Config {
 	return &pod.Config{
 		Name:            podName,
 		NamePrefix:      "pod-ephemeral-test-",
 		VolumeName:      "ephemeral-vol",
 		MountPath:       "/data",
 		ContainerName:   "prov-test",
-		ContainerImage:  "docker.io/centos:latest",
+		ContainerImage:  containerImage,
 		Command:         []string{`/bin/bash`},
 		Args:            []string{"-c", "trap 'exit 0' SIGTERM;while true; do sleep 1; done"},
 		CSIVolumeSource: csiVolSrc,
@@ -192,7 +203,7 @@ func EphemeralPodConfig(podName string, csiVolSrc v1.CSIVolumeSource) *pod.Confi
 }
 
 // VolumeMigrateStsConfig config to use in scaling suite
-func VolumeMigrateStsConfig(storageclass string, claimSize string, volumeNumber int, podNumber int32, podPolicy string) *statefulset.Config {
+func VolumeMigrateStsConfig(storageclass string, claimSize string, volumeNumber int, podNumber int32, podPolicy string, containerImage string) *statefulset.Config {
 	return &statefulset.Config{
 		VolumeNumber:        volumeNumber,
 		Replicas:            podNumber,
@@ -202,7 +213,7 @@ func VolumeMigrateStsConfig(storageclass string, claimSize string, volumeNumber 
 		PodManagementPolicy: podPolicy,
 		ClaimSize:           claimSize,
 		ContainerName:       "volume-migrate-test",
-		ContainerImage:      "docker.io/centos:latest",
+		ContainerImage:      containerImage,
 		NamePrefix:          "sts-volume-migrate-test",
 		Command:             []string{`/bin/bash`},
 		Args:                []string{"-c", "trap 'exit 0' SIGTERM;while true; do sleep 1; done"},
