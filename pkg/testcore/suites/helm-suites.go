@@ -49,8 +49,8 @@ func (ps *PostgresqlSuite) Run(ctx context.Context, storageClass string, clients
 	}
 
 	if ps.Image == "" {
-		log.Info("Using default image")
 		ps.Image = "docker.io/bitnami/postgresql:11.8.0-debian-10-r72"
+		log.Infof("Using default image: %s", ps.Image)
 	}
 
 	pvcClient := clients.PVCClient
