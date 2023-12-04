@@ -425,16 +425,9 @@ func getFunctionalCloneVolumeCommand(globalFlags []cli.Flag) cli.Command {
 			pvcName := c.String("pvc-name")
 			podName := c.String("pod-name")
 			accessMode := c.String("access-mode")
-			imageConfigPath := c.String("image-config")
-			var testImage string
-			if imageConfigPath != "" {
-				img, err := readImageConfig(imageConfigPath)
-				if err != nil {
-					return fmt.Errorf("failed to find image Config: %s", err)
-				}
-				for _, img := range img.Images {
-					testImage = img.Test
-				}
+			testImage, err := getTestImage(c.String("image-config"))
+			if err != nil {
+				return fmt.Errorf("failed to get test image: %s", err)
 			}
 
 			s := []suites.Interface{
@@ -504,16 +497,9 @@ func getFunctionalProvisioningCommand(globalFlags []cli.Flag) cli.Command {
 			desc := c.String("description")
 			volAccessMode := c.String("vol-access-mode")
 			roFlag := c.Bool("roFlag")
-			imageConfigPath := c.String("image-config")
-			var testImage string
-			if imageConfigPath != "" {
-				img, err := readImageConfig(imageConfigPath)
-				if err != nil {
-					return fmt.Errorf("failed to find image Config: %s", err)
-				}
-				for _, img := range img.Images {
-					testImage = img.Test
-				}
+			testImage, err := getTestImage(c.String("image-config"))
+			if err != nil {
+				return fmt.Errorf("failed to get test image: %s", err)
 			}
 			s := []suites.Interface{
 				&suites.ProvisioningSuite{
@@ -585,16 +571,9 @@ func getFunctionalSnapCreationCommand(globalFlags []cli.Flag) cli.Command {
 			desc := c.String("description")
 			snapName := c.String("snap-name")
 			accessModeRestored := c.String("access-mode-restored-volume")
-			imageConfigPath := c.String("image-config")
-			var testImage string
-			if imageConfigPath != "" {
-				img, err := readImageConfig(imageConfigPath)
-				if err != nil {
-					return fmt.Errorf("failed to find image Config: %s", err)
-				}
-				for _, img := range img.Images {
-					testImage = img.Test
-				}
+			testImage, err := getTestImage(c.String("image-config"))
+			if err != nil {
+				return fmt.Errorf("failed to get test image: %s", err)
 			}
 			s := []suites.Interface{
 				&suites.SnapSuite{
@@ -651,16 +630,9 @@ func getFunctionalMultiAttachVolCommand(globalFlags []cli.Flag) cli.Command {
 			desc := c.String("description")
 			isRawBlock := c.Bool("block")
 			accessMode := c.String("access-mode")
-			imageConfigPath := c.String("image-config")
-			var testImage string
-			if imageConfigPath != "" {
-				img, err := readImageConfig(imageConfigPath)
-				if err != nil {
-					return fmt.Errorf("failed to find image Config: %s", err)
-				}
-				for _, img := range img.Images {
-					testImage = img.Test
-				}
+			testImage, err := getTestImage(c.String("image-config"))
+			if err != nil {
+				return fmt.Errorf("failed to get test image: %s", err)
 			}
 			s := []suites.Interface{
 				&suites.MultiAttachSuite{
@@ -720,16 +692,9 @@ func getFunctionalEphemeralCreationCommand(globalFlags []cli.Flag) cli.Command {
 			fsType := c.String("fs-type")
 			attributesFile := c.String("csi-attributes")
 			podName := c.String("pod-name")
-			imageConfigPath := c.String("image-config")
-			var testImage string
-			if imageConfigPath != "" {
-				img, err := readImageConfig(imageConfigPath)
-				if err != nil {
-					return fmt.Errorf("failed to find image Config: %s", err)
-				}
-				for _, img := range img.Images {
-					testImage = img.Test
-				}
+			testImage, err := getTestImage(c.String("image-config"))
+			if err != nil {
+				return fmt.Errorf("failed to get test image: %s", err)
 			}
 			// We will generate volumeAttributes by reading the properties file
 			volAttributes, err := readEphemeralConfig(attributesFile)
@@ -912,16 +877,9 @@ func getCapacityTrackingCommand(globalFlags []cli.Flag) cli.Command {
 			storageClass := c.String("sc")
 			volumeSize := c.String("volSize")
 			pollInterval := c.Duration("poll-interval")
-			imageConfigPath := c.String("image-config")
-			var testImage string
-			if imageConfigPath != "" {
-				img, err := readImageConfig(imageConfigPath)
-				if err != nil {
-					return fmt.Errorf("failed to find image Config: %s", err)
-				}
-				for _, img := range img.Images {
-					testImage = img.Test
-				}
+			testImage, err := getTestImage(c.String("image-config"))
+			if err != nil {
+				return fmt.Errorf("failed to get test image: %s", err)
 			}
 			s := []suites.Interface{
 				&suites.CapacityTrackingSuite{

@@ -185,16 +185,9 @@ func GetCertifyCommand() cli.Command {
 				return fmt.Errorf("unable to decode Config: %s", err)
 			}
 
-			imageConfigPath := c.String("image-config")
-			var testImage string
-			if imageConfigPath != "" {
-				img, err := readImageConfig(imageConfigPath)
-				if err != nil {
-					return fmt.Errorf("failed to find image Config: %s", err)
-				}
-				for _, img := range img.Images {
-					testImage = img.Test
-				}
+			testImage, err := getTestImage(c.String("image-config"))
+			if err != nil {
+				return fmt.Errorf("failed to get test image: %s", err)
 			}
 			// Parse timeout
 			timeout, err := time.ParseDuration(c.String("timeout"))
