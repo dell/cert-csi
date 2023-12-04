@@ -232,8 +232,8 @@ func (ps *ProvisioningSuite) Run(ctx context.Context, storageClass string, clien
 		ps.VolumeSize = "3Gi"
 	}
 	if ps.Image == "" {
-		log.Info("Using default image")
 		ps.Image = "docker.io/centos:latest"
+		log.Infof("Using default image: %s", ps.Image)
 	}
 	ps.validateCustomPodName()
 
@@ -397,8 +397,8 @@ func (rrps *RemoteReplicationProvisioningSuite) Run(ctx context.Context, storage
 		rrps.VolumeSize = "3Gi"
 	}
 	if rrps.Image == "" {
-		log.Info("Using default image")
 		rrps.Image = "docker.io/centos:latest"
+		log.Infof("Using default image: %s", rrps.Image)
 	}
 
 	if rrps.RemoteConfigPath != "" && !isSingle {
@@ -904,8 +904,8 @@ func (ss *ScalingSuite) Run(ctx context.Context, storageClass string, clients *k
 		ss.VolumeSize = "3Gi"
 	}
 	if ss.Image == "" {
-		log.Info("Using default image")
 		ss.Image = "docker.io/centos:latest"
+		log.Infof("Using default image: %s", ss.Image)
 	}
 
 	stsconf := testcore.ScalingStsConfig(storageClass, ss.VolumeSize, ss.VolumeNumber, ss.PodPolicy, ss.Image)
@@ -1038,8 +1038,8 @@ func (vis *VolumeIoSuite) Run(ctx context.Context, storageClass string, clients 
 	}
 
 	if vis.Image == "" {
-		log.Info("Using default image")
 		vis.Image = "docker.io/centos:latest"
+		log.Infof("Using default image: %s", vis.Image)
 	}
 
 	firstConsumer, err := shouldWaitForFirstConsumer(ctx, storageClass, pvcClient)
@@ -1203,8 +1203,8 @@ func (vgs *VolumeGroupSnapSuite) Run(ctx context.Context, storageClass string, c
 	}
 
 	if vgs.Image == "" {
-		log.Info("Using default image")
 		vgs.Image = "docker.io/centos:latest"
+		log.Infof("Using default image: %s", vgs.Image)
 	}
 
 	pvcClient := clients.PVCClient
@@ -1351,8 +1351,8 @@ func (ss *SnapSuite) Run(ctx context.Context, storageClass string, clients *k8sc
 		ss.VolumeSize = "3Gi"
 	}
 	if ss.Image == "" {
-		log.Info("Using default image")
 		ss.Image = "docker.io/centos:latest"
+		log.Infof("Using default image: %s", ss.Image)
 	}
 
 	result := validateCustomSnapName(ss.CustomSnapName, ss.SnapAmount)
@@ -1677,8 +1677,8 @@ func (rs *ReplicationSuite) Run(ctx context.Context, storageClass string, client
 		rs.VolumeSize = "3Gi"
 	}
 	if rs.Image == "" {
-		log.Info("Using default image")
 		rs.Image = "docker.io/centos:latest"
+		log.Infof("Using default image: %s", rs.Image)
 	}
 
 	log.Infof("Creating %s pods, each with %s volumes", color.YellowString(strconv.Itoa(rs.PodNumber)),
@@ -1945,8 +1945,8 @@ func (ves *VolumeExpansionSuite) Run(ctx context.Context, storageClass string, c
 		ves.PodNumber = 1
 	}
 	if ves.Image == "" {
-		log.Info("Using default image")
 		ves.Image = "docker.io/centos:latest"
+		log.Infof("Using default image: %s", ves.Image)
 	}
 
 	log.Infof("Creating %s pods, each with %s volumes of size (%s)", color.YellowString(strconv.Itoa(ves.PodNumber)),
@@ -2238,8 +2238,8 @@ func (vh *VolumeHealthMetricsSuite) Run(ctx context.Context, storageClass string
 		vh.PodNumber = 1
 	}
 	if vh.Image == "" {
-		log.Info("Using default image")
 		vh.Image = "docker.io/centos:latest"
+		log.Infof("Using default image: %s", vh.Image)
 	}
 
 	//Create a PVC
@@ -2449,8 +2449,8 @@ func (cs *CloneVolumeSuite) Run(ctx context.Context, storageClass string, client
 		cs.VolumeSize = "3Gi"
 	}
 	if cs.Image == "" {
-		log.Info("Using default image")
 		cs.Image = "docker.io/centos:latest"
+		log.Infof("Using default image: %s", cs.Image)
 	}
 	clonedVolName := ""
 	result := validateCustomName(cs.CustomPvcName, cs.VolumeNumber)
@@ -2612,8 +2612,8 @@ func (mas *MultiAttachSuite) Run(ctx context.Context, storageClass string, clien
 		mas.PodNumber = 2
 	}
 	if mas.Image == "" {
-		log.Info("Using default image")
 		mas.Image = "docker.io/centos:latest"
+		log.Infof("Using default image: %s", mas.Image)
 	}
 
 	log.Info("Creating Volume")
@@ -2877,8 +2877,8 @@ func (bss *BlockSnapSuite) Run(ctx context.Context, storageClass string, clients
 		bss.VolumeSize = "3Gi"
 	}
 	if bss.Image == "" {
-		log.Info("Using default image")
 		bss.Image = "docker.io/centos:latest"
+		log.Infof("Using default image: %s", bss.Image)
 	}
 	pvcClient := clients.PVCClient
 	podClient := clients.PodClient
@@ -3176,8 +3176,8 @@ func (vms *VolumeMigrateSuite) Run(ctx context.Context, storageClass string, cli
 		vms.PodNumber = 3
 	}
 	if vms.Image == "" {
-		log.Info("Using default image")
 		vms.Image = "docker.io/centos:latest"
+		log.Infof("Using default image: %s", vms.Image)
 	}
 
 	log.Println("Volumes:", vms.VolumeNumber, "pods:", vms.PodNumber)

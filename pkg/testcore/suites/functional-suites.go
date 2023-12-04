@@ -496,8 +496,8 @@ func (ep *EphemeralVolumeSuite) Run(ctx context.Context, storageClass string, cl
 	}
 
 	if ep.Image == "" {
-		log.Info("Using default image")
 		ep.Image = "docker.io/centos:latest"
+		log.Infof("Using default image: %s", ep.Image)
 	}
 
 	log.Infof("Creating %s pods, each with 1 volumes", color.YellowString(strconv.Itoa(ep.PodNumber)))
@@ -844,8 +844,8 @@ func (cts *CapacityTrackingSuite) Run(ctx context.Context, storageClass string, 
 	}
 
 	if cts.Image == "" {
-		log.Info("Using default image")
 		cts.Image = "docker.io/centos:latest"
+		log.Infof("Using default image: %s", cts.Image)
 	}
 
 	if *sc.Object.VolumeBindingMode != storagev1.VolumeBindingWaitForFirstConsumer {
