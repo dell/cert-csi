@@ -108,11 +108,17 @@ func E2eReportParser(filename string) ([]map[string]string, error) {
 			"TotalTestsPassed":   strconv.Itoa(TestsPassed),
 			"TotalTestsFailed":   strconv.Itoa(failedTestsCount)})
 		if len(failedTests) > 0 {
-			fmt.Println("Failed Tests Are:")
+			fmt.Println("Failed Tests Are: ")
 		}
 		for k := 0; k < len(failedTests); k++ {
 			fmt.Println(failedTests[k] + "\n")
 
+		}
+		if len(passedTests) > 0 {
+			fmt.Println("Passed Tests Are: ")
+		}
+		for l := 0; l < len(passedTests); l++ {
+			fmt.Println(passedTests[l] + "\n")
 		}
 
 	}
