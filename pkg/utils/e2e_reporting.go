@@ -114,6 +114,9 @@ func E2eReportParser(filename string) ([]map[string]string, error) {
 			fmt.Println(failedTests[k] + "\n")
 
 		}
+		for l := 0; l < len(passedTests); l++ {
+			fmt.Println(passedTests[l] + "\n")
+		}
 
 	}
 	return result, nil
