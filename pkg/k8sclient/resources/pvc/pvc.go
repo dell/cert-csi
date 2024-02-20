@@ -155,7 +155,7 @@ func (c *Client) MakePVC(cfg *Config) *v1.PersistentVolumeClaim {
 		Spec: v1.PersistentVolumeClaimSpec{
 			Selector:    cfg.Selector,
 			AccessModes: cfg.AccessModes,
-			Resources: v1.ResourceRequirements{
+			Resources: v1.VolumeResourceRequirements{
 				Requests: v1.ResourceList{
 					v1.ResourceStorage: resource.MustParse(cfg.ClaimSize),
 				},
@@ -438,7 +438,7 @@ func (c *Client) CreatePVCObject(ctx context.Context, remotePVObject *v1.Persist
 		},
 		Spec: v1.PersistentVolumeClaimSpec{
 			AccessModes: accessMode,
-			Resources: v1.ResourceRequirements{
+			Resources: v1.VolumeResourceRequirements{
 				Requests: requestsResReq,
 			},
 			VolumeName:       remotePVName,
