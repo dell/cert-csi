@@ -148,7 +148,7 @@ func (c *Client) MakeStatefulSet(config *Config) *appsv1.StatefulSet {
 			},
 			Spec: v1.PersistentVolumeClaimSpec{
 				AccessModes: []v1.PersistentVolumeAccessMode{"ReadWriteOnce"},
-				Resources: v1.ResourceRequirements{
+				Resources: v1.VolumeResourceRequirements{
 					Requests: v1.ResourceList{
 						v1.ResourceStorage: resource.MustParse(config.ClaimSize),
 					},
