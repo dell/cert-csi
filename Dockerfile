@@ -15,8 +15,9 @@
 #
 
 ARG BASEIMAGE
+ARG GOIMAGE
 
-FROM golang:1.20 as build-env
+FROM $GOIMAGE as build-env
 
 WORKDIR /app/cert-csi/
 COPY go.mod go.sum ./
