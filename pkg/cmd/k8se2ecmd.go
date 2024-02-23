@@ -37,55 +37,53 @@ func GetK8sEndToEndCommand() cli.Command {
 		Name:     "k8s-e2e",
 		Usage:    "k8s-e2e command to execute the kubernetes end-to-end testcases",
 		Category: "main",
-		Flags: append(
-			[]cli.Flag{
-				cli.StringFlag{
-					Name:     "driver-config",
-					Usage:    "path to test driver config file",
-					Required: true,
-				},
-				cli.StringFlag{
-					Name:  "reportPath, path",
-					Usage: "path to folder where reports will be created (if not specified `$HOME/reports/execution_[storage-class].xml` will be used)",
-				},
-				cli.StringFlag{
-					Name:  "focus",
-					Usage: "focus string(regx) what your k8s e2e tests should foucs on Ex: \"External.Storage.*\"",
-				},
-				cli.StringFlag{
-					Name:  "focus-file",
-					Usage: "focus file(regx) what your k8s e2e tests should focus on Ex: 'testsuitename.go'",
-				},
-				cli.StringFlag{
-					Name:   "config, conf, c",
-					Usage:  "config for connecting to kubernetes",
-					EnvVar: "KUBECONFIG",
-				},
-				cli.StringFlag{
-					Name:  "skip",
-					Usage: "skip string(regx) what your k8s e2e tests should skip Ex: '\\[Feature:|\\[Disruptive\\]'",
-				},
-				cli.StringFlag{
-					Name:  "skip-file",
-					Usage: "skip file(regx) what your k8s e2e tests should skip Ex: 'testsuitename.go'",
-				},
-				cli.StringFlag{
-					Name: "skip-tests",
-					Usage: "skip unsupported tests give the file path Ex:  /root/tests/skip.yaml" +
-						"ignore:\n" +
-						"  - \"skip this test\"",
-				},
-				cli.StringFlag{
-					Name:  "timeout",
-					Usage: "time out for kubernetes e2e command to exit default will be 1h Ex: 2h",
-				},
-				cli.StringFlag{
-					Name:     "version",
-					Usage:    "Kubernetes version that you want to test end-to-end tests",
-					Required: true,
-				},
+		Flags: []cli.Flag{
+			cli.StringFlag{
+				Name:     "driver-config",
+				Usage:    "path to test driver config file",
+				Required: true,
 			},
-		),
+			cli.StringFlag{
+				Name:  "reportPath, path",
+				Usage: "path to folder where reports will be created (if not specified `$HOME/reports/execution_[storage-class].xml` will be used)",
+			},
+			cli.StringFlag{
+				Name:  "focus",
+				Usage: "focus string(regx) what your k8s e2e tests should foucs on Ex: \"External.Storage.*\"",
+			},
+			cli.StringFlag{
+				Name:  "focus-file",
+				Usage: "focus file(regx) what your k8s e2e tests should focus on Ex: 'testsuitename.go'",
+			},
+			cli.StringFlag{
+				Name:   "config, conf, c",
+				Usage:  "config for connecting to kubernetes",
+				EnvVar: "KUBECONFIG",
+			},
+			cli.StringFlag{
+				Name:  "skip",
+				Usage: "skip string(regx) what your k8s e2e tests should skip Ex: '\\[Feature:|\\[Disruptive\\]'",
+			},
+			cli.StringFlag{
+				Name:  "skip-file",
+				Usage: "skip file(regx) what your k8s e2e tests should skip Ex: 'testsuitename.go'",
+			},
+			cli.StringFlag{
+				Name: "skip-tests",
+				Usage: "skip unsupported tests give the file path Ex:  /root/tests/skip.yaml" +
+					"ignore:\n" +
+					"  - \"skip this test\"",
+			},
+			cli.StringFlag{
+				Name:  "timeout",
+				Usage: "time out for kubernetes e2e command to exit default will be 1h Ex: 2h",
+			},
+			cli.StringFlag{
+				Name:     "version",
+				Usage:    "Kubernetes version that you want to test end-to-end tests",
+				Required: true,
+			},
+		},
 		Before: func(c *cli.Context) error {
 			checks := utils.Prechecks(c)
 			if !checks {
