@@ -76,100 +76,98 @@ func GetCertifyCommand() cli.Command {
 		Name:     "certify",
 		Usage:    "certify csi-driver",
 		Category: "main",
-		Flags: append(
-			[]cli.Flag{
-				cli.StringFlag{
-					Name:     "cert-config",
-					Usage:    "path to certification config file",
-					Required: true,
-				},
-				cli.StringFlag{
-					Name:  "image-config",
-					Usage: "path to images config file",
-				},
-				cli.StringFlag{
-					Name:   "config, conf, c",
-					Usage:  "config for connecting to kubernetes",
-					EnvVar: "KUBECONFIG",
-				},
-				cli.StringFlag{
-					Name:  "namespace, ns",
-					Usage: "specify the driver namespace (used in driver resource usage)",
-				},
-				cli.StringFlag{
-					Name: "longevity, long, l",
-					Usage: "launch in longevity mode with provided number of iterations. Accepted formats are:" +
-						" number of iterations (ex. 10) or time (ex. 3d.2h30m15s)",
-					Value: "1",
-				},
-				cli.StringFlag{
-					Name:  "timeout, t",
-					Usage: "set the timeout value for all of the resources (accepts format like 2h30m15s) default is 0s",
-					Value: "0s",
-				},
-				cli.BoolFlag{
-					Name:  "sequential, sq",
-					Usage: "include this flag to run the test suites sequentially",
-				},
-				cli.BoolFlag{
-					Name:  "no-cleanup, nc",
-					Usage: "include this flag do disable cleanup between iterations",
-				},
-				cli.BoolFlag{
-					Name:  "no-cleanup-on-fail, ncof",
-					Usage: "include this flag do disable cleanup on fail",
-				},
-				cli.StringFlag{
-					Name:  "start-hook, sh",
-					Usage: "specify the path to the start-hook",
-				},
-				cli.StringFlag{
-					Name:  "ready-hook, rh",
-					Usage: "specify the path to the ready-hook",
-				},
-				cli.StringFlag{
-					Name:  "finish-hook, fh",
-					Usage: "specify the path to the finish-hook",
-				},
-				cli.BoolFlag{
-					Name:  "no-metrics, nm",
-					Usage: "include this flag to disable event-based performance metrics, thus creating only-load scenario",
-				},
-				cli.BoolFlag{
-					Name:  "no-reports, nr",
-					Usage: "include this flag to skip report generating stage",
-				},
-				cli.StringFlag{
-					Name:  "observer-type, ot",
-					Usage: "set the observer type to use [event] or [list]",
-					Value: "event",
-				},
-				cli.StringFlag{
-					Name:  "volumeSnapshotClass, vsc",
-					Usage: "define your volumeSnapshotClass",
-				},
-				cli.StringFlag{
-					Name:  "reportPath, path",
-					Usage: "path to folder where reports will be created (if not specified `~/.cert-csi/` will be used)",
-				},
-				cli.StringFlag{
-					Name:  "driver-namespace, driver-ns",
-					Usage: "specify the driver namespace to find the driver resources for the volume health metrics suite",
-				},
-				cli.StringFlag{
-					Name:  "driver-name, driver",
-					Usage: "specify the driver for volume group snapshot",
-				},
-				cli.StringFlag{
-					Name:  "vgs-volume-label",
-					Usage: "specify the volume label for VGS",
-				},
-				cli.StringFlag{
-					Name:  "vgs-name",
-					Usage: "specify the volume group name",
-				},
+		Flags: []cli.Flag{
+			cli.StringFlag{
+				Name:     "cert-config",
+				Usage:    "path to certification config file",
+				Required: true,
 			},
-		),
+			cli.StringFlag{
+				Name:  "image-config",
+				Usage: "path to images config file",
+			},
+			cli.StringFlag{
+				Name:   "config, conf, c",
+				Usage:  "config for connecting to kubernetes",
+				EnvVar: "KUBECONFIG",
+			},
+			cli.StringFlag{
+				Name:  "namespace, ns",
+				Usage: "specify the driver namespace (used in driver resource usage)",
+			},
+			cli.StringFlag{
+				Name: "longevity, long, l",
+				Usage: "launch in longevity mode with provided number of iterations. Accepted formats are:" +
+					" number of iterations (ex. 10) or time (ex. 3d.2h30m15s)",
+				Value: "1",
+			},
+			cli.StringFlag{
+				Name:  "timeout, t",
+				Usage: "set the timeout value for all of the resources (accepts format like 2h30m15s) default is 0s",
+				Value: "0s",
+			},
+			cli.BoolFlag{
+				Name:  "sequential, sq",
+				Usage: "include this flag to run the test suites sequentially",
+			},
+			cli.BoolFlag{
+				Name:  "no-cleanup, nc",
+				Usage: "include this flag do disable cleanup between iterations",
+			},
+			cli.BoolFlag{
+				Name:  "no-cleanup-on-fail, ncof",
+				Usage: "include this flag do disable cleanup on fail",
+			},
+			cli.StringFlag{
+				Name:  "start-hook, sh",
+				Usage: "specify the path to the start-hook",
+			},
+			cli.StringFlag{
+				Name:  "ready-hook, rh",
+				Usage: "specify the path to the ready-hook",
+			},
+			cli.StringFlag{
+				Name:  "finish-hook, fh",
+				Usage: "specify the path to the finish-hook",
+			},
+			cli.BoolFlag{
+				Name:  "no-metrics, nm",
+				Usage: "include this flag to disable event-based performance metrics, thus creating only-load scenario",
+			},
+			cli.BoolFlag{
+				Name:  "no-reports, nr",
+				Usage: "include this flag to skip report generating stage",
+			},
+			cli.StringFlag{
+				Name:  "observer-type, ot",
+				Usage: "set the observer type to use [event] or [list]",
+				Value: "event",
+			},
+			cli.StringFlag{
+				Name:  "volumeSnapshotClass, vsc",
+				Usage: "define your volumeSnapshotClass",
+			},
+			cli.StringFlag{
+				Name:  "reportPath, path",
+				Usage: "path to folder where reports will be created (if not specified `~/.cert-csi/` will be used)",
+			},
+			cli.StringFlag{
+				Name:  "driver-namespace, driver-ns",
+				Usage: "specify the driver namespace to find the driver resources for the volume health metrics suite",
+			},
+			cli.StringFlag{
+				Name:  "driver-name, driver",
+				Usage: "specify the driver for volume group snapshot",
+			},
+			cli.StringFlag{
+				Name:  "vgs-volume-label",
+				Usage: "specify the volume label for VGS",
+			},
+			cli.StringFlag{
+				Name:  "vgs-name",
+				Usage: "specify the volume group name",
+			},
+		},
 		Before: updatePath,
 		Action: func(c *cli.Context) error {
 			viper.SetConfigType("yaml")
