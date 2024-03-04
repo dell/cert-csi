@@ -204,7 +204,6 @@ func (snap *Snapshot) WaitUntilGone(ctx context.Context) error {
 	yellow := color.New(color.FgHiYellow)
 	log.Debugf("snap %s was deleted in %s", snap.Object.Name, yellow.Sprint(time.Since(startTime)))
 	return nil
-
 }
 
 func (snap *Snapshot) pollWait(ctx context.Context) (bool, error) {

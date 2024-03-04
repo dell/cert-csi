@@ -46,7 +46,7 @@ func getReportFile(runName, format string) (*os.File, string, error) {
 	if err != nil {
 		return nil, "", err
 	}
-	if err = os.MkdirAll(pathReportsDir, 0750); err != nil {
+	if err = os.MkdirAll(pathReportsDir, 0o750); err != nil {
 		return nil, "", err
 	}
 

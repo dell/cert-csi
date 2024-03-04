@@ -46,10 +46,8 @@ const (
 //go:embed templates/*
 var embedFS embed.FS
 
-var (
-	// PathReport represent path of the report file
-	PathReport string
-)
+// PathReport represent path of the report file
+var PathReport string
 
 // Reporter is an interface for generating reports
 type Reporter interface {
@@ -349,7 +347,7 @@ func fileExists(name string) bool {
 }
 
 func addPathToFile(fileName string, exportVar string, path string) error {
-	f, err := os.OpenFile(filepath.Clean(fileName), os.O_RDWR|os.O_CREATE, 0600)
+	f, err := os.OpenFile(filepath.Clean(fileName), os.O_RDWR|os.O_CREATE, 0o600)
 	defer func() {
 		if err := f.Close(); err != nil {
 			panic(err)
@@ -379,7 +377,7 @@ func addPathToFile(fileName string, exportVar string, path string) error {
 	}
 
 	output := strings.Join(lines, "\n")
-	err = os.WriteFile(f.Name(), []byte(output), 0600)
+	err = os.WriteFile(f.Name(), []byte(output), 0o600)
 	if err != nil {
 		panic(err)
 	}

@@ -217,7 +217,6 @@ func (ss *SQLiteStore) SaveEvents(events []*Event) error {
 	`
 
 	stmt, err := ss.db.Prepare(sqlAddEvent)
-
 	if err != nil {
 		return err
 	}
@@ -240,7 +239,8 @@ func (ss *SQLiteStore) prepareSQLSelectStmt(
 	whereConditions Conditions,
 	orderBy string,
 	limit int,
-	tableName string) string {
+	tableName string,
+) string {
 	var b strings.Builder
 	b.WriteString(fmt.Sprintf("SELECT * FROM %s", tableName)) // #nosec
 
@@ -301,7 +301,8 @@ func (ss *SQLiteStore) GetEvents(whereConditions Conditions, orderBy string, lim
 // returns the results sorted by testcase and entity
 func (ss *SQLiteStore) GetEntitiesWithEventsByTestCaseAndEntityType(
 	tc *TestCase,
-	eType EntityTypeEnum) (map[Entity][]Event, error) {
+	eType EntityTypeEnum,
+) (map[Entity][]Event, error) {
 	sqlStmt := `
 		SELECT et.*, ev.*
 		FROM entities et JOIN events ev
@@ -428,7 +429,6 @@ func (ss *SQLiteStore) SaveEntities(entities []*Entity) error {
 	`
 
 	stmt, err := ss.db.Prepare(sqlAddEvent)
-
 	if err != nil {
 		return err
 	}
@@ -488,7 +488,6 @@ func (ss *SQLiteStore) SaveNumberEntities(nEntities []*NumberEntities) error {
 	`
 
 	stmt, err := ss.db.Prepare(sqlAdd)
-
 	if err != nil {
 		return err
 	}
@@ -519,7 +518,8 @@ func (ss *SQLiteStore) SaveNumberEntities(nEntities []*NumberEntities) error {
 func (ss *SQLiteStore) GetNumberEntities(
 	whereConditions Conditions,
 	orderBy string,
-	limit int) ([]NumberEntities, error) {
+	limit int,
+) ([]NumberEntities, error) {
 	sqlStmt := ss.prepareSQLSelectStmt(whereConditions, orderBy, limit, "number_entities")
 	rows, err := ss.db.Query(sqlStmt)
 	if err != nil {
@@ -564,7 +564,6 @@ func (ss *SQLiteStore) SaveResourceUsage(resUsages []*ResourceUsage) error {
 	`
 
 	stmt, err := ss.db.Prepare(sqlAdd)
-
 	if err != nil {
 		logrus.Errorf("Can't prepare statement")
 		return err
@@ -597,7 +596,8 @@ func (ss *SQLiteStore) SaveResourceUsage(resUsages []*ResourceUsage) error {
 func (ss *SQLiteStore) GetResourceUsage(
 	whereConditions Conditions,
 	orderBy string,
-	limit int) ([]ResourceUsage, error) {
+	limit int,
+) ([]ResourceUsage, error) {
 	sqlStmt := ss.prepareSQLSelectStmt(whereConditions, orderBy, limit, "resource_usage")
 	rows, err := ss.db.Query(sqlStmt)
 	if err != nil {

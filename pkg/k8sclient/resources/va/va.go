@@ -111,7 +111,6 @@ func (c *Client) WaitUntilVaGone(ctx context.Context, pvName string) error {
 	}
 	log.Infof("VolumeAttachment deleted")
 	return nil
-
 }
 
 // DeleteVaBasedOnPVName deletes the VA associated with passed PV

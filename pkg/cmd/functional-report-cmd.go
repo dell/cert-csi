@@ -66,7 +66,6 @@ func GetFunctionalReportCommand() cli.Command {
 			defer db.Close()
 
 			err := reporter.GenerateFunctionalReport(db, types)
-
 			if err != nil {
 				log.Errorf("Can't generate reports; error=%v", err)
 				return err

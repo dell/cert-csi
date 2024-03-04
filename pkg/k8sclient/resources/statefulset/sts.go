@@ -281,7 +281,7 @@ func (c *Client) DeleteAll(ctx context.Context) error {
 }
 
 // Update makes API call to update existing resource with new Spec provided in `sts`
-func (c *Client) Update(sts *appsv1.StatefulSet) *StatefulSet {
+func (c *Client) Update(_ *appsv1.StatefulSet) *StatefulSet {
 	return &StatefulSet{}
 }
 
@@ -373,7 +373,7 @@ func (sts *StatefulSet) GetPodList(ctx context.Context) (*v1.PodList, error) {
 }
 
 // WaitForRunningAndReady stalls provided number of pods is running and ready
-func (sts *StatefulSet) WaitForRunningAndReady(ctx context.Context, numPodsRunning, numPodsReady int32) error {
+func (sts *StatefulSet) WaitForRunningAndReady(ctx context.Context, numPodsRunning, _ int32) error {
 	log := utils.GetLoggerFromContext(ctx)
 	log.Infof("Waiting for sts pods to become ready")
 	timeout := Timeout

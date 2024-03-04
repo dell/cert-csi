@@ -22,10 +22,12 @@ import (
 	"errors"
 	"fmt"
 	"math"
+	"math/rand"
 	"os"
 	"os/exec"
 	"strconv"
 	"strings"
+	"time"
 
 	"github.com/dell/cert-csi/pkg/k8sclient"
 	"github.com/dell/cert-csi/pkg/k8sclient/resources/commonparams"
@@ -46,9 +48,6 @@ import (
 
 	snapv1client "github.com/dell/cert-csi/pkg/k8sclient/resources/volumesnapshot/v1"
 	snapbetaclient "github.com/dell/cert-csi/pkg/k8sclient/resources/volumesnapshot/v1beta1"
-
-	"math/rand"
-	"time"
 
 	"github.com/fatih/color"
 	snapv1 "github.com/kubernetes-csi/external-snapshotter/client/v4/apis/volumesnapshot/v1"
@@ -570,7 +569,7 @@ func (rrps *RemoteReplicationProvisioningSuite) Run(ctx context.Context, storage
 	log.Infof("The replication group name from pvc is %s ", rgName)
 
 	// Add remote RG deletion step to deletion callback function
-	delFunc = func(f func() error) func() error {
+	delFunc = func(_ func() error) func() error {
 		return func() error {
 			log.Info("Deleting local RG")
 			rgObject := rgClient.Get(context.Background(), rgName)
@@ -1832,7 +1831,7 @@ func (rs *ReplicationSuite) Run(ctx context.Context, storageClass string, client
 	log.Infof("The replication group name from pvc is %s ", rgName)
 
 	// Add remote RG deletion step to deletion callback function
-	delFunc = func(f func() error) func() error {
+	delFunc = func(_ func() error) func() error {
 		return func() error {
 			log.Info("Deleting local RG")
 			rgObject := rgClient.Get(context.Background(), rgName)
@@ -2212,7 +2211,6 @@ type VolumeHealthMetricsSuite struct {
 
 // FindDriverLogs executes command and returns the output
 func FindDriverLogs(command []string) (string, error) {
-
 	cmd := exec.Command(command[0], command[1:]...) // #nosec G204
 	output, err := cmd.Output()
 	if err != nil {
@@ -2242,7 +2240,7 @@ func (vh *VolumeHealthMetricsSuite) Run(ctx context.Context, storageClass string
 		log.Infof("Using default image: %s", vh.Image)
 	}
 
-	//Create a PVC
+	// Create a PVC
 	vcconf := testcore.VolumeCreationConfig(storageClass, vh.VolumeSize, "", vh.AccessMode)
 	volTmpl := pvcClient.MakePVC(vcconf)
 	pvc := pvcClient.Create(ctx, volTmpl)
@@ -2283,7 +2281,6 @@ func (vh *VolumeHealthMetricsSuite) Run(ctx context.Context, storageClass string
 	var PersistentVolumeID string
 	for _, p := range persistentVolumes.Items {
 		if p.Spec.ClaimRef.Namespace == PVCNamespace {
-
 			PersistentVolumeID = p.Spec.CSI.VolumeHandle
 		}
 	}
@@ -2325,10 +2322,10 @@ func (vh *VolumeHealthMetricsSuite) Run(ctx context.Context, storageClass string
 	log.Info("Driver Node Pod ", driverNodePod)
 	log.Info("Driver Controller Pod ", driverControllerPod)
 
-	var NodeLogs = false
-	var ControllerLogs = false
+	NodeLogs := false
+	ControllerLogs := false
 
-	var retryCount = 1
+	retryCount := 1
 	for i := 0; i < maxRetryCount; i++ {
 
 		if !ControllerLogs {
@@ -2680,7 +2677,6 @@ func (mas *MultiAttachSuite) Run(ctx context.Context, storageClass string, clien
 	if mas.AccessMode == "ReadWriteOncePod" {
 		time.Sleep(1 * time.Minute)
 		readyPodCount, err := podClient.ReadyPodsCount(ctx)
-
 		if err != nil {
 			return delFunc, err
 		}
@@ -2781,14 +2777,15 @@ func (mas *MultiAttachSuite) GenerateTopologySpreadConstraints(nodeCount int, la
 	if remainder != 0 {
 		maxSkew++
 	}
-	spreadConstraints := []v1.TopologySpreadConstraint{{
-		MaxSkew:           int32(maxSkew),
-		TopologyKey:       "kubernetes.io/hostname",
-		WhenUnsatisfiable: v1.ScheduleAnyway,
-		LabelSelector: &metav1.LabelSelector{
-			MatchLabels: labels,
+	spreadConstraints := []v1.TopologySpreadConstraint{
+		{
+			MaxSkew:           int32(maxSkew),
+			TopologyKey:       "kubernetes.io/hostname",
+			WhenUnsatisfiable: v1.ScheduleAnyway,
+			LabelSelector: &metav1.LabelSelector{
+				MatchLabels: labels,
+			},
 		},
-	},
 	}
 	return spreadConstraints
 }
@@ -3284,7 +3281,7 @@ func (vms *VolumeMigrateSuite) Run(ctx context.Context, storageClass string, cli
 		}
 	}
 
-	delFunc = func(f func() error) func() error {
+	delFunc = func(_ func() error) func() error {
 		return func() error {
 			log.Info("Deleting pvs")
 			pvs, err := pvClient.Interface.List(ctx, metav1.ListOptions{})

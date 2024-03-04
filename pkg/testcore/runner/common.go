@@ -52,7 +52,6 @@ type Runner struct {
 }
 
 func getSuiteRunner(configPath, driverNs, observerType string, timeout int, noCleanup, noCleanupOnFail bool, noreport bool) *Runner {
-
 	t := strings.ToUpper(observerType)
 	correctType := (t == string(observer.EVENT)) || (t == string(observer.LIST))
 	if !correctType {
@@ -86,7 +85,7 @@ func getSuiteRunner(configPath, driverNs, observerType string, timeout int, noCl
 	}
 }
 
-func generateTestRunDetails(scDB *store.StorageClassDB, kubeClient *k8sclient.KubeClient, host string) {
+func generateTestRunDetails(scDB *store.StorageClassDB, _ *k8sclient.KubeClient, host string) {
 	scDB.TestRun = store.TestRun{
 		Name:           "test-run-" + k8sclient.RandomSuffix(),
 		StartTimestamp: time.Now(),

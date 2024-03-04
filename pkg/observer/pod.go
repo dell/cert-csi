@@ -37,7 +37,7 @@ type PodObserver struct {
 }
 
 // StartWatching starts watching pod
-func (po *PodObserver) StartWatching(ctx context.Context, runner *Runner) {
+func (po *PodObserver) StartWatching(_ context.Context, runner *Runner) {
 	defer runner.WaitGroup.Done()
 
 	log.Debugf("%s started watching", po.GetName())
