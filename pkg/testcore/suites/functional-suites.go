@@ -51,7 +51,7 @@ type VolumeDeletionSuite struct {
 }
 
 // Run to delete the volume created by name and namespace as cli params
-func (vds *VolumeDeletionSuite) Run(ctx context.Context, storageClass string, clients *k8sclient.Clients) (delFunc func() error, e error) {
+func (vds *VolumeDeletionSuite) Run(ctx context.Context, _ string, clients *k8sclient.Clients) (delFunc func() error, e error) {
 	if vds.Name == "" {
 		log.Fatalf("Error PVC name is required parameter")
 	}
@@ -87,7 +87,7 @@ func (*VolumeDeletionSuite) GetObservers(obsType observer.Type) []observer.Inter
 }
 
 // GetClients creates and returns PVC and Metrics clients
-func (vds *VolumeDeletionSuite) GetClients(namespace string, client *k8sclient.KubeClient) (*k8sclient.Clients, error) {
+func (vds *VolumeDeletionSuite) GetClients(_ string, client *k8sclient.KubeClient) (*k8sclient.Clients, error) {
 	pvcClient, pvcErr := client.CreatePVCClient(vds.Namespace)
 	if pvcErr != nil {
 		return nil, pvcErr
@@ -119,7 +119,7 @@ type PodDeletionSuite struct {
 }
 
 // Run to delete the volume created by name and namespace as cli params
-func (pds *PodDeletionSuite) Run(ctx context.Context, storageClass string, clients *k8sclient.Clients) (delFunc func() error, e error) {
+func (pds *PodDeletionSuite) Run(ctx context.Context, _ string, clients *k8sclient.Clients) (delFunc func() error, e error) {
 	if pds.Name == "" {
 		log.Fatalf("Error Pod name is required parameter")
 	}
@@ -176,7 +176,7 @@ func (*PodDeletionSuite) GetObservers(obsType observer.Type) []observer.Interfac
 }
 
 // GetClients creates and returns pod, pvc, va, metrics clients
-func (pds *PodDeletionSuite) GetClients(namespace string, client *k8sclient.KubeClient) (*k8sclient.Clients, error) {
+func (pds *PodDeletionSuite) GetClients(_ string, client *k8sclient.KubeClient) (*k8sclient.Clients, error) {
 	podClient, podErr := client.CreatePodClient(pds.Namespace)
 	if podErr != nil {
 		return nil, podErr
@@ -220,7 +220,7 @@ type ClonedVolDeletionSuite struct {
 }
 
 // Run to delete the volume created by name and namespace as cli params
-func (pds *ClonedVolDeletionSuite) Run(ctx context.Context, storageClass string, clients *k8sclient.Clients) (delFunc func() error, e error) {
+func (pds *ClonedVolDeletionSuite) Run(ctx context.Context, _ string, clients *k8sclient.Clients) (delFunc func() error, e error) {
 	if pds.Name == "" {
 		log.Fatalf("Error PVC name is required parameter")
 	}
@@ -236,7 +236,7 @@ func (pds *ClonedVolDeletionSuite) Run(ctx context.Context, storageClass string,
 		return delFunc, err
 	}
 
-	//Deleting corresponding pod attached to cloned volume
+	// Deleting corresponding pod attached to cloned volume
 	cPodObj, _ := podClient.Interface.Get(ctx, pds.PodName+"-cloned", metav1.GetOptions{})
 	log.Infof("Deleting pod with name:%s", color.YellowString(cPodObj.GetName()))
 	err = podClient.Delete(ctx, cPodObj).Sync(ctx).GetError()
@@ -253,14 +253,14 @@ func (pds *ClonedVolDeletionSuite) Run(ctx context.Context, storageClass string,
 		return delFunc, err
 	}
 
-	//Deleting corresponding cloned volume
+	// Deleting corresponding cloned volume
 	cPvcObj, _ := pvcClient.Interface.Get(ctx, pds.Name+"-cloned", metav1.GetOptions{})
 	log.Infof("Deleting volume with name:%s", color.YellowString(cPvcObj.GetName()))
 	err = pvcClient.Delete(ctx, cPvcObj).Sync(ctx).GetError()
 	if err != nil {
 		return delFunc, err
 	}
-	//wait for volume attachments to be deleted
+	// wait for volume attachments to be deleted
 	vaClient := clients.VaClient
 	err = vaClient.WaitUntilVaGone(ctx, pvcObj.Spec.VolumeName)
 	if err != nil {
@@ -297,7 +297,7 @@ func (*ClonedVolDeletionSuite) GetObservers(obsType observer.Type) []observer.In
 }
 
 // GetClients creates and returns pod, pvc, metrics, va clients
-func (pds *ClonedVolDeletionSuite) GetClients(namespace string, client *k8sclient.KubeClient) (*k8sclient.Clients, error) {
+func (pds *ClonedVolDeletionSuite) GetClients(_ string, client *k8sclient.KubeClient) (*k8sclient.Clients, error) {
 	podClient, pvcErr := client.CreatePodClient(pds.Namespace)
 	if pvcErr != nil {
 		return nil, pvcErr
@@ -339,7 +339,7 @@ type SnapshotDeletionSuite struct {
 }
 
 // Run to snaphot the volume created by name and namespace as cli params
-func (sds *SnapshotDeletionSuite) Run(ctx context.Context, storageClass string, clients *k8sclient.Clients) (delFunc func() error, e error) {
+func (sds *SnapshotDeletionSuite) Run(ctx context.Context, _ string, clients *k8sclient.Clients) (delFunc func() error, e error) {
 	if sds.Name == "" {
 		log.Fatalf("Error snap name is required parameter")
 	}
@@ -353,7 +353,7 @@ func (sds *SnapshotDeletionSuite) Run(ctx context.Context, storageClass string, 
 	}
 	pvcClient := clients.PVCClient
 	podClient := clients.PodClient
-	//Deleting pod attached to restored volume
+	// Deleting pod attached to restored volume
 	sPodObj, _ := podClient.Interface.Get(ctx, sds.Name+"-restore-pod", metav1.GetOptions{})
 	log.Infof("Deleting restored pod with name:%s", color.YellowString(sPodObj.GetName()))
 	err = podClient.Delete(ctx, sPodObj).Sync(ctx).GetError()
@@ -361,28 +361,28 @@ func (sds *SnapshotDeletionSuite) Run(ctx context.Context, storageClass string, 
 		return delFunc, err
 	}
 
-	//Deleting restored volume from snapshot
+	// Deleting restored volume from snapshot
 	sPvcObj, _ := pvcClient.Interface.Get(ctx, sds.Name+"-restore", metav1.GetOptions{})
 	log.Infof("Deleting restored volume from snapshot with name:%s", color.YellowString(sPvcObj.GetName()))
 	err = pvcClient.Delete(ctx, sPvcObj).Sync(ctx).GetError()
 	if err != nil {
 		return delFunc, err
 	}
-	//wait for volume attachments to be deleted
+	// wait for volume attachments to be deleted
 	vaClient := clients.VaClient
 	err = vaClient.WaitUntilVaGone(ctx, sPvcObj.Spec.VolumeName)
 	if err != nil {
 		return delFunc, err
 	}
 
-	//Deleting volume created using custom snapname before Snapshot creation
+	// Deleting volume created using custom snapname before Snapshot creation
 	sPvcObj1, _ := pvcClient.Interface.Get(ctx, sds.Name+"-pvc", metav1.GetOptions{})
 	log.Infof("Deleting volume created using custom snapname before Snapshot creation:%s", color.YellowString(sPvcObj1.GetName()))
 	err = pvcClient.Delete(ctx, sPvcObj1).Sync(ctx).GetError()
 	if err != nil {
 		return delFunc, err
 	}
-	//wait for volume attachments to be deleted
+	// wait for volume attachments to be deleted
 	err = vaClient.WaitUntilVaGone(ctx, sPvcObj1.Spec.VolumeName)
 	if err != nil {
 		return delFunc, err
@@ -487,7 +487,7 @@ type EphemeralVolumeSuite struct {
 }
 
 // Run runs ephemeral volume test suite
-func (ep *EphemeralVolumeSuite) Run(ctx context.Context, storageClass string, clients *k8sclient.Clients) (delFunc func() error, e error) {
+func (ep *EphemeralVolumeSuite) Run(ctx context.Context, _ string, clients *k8sclient.Clients) (delFunc func() error, e error) {
 	podClient := clients.PodClient
 
 	if ep.PodNumber <= 0 {
@@ -631,7 +631,7 @@ type NodeDrainSuite struct {
 }
 
 // Run to delete the volume created by name and namespace as cli params
-func (nds *NodeDrainSuite) Run(ctx context.Context, storageClass string, clients *k8sclient.Clients) (delFunc func() error, e error) {
+func (nds *NodeDrainSuite) Run(ctx context.Context, _ string, clients *k8sclient.Clients) (delFunc func() error, e error) {
 	if nds.Name == "" {
 		log.Fatalf("Error Node name is required parameter")
 	}
@@ -652,7 +652,8 @@ func (nds *NodeDrainSuite) Run(ctx context.Context, storageClass string, clients
 	}
 
 	podList, podErr := podClient.Interface.List(ctx, metav1.ListOptions{
-		FieldSelector: fields.SelectorFromSet(fields.Set{"spec.nodeName": nds.Name}).String()})
+		FieldSelector: fields.SelectorFromSet(fields.Set{"spec.nodeName": nds.Name}).String(),
+	})
 	if podErr != nil {
 		return delFunc, podErr
 	}
@@ -686,7 +687,7 @@ func (*NodeDrainSuite) GetObservers(obsType observer.Type) []observer.Interface 
 }
 
 // GetClients creates and returns node, pod, pvc, va, statefulset, metrics clients
-func (nds *NodeDrainSuite) GetClients(namespace string, client *k8sclient.KubeClient) (*k8sclient.Clients, error) {
+func (nds *NodeDrainSuite) GetClients(_ string, client *k8sclient.KubeClient) (*k8sclient.Clients, error) {
 	nodeClient, nodeErr := client.CreateNodeClient()
 	if nodeErr != nil {
 		return nil, nodeErr
@@ -740,7 +741,7 @@ type NodeUncordonSuite struct {
 }
 
 // Run to delete the volume created by name and namespace as cli params
-func (nds *NodeUncordonSuite) Run(ctx context.Context, storageClass string, clients *k8sclient.Clients) (delFunc func() error, e error) {
+func (nds *NodeUncordonSuite) Run(ctx context.Context, _ string, clients *k8sclient.Clients) (delFunc func() error, e error) {
 	if nds.Name == "" {
 		log.Fatalf("Error Node name is required parameter")
 	}
@@ -778,7 +779,7 @@ func (*NodeUncordonSuite) GetObservers(obsType observer.Type) []observer.Interfa
 }
 
 // GetClients creates and returns node, pod, pvc, va, metrics clients
-func (nds *NodeUncordonSuite) GetClients(namespace string, client *k8sclient.KubeClient) (*k8sclient.Clients, error) {
+func (nds *NodeUncordonSuite) GetClients(_ string, client *k8sclient.KubeClient) (*k8sclient.Clients, error) {
 	nodeClient, nodeErr := client.CreateNodeClient()
 	if nodeErr != nil {
 		return nil, nodeErr
@@ -945,11 +946,10 @@ func getTopologyCount() (int, error) {
 	return topologiesCount, nil
 }
 
-func (cts *CapacityTrackingSuite) checkIfGetCapacityIsPolled(ctx context.Context, clients *k8sclient.Clients, storageClass string, topologyCount int) error {
+func (cts *CapacityTrackingSuite) checkIfGetCapacityIsPolled(ctx context.Context, clients *k8sclient.Clients, storageClass string, _ int) error {
 	log.Infof("Waiting for provisioner to %s GetCapacity for %s storage class in %s", color.GreenString("POLL"), color.YellowString(storageClass), color.HiYellowString(cts.PollInterval.String()))
 
 	capacities, err := clients.CSISCClient.GetByStorageClass(ctx, storageClass)
-
 	if err != nil {
 		return err
 	}

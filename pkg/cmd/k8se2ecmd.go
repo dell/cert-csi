@@ -119,5 +119,4 @@ func GetK8sEndToEndCommand() cli.Command {
 		},
 	}
 	return e2eCmd
-
 }

@@ -83,8 +83,8 @@ func checkValidNamespace(driverNs string, runner *Runner) {
 
 // NewSuiteRunner creates and returns SuiteRunner
 func NewSuiteRunner(configPath, driverNs, startHook, readyHook, finishHook, observerType, longevity string, driverNSHealthMetrics string,
-	timeout int, cooldown int, sequentialExecution, noCleanup, noCleanupOnFail, noMetrics bool, noReport bool, scDBs []*store.StorageClassDB) *SuiteRunner {
-
+	timeout int, cooldown int, sequentialExecution, noCleanup, noCleanupOnFail, noMetrics bool, noReport bool, scDBs []*store.StorageClassDB,
+) *SuiteRunner {
 	runner := getSuiteRunner(
 		configPath,
 		driverNs,
@@ -393,12 +393,11 @@ func (sr *SuiteRunner) runFlowManagementGoroutine() (context.Context, chan os.Si
 			signal.Stop(c)
 			close(c)
 		}
-
 	}(sr)
 	return iterCtx, c
 }
 
-func runSuite(ctx context.Context, suite suites.Interface, sr *SuiteRunner, testCase *store.TestCase, db *store.SQLiteStore, storageClass string, c chan os.Signal) (res TestResult, resErr error) {
+func runSuite(ctx context.Context, suite suites.Interface, sr *SuiteRunner, testCase *store.TestCase, db *store.SQLiteStore, storageClass string, _ chan os.Signal) (res TestResult, resErr error) {
 	log := utils.GetLoggerFromContext(ctx)
 
 	startTime := time.Now()
@@ -444,7 +443,7 @@ func runSuite(ctx context.Context, suite suites.Interface, sr *SuiteRunner, test
 			syscall.SIGTERM, // "the normal way to politely ask a program to terminate"
 			syscall.SIGINT,  // Ctrl+C
 		)
-		go func(sr *SuiteRunner) {
+		go func(_ *SuiteRunner) {
 			_, ok := <-skipCh
 			if !ok {
 				return

@@ -25,10 +25,12 @@ import (
 
 func TestE2eReportParser(t *testing.T) {
 	var preResult []map[string]string
-	preResult = append(preResult, map[string]string{"TestSuiteName": "Kubernetes e2e suite",
+	preResult = append(preResult, map[string]string{
+		"TestSuiteName":      "Kubernetes e2e suite",
 		"TotalTestsExecuted": "47",
 		"TotalTestsPassed":   "47",
-		"TotalTestsFailed":   "0"})
+		"TotalTestsFailed":   "0",
+	})
 	type args struct {
 		filename string
 	}

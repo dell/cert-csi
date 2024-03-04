@@ -186,8 +186,8 @@ func (mc *MetricsCollector) Collect(runName string) (*MetricsCollection, error) 
 }
 
 func (mc *MetricsCollector) getPodsMetrics(
-	tc *store.TestCase) ([]PodMetrics, map[interface{}]DurationOfStage, error) {
-
+	tc *store.TestCase,
+) ([]PodMetrics, map[interface{}]DurationOfStage, error) {
 	var podMetrics []PodMetrics
 	stageMetrics := make(map[interface{}][]time.Duration)
 
@@ -216,8 +216,8 @@ func (mc *MetricsCollector) getPodsMetrics(
 }
 
 func (mc *MetricsCollector) getPVCsMetrics(
-	tc *store.TestCase) ([]PVCMetrics, map[interface{}]DurationOfStage, error) {
-
+	tc *store.TestCase,
+) ([]PVCMetrics, map[interface{}]DurationOfStage, error) {
 	var pvcMetrics []PVCMetrics
 	stageMetrics := make(map[interface{}][]time.Duration)
 

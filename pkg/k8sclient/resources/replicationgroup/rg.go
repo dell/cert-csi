@@ -156,9 +156,8 @@ func (rg *RG) selectDesiredState(rgAction, driverName string) string {
 		return "FAILEDOVER"
 	} else if strings.Contains(rgAction, "REPROTECT") {
 		return "SYNCHRONIZED"
-	} else {
-		return "SYNCHRONIZED"
 	}
+	return "SYNCHRONIZED"
 }
 
 func (rg *RG) getPreDesiredState(rgAction, driverName string) string {
@@ -169,9 +168,8 @@ func (rg *RG) getPreDesiredState(rgAction, driverName string) string {
 			return "SUSPENDED"
 		}
 		return "FAILEDOVER"
-	} else {
-		return "SYNCHRONIZED"
 	}
+	return "SYNCHRONIZED"
 }
 
 func (rg *RG) stablelize(ctx context.Context, rgAction, expectedState string) error {

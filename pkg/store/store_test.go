@@ -161,7 +161,8 @@ func (suite *StoreTestSuite) TestAllStores() {
 		suite.Equal(len(entities), 1)
 
 		nEntities := []*NumberEntities{
-			{TcID: sourceTestCase.ID,
+			{
+				TcID:            sourceTestCase.ID,
 				Timestamp:       time.Now(),
 				PodsCreating:    2,
 				PodsReady:       0,
@@ -170,7 +171,8 @@ func (suite *StoreTestSuite) TestAllStores() {
 				PvcBound:        1,
 				PvcTerminating:  0,
 			},
-			{TcID: sourceTestCase.ID,
+			{
+				TcID:            sourceTestCase.ID,
 				Timestamp:       time.Now().Add(time.Second * 5),
 				PodsCreating:    1,
 				PodsReady:       2,

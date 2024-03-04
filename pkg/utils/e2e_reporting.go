@@ -38,7 +38,7 @@ type Testsuites struct {
 // Testsuite contain all the information about the tests
 type Testsuite struct {
 	XMLName xml.Name `xml:"testsuite"`
-	//Properties []Property `xml:"properties"`
+	// Properties []Property `xml:"properties"`
 	Name      string     `xml:"name,attr"`
 	Tests     string     `xml:"tests,attr"`
 	Skipped   string     `xml:"skipped,attr"`
@@ -99,20 +99,19 @@ func E2eReportParser(filename string) ([]map[string]string, error) {
 				} else {
 					passedTests = append(passedTests, testsuites.Testsuites[i].Testcases[j].Name)
 				}
-
 			}
-
 		}
-		result = append(result, map[string]string{"TestSuiteName": testsuites.Testsuites[i].Name,
+		result = append(result, map[string]string{
+			"TestSuiteName":      testsuites.Testsuites[i].Name,
 			"TotalTestsExecuted": strconv.Itoa(testsRun),
 			"TotalTestsPassed":   strconv.Itoa(TestsPassed),
-			"TotalTestsFailed":   strconv.Itoa(failedTestsCount)})
+			"TotalTestsFailed":   strconv.Itoa(failedTestsCount),
+		})
 		if len(failedTests) > 0 {
 			fmt.Println("Failed Tests Are: ")
 		}
 		for k := 0; k < len(failedTests); k++ {
 			fmt.Println(failedTests[k] + "\n")
-
 		}
 		if len(passedTests) > 0 {
 			fmt.Println("Passed Tests Are: ")
@@ -123,5 +122,4 @@ func E2eReportParser(filename string) ([]map[string]string, error) {
 
 	}
 	return result, nil
-
 }
