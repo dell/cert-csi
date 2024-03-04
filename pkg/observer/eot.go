@@ -62,7 +62,7 @@ func (eno *EntityNumberObserver) Interrupted() bool {
 }
 
 // StartWatching watches all entities - pods and pvcs
-func (eno *EntityNumberObserver) StartWatching(ctx context.Context, runner *Runner) {
+func (eno *EntityNumberObserver) StartWatching(_ context.Context, runner *Runner) {
 	defer runner.WaitGroup.Done()
 
 	var nEntities []*store.NumberEntities
@@ -111,12 +111,12 @@ func (eno *EntityNumberObserver) StartWatching(ctx context.Context, runner *Runn
 	if err != nil {
 		log.Errorf("Can't save number of entities; error=%v", pollErr)
 	}
-
 }
 
 func (eno *EntityNumberObserver) checkPvcs(
 	pvcClient *pvc.Client,
-	info *store.NumberEntities) (bool, error) {
+	info *store.NumberEntities,
+) (bool, error) {
 	if pvcClient == nil {
 		return false, nil
 	}
@@ -144,7 +144,8 @@ func (eno *EntityNumberObserver) checkPvcs(
 
 func (eno *EntityNumberObserver) checkPods(
 	podClient *pod.Client,
-	info *store.NumberEntities) (bool, error) {
+	info *store.NumberEntities,
+) (bool, error) {
 	if podClient == nil {
 		return false, nil
 	}

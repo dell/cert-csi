@@ -97,7 +97,6 @@ func (c *Client) Update(ctx context.Context, capacity *storagev1.CSIStorageCapac
 		Client: c,
 		Object: capacity,
 	}, nil
-
 }
 
 // WaitForAllToBeCreated waits for CSIStorageCapacity objects to be created for a storage class
@@ -120,7 +119,6 @@ func (c *Client) WaitForAllToBeCreated(ctx context.Context, scName string, expec
 			}
 
 			csiscList, err := c.Interface.List(ctx, metav1.ListOptions{})
-
 			if err != nil {
 				return false, err
 			}
@@ -165,7 +163,6 @@ func (c *Client) WaitForAllToBeDeleted(ctx context.Context, scName string) error
 			}
 
 			csiscList, err := c.Interface.List(ctx, metav1.ListOptions{})
-
 			if err != nil {
 				return false, err
 			}
@@ -192,7 +189,6 @@ func (c *Client) WaitForAllToBeDeleted(ctx context.Context, scName string) error
 
 // WatchUntilUpdated polls till CSIStorageCapacity object is updated
 func (csisc *CSIStorageCapacity) WatchUntilUpdated(ctx context.Context, pollInterval time.Duration) error {
-
 	meta := csisc.Object.ObjectMeta
 	timeout := int64(pollInterval.Seconds())
 

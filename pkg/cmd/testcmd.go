@@ -380,6 +380,7 @@ func getRemoteReplicationProvisioningCommand(globalFlags []cli.Flag) cli.Command
 		},
 	}
 }
+
 func getReplicationCommand(globalFlags []cli.Flag) cli.Command {
 	return cli.Command{
 		Name:     "replication",
@@ -774,7 +775,6 @@ func getVolumeIoCommand(globalFlags []cli.Flag) cli.Command {
 			return nil
 		},
 	}
-
 }
 
 func getSnapCommand(globalFlags []cli.Flag) cli.Command {
@@ -939,10 +939,12 @@ func getBlockSnapCommand(globalFlags []cli.Flag) cli.Command {
 				return fmt.Errorf("failed to get test image: %s", err)
 			}
 			s := []suites.Interface{
-				&suites.BlockSnapSuite{SnapClass: snapClass,
+				&suites.BlockSnapSuite{
+					SnapClass:  snapClass,
 					VolumeSize: size,
 					AccessMode: accessMode,
-					Image:      testImage},
+					Image:      testImage,
+				},
 			}
 
 			sr, ss := createSuiteRunner(c, s)

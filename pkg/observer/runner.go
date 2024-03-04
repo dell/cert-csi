@@ -58,7 +58,8 @@ type Runner struct {
 
 // NewObserverRunner returns a Runner instance
 func NewObserverRunner(observers []Interface, clients *k8sclient.Clients,
-	db store.Store, testCase *store.TestCase, driverNs string, shouldClean bool) *Runner {
+	db store.Store, testCase *store.TestCase, driverNs string, shouldClean bool,
+) *Runner {
 	return &Runner{
 		Observers:       observers,
 		Clients:         clients,
@@ -86,7 +87,7 @@ func (runner *Runner) Stop() error {
 	}
 
 	// Erase map
-	defer runner.PvcShare.Range(func(key interface{}, value interface{}) bool {
+	defer runner.PvcShare.Range(func(key interface{}, _ interface{}) bool {
 		runner.PvcShare.Delete(key)
 		return true
 	})
@@ -101,7 +102,7 @@ func (runner *Runner) Stop() error {
 			return err
 		}
 
-		runner.PvcShare.Range(func(key interface{}, value interface{}) bool {
+		runner.PvcShare.Range(func(key interface{}, _ interface{}) bool {
 			pvName, ok := key.(string)
 			if !ok {
 				return false

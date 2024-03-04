@@ -35,7 +35,7 @@ type VaObserver struct {
 }
 
 // StartWatching starts watching a volume attachment and related events
-func (vao *VaObserver) StartWatching(ctx context.Context, runner *Runner) {
+func (vao *VaObserver) StartWatching(_ context.Context, runner *Runner) {
 	defer runner.WaitGroup.Done()
 
 	log.Debugf("%s started watching", vao.GetName())

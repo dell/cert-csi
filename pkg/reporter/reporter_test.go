@@ -138,7 +138,6 @@ func (suite *ReporterTestSuite) TestGenerateTextReporter() {
 }
 
 func (suite *ReporterTestSuite) TestGenerateAllReports() {
-
 	type args struct {
 		dbs []*store.StorageClassDB
 	}

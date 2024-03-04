@@ -325,10 +325,14 @@ func TestExecuteE2ECommand(t *testing.T) {
 		args    args
 		wantErr bool
 	}{
-		{name: "execute with proper arguments",
-			args: args{args: []string{"-kubeconfig", "/root/.kube/config", "-storage.testdriver", "testdata/config-nfs.yaml", "--ginkgo.skip", "*"},
-				ch: cha},
-			wantErr: true},
+		{
+			name: "execute with proper arguments",
+			args: args{
+				args: []string{"-kubeconfig", "/root/.kube/config", "-storage.testdriver", "testdata/config-nfs.yaml", "--ginkgo.skip", "*"},
+				ch:   cha,
+			},
+			wantErr: true,
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -350,7 +354,7 @@ func TestGenerateReport(t *testing.T) {
 		{"send correct report ", args{"testdata/execution_powerstore-nfs.xml"}},
 	}
 	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
+		t.Run(tt.name, func(_ *testing.T) {
 			GenerateReport(tt.args.report)
 		})
 	}

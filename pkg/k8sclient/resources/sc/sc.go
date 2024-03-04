@@ -100,8 +100,8 @@ func (c *Client) MakeStorageClass(name string, provisioner string) *v1.StorageCl
 	return &v1.StorageClass{
 		ObjectMeta:        metav1.ObjectMeta{Name: name},
 		Provisioner:       provisioner,
-		VolumeBindingMode: &WaitForFirstConsumer}
-
+		VolumeBindingMode: &WaitForFirstConsumer,
+	}
 }
 
 // DuplicateStorageClass creates a copy of storage class

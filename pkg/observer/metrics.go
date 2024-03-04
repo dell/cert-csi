@@ -59,7 +59,7 @@ func (cmo *ContainerMetricsObserver) Interrupted() bool {
 }
 
 // StartWatching starts watching container metrics
-func (cmo *ContainerMetricsObserver) StartWatching(ctx context.Context, runner *Runner) {
+func (cmo *ContainerMetricsObserver) StartWatching(_ context.Context, runner *Runner) {
 	defer runner.WaitGroup.Done()
 	if runner.DriverNamespace == "" {
 		cmo.Interrupt()
