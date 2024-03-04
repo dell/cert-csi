@@ -162,7 +162,6 @@ func IsSnapReady(sn *v1beta1.VolumeSnapshot) bool {
 	}
 	logrus.Debugf("Check snapshot %s is ready: %t", sn.Name, ready)
 	return ready
-
 }
 
 // WaitUntilGone waits until snapshot is deleted
@@ -204,7 +203,6 @@ func (snap *Snapshot) WaitUntilGone(ctx context.Context) error {
 	yellow := color.New(color.FgHiYellow)
 	log.Debugf("snap %s was deleted in %s", snap.Object.Name, yellow.Sprint(time.Since(startTime)))
 	return nil
-
 }
 
 func (snap *Snapshot) pollWait(ctx context.Context) (bool, error) {

@@ -26,8 +26,10 @@ import (
 	log "github.com/sirupsen/logrus"
 )
 
-const hoursinweek = 168
-const hoursinday = 24
+const (
+	hoursinweek = 168
+	hoursinday  = 24
+)
 
 // ExtendedDuration in weeks, days, hours, minutes and seconds
 type ExtendedDuration struct {
@@ -40,8 +42,8 @@ type ExtendedDuration struct {
 
 // ParseDuration parse duration string and returns ExtendedDuration struct
 func ParseDuration(str string) (*ExtendedDuration, error) {
-	var r = regexp.MustCompile(`(?P<weeks>\d+[wW])?(?P<days>\d+[dD])?(?P<hours>\d+[hH])?(?P<minutes>\d+[mM])?(?P<seconds>\d+[sS])?`)
-	var result = &ExtendedDuration{}
+	r := regexp.MustCompile(`(?P<weeks>\d+[wW])?(?P<days>\d+[dD])?(?P<hours>\d+[hH])?(?P<minutes>\d+[mM])?(?P<seconds>\d+[sS])?`)
+	result := &ExtendedDuration{}
 	var err error
 	res := r.FindAllStringSubmatch(str, -1)
 	for idx := range res {

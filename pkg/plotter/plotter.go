@@ -135,7 +135,7 @@ func PlotStageMetricHistogram(tc collector.TestCaseMetrics, stage interface{}, r
 	filePath, err := GetReportPathDir(reportName)
 	filePath = fmt.Sprintf("%s/%s", filePath, tc.TestCase.Name+strconv.Itoa(int(tc.TestCase.ID)))
 
-	_ = os.MkdirAll(filePath, 0750)
+	_ = os.MkdirAll(filePath, 0o750)
 	filePath = filepath.Join(filePath, fmt.Sprintf("%s.png", stage))
 	if err := p.Save(4*vg.Inch, 4*vg.Inch, filePath); err != nil {
 		log.Errorf("Can't save the histogram; error=%v", err)
@@ -147,7 +147,6 @@ func PlotStageMetricHistogram(tc collector.TestCaseMetrics, stage interface{}, r
 // PlotStageBoxPlot creates and saves a histogram of time distributions
 // +returns absolute filepath to created plot
 func PlotStageBoxPlot(tc collector.TestCaseMetrics, stage interface{}, reportName string) (*plot.Plot, error) {
-
 	var values plotter.Values
 
 	pvcStage, isPvc := stage.(collector.PVCStage)
@@ -192,7 +191,7 @@ func PlotStageBoxPlot(tc collector.TestCaseMetrics, stage interface{}, reportNam
 	filePath, err := GetReportPathDir(reportName)
 	filePath = fmt.Sprintf("%s/%s", filePath, tc.TestCase.Name+strconv.Itoa(int(tc.TestCase.ID)))
 
-	_ = os.MkdirAll(filePath, 0750)
+	_ = os.MkdirAll(filePath, 0o750)
 
 	if isPvc {
 		filePath = filepath.Join(filePath, fmt.Sprintf("%s.png", stage.(collector.PVCStage)+"_boxplot"))
@@ -415,7 +414,7 @@ func PlotEntityOverTime(tc collector.TestCaseMetrics, reportName string) (*plot.
 	filePath, err := GetReportPathDir(reportName)
 	filePath = fmt.Sprintf("%s/%s", filePath, tc.TestCase.Name+strconv.Itoa(int(tc.TestCase.ID)))
 
-	_ = os.MkdirAll(filePath, 0750)
+	_ = os.MkdirAll(filePath, 0o750)
 	var fileName string
 
 	fileName = fmt.Sprintf("%s.png", "EntityNumberOverTime")
@@ -602,7 +601,7 @@ func PlotIterationTimes(tcMetrics []collector.TestCaseMetrics, reportName string
 
 	filePath, err := GetReportPathDir(reportName)
 
-	_ = os.MkdirAll(filePath, 0750)
+	_ = os.MkdirAll(filePath, 0o750)
 
 	filePath = filepath.Join(filePath, fmt.Sprintf("IterationTimes.png"))
 
@@ -670,7 +669,7 @@ func PlotAvgStageTimeOverIterations(tcMetrics []collector.TestCaseMetrics, repor
 		p.Add(line)
 
 		filePath, err := GetReportPathDir(reportName)
-		_ = os.MkdirAll(filePath, 0750)
+		_ = os.MkdirAll(filePath, 0o750)
 		var fileName string
 		fileName = fmt.Sprintf("%sOverIterations.png", name)
 		filePath = filepath.Join(filePath, fileName)
@@ -733,7 +732,7 @@ func plotMemoryOrCPU(metrics map[string]plotter.XYs, reportName string, name str
 	p.Draw(dc)
 
 	filePath, err := GetReportPathDir(reportName)
-	_ = os.MkdirAll(filePath, 0750)
+	_ = os.MkdirAll(filePath, 0o750)
 	var fileName string
 	fileName = fmt.Sprintf("%s.png", name)
 	filePath = filepath.Join(filePath, fileName)
@@ -818,7 +817,7 @@ func plotMinMax(minMetrics plotter.XYs, maxMetrics plotter.XYs, reportName strin
 
 	filePath, err := GetReportPathDir(reportName)
 
-	_ = os.MkdirAll(filePath, 0750)
+	_ = os.MkdirAll(filePath, 0o750)
 
 	fileName := fmt.Sprintf("%s%s.png", name, "OverTime")
 	filePath = filepath.Join(filePath, fileName)

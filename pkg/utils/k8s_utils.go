@@ -120,7 +120,6 @@ func UnTarBinary() error {
 	}
 	log.Infof(string(stdout))
 	return nil
-
 }
 
 // CheckKubeConfigEnv will check the environment variable KUBECONFIG and returns default KUBECONFIG if not set
@@ -150,7 +149,6 @@ func Prechecks(c *cli.Context) bool {
 		log.Errorf("Driver config file not found: %s ", c.String("driver-config"))
 	}
 	return exist
-
 }
 
 // GetURL will return the URL by including the given version
@@ -167,7 +165,6 @@ func GetURL(version string) (string, error) {
 	default:
 		return "", errors.New("Unable to build URL with the given version:" + version)
 	}
-
 }
 
 // CheckIfBinaryExists will check the existing binary version and return true if version match else return false
@@ -183,7 +180,6 @@ func CheckIfBinaryExists(version string) bool {
 		return true
 	}
 	return false
-
 }
 
 // Prerequisites function will full-fill all prerequisites
@@ -227,7 +223,6 @@ func ReadTestDriverConfig(driverconfig string) string {
 		return ""
 	}
 	return DriverConfig.StorageClass.Class
-
 }
 
 // SkipTests will skip the tests mentioned in the ignore.yaml
@@ -256,7 +251,6 @@ func SkipTests(skipFile string) (string, error) {
 	skippedTests = strings.TrimSuffix(skippedTests, "|")
 
 	return skippedTests, nil
-
 }
 
 // BuildE2eCommand will build the command args
@@ -334,7 +328,6 @@ func GenerateReport(report string) {
 
 // ExecuteE2ECommand will execute the ./e2e.test command and generates the reports
 func ExecuteE2ECommand(args []string, ch chan os.Signal) error {
-
 	log.Info("e2e command arguments are: ", args)
 	cmd := exec.Command(k8sBinary, args...)
 	go func() {
@@ -360,7 +353,6 @@ func ExecuteE2ECommand(args []string, ch chan os.Signal) error {
 			return
 		}
 		log.Infof("Teriminated kubernetes e2e process")
-
 	}()
 
 	var stdBuffer bytes.Buffer
@@ -373,7 +365,6 @@ func ExecuteE2ECommand(args []string, ch chan os.Signal) error {
 	executionLogFile := defaultDir + executionLogFile + "_" + ReadTestDriverConfig(args[3]) + ".log"
 	err := os.Remove(filepath.Clean(executionLogFile))
 	f, err := os.Create(filepath.Clean(executionLogFile))
-
 	if err != nil {
 		log.Errorf("Error in file operation: %s", err.Error())
 	}

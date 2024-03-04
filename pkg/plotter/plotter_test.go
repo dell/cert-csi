@@ -386,7 +386,6 @@ func (suite *PlotterTestSuite) TestPlotStageMetricHistogram() {
 			}
 			tt.assertFunc(p)
 		})
-
 	}
 }
 
@@ -521,7 +520,6 @@ func (suite *PlotterTestSuite) TestPlotStageBoxPlot() {
 			}
 			tt.assertFunc(p)
 		})
-
 	}
 }
 
@@ -587,7 +585,6 @@ func (suite *PlotterTestSuite) TestPlotEntityOverTime() {
 			}
 			tt.assertFunc(p)
 		})
-
 	}
 }
 
@@ -804,7 +801,6 @@ func (suite *PlotterTestSuite) TestPlotMinMaxEntityOverTime() {
 			}
 			tt.assertFunc()
 		})
-
 	}
 }
 
@@ -933,7 +929,6 @@ func (suite *PlotterTestSuite) TestPlotResourceUsageOverTime() {
 			}
 			tt.assertFunc()
 		})
-
 	}
 }
 
@@ -1126,7 +1121,7 @@ func (suite *PlotterTestSuite) TestPlotIterationTimes() {
 				reportName: "test-report",
 			},
 			wantErr: false,
-			assertFunc: func(plot *plot.Plot) {
+			assertFunc: func(_ *plot.Plot) {
 				suite.FileExists(suite.filepath + "/reports/test-report/IterationTimes.png")
 			},
 		},
@@ -1141,7 +1136,6 @@ func (suite *PlotterTestSuite) TestPlotIterationTimes() {
 			}
 			tt.assertFunc(p)
 		})
-
 	}
 }
 
@@ -1310,7 +1304,6 @@ func (suite *PlotterTestSuite) TestPlotAvgStageTimeOverIterations() {
 			}
 			tt.assertFunc()
 		})
-
 	}
 }
 

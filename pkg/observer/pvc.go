@@ -36,7 +36,7 @@ type PvcObserver struct {
 }
 
 // StartWatching starts watching a PVC
-func (obs *PvcObserver) StartWatching(ctx context.Context, runner *Runner) {
+func (obs *PvcObserver) StartWatching(_ context.Context, runner *Runner) {
 	defer runner.WaitGroup.Done()
 
 	log.Debugf("%s started watching", obs.GetName())

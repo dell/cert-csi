@@ -31,7 +31,6 @@ import (
 
 // GetListCommand returns list CLI command
 func GetListCommand() cli.Command {
-
 	listCmd := cli.Command{
 		Name:     "list",
 		Usage:    "lists different data",

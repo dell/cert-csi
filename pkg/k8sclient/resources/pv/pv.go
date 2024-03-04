@@ -376,7 +376,6 @@ func (pv *PersistentVolume) WaitUntilGone(ctx context.Context) error {
 	yellow := color.New(color.FgHiYellow)
 	log.Debugf("Pv %s was deleted in %s", pv.Object.Name, yellow.Sprint(time.Since(startTime)))
 	return nil
-
 }
 
 // Sync waits until PV is deleted or bound

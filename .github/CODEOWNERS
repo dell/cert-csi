@@ -6,16 +6,18 @@
 # These are the default owners for the code and will
 # be requested for review when someone opens a pull request.
 # order is alphabetical for easier maintenance.
-# 
+# Aaron Tye (atye)
 # Adarsh Kumar Yadav (adarsh-dell)
 # Akshay Saini (AkshaySainiDell)
+# Alik Saring (alikdell)
 # Bharath Sreekanth (bharathsreekanth)
+# Evgeny Uglov (EvgenyUglov)
 # Harish P (harishp8889)
 # Jacob Grosner (JacobGros)
 # Prabhulinga Revur (prabhu-dell)
 # Rajkumar Palani (rajkumar-palani)
 # Rajshree Khare (khareRajshree)
-# Shanmugapriya M (spriya-m)
+# Shayna Finocchiaro (shaynafinocchiaro)
 # Shefali Malhotra (shefali-malhotra)
 # Spandita Panigrahi (panigs7)
 # Sushma T S (tssushma)
@@ -23,4 +25,4 @@
 # Yamunadevi Shanmugam (shanmydell)
 
 # for all files:
-* @adarsh-dell @AkshaySainiDell @bharathsreekanth @harishp8889 @JacobGros @prabhu-dell @rajkumar-palani @khareRajshree @spriya-m @shefali-malhotra @panigs7 @tssushma @gilltaran @shanmydell
+* @adarsh-dell @AkshaySainiDell @bharathsreekanth @harishp8889 @JacobGros @prabhu-dell @rajkumar-palani @khareRajshree @shefali-malhotra @panigs7 @tssushma @gilltaran @shanmydell @alikdell @atye @coulof @shaynafinocchiaro @xuluna @EvgenyUglov

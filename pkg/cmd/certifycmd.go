@@ -237,7 +237,6 @@ func GetCertifyCommand() cli.Command {
 						VolumeSize:   minSize,
 						Image:        testImage,
 					})
-
 				}
 
 				if sc.Expansion {
