@@ -1,6 +1,6 @@
 /*
  *
- * Copyright © 2022-2023 Dell Inc. or its subsidiaries. All Rights Reserved.
+ * Copyright © 2022-2024 Dell Inc. or its subsidiaries. All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -51,7 +51,7 @@ func init() {
 func main() {
 	app := cli.NewApp()
 	app.Name = "cert-csi"
-	app.Version = "1.4.0"
+	app.Version = "1.4.1"
 	app.Usage = "unified method of benchmarking and certification of csi drivers"
 	app.EnableBashCompletion = true
 	app.Flags = []cli.Flag{
