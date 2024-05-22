@@ -42,4 +42,4 @@ under [Apache 2 License](https://www.apache.org/licenses/LICENSE-2.0.html) on
 GitHub.
 
 ## Certification Tool to Validate Drivers
-Please refer [Cert-CSI Documentation](https://dell.github.io/csm-docs/docs/csidriver/installation/test/certcsi/)
+Please refer [Cert-CSI Documentation](https://dell.github.io/csm-docs/docs/support/cert-csi/)
