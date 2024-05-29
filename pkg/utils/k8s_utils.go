@@ -34,7 +34,7 @@ import (
 
 	log "github.com/sirupsen/logrus"
 	"github.com/urfave/cli"
-	"gopkg.in/yaml.v2"
+	"gopkg.in/yaml.v3"
 )
 
 var (
