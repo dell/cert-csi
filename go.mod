@@ -5,7 +5,7 @@ go 1.22
 require (
 	github.com/cheggaaa/pb/v3 v3.1.5
 	github.com/dell/csi-volumegroup-snapshotter v1.5.1
-	github.com/dell/csm-replication v1.8.0
+	github.com/dell/csm-replication v1.8.1
 	github.com/fatih/color v1.17.0
 	github.com/gofrs/flock v0.8.1
 	github.com/kubernetes-csi/external-snapshotter/client/v4 v4.2.0
