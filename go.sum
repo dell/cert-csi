@@ -117,8 +117,8 @@ github.com/davecgh/go-spew v1.1.2-0.20180830191138-d8f796af33cc h1:U9qPSI2PIWSS1
 github.com/davecgh/go-spew v1.1.2-0.20180830191138-d8f796af33cc/go.mod h1:J7Y8YcW2NihsgmVo/mv3lAwl/skON4iLHjSsI+c5H38=
 github.com/dell/csi-volumegroup-snapshotter v1.5.1 h1:Xn+nkiCoUwcbYmtF+ocfSBTKlY0THxFOBUGcBP+hpLc=
 github.com/dell/csi-volumegroup-snapshotter v1.5.1/go.mod h1:WAcSi0ruHLZ6NtESVbpnebhK1fkruFCvccFYgCXsrHI=
-github.com/dell/csm-replication v1.8.0 h1:Q7j9S4JOjcOKKN/XhMgUuwh9latgRMZ+xazLivFzagE=
-github.com/dell/csm-replication v1.8.0/go.mod h1:aS7RiQw/W0KHlQjNx3uRvQdRrPor+zkkiLKm0+7wYcE=
+github.com/dell/csm-replication v1.8.1 h1:oA+AyhQeo+lGQrEdcNEGguEBXlWwMWxT3tcYtWfhR0o=
+github.com/dell/csm-replication v1.8.1/go.mod h1:70uuFE4YIxfkP7AFPACghHZOL0yxvHXOmIkSPBGVk0M=
 github.com/dgrijalva/jwt-go v3.2.0+incompatible/go.mod h1:E3ru+11k8xSBh+hMPgOLZmtrrCbhqsmaPHjLKYnJCaQ=
 github.com/distribution/distribution/v3 v3.0.0-20221208165359-362910506bc2 h1:aBfCb7iqHmDEIp6fBvC/hQUddQfg+3qdYjwzaiP9Hnc=
 github.com/distribution/distribution/v3 v3.0.0-20221208165359-362910506bc2/go.mod h1:WHNsWjnIn2V1LYOrME7e8KxSeKunYHsxEm4am0BUtcI=
