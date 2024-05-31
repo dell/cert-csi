@@ -10,7 +10,7 @@ You may obtain a copy of the License at
 
 # CERT-CSI: Test tool for CSI Drivers
 
-[![Contributor Covenant](https://img.shields.io/badge/Contributor%20Covenant-v2.0%20adopted-ff69b4.svg)](docs/CODE_OF_CONDUCT.md) 
+[![Contributor Covenant](https://img.shields.io/badge/Contributor%20Covenant-v2.0%20adopted-ff69b4.svg)](docs/CODE_OF_CONDUCT.md)
 [![License](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](https://www.apache.org/licenses/LICENSE-2.0)
 [![Releases](https://img.shields.io/badge/Releases-green.svg)](https://github.com/dell/cert-csi/releases)
 
@@ -42,4 +42,5 @@ under [Apache 2 License](https://www.apache.org/licenses/LICENSE-2.0.html) on
 GitHub.
 
 ## Certification Tool to Validate Drivers
+
 Please refer [Cert-CSI Documentation](https://dell.github.io/csm-docs/docs/support/cert-csi/)
