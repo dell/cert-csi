@@ -69,7 +69,7 @@ func (c *Client) AddRepository(name, url string) error {
 	repoFile := c.settings.RepositoryConfig
 
 	// Ensure the file directory exists as it is required for file locking
-	err := os.MkdirAll(filepath.Dir(repoFile), 0750)
+	err := os.MkdirAll(filepath.Dir(repoFile), 0o750)
 	if err != nil && !os.IsExist(err) {
 		return err
 	}
