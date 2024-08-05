@@ -57,7 +57,7 @@ func (vao *VaListObserver) StartWatching(ctx context.Context, runner *Runner) {
 	pollErr := wait.PollImmediate(500*time.Millisecond, time.Duration(timeout)*time.Second, func() (bool, error) {
 		select {
 		case <-vao.finished:
-			if len(attachedVAs) == len(deletedVAs) || runner.ShouldClean == false {
+			if len(attachedVAs) == len(deletedVAs) || !runner.ShouldClean {
 				log.Debugf("%s finished watching", vao.GetName())
 				saveErr := runner.Database.SaveEvents(events)
 				if saveErr != nil {

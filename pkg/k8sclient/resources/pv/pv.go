@@ -390,10 +390,7 @@ func (pv *PersistentVolume) Sync(ctx context.Context) *PersistentVolume {
 
 // HasError checks if PV contains error
 func (pv *PersistentVolume) HasError() bool {
-	if pv.error != nil {
-		return true
-	}
-	return false
+	return pv.error != nil
 }
 
 // GetError returns PV error

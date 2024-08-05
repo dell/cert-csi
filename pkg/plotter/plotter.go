@@ -69,8 +69,7 @@ func GetReportPathDir(reportName string) (string, error) {
 // PlotStageMetricHistogram creates and saves a histogram of time distributions
 // +returns absolute filepath to created plot
 func PlotStageMetricHistogram(tc collector.TestCaseMetrics, stage interface{}, reportName string) (*plot.Plot, error) {
-	var metrics map[int]int
-	metrics = make(map[int]int)
+	metrics := make(map[int]int)
 
 	var min int
 	var max int
@@ -90,14 +89,12 @@ func PlotStageMetricHistogram(tc collector.TestCaseMetrics, stage interface{}, r
 
 	if isPvc {
 		for _, pvcMetric := range tc.PVCs {
-			var value int
-			value = int(math.Round(pvcMetric.Metrics[pvcStage].Seconds()))
+			value := int(math.Round(pvcMetric.Metrics[pvcStage].Seconds()))
 			metrics[value]++
 		}
 	} else if isPod {
 		for _, podMetric := range tc.Pods {
-			var value int
-			value = int(math.Round(podMetric.Metrics[podStage].Seconds()))
+			value := int(math.Round(podMetric.Metrics[podStage].Seconds()))
 			metrics[value]++
 		}
 	} else {
@@ -117,8 +114,8 @@ func PlotStageMetricHistogram(tc collector.TestCaseMetrics, stage interface{}, r
 	p := plot.New()
 
 	if p == nil {
-		log.Errorf("Can't create new plot")
-		return nil, errors.New("Can't create new plot")
+		log.Errorf("can't create new plot")
+		return nil, errors.New("can't create new plot")
 	}
 
 	p.Title.Text = fmt.Sprintf("Distribution of %s times. Pods=%d, PVCs=%d", stage, len(tc.Pods), len(tc.PVCs))
@@ -132,7 +129,7 @@ func PlotStageMetricHistogram(tc collector.TestCaseMetrics, stage interface{}, r
 
 	p.Add(barsBind)
 
-	filePath, err := GetReportPathDir(reportName)
+	filePath, _ := GetReportPathDir(reportName)
 	filePath = fmt.Sprintf("%s/%s", filePath, tc.TestCase.Name+strconv.Itoa(int(tc.TestCase.ID)))
 
 	_ = os.MkdirAll(filePath, 0o750)
@@ -155,15 +152,13 @@ func PlotStageBoxPlot(tc collector.TestCaseMetrics, stage interface{}, reportNam
 	if isPvc {
 		values = make(plotter.Values, len(tc.PVCs))
 		for i, pvcMetric := range tc.PVCs {
-			var value float64
-			value = pvcMetric.Metrics[pvcStage].Seconds()
+			value := pvcMetric.Metrics[pvcStage].Seconds()
 			values[i] = value
 		}
 	} else if isPod {
 		values = make(plotter.Values, len(tc.Pods))
 		for i, podMetric := range tc.Pods {
-			var value float64
-			value = podMetric.Metrics[podStage].Seconds()
+			value := podMetric.Metrics[podStage].Seconds()
 			values[i] = value
 		}
 	} else {
@@ -174,8 +169,8 @@ func PlotStageBoxPlot(tc collector.TestCaseMetrics, stage interface{}, reportNam
 	p := plot.New()
 
 	if p == nil {
-		log.Errorf("Can't create new plot")
-		return nil, errors.New("Can't create new plot")
+		log.Errorf("can't create new plot")
+		return nil, errors.New("can't create new plot")
 	}
 	p.Title.Text = fmt.Sprintf("Box plot of %s times. Pods=%d, PVCs=%d", stage, len(tc.Pods), len(tc.PVCs))
 	p.Y.Label.Text = "times"
@@ -188,7 +183,7 @@ func PlotStageBoxPlot(tc collector.TestCaseMetrics, stage interface{}, reportNam
 
 	p.Add(boxPlot)
 
-	filePath, err := GetReportPathDir(reportName)
+	filePath, _ := GetReportPathDir(reportName)
 	filePath = fmt.Sprintf("%s/%s", filePath, tc.TestCase.Name+strconv.Itoa(int(tc.TestCase.ID)))
 
 	_ = os.MkdirAll(filePath, 0o750)
@@ -256,10 +251,10 @@ func PlotEntityOverTime(tc collector.TestCaseMetrics, reportName string) (*plot.
 	p := plot.New()
 
 	if p == nil {
-		log.Errorf("Can't create new plot")
-		return nil, errors.New("Can't create new plot")
+		log.Errorf("can't create new plot")
+		return nil, errors.New("can't create new plot")
 	}
-	p.Title.Text = fmt.Sprintf("EntityNumber over time")
+	p.Title.Text = "EntityNumber over time"
 	p.Y.Label.Text = "number"
 	p.X.Label.Text = "time"
 	// Draw a grid behind the data
@@ -411,13 +406,12 @@ func PlotEntityOverTime(tc collector.TestCaseMetrics, reportName string) (*plot.
 	dc = draw.Crop(dc, 0, -legendWidth-vg.Millimeter, 0, 0) // Make space for the legend.
 	p.Draw(dc)
 
-	filePath, err := GetReportPathDir(reportName)
+	filePath, _ := GetReportPathDir(reportName)
 	filePath = fmt.Sprintf("%s/%s", filePath, tc.TestCase.Name+strconv.Itoa(int(tc.TestCase.ID)))
 
 	_ = os.MkdirAll(filePath, 0o750)
-	var fileName string
 
-	fileName = fmt.Sprintf("%s.png", "EntityNumberOverTime")
+	fileName := fmt.Sprintf("%s.png", "EntityNumberOverTime")
 	filePath = filepath.Join(filePath, fileName)
 
 	w, err := os.Create(filepath.Clean(filePath))
@@ -585,8 +579,8 @@ func PlotIterationTimes(tcMetrics []collector.TestCaseMetrics, reportName string
 	}
 	p := plot.New()
 	if p == nil {
-		log.Error("Can't create a new plot")
-		return nil, errors.New("Can't create new plot")
+		log.Error("can't create a new plot")
+		return nil, errors.New("can't create new plot")
 	}
 
 	p.Title.Text = "IterationTimes"
@@ -599,11 +593,11 @@ func PlotIterationTimes(tcMetrics []collector.TestCaseMetrics, reportName string
 		return nil, err
 	}
 
-	filePath, err := GetReportPathDir(reportName)
+	filePath, _ := GetReportPathDir(reportName)
 
 	_ = os.MkdirAll(filePath, 0o750)
 
-	filePath = filepath.Join(filePath, fmt.Sprintf("IterationTimes.png"))
+	filePath = filepath.Join(filePath, "IterationTimes.png")
 
 	// Save the plot to a PNG file.
 	if err := p.Save(6*vg.Inch, 4*vg.Inch, filePath); err != nil {
@@ -651,8 +645,8 @@ func PlotAvgStageTimeOverIterations(tcMetrics []collector.TestCaseMetrics, repor
 
 		p := plot.New()
 		if p == nil {
-			log.Error("Can't create a new plot")
-			return errors.New("Can't create new plot")
+			log.Error("can't create a new plot")
+			return errors.New("can't create new plot")
 		}
 		p.Title.Text = fmt.Sprintf("Avg time of %s", name)
 		p.Y.Label.Text = "time, s"
@@ -668,10 +662,9 @@ func PlotAvgStageTimeOverIterations(tcMetrics []collector.TestCaseMetrics, repor
 
 		p.Add(line)
 
-		filePath, err := GetReportPathDir(reportName)
+		filePath, _ := GetReportPathDir(reportName)
 		_ = os.MkdirAll(filePath, 0o750)
-		var fileName string
-		fileName = fmt.Sprintf("%sOverIterations.png", name)
+		fileName := fmt.Sprintf("%sOverIterations.png", name)
 		filePath = filepath.Join(filePath, fileName)
 
 		if err := p.Save(8*vg.Inch, 4*vg.Inch, filePath); err != nil {
@@ -685,10 +678,10 @@ func PlotAvgStageTimeOverIterations(tcMetrics []collector.TestCaseMetrics, repor
 func plotMemoryOrCPU(metrics map[string]plotter.XYs, reportName string, name string) error {
 	p := plot.New()
 	if p == nil {
-		log.Errorf("Can't create new plot")
-		return errors.New("Can't create new plot")
+		log.Errorf("can't create new plot")
+		return errors.New("can't create new plot")
 	}
-	p.Title.Text = fmt.Sprintf(name)
+	p.Title.Text = name
 	p.Y.Label.Text = "value"
 	p.X.Label.Text = "time"
 	// Draw a grid behind the data
@@ -731,10 +724,9 @@ func plotMemoryOrCPU(metrics map[string]plotter.XYs, reportName string, name str
 	// Make space for the legend.
 	p.Draw(dc)
 
-	filePath, err := GetReportPathDir(reportName)
+	filePath, _ := GetReportPathDir(reportName)
 	_ = os.MkdirAll(filePath, 0o750)
-	var fileName string
-	fileName = fmt.Sprintf("%s.png", name)
+	fileName := fmt.Sprintf("%s.png", name)
 	filePath = filepath.Join(filePath, fileName)
 	w, err := os.Create(filepath.Clean(filePath))
 	if err != nil {
@@ -752,8 +744,8 @@ func plotMemoryOrCPU(metrics map[string]plotter.XYs, reportName string, name str
 func plotMinMax(minMetrics plotter.XYs, maxMetrics plotter.XYs, reportName string, name string) error {
 	p := plot.New()
 	if p == nil {
-		log.Errorf("Can't create new plot")
-		return errors.New("Can't create new plot")
+		log.Errorf("can't create new plot")
+		return errors.New("can't create new plot")
 	}
 	p.Title.Text = fmt.Sprintf("%s over time", name)
 	p.Y.Label.Text = "number"
@@ -815,7 +807,7 @@ func plotMinMax(minMetrics plotter.XYs, maxMetrics plotter.XYs, reportName strin
 	// Make space for the legend.
 	p.Draw(dc)
 
-	filePath, err := GetReportPathDir(reportName)
+	filePath, _ := GetReportPathDir(reportName)
 
 	_ = os.MkdirAll(filePath, 0o750)
 

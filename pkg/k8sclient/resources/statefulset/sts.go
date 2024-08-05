@@ -499,10 +499,7 @@ func (sts *StatefulSet) Sync(ctx context.Context) *StatefulSet {
 
 // HasError checks if statefulset contains error
 func (sts *StatefulSet) HasError() bool {
-	if sts.error != nil {
-		return true
-	}
-	return false
+	return sts.error != nil
 }
 
 // GetError returns statefulset error

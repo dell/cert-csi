@@ -110,7 +110,7 @@ func (vds *VolumeDeletionSuite) GetNamespace() string {
 
 // Parameters is returns format string
 func (vds *VolumeDeletionSuite) Parameters() string {
-	return fmt.Sprintf("{}")
+	return "{}"
 }
 
 // PodDeletionSuite is used for managing pod deletion test suite
@@ -210,7 +210,7 @@ func (pds *PodDeletionSuite) GetNamespace() string {
 
 // Parameters returns format string
 func (pds *PodDeletionSuite) Parameters() string {
-	return fmt.Sprintf("{}")
+	return "{}"
 }
 
 // ClonedVolDeletionSuite is used to manage cloned volume deletion test suite
@@ -330,7 +330,7 @@ func (pds *ClonedVolDeletionSuite) GetNamespace() string {
 
 // Parameters returns format string
 func (pds *ClonedVolDeletionSuite) Parameters() string {
-	return fmt.Sprintf("{}")
+	return "{}"
 }
 
 // SnapshotDeletionSuite is used for managing snapshot deletion test suite
@@ -472,7 +472,7 @@ func (sds *SnapshotDeletionSuite) GetNamespace() string {
 
 // Parameters returns format string
 func (sds *SnapshotDeletionSuite) Parameters() string {
-	return fmt.Sprintf("{}")
+	return "{}"
 }
 
 // EphemeralVolumeSuite is used to manage ephemeral volume test suite
@@ -638,10 +638,10 @@ func (nds *NodeDrainSuite) Run(ctx context.Context, _ string, clients *k8sclient
 
 	log.Infof("Draining node with name:%s", color.YellowString(nds.Name))
 	nodeClient := clients.NodeClient
-	err := nodeClient.NodeCordon(ctx, nds.Name)
+	_ = nodeClient.NodeCordon(ctx, nds.Name)
 
 	podClient := clients.PodClient
-	err = podClient.DeleteOrEvictPods(ctx, nds.Name, nds.GracePeriodSeconds)
+	err := podClient.DeleteOrEvictPods(ctx, nds.Name, nds.GracePeriodSeconds)
 	if err != nil {
 		return delFunc, err
 	}
@@ -730,7 +730,7 @@ func (nds *NodeDrainSuite) GetNamespace() string {
 
 // Parameters returns format string
 func (nds *NodeDrainSuite) Parameters() string {
-	return fmt.Sprintf("{}")
+	return "{}"
 }
 
 // NodeUncordonSuite is used to manage node uncordon test suite
@@ -818,7 +818,7 @@ func (nds *NodeUncordonSuite) GetNamespace() string {
 
 // Parameters returns format string
 func (nds *NodeUncordonSuite) Parameters() string {
-	return fmt.Sprintf("{}")
+	return "{}"
 }
 
 // CapacityTrackingSuite is used to manage storage capacity tracking test suite
@@ -935,7 +935,7 @@ func (cts *CapacityTrackingSuite) Run(ctx context.Context, storageClass string, 
 }
 
 func getTopologyCount() (int, error) {
-	exe := []string{"bash", "-c", fmt.Sprintf("kubectl describe csinode | grep 'Topology Keys'")}
+	exe := []string{"bash", "-c", "kubectl describe csinode | grep 'Topology Keys'"}
 	str, err := FindDriverLogs(exe)
 	if err != nil {
 		return 0, err
