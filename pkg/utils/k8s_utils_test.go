@@ -328,10 +328,10 @@ func TestExecuteE2ECommand(t *testing.T) {
 		{
 			name: "execute with proper arguments",
 			args: args{
-				args: []string{"-kubeconfig", "/root/.kube/config", "-storage.testdriver", "testdata/config-nfs.yaml", "--ginkgo.skip", "*"},
+				args: []string{"-kubeconfig", "/root/.kube/config", "-storage.testdriver", "testdata/config-nfs.yaml", "--ginkgo.skip", ".*"},
 				ch:   cha,
 			},
-			wantErr: true,
+			wantErr: false,
 		},
 	}
 	for _, tt := range tests {
