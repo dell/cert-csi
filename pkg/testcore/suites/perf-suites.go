@@ -2722,7 +2722,7 @@ func (mas *MultiAttachSuite) Run(ctx context.Context, storageClass string, clien
 		}
 	} else {
 		device := fmt.Sprintf("/dev%s0", podconf.MountPath)
-		file := fmt.Sprintf("/tmp/blob.data")
+		file := "/tmp/blob.data"
 
 		hash := bytes.NewBufferString("")
 
