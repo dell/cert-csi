@@ -450,10 +450,7 @@ func (pod *Pod) Sync(ctx context.Context) *Pod {
 
 // HasError checks whether pod has any error
 func (pod *Pod) HasError() bool {
-	if pod.error != nil {
-		return true
-	}
-	return false
+	return pod.error != nil
 }
 
 // GetError returns pod error

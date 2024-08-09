@@ -193,10 +193,7 @@ func (cont *SnapshotContent) WaitForRunning(ctx context.Context) error {
 
 // HasError checks if snapshot content has error
 func (cont *SnapshotContent) HasError() bool {
-	if cont.error != nil {
-		return true
-	}
-	return false
+	return cont.error != nil
 }
 
 // GetError returns snapshot content error

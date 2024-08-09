@@ -113,10 +113,7 @@ func (c *Client) DuplicateStorageClass(name string, sourceSc *v1.StorageClass) *
 
 // HasError checks whether storage class has error
 func (sc *StorageClass) HasError() bool {
-	if sc.error != nil {
-		return true
-	}
-	return false
+	return sc.error != nil
 }
 
 // GetError returns storage class error

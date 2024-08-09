@@ -192,10 +192,7 @@ func (vgs *VGS) Name() string {
 
 // HasError checks whether VGS has error
 func (vgs *VGS) HasError() bool {
-	if vgs.error != nil {
-		return true
-	}
-	return false
+	return vgs.error != nil
 }
 
 // GetError returns VGS error

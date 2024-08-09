@@ -262,10 +262,7 @@ func (snap *Snapshot) WaitForRunning(ctx context.Context) error {
 
 // HasError checks whether Snapshot has error
 func (snap *Snapshot) HasError() bool {
-	if snap.error != nil {
-		return true
-	}
-	return false
+	return snap.error != nil
 }
 
 // GetError returns snapshot error

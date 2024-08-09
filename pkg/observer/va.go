@@ -66,7 +66,7 @@ func (vao *VaObserver) StartWatching(_ context.Context, runner *Runner) {
 		select {
 		case <-vao.finished:
 			// We can't finish if we haven't received all deletion events
-			if len(attachedVAs) == len(deletedVAs) || runner.ShouldClean == false {
+			if len(attachedVAs) == len(deletedVAs) || !runner.ShouldClean {
 				err := runner.Database.SaveEvents(events)
 				if err != nil {
 					log.Errorf("Error saving events; error=%v", err)

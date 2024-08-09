@@ -157,7 +157,7 @@ func (suite *StoreTestSuite) TestAllStores() {
 		suite.Equal(len(entities), 1, fmt.Sprintf("able to get entity relations using %s store", key))
 		suite.Equal(entities[0].Name, "pvc1", fmt.Sprintf("able to get entity name from relation using %s store", key))
 
-		entities, err = store.GetEntities(Conditions{"type": Pvc}, "", 0)
+		entities, _ = store.GetEntities(Conditions{"type": Pvc}, "", 0)
 		suite.Equal(len(entities), 1)
 
 		nEntities := []*NumberEntities{

@@ -215,9 +215,9 @@ type DriverConfig struct {
 
 // ReadTestDriverConfig will read the driver config
 func ReadTestDriverConfig(driverconfig string) string {
-	file, err := os.ReadFile(filepath.Clean(driverconfig))
+	file, _ := os.ReadFile(filepath.Clean(driverconfig))
 	var DriverConfig DriverConfig
-	err = yaml.Unmarshal(file, &DriverConfig)
+	err := yaml.Unmarshal(file, &DriverConfig)
 	if err != nil {
 		log.Errorf("Unable to read the driver config:%s", err.Error())
 		return ""
@@ -234,9 +234,9 @@ func SkipTests(skipFile string) (string, error) {
 	if skipFile == "" {
 		skipFile = IgnoreFile
 	}
-	file, err := os.ReadFile(filepath.Clean(skipFile))
+	file, _ := os.ReadFile(filepath.Clean(skipFile))
 	var tests SkippedTests
-	err = yaml.Unmarshal(file, &tests)
+	err := yaml.Unmarshal(file, &tests)
 	if err != nil {
 		log.Errorf("YAML-Encoded error :%s", err)
 		return "", err
@@ -363,7 +363,7 @@ func ExecuteE2ECommand(args []string, ch chan os.Signal) error {
 	// Execute the command
 	cmdErr := cmd.Run()
 	executionLogFile := defaultDir + executionLogFile + "_" + ReadTestDriverConfig(args[3]) + ".log"
-	err := os.Remove(filepath.Clean(executionLogFile))
+	_ = os.Remove(filepath.Clean(executionLogFile))
 	f, err := os.Create(filepath.Clean(executionLogFile))
 	if err != nil {
 		log.Errorf("Error in file operation: %s", err.Error())
