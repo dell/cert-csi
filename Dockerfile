@@ -21,9 +21,6 @@ FROM $GOIMAGE as build-env
 
 WORKDIR /app/cert-csi/
 COPY go.mod go.sum ./
-COPY ./certs/ /usr/local/share/ca-certificates/
-
-RUN update-ca-certificates
 
 RUN GOSUMDB=off go mod download
 
