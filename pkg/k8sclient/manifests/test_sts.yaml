@@ -32,7 +32,7 @@ spec:
     spec:
       containers:
         - name: test
-          image: docker.io/centos:latest
+          image: quay.io/centos/centos:latest
           imagePullPolicy: IfNotPresent
           volumeMounts:
             - name: pvol-0

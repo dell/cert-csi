@@ -124,7 +124,7 @@ func (c *Client) MakeStatefulSet(config *Config) *appsv1.StatefulSet {
 	}
 
 	if len(config.ContainerImage) == 0 {
-		config.ContainerImage = "docker.io/centos:latest"
+		config.ContainerImage = "quay.io/centos/centos:latest"
 	}
 
 	if len(config.Command) == 0 {

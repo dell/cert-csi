@@ -496,7 +496,7 @@ func (ep *EphemeralVolumeSuite) Run(ctx context.Context, _ string, clients *k8sc
 	}
 
 	if ep.Image == "" {
-		ep.Image = "docker.io/centos:latest"
+		ep.Image = "quay.io/centos/centos:latest"
 		log.Infof("Using default image: %s", ep.Image)
 	}
 
@@ -845,7 +845,7 @@ func (cts *CapacityTrackingSuite) Run(ctx context.Context, storageClass string, 
 	}
 
 	if cts.Image == "" {
-		cts.Image = "docker.io/centos:latest"
+		cts.Image = "quay.io/centos/centos:latest"
 		log.Infof("Using default image: %s", cts.Image)
 	}
 

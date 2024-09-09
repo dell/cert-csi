@@ -114,7 +114,7 @@ func (c *Client) MakePod(config *Config) *v1.Pod {
 	}
 
 	if len(config.ContainerImage) == 0 {
-		config.ContainerImage = "docker.io/centos:latest"
+		config.ContainerImage = "quay.io/centos/centos:latest"
 	}
 
 	if len(config.Command) == 0 {
@@ -529,7 +529,7 @@ func (c *Client) MakeEphemeralPod(config *Config) *v1.Pod {
 	}
 
 	if len(config.ContainerImage) == 0 {
-		config.ContainerImage = "docker.io/centos:latest"
+		config.ContainerImage = "quay.io/centos/centos:latest"
 	}
 
 	if len(config.Command) == 0 {
