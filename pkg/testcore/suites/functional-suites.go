@@ -886,9 +886,6 @@ func (cts *CapacityTrackingSuite) Run(ctx context.Context, storageClass string, 
 	// POD should stay in pending state if capacity is zero
 	log.Infof("Updating CSIStorageCapacity for %s storage class, setting capacity to %s", color.YellowString(storageClass), color.HiYellowString("%d", 0))
 	capacities, _ := clients.CSISCClient.GetByStorageClass(ctx, storageClass)
-	if err != nil {
-		return delFunc, err
-	}
 
 	_, err = clients.CSISCClient.SetCapacityToZero(ctx, capacities)
 	if err != nil {

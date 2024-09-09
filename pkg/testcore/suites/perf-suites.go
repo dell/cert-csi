@@ -922,7 +922,7 @@ func (ss *ScalingSuite) Run(ctx context.Context, storageClass string, clients *k
 	}
 
 	// Scaling to needed number of replicas
-	sts = stsClient.Scale(ctx, sts.Set, int32(ss.ReplicaNumber))
+	sts = stsClient.Scale(ctx, sts.Set, int32(ss.ReplicaNumber)) // #nosec G115
 	if sts.HasError() {
 		return delFunc, sts.GetError()
 	}
@@ -938,7 +938,7 @@ func (ss *ScalingSuite) Run(ctx context.Context, storageClass string, clients *k
 	} else {
 		log.Info("Gradually scaling down sts")
 		for i := ss.ReplicaNumber - 1; i >= 0; i-- {
-			sts := stsClient.Scale(ctx, sts.Set, int32(i))
+			sts := stsClient.Scale(ctx, sts.Set, int32(i)) // #nosec G115
 			if sts.HasError() {
 				return delFunc, sts.GetError()
 			}
@@ -2779,7 +2779,7 @@ func (mas *MultiAttachSuite) GenerateTopologySpreadConstraints(nodeCount int, la
 	}
 	spreadConstraints := []v1.TopologySpreadConstraint{
 		{
-			MaxSkew:           int32(maxSkew),
+			MaxSkew:           int32(maxSkew), // #nosec G115
 			TopologyKey:       "kubernetes.io/hostname",
 			WhenUnsatisfiable: v1.ScheduleAnyway,
 			LabelSelector: &metav1.LabelSelector{
@@ -3194,7 +3194,7 @@ func (vms *VolumeMigrateSuite) Run(ctx context.Context, storageClass string, cli
 		return delFunc, targetSC.GetError()
 	}
 
-	stsConf := testcore.VolumeMigrateStsConfig(storageClass, "1Gi", vms.VolumeNumber, int32(vms.PodNumber), "", vms.Image)
+	stsConf := testcore.VolumeMigrateStsConfig(storageClass, "1Gi", vms.VolumeNumber, int32(vms.PodNumber), "", vms.Image) // #nosec G115
 	stsTmpl := stsClient.MakeStatefulSet(stsConf)
 	// Creating Statefulset
 	log.Println("Creating Statefulset")
@@ -3335,7 +3335,7 @@ func (vms *VolumeMigrateSuite) Run(ctx context.Context, storageClass string, cli
 		podClient.Delete(ctx, &pod)
 	}
 
-	newStsConf := testcore.VolumeMigrateStsConfig(vms.TargetSC, "1Gi", vms.VolumeNumber, int32(vms.PodNumber), "", vms.Image)
+	newStsConf := testcore.VolumeMigrateStsConfig(vms.TargetSC, "1Gi", vms.VolumeNumber, int32(vms.PodNumber), "", vms.Image) // #nosec G115
 	newStsTmpl := stsClient.MakeStatefulSet(newStsConf)
 	// Creating new Statefulset
 	log.Println("Creating new Statefulset")
