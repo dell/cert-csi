@@ -104,7 +104,7 @@ func DownloadBinary(version string) error {
 
 	_, err = io.Copy(out, resp.Body)
 	if err != nil {
-		log.Errorf(err.Error())
+		log.Errorf("%s", err.Error())
 	}
 
 	return err
@@ -118,7 +118,7 @@ func UnTarBinary() error {
 		log.Errorf("Unable to untar binaryfile with error: %s", err.Error())
 		return err
 	}
-	log.Infof(string(stdout))
+	log.Infof("%s", string(stdout))
 	return nil
 }
 

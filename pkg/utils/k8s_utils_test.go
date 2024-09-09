@@ -63,7 +63,7 @@ func TestUnTarBinary(t *testing.T) {
 				os.Remove(filepath.Clean(BinaryFile))
 			}
 			if tt.name == "Untar if file present" {
-				DownloadBinary("v1.25.0")
+				_ = DownloadBinary("v1.25.0")
 			}
 			if err := UnTarBinary(); (err != nil) != tt.wantErr {
 				t.Errorf("UnTarBinary() error = %v, wantErr %v", err, tt.wantErr)
@@ -194,8 +194,8 @@ func TestCheckIfBinaryExists(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			if tt.name == "check with valid version" {
-				DownloadBinary("v1.25.0")
-				UnTarBinary()
+				_ = DownloadBinary("v1.25.0")
+				_ = UnTarBinary()
 			}
 			if got := CheckIfBinaryExists(tt.args.version); got != tt.want {
 				t.Errorf("CheckIfBinaryExists() = %v, want %v", got, tt.want)
