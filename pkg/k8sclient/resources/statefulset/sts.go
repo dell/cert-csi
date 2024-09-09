@@ -246,7 +246,7 @@ func (c *Client) DeleteWithOptions(ctx context.Context, sts *appsv1.StatefulSet,
 	}
 	err := c.Interface.Delete(ctx, sts.GetName(), opts)
 	if err != nil {
-		logrus.Debugf(err.Error())
+		logrus.Debugf("%s", err.Error())
 		funcErr = err
 	}
 	log.Debugf("Deleted stateful set %s", sts.GetName())
