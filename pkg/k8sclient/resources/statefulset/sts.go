@@ -396,16 +396,19 @@ func (sts *StatefulSet) WaitForRunningAndReady(ctx context.Context, numPodsRunni
 				return false, err
 			}
 
-			if int32(len(podList.Items)) < numPodsRunning { // #nosec G115
+			// #nosec G115
+			if int32(len(podList.Items)) < numPodsRunning {
 				log.Debugf("Found %d stateful pods, waiting for %d", len(podList.Items), numPodsRunning)
 				return false, nil
 			}
-			if int32(len(podList.Items)) > numPodsRunning { // #nosec G115
+			// #nosec G115
+			if int32(len(podList.Items)) > numPodsRunning {
 				log.Debugf("Too many pods scheduled, expected %d got %d", numPodsRunning, len(podList.Items))
 				return false, nil
 			}
 
-			if int32(len(podList.Items)) == numPodsRunning && numPodsRunning == 0 { // #nosec G115
+			// #nosec G115
+			if int32(len(podList.Items)) == numPodsRunning && numPodsRunning == 0 {
 				return true, nil
 			}
 
