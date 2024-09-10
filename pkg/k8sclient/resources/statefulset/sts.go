@@ -124,7 +124,7 @@ func (c *Client) MakeStatefulSet(config *Config) *appsv1.StatefulSet {
 	}
 
 	if len(config.ContainerImage) == 0 {
-		config.ContainerImage = "docker.io/centos:latest"
+		config.ContainerImage = "quay.io/centos/centos:latest"
 	}
 
 	if len(config.Command) == 0 {
@@ -246,7 +246,7 @@ func (c *Client) DeleteWithOptions(ctx context.Context, sts *appsv1.StatefulSet,
 	}
 	err := c.Interface.Delete(ctx, sts.GetName(), opts)
 	if err != nil {
-		logrus.Debugf(err.Error())
+		logrus.Debugf("%s", err.Error())
 		funcErr = err
 	}
 	log.Debugf("Deleted stateful set %s", sts.GetName())
@@ -396,15 +396,18 @@ func (sts *StatefulSet) WaitForRunningAndReady(ctx context.Context, numPodsRunni
 				return false, err
 			}
 
+			// #nosec G115
 			if int32(len(podList.Items)) < numPodsRunning {
 				log.Debugf("Found %d stateful pods, waiting for %d", len(podList.Items), numPodsRunning)
 				return false, nil
 			}
+			// #nosec G115
 			if int32(len(podList.Items)) > numPodsRunning {
 				log.Debugf("Too many pods scheduled, expected %d got %d", numPodsRunning, len(podList.Items))
 				return false, nil
 			}
 
+			// #nosec G115
 			if int32(len(podList.Items)) == numPodsRunning && numPodsRunning == 0 {
 				return true, nil
 			}

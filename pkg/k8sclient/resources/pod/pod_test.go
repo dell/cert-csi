@@ -52,7 +52,7 @@ func (suite *PodTestSuite) TestMakePod() {
 		VolumeName:     "vol",
 		MountPath:      "/data",
 		ContainerName:  "prov-test",
-		ContainerImage: "docker.io/centos:latest",
+		ContainerImage: "quay.io/centos/centos:latest",
 		Command:        []string{"/app/run.sh"},
 	}
 	podClient, err := suite.kubeClient.CreatePodClient("test-namespace")
@@ -82,7 +82,7 @@ func (suite *PodTestSuite) TestMakePod_default() {
 	podTmpl := podClient.MakePod(podconf)
 	suite.NoError(err)
 	suite.Equal("test-namespace", podTmpl.Namespace)
-	suite.Equal(podconf.ContainerImage, "docker.io/centos:latest")
+	suite.Equal(podconf.ContainerImage, "quay.io/centos/centos:latest")
 	suite.Equal(podconf.Command, []string{"/bin/bash"})
 }
 

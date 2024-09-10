@@ -496,7 +496,7 @@ func (ep *EphemeralVolumeSuite) Run(ctx context.Context, _ string, clients *k8sc
 	}
 
 	if ep.Image == "" {
-		ep.Image = "docker.io/centos:latest"
+		ep.Image = "quay.io/centos/centos:latest"
 		log.Infof("Using default image: %s", ep.Image)
 	}
 
@@ -845,7 +845,7 @@ func (cts *CapacityTrackingSuite) Run(ctx context.Context, storageClass string, 
 	}
 
 	if cts.Image == "" {
-		cts.Image = "docker.io/centos:latest"
+		cts.Image = "quay.io/centos/centos:latest"
 		log.Infof("Using default image: %s", cts.Image)
 	}
 
@@ -885,10 +885,7 @@ func (cts *CapacityTrackingSuite) Run(ctx context.Context, storageClass string, 
 
 	// POD should stay in pending state if capacity is zero
 	log.Infof("Updating CSIStorageCapacity for %s storage class, setting capacity to %s", color.YellowString(storageClass), color.HiYellowString("%d", 0))
-	capacities, _ := clients.CSISCClient.GetByStorageClass(ctx, storageClass)
-	if err != nil {
-		return delFunc, err
-	}
+	capacities, err := clients.CSISCClient.GetByStorageClass(ctx, storageClass)
 
 	_, err = clients.CSISCClient.SetCapacityToZero(ctx, capacities)
 	if err != nil {

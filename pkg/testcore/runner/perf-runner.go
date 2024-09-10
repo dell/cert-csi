@@ -213,7 +213,6 @@ func ExecuteSuite(iterCtx context.Context, num int, suites map[string][]suites.I
 
 	if sr.IsStopped() {
 		log.Debug("Suite range stopped")
-		err = fmt.Errorf("suite range stopped")
 	}
 
 	if sr.CoolDownPeriod != 0 {
@@ -424,7 +423,7 @@ func runSuite(ctx context.Context, suite suites.Interface, sr *SuiteRunner, test
 	}
 
 	var obs *observer.Runner
-	if sr.NoMetrics == false {
+	if !sr.NoMetrics {
 		// Create new observer runner, using list of important observers
 		observers := suite.GetObservers(sr.ObserverType)
 		obs = observer.NewObserverRunner(observers, clients, db, testCase, sr.DriverNamespace, sr.ShouldClean(SUCCESS))
@@ -475,7 +474,7 @@ func runSuite(ctx context.Context, suite suites.Interface, sr *SuiteRunner, test
 			}
 			sr.delTime += time.Since(delTime)
 		}
-		if sr.NoMetrics == false {
+		if !sr.NoMetrics {
 			obs.ShouldClean = shouldClean
 			err := obs.Stop()
 			if err != nil {
@@ -563,7 +562,7 @@ func (sr *SuiteRunner) Stop() {
 // Close closes all databases
 func (sr *SuiteRunner) Close() {
 	// Closing all databases
-	if sr.noreport == false {
+	if !sr.noreport {
 		err := reporter.GenerateReportsFromMultipleDBs([]reporter.ReportType{
 			reporter.XMLReport,
 			reporter.TabularReport,
@@ -574,7 +573,7 @@ func (sr *SuiteRunner) Close() {
 	}
 
 	for _, scDB := range sr.ScDBs {
-		if sr.NoMetrics == false && sr.noreport == false {
+		if !sr.NoMetrics && !sr.noreport {
 			err := reporter.GenerateAllReports(sr.ScDBs)
 			if err != nil {
 				logrus.Errorf("Can't generate reports; error=%v", err)

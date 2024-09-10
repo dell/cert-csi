@@ -57,7 +57,7 @@ func GetCleanupCommand() cli.Command {
 		Action: func(c *cli.Context) error {
 			fmt.Println("*** THIS WILL DELETE ALL NAMESPACES AND RESOURCES THAT HAVE A \"-test-\" or \"-suite-\" IN THEIR NAMES ***")
 			fmt.Println("Are you sure (y/N)")
-			if c.Bool("yes") != true {
+			if !c.Bool("yes") {
 				reader := bufio.NewReader(os.Stdin)
 				fmt.Print("-> ")
 				char, _, err := reader.ReadRune()

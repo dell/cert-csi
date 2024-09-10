@@ -231,7 +231,7 @@ func (ps *ProvisioningSuite) Run(ctx context.Context, storageClass string, clien
 		ps.VolumeSize = "3Gi"
 	}
 	if ps.Image == "" {
-		ps.Image = "docker.io/centos:latest"
+		ps.Image = "quay.io/centos/centos:latest"
 		log.Infof("Using default image: %s", ps.Image)
 	}
 	ps.validateCustomPodName()
@@ -396,7 +396,7 @@ func (rrps *RemoteReplicationProvisioningSuite) Run(ctx context.Context, storage
 		rrps.VolumeSize = "3Gi"
 	}
 	if rrps.Image == "" {
-		rrps.Image = "docker.io/centos:latest"
+		rrps.Image = "quay.io/centos/centos:latest"
 		log.Infof("Using default image: %s", rrps.Image)
 	}
 
@@ -903,7 +903,7 @@ func (ss *ScalingSuite) Run(ctx context.Context, storageClass string, clients *k
 		ss.VolumeSize = "3Gi"
 	}
 	if ss.Image == "" {
-		ss.Image = "docker.io/centos:latest"
+		ss.Image = "quay.io/centos/centos:latest"
 		log.Infof("Using default image: %s", ss.Image)
 	}
 
@@ -922,7 +922,7 @@ func (ss *ScalingSuite) Run(ctx context.Context, storageClass string, clients *k
 	}
 
 	// Scaling to needed number of replicas
-	sts = stsClient.Scale(ctx, sts.Set, int32(ss.ReplicaNumber))
+	sts = stsClient.Scale(ctx, sts.Set, int32(ss.ReplicaNumber)) // #nosec G115
 	if sts.HasError() {
 		return delFunc, sts.GetError()
 	}
@@ -938,7 +938,7 @@ func (ss *ScalingSuite) Run(ctx context.Context, storageClass string, clients *k
 	} else {
 		log.Info("Gradually scaling down sts")
 		for i := ss.ReplicaNumber - 1; i >= 0; i-- {
-			sts := stsClient.Scale(ctx, sts.Set, int32(i))
+			sts := stsClient.Scale(ctx, sts.Set, int32(i)) // #nosec G115
 			if sts.HasError() {
 				return delFunc, sts.GetError()
 			}
@@ -1037,7 +1037,7 @@ func (vis *VolumeIoSuite) Run(ctx context.Context, storageClass string, clients 
 	}
 
 	if vis.Image == "" {
-		vis.Image = "docker.io/centos:latest"
+		vis.Image = "quay.io/centos/centos:latest"
 		log.Infof("Using default image: %s", vis.Image)
 	}
 
@@ -1202,7 +1202,7 @@ func (vgs *VolumeGroupSnapSuite) Run(ctx context.Context, storageClass string, c
 	}
 
 	if vgs.Image == "" {
-		vgs.Image = "docker.io/centos:latest"
+		vgs.Image = "quay.io/centos/centos:latest"
 		log.Infof("Using default image: %s", vgs.Image)
 	}
 
@@ -1350,7 +1350,7 @@ func (ss *SnapSuite) Run(ctx context.Context, storageClass string, clients *k8sc
 		ss.VolumeSize = "3Gi"
 	}
 	if ss.Image == "" {
-		ss.Image = "docker.io/centos:latest"
+		ss.Image = "quay.io/centos/centos:latest"
 		log.Infof("Using default image: %s", ss.Image)
 	}
 
@@ -1676,7 +1676,7 @@ func (rs *ReplicationSuite) Run(ctx context.Context, storageClass string, client
 		rs.VolumeSize = "3Gi"
 	}
 	if rs.Image == "" {
-		rs.Image = "docker.io/centos:latest"
+		rs.Image = "quay.io/centos/centos:latest"
 		log.Infof("Using default image: %s", rs.Image)
 	}
 
@@ -1944,7 +1944,7 @@ func (ves *VolumeExpansionSuite) Run(ctx context.Context, storageClass string, c
 		ves.PodNumber = 1
 	}
 	if ves.Image == "" {
-		ves.Image = "docker.io/centos:latest"
+		ves.Image = "quay.io/centos/centos:latest"
 		log.Infof("Using default image: %s", ves.Image)
 	}
 
@@ -2236,7 +2236,7 @@ func (vh *VolumeHealthMetricsSuite) Run(ctx context.Context, storageClass string
 		vh.PodNumber = 1
 	}
 	if vh.Image == "" {
-		vh.Image = "docker.io/centos:latest"
+		vh.Image = "quay.io/centos/centos:latest"
 		log.Infof("Using default image: %s", vh.Image)
 	}
 
@@ -2446,7 +2446,7 @@ func (cs *CloneVolumeSuite) Run(ctx context.Context, storageClass string, client
 		cs.VolumeSize = "3Gi"
 	}
 	if cs.Image == "" {
-		cs.Image = "docker.io/centos:latest"
+		cs.Image = "quay.io/centos/centos:latest"
 		log.Infof("Using default image: %s", cs.Image)
 	}
 	clonedVolName := ""
@@ -2609,7 +2609,7 @@ func (mas *MultiAttachSuite) Run(ctx context.Context, storageClass string, clien
 		mas.PodNumber = 2
 	}
 	if mas.Image == "" {
-		mas.Image = "docker.io/centos:latest"
+		mas.Image = "quay.io/centos/centos:latest"
 		log.Infof("Using default image: %s", mas.Image)
 	}
 
@@ -2779,7 +2779,7 @@ func (mas *MultiAttachSuite) GenerateTopologySpreadConstraints(nodeCount int, la
 	}
 	spreadConstraints := []v1.TopologySpreadConstraint{
 		{
-			MaxSkew:           int32(maxSkew),
+			MaxSkew:           int32(maxSkew), // #nosec G115
 			TopologyKey:       "kubernetes.io/hostname",
 			WhenUnsatisfiable: v1.ScheduleAnyway,
 			LabelSelector: &metav1.LabelSelector{
@@ -2874,7 +2874,7 @@ func (bss *BlockSnapSuite) Run(ctx context.Context, storageClass string, clients
 		bss.VolumeSize = "3Gi"
 	}
 	if bss.Image == "" {
-		bss.Image = "docker.io/centos:latest"
+		bss.Image = "quay.io/centos/centos:latest"
 		log.Infof("Using default image: %s", bss.Image)
 	}
 	pvcClient := clients.PVCClient
@@ -3173,7 +3173,7 @@ func (vms *VolumeMigrateSuite) Run(ctx context.Context, storageClass string, cli
 		vms.PodNumber = 3
 	}
 	if vms.Image == "" {
-		vms.Image = "docker.io/centos:latest"
+		vms.Image = "quay.io/centos/centos:latest"
 		log.Infof("Using default image: %s", vms.Image)
 	}
 
@@ -3194,7 +3194,7 @@ func (vms *VolumeMigrateSuite) Run(ctx context.Context, storageClass string, cli
 		return delFunc, targetSC.GetError()
 	}
 
-	stsConf := testcore.VolumeMigrateStsConfig(storageClass, "1Gi", vms.VolumeNumber, int32(vms.PodNumber), "", vms.Image)
+	stsConf := testcore.VolumeMigrateStsConfig(storageClass, "1Gi", vms.VolumeNumber, int32(vms.PodNumber), "", vms.Image) // #nosec G115
 	stsTmpl := stsClient.MakeStatefulSet(stsConf)
 	// Creating Statefulset
 	log.Println("Creating Statefulset")
@@ -3335,7 +3335,7 @@ func (vms *VolumeMigrateSuite) Run(ctx context.Context, storageClass string, cli
 		podClient.Delete(ctx, &pod)
 	}
 
-	newStsConf := testcore.VolumeMigrateStsConfig(vms.TargetSC, "1Gi", vms.VolumeNumber, int32(vms.PodNumber), "", vms.Image)
+	newStsConf := testcore.VolumeMigrateStsConfig(vms.TargetSC, "1Gi", vms.VolumeNumber, int32(vms.PodNumber), "", vms.Image) // #nosec G115
 	newStsTmpl := stsClient.MakeStatefulSet(newStsConf)
 	// Creating new Statefulset
 	log.Println("Creating new Statefulset")
