@@ -213,7 +213,6 @@ func ExecuteSuite(iterCtx context.Context, num int, suites map[string][]suites.I
 
 	if sr.IsStopped() {
 		log.Debug("Suite range stopped")
-		_ = fmt.Errorf("suite range stopped")
 	}
 
 	if sr.CoolDownPeriod != 0 {

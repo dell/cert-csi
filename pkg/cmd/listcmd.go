@@ -71,7 +71,7 @@ func getTestrunsCmd() cli.Command {
 				if len(runs) == 0 {
 					return fmt.Errorf("can't list test cases")
 				}
-				var nameTypes = make(map[string]bool)
+				nameTypes := make(map[string]bool)
 				var suites strings.Builder
 
 				success := true
