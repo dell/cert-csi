@@ -1,6 +1,6 @@
 module github.com/dell/cert-csi
 
-go 1.22.0
+go 1.23
 
 require (
 	github.com/cheggaaa/pb/v3 v3.1.5
