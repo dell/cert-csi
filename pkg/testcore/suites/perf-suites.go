@@ -45,6 +45,7 @@ import (
 	storagev1 "k8s.io/api/storage/v1"
 	"k8s.io/apimachinery/pkg/api/resource"
 	"k8s.io/apimachinery/pkg/util/wait"
+	"k8s.io/kubernetes/pkg/kubelet/events"
 
 	snapv1client "github.com/dell/cert-csi/pkg/k8sclient/resources/volumesnapshot/v1"
 	snapbetaclient "github.com/dell/cert-csi/pkg/k8sclient/resources/volumesnapshot/v1beta1"
@@ -2038,13 +2039,42 @@ func (ves *VolumeExpansionSuite) Run(ctx context.Context, storageClass string, c
 			return delFunc, updatedPVC.GetError()
 		}
 	}
-	if ves.IsBlock {
-		// We can't compare deltas for RawBlock so just end it here
-		return delFunc, nil
-	}
 
 	// Give some time for driver to expand
 	time.Sleep(10 * time.Second)
+
+	if ves.IsBlock {
+		// Check for "FileSystemResizeSuccessful" event to confirm successful resizing
+		log.Infof("Waiting for 'FileSystemResizeSuccessful' event for each pod")
+
+		for _, pod := range podObjectList {
+			pollErr := wait.PollImmediate(10*time.Second, time.Duration(pvcClient.Timeout)*time.Second,
+				func() (bool, error) {
+					eventList, err := podClient.ClientSet.CoreV1().Events(pod.Namespace).List(ctx, metav1.ListOptions{
+						FieldSelector: fmt.Sprintf("involvedObject.name=%s,involvedObject.kind=Pod", pod.Name),
+					})
+					if err != nil {
+						log.Errorf("Failed to list events for pod %s: %v", pod.Name, err)
+						return false, err
+					}
+
+					for _, event := range eventList.Items {
+						if event.Reason == events.FileSystemResizeSuccess {
+							log.Infof("Pod %s: 'FileSystemResizeSuccessful' event detected", pod.Name)
+							return true, nil
+						}
+					}
+					return false, nil
+				})
+
+			if pollErr != nil {
+				return delFunc, fmt.Errorf("timed out waiting for 'FileSystemResizeSuccessful' event for pod %s", pod.Name)
+			}
+		}
+
+		log.Infof("'FileSystemResizeSuccessful' event detected for all pods")
+		return delFunc, nil
+	}
 
 	for _, p := range podObjectList {
 		for _, v := range p.Spec.Containers[0].VolumeMounts {
