@@ -4,7 +4,7 @@ go 1.23
 
 require (
 	github.com/cheggaaa/pb/v3 v3.1.5
-	github.com/dell/csi-volumegroup-snapshotter v1.6.0
+	github.com/dell/csi-volumegroup-snapshotter v1.7.0
 	github.com/dell/csm-replication v1.9.0
 	github.com/fatih/color v1.17.0
 	github.com/gofrs/flock v0.8.1
