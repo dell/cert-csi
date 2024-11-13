@@ -840,10 +840,13 @@ func (cts *CapacityTrackingSuite) Run(ctx context.Context, storageClass string, 
 
 	// Get unique topology count from csinode
 	// Get topology keys to filter for when retrieving topology count
-	matchLabelExpressions := sc.Object.AllowedTopologies[0].MatchLabelExpressions
 	topologyKeys := []string{}
-	for _, exp := range matchLabelExpressions {
-		topologyKeys = append(topologyKeys, exp.Key)
+
+	if len(sc.Object.AllowedTopologies) > 0 {
+		matchLabelExpressions := sc.Object.AllowedTopologies[0].MatchLabelExpressions
+		for _, exp := range matchLabelExpressions {
+			topologyKeys = append(topologyKeys, exp.Key)
+		}
 	}
 	topologiesCount, err := getTopologyCount(topologyKeys)
 	if err != nil {
