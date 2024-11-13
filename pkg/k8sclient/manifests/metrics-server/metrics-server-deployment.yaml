@@ -40,19 +40,18 @@ spec:
     spec:
       serviceAccountName: metrics-server
       volumes:
-      # mount in tmp so we can safely use from-scratch images and/or read-only containers
-      - name: tmp-dir
-        emptyDir: {}
-      containers:
-      - name: metrics-server
-        image: registry.k8s.io/metrics-server-amd64:v0.3.5
-        imagePullPolicy: Always
-        volumeMounts:
+        # mount in tmp so we can safely use from-scratch images and/or read-only containers
         - name: tmp-dir
-          mountPath: /tmp
-        command:
-        - /metrics-server
-        - --v=2
-        - --kubelet-preferred-address-types=InternalIP
-        - --kubelet-insecure-tls=true
-
+          emptyDir: {}
+      containers:
+        - name: metrics-server
+          image: registry.k8s.io/metrics-server-amd64:v0.3.5
+          imagePullPolicy: Always
+          volumeMounts:
+            - name: tmp-dir
+              mountPath: /tmp
+          command:
+            - /metrics-server
+            - --v=2
+            - --kubelet-preferred-address-types=InternalIP
+            - --kubelet-insecure-tls=true

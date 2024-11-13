@@ -20,7 +20,7 @@ metadata:
   generateName: test-pvc-
 spec:
   accessModes:
-  - ReadWriteOnce
+    - ReadWriteOnce
   volumeMode: Filesystem
   resources:
     requests:

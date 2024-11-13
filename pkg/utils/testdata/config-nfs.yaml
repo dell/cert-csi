@@ -1,16 +1,18 @@
-#testdriver.go
+# yamllint disable-file
+# This file is not valid YAML because it is a Helm template
+# testdriver.go
 StorageClass:
-  FromExistingClassName: powerstore-nfs    #Storage class name we want to test the driver with 
+  FromExistingClassName: powerstore-nfs  # Storage class name we want to test the driver with
 SnapshotClass:
-  FromExistingClassName: powerstore-snapclass #snapshot class name 
+  FromExistingClassName: powerstore-snapclass  # snapshot class name
 DriverInfo:
-  Name: csi-powerstore.dellemc.com #Driver name 
+  Name: csi-powerstore.dellemc.com  # Driver name
   SupportedSizeRange:
-    Min: 3Gi 
+    Min: 3Gi
   SupportedFsType: {
-    "nfs"  # Supported fstypes in a coma separated values
+    "nfs",  # Supported fstypes in a coma separated values
   }
-  #Capabilities that driver support false to disable the capability and vice versa
+  # Capabilities that driver support false to disable the capability and vice versa
   Capabilities:
     persistence: true
     block: false
@@ -27,18 +29,18 @@ DriverInfo:
     onlineExpansion: true
     offlineExpansion: true
     readWriteOncePod: true
-  #Allowed topologies
+  # Allowed topologies
   TopologyKeys:
     - "csi-powerstore.dellemc.com/10.10.10.10-nfs"
     - "csi-powerstore.dellemc.com/10.10.10.10-iscsi"
-  #In the stress tests how many pods and snapshots it should create
+  # In the stress tests how many pods and snapshots it should create
   VolumeSnapshotStressTestOptions:
     NumPods: 2
     NumSnapshots: 2
   StressTestOptions:
     NumPods: 2
     NumRestarts: 2
-  #Performance test options like volume size and latency and throughput
+  # Performance test options like volume size and latency and throughput
   PerformanceTestOptions:
     ProvisioningOptions:
       VolumeSize: "3Gi"
@@ -46,7 +48,7 @@ DriverInfo:
       ExpectedMetrics:
         AvgLatency: 100000000000
         Throughput: 0.0
-#Inline volume options what your driver requires like array IF size and protocol and nas name etc..
+# Inline volume options what your driver requires like array IF size and protocol and nas name etc..
 InlineVolumes:
   - Attributes:
       arrayID: "myarrayid"
