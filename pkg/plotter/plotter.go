@@ -71,16 +71,16 @@ func GetReportPathDir(reportName string) (string, error) {
 func PlotStageMetricHistogram(tc collector.TestCaseMetrics, stage interface{}, reportName string) (*plot.Plot, error) {
 	metrics := make(map[int]int)
 
-	var min int
-	var max int
+	var minDuration int
+	var maxDuration int
 
-	min = int(math.Round(tc.StageMetrics[stage].Min.Seconds()))
-	max = int(math.Round(tc.StageMetrics[stage].Max.Seconds())) + 1
-	if max > 3000 {
-		max = 3000
+	minDuration = int(math.Round(tc.StageMetrics[stage].Min.Seconds()))
+	maxDuration = int(math.Round(tc.StageMetrics[stage].Max.Seconds())) + 1
+	if maxDuration > 3000 {
+		maxDuration = 3000
 	}
 
-	for i := min; i < max; i++ {
+	for i := minDuration; i < maxDuration; i++ {
 		metrics[i] = 0
 	}
 
@@ -457,20 +457,20 @@ func PlotMinMaxEntityOverTime(tcMetrics []collector.TestCaseMetrics, reportName 
 		return fmt.Errorf("no EntityMetrics provided")
 	}
 
-	min := math.MaxInt32
-	max := 0
+	minValue := math.MaxInt32
+	maxValue := 0
 
 	for _, tcm := range tcMetrics {
 		if tcm.EntityNumberMetrics == nil || len(tcm.EntityNumberMetrics) == 0 {
 			log.Errorf("MinMaxEoT: No EntityNumberMetrics provided in %s%d", tcm.TestCase.Name, tcm.TestCase.ID)
 			continue
 		}
-		if len(tcm.EntityNumberMetrics) > max {
-			max = len(tcm.EntityNumberMetrics)
+		if len(tcm.EntityNumberMetrics) > maxValue {
+			maxValue = len(tcm.EntityNumberMetrics)
 			firstTime := tcm.EntityNumberMetrics[0].Timestamp
 			maxPodsCreating, maxPodsReady, maxPodsTerminating, maxPvcsCreating, maxPvcsBound = getMetrics(tcm, firstTime)
-		} else if len(tcm.EntityNumberMetrics) < min {
-			min = len(tcm.EntityNumberMetrics)
+		} else if len(tcm.EntityNumberMetrics) < minValue {
+			minValue = len(tcm.EntityNumberMetrics)
 			firstTime := tcm.EntityNumberMetrics[0].Timestamp
 			minPodsCreating, minPodsReady, minPodsTerminating, minPvcsCreating, minPvcsBound = getMetrics(tcm, firstTime)
 		}
