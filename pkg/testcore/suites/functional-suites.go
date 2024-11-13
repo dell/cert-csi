@@ -839,8 +839,13 @@ func (cts *CapacityTrackingSuite) Run(ctx context.Context, storageClass string, 
 	}
 
 	// Get unique topology count from csinode
-	topologyKey := sc.Object.AllowedTopologies[0].MatchLabelExpressions[0].Key
-	topologiesCount, err := getTopologyCount(topologyKey)
+	// Get topology keys to filter for when retrieving topology count
+	matchLabelExpressions := sc.Object.AllowedTopologies[0].MatchLabelExpressions
+	topologyKeys := []string{}
+	for _, exp := range matchLabelExpressions {
+		topologyKeys = append(topologyKeys, exp.Key)
+	}
+	topologiesCount, err := getTopologyCount(topologyKeys)
 	if err != nil {
 		return delFunc, err
 	}
@@ -933,14 +938,17 @@ func (cts *CapacityTrackingSuite) Run(ctx context.Context, storageClass string, 
 	return delFunc, nil
 }
 
-func getTopologyCount(topologyKey string) (int, error) {
-	exe := []string{"bash", "-c", "kubectl describe csinode | grep 'Topology Keys' | grep '" + topologyKey + "'"}
+func getTopologyCount(topologyKeys []string) (int, error) {
+	exe := []string{"bash", "-c", "kubectl describe csinode | grep 'Topology Keys'"}
 	str, err := FindDriverLogs(exe)
 	if err != nil {
 		return 0, err
 	}
 	topologies := strings.Split(strings.TrimSpace(strings.ReplaceAll(str, "Topology Keys:", "")), "\n")
 	topologies = removeDuplicates(topologies)
+	if len(topologyKeys) > 0 {
+		topologies = filterArrayForMatches(topologies, topologyKeys)
+	}
 	topologiesCount := len(topologies)
 	return topologiesCount, nil
 }
@@ -973,6 +981,20 @@ func removeDuplicates(strSlice []string) []string {
 		}
 	}
 	return list
+}
+
+func filterArrayForMatches(listToFilter []string, filterValues []string) []string {
+	filteredList := []string{}
+	for _, value := range listToFilter {
+		for _, key := range filterValues {
+			if strings.Contains(value, key) {
+				filteredList = append(filteredList, value)
+				break
+			}
+		}
+	}
+
+	return filteredList
 }
 
 // GetName returns storage capacity tracking suite name
