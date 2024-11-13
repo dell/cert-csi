@@ -1,15 +1,15 @@
 # testdriver.go
 StorageClass:
-  FromExistingClassName: powerstore-nfs #Storage class name we want to test the driver with
+  FromExistingClassName: powerstore-nfs  # Storage class name we want to test the driver with
 SnapshotClass:
-  FromExistingClassName: powerstore-snapclass #snapshot class name
+  FromExistingClassName: powerstore-snapclass  # snapshot class name
 DriverInfo:
-  Name: csi-powerstore.dellemc.com #Driver name
+  Name: csi-powerstore.dellemc.com  # Driver name
   SupportedSizeRange:
     Min: 3Gi
   SupportedFsType: {
-      "nfs", # Supported fstypes in a coma separated values
-    }
+    "nfs",  # Supported fstypes in a coma separated values
+  }
   # Capabilities that driver support false to disable the capability and vice versa
   Capabilities:
     persistence: true
