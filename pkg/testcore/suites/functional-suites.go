@@ -832,17 +832,19 @@ type CapacityTrackingSuite struct {
 
 // Run runs storage capacity tracking test suite
 func (cts *CapacityTrackingSuite) Run(ctx context.Context, storageClass string, clients *k8sclient.Clients) (delFunc func() error, e error) {
-	// Get unique topology count from csinode
-	topologiesCount, err := getTopologyCount()
-	if err != nil {
-		return delFunc, err
-	}
-	log.Infof("Found %s topology segment(s) in csinode", color.HiYellowString(strconv.Itoa(topologiesCount)))
 	storageClass = cts.StorageClass
 	sc := clients.SCClient.Get(ctx, storageClass)
 	if sc.HasError() {
 		return delFunc, sc.GetError()
 	}
+
+	// Get unique topology count from csinode
+	topologyKey := sc.Object.AllowedTopologies[0].MatchLabelExpressions[0].Key
+	topologiesCount, err := getTopologyCount(topologyKey)
+	if err != nil {
+		return delFunc, err
+	}
+	log.Infof("Found %s topology segment(s) in csinode", color.HiYellowString(strconv.Itoa(topologiesCount)))
 
 	if cts.Image == "" {
 		cts.Image = "quay.io/centos/centos:latest"
@@ -931,8 +933,8 @@ func (cts *CapacityTrackingSuite) Run(ctx context.Context, storageClass string, 
 	return delFunc, nil
 }
 
-func getTopologyCount() (int, error) {
-	exe := []string{"bash", "-c", "kubectl describe csinode | grep 'Topology Keys'"}
+func getTopologyCount(topologyKey string) (int, error) {
+	exe := []string{"bash", "-c", "kubectl describe csinode | grep 'Topology Keys' | grep '" + topologyKey + "'"}
 	str, err := FindDriverLogs(exe)
 	if err != nil {
 		return 0, err
