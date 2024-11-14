@@ -333,6 +333,14 @@ func TestExecuteE2ECommand(t *testing.T) {
 			},
 			wantErr: false,
 		},
+		{
+			name: "execute with nil signal returns early",
+			args: args{
+				args: []string{"-kubeconfig", "/root/.kube/config", "-storage.testdriver", "testdata/config-nfs.yaml", "--ginkgo.skip", ".*"},
+				ch:   nil,
+			},
+			wantErr: false,
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
