@@ -34,7 +34,7 @@ func TestGetTopologyCount(t *testing.T) {
 	// Test case: Non-empty topology keys
 
 	FindDriverLogs = func(_ []string) (string, error) {
-		var keys = "Topology Keys: [csi-powerstore.dellemc.com/10.230.24.67-iscsi csi-powerstore.dellemc.com/10.230.24.67-nfs]"
+		keys := "Topology Keys: [csi-powerstore.dellemc.com/10.230.24.67-iscsi csi-powerstore.dellemc.com/10.230.24.67-nfs]"
 		return keys, nil
 	}
 	topologyCount, err = getTopologyCount([]string{"csi-powerstore.dellemc.com/10.230.24.67-iscsi"})
@@ -45,7 +45,6 @@ func TestGetTopologyCount(t *testing.T) {
 	FindDriverLogs = func(_ []string) (string, error) {
 		return "", errors.New("error in FindDriverLogs")
 	}
-	type FindDriverLogs func(url string) string
 	topologyCount, err = getTopologyCount([]string{})
 	assert.Error(t, err)
 	assert.Equal(t, 0, topologyCount)
