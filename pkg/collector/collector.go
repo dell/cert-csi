@@ -255,25 +255,25 @@ func (mc *MetricsCollector) getPVCsMetrics(
 func calculateMetricsOfStages(stageMetrics map[interface{}][]time.Duration) map[interface{}]DurationOfStage {
 	calculatedMetrics := make(map[interface{}]DurationOfStage)
 	for k, v := range stageMetrics {
-		minDuration, maxDuration := findMaxAndMin(v)
+		minimum, maximum := findMaxAndMin(v)
 		avg := findAvg(v)
-		calculatedMetrics[k] = DurationOfStage{minDuration, maxDuration, avg}
+		calculatedMetrics[k] = DurationOfStage{minimum, maximum, avg}
 	}
 	return calculatedMetrics
 }
 
-func findMaxAndMin(metrics []time.Duration) (minDuration, maxDuration time.Duration) {
-	minDuration = metrics[0]
-	maxDuration = metrics[0]
+func findMaxAndMin(metrics []time.Duration) (minimum, maximum time.Duration) {
+	minimum = metrics[0]
+	maximum = metrics[0]
 	for _, m := range metrics[1:] {
-		if m > maxDuration {
-			maxDuration = m
+		if m > maximum {
+			maximum = m
 		}
-		if m < minDuration {
-			minDuration = m
+		if m < minimum {
+			minimum = m
 		}
 	}
-	return minDuration, maxDuration
+	return minimum, maximum
 }
 
 func findAvg(metrics []time.Duration) time.Duration {
