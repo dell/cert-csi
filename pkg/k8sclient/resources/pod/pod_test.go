@@ -55,6 +55,9 @@ func (suite *PodTestSuite) TestMakePod() {
 		ContainerImage: "quay.io/centos/centos:latest",
 		Command:        []string{"/app/run.sh"},
 	}
+
+	podconf.VolumeMode = "Block"
+
 	podClient, err := suite.kubeClient.CreatePodClient("test-namespace")
 	suite.NoError(err)
 	podTmpl := podClient.MakePod(podconf)
