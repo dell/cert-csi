@@ -281,6 +281,9 @@ func TestBuildE2eCommand(t *testing.T) {
 	set1 := flag.NewFlagSet("test", 0)
 	set1.String("driver-config", "testdata/config-nfs.yaml", "driver config file")
 	x2 := cli.NewContext(nil, set1, nil)
+
+	defaultDir := os.Getenv("HOME") + "/reports/"
+
 	tests := []struct {
 		name    string
 		args    args
@@ -296,7 +299,7 @@ func TestBuildE2eCommand(t *testing.T) {
 		{
 			name:    "send good config file",
 			args:    args{ctx: x2},
-			want:    []string{"-kubeconfig", "/root/.kube/config", "-storage.testdriver", "testdata/config-nfs.yaml", "--ginkgo.junit-report", "/root/reports/execution_powerstore-nfs.xml"},
+			want:    []string{"-kubeconfig", "/root/.kube/config", "-storage.testdriver", "testdata/config-nfs.yaml", "--ginkgo.junit-report", defaultDir + "execution_powerstore-nfs.xml"},
 			wantErr: false,
 		},
 	}
