@@ -73,6 +73,38 @@ func (suite *VaTestSuite) TestVaClient_WaitUntilNoneLeft() {
 	})
 }
 
+func (suite *VaTestSuite) TestWaitUntilVaGone() {
+	pvName := "test-pv"
+	va, err := suite.kubeClient.ClientSet.StorageV1().VolumeAttachments().Create(context.Background(), &storagev1.VolumeAttachment{
+		ObjectMeta: metav1.ObjectMeta{
+			Name: "test-va",
+		},
+		Spec: storagev1.VolumeAttachmentSpec{
+			Source: storagev1.VolumeAttachmentSource{
+				PersistentVolumeName: &pvName,
+			},
+		},
+	}, metav1.CreateOptions{})
+	suite.NoError(err)
+
+	vaClient, err := suite.kubeClient.CreateVaClient("test-namespace")
+	suite.NoError(err)
+
+	err = suite.kubeClient.ClientSet.StorageV1().VolumeAttachments().Delete(context.Background(), va.Name, metav1.DeleteOptions{})
+	suite.NoError(err)
+
+	suite.Run("wait until VA is gone", func() {
+		err = vaClient.WaitUntilVaGone(context.Background(), *va.Spec.Source.PersistentVolumeName)
+		suite.NoError(err)
+	})
+
+	suite.Run("no VA found", func() {
+		nonExistentPvName := "non-existent-pv"
+		err = vaClient.WaitUntilVaGone(context.Background(), nonExistentPvName)
+		suite.NoError(err)
+	})
+}
+
 func TestVaTestSuite(t *testing.T) {
 	suite.Run(t, new(VaTestSuite))
 }
