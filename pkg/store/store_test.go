@@ -223,6 +223,9 @@ func (suite *StoreTestSuite) TestAllStores() {
 		suite.Equal(len(events), 1)
 		suite.Equal(ne[0].PodsReady, 2)
 
+		_, err = store.GetNumberEntities(Conditions{"fake_param": "pod2"}, "timestamp DESC", 1)
+		suite.EqualError(err, "no such column: fake_param")
+
 		podWithEvents, err := store.GetEntitiesWithEventsByTestCaseAndEntityType(&tc, Pod)
 		suite.NoError(err)
 		suite.Equal(len(podWithEvents), 1)
