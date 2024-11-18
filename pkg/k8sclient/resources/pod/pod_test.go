@@ -219,6 +219,53 @@ func (suite *PodTestSuite) TestDeleteAll() {
 	})
 }
 
+func (suite *PodTestSuite) TestReadyPodsCount() {
+	podconf := &pod.Config{
+		NamePrefix:     "pod-prov-test-",
+		PvcNames:       []string{"pvc1", "pvc2", "pvc3"},
+		VolumeName:     "vol",
+		MountPath:      "/data",
+		ContainerName:  "prov-test",
+		ContainerImage: "quay.io/centos/centos:latest",
+		Command:        []string{"/app/run.sh"},
+	}
+
+	client, err := suite.kubeClient.CreatePodClient("test-namespace")
+	suite.NoError(err)
+
+	podTmpl := client.MakePod(podconf)
+	suite.Equal("test-namespace", podTmpl.Namespace)
+
+	suite.Run("Ready Pods Count test", func() {
+		readyCount, err := client.ReadyPodsCount(context.Background())
+		suite.Equal(readyCount, 0)
+		suite.NoError(err)
+	})
+}
+
+func (suite *PodTestSuite) TestWaitForAllToBeReady() {
+	podconf := &pod.Config{
+		NamePrefix:     "pod-prov-test-",
+		PvcNames:       []string{"pvc1", "pvc2", "pvc3"},
+		VolumeName:     "vol",
+		MountPath:      "/data",
+		ContainerName:  "prov-test",
+		ContainerImage: "quay.io/centos/centos:latest",
+		Command:        []string{"/app/run.sh"},
+	}
+
+	client, err := suite.kubeClient.CreatePodClient("test-namespace")
+	suite.NoError(err)
+
+	podTmpl := client.MakePod(podconf)
+	suite.Equal("test-namespace", podTmpl.Namespace)
+
+	suite.Run("waits for all Pods to be in Ready state test", func() {
+		err := client.WaitForAllToBeReady(context.Background())
+		suite.NoError(err)
+	})
+}
+
 func TestPodTestSuite(t *testing.T) {
 	suite.Run(t, new(PodTestSuite))
 }
