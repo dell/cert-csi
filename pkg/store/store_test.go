@@ -54,6 +54,8 @@ func (suite *StoreTestSuite) TestAllStores() {
 		}
 		err := store.SaveTestRun(sourceTestRun)
 		suite.NoError(err)
+		err = store.SaveTestRun(sourceTestRun)
+		suite.EqualError(err, "UNIQUE constraint failed: test_runs.name")
 
 		sourceTestCase := &TestCase{
 			Name:           "test case",
@@ -116,6 +118,23 @@ func (suite *StoreTestSuite) TestAllStores() {
 		})
 		suite.EqualError(err, "UNIQUE constraint failed: entities.k8s_uid")
 
+		err = store.SaveResourceUsage([]*ResourceUsage{
+			{
+				PodName:       "pod2",
+				TcID:          sourceTestCase.ID,
+				ContainerName: "container2",
+				Timestamp:     time.Now(),
+				CPU:           1,
+				Mem:           2,
+			},
+		})
+		suite.Nil(err, "able to save resource usage")
+
+		testRuns, err := store.GetTestRuns(Conditions{"name": "test run 1"}, "", 0)
+		suite.Nil(err, "able to get test run by name")
+		suite.Equal(len(testRuns), 1, fmt.Sprintf("able to get test run by name using %s store", key))
+		suite.Equal(testRuns[0].Name, "test run 1", fmt.Sprintf("able to get test run name using %s store", key))
+
 		events, err := store.GetEvents(Conditions{"name": "test event 1"}, "", 0)
 		suite.Nil(err, "able to get event by name")
 		suite.Equal(len(events), 1, fmt.Sprintf("able to get event by name using %s store", key))
@@ -134,15 +153,23 @@ func (suite *StoreTestSuite) TestAllStores() {
 		suite.Nil(err, "able to get events by entity id")
 		suite.Equal(len(events), 1, fmt.Sprintf("able to get events by entity id using %s store", key))
 
+		_, err = store.GetEvents(Conditions{"fake_param": sourceEntityPod.ID}, "", 0)
+		suite.EqualError(err, "no such column: fake_param")
+
 		tcs, err := store.GetTestCases(Conditions{"name": "test case"}, "", 0)
 		suite.Nil(err, "able to get test case by uid")
 		suite.Equal(len(tcs), 1, fmt.Sprintf("able to get test case by uid using %s store", key))
 		tc := tcs[0]
 		suite.Equal(tc.Name, "test case", fmt.Sprintf("able to get test name case using %s store", key))
 
+		_, err = store.GetTestCases(Conditions{"fake_param": "test case"}, "", 0)
+		suite.EqualError(err, "no such column: fake_param")
+
+		err = store.FailedTestCase(&tc, time.Now(), "failed test case")
+		suite.Nil(err, "able to set success status to failed for test case")
 		suite.False(tc.Success, "success status for test case must be false")
 		err = store.SuccessfulTestCase(&tc, time.Now())
-		suite.Nil(err, "able to set success status to test case")
+		suite.Nil(err, "able to set success status to success for test case")
 		suite.True(tc.Success, "success status for test case must be true")
 
 		tcs, err = store.GetTestCases(Conditions{"success": true}, "", 0)
@@ -159,6 +186,9 @@ func (suite *StoreTestSuite) TestAllStores() {
 
 		entities, _ = store.GetEntities(Conditions{"type": Pvc}, "", 0)
 		suite.Equal(len(entities), 1)
+
+		_, err = store.GetEntities(Conditions{"fake_param": Pvc}, "", 0)
+		suite.EqualError(err, "no such column: fake_param")
 
 		nEntities := []*NumberEntities{
 			{
@@ -194,6 +224,12 @@ func (suite *StoreTestSuite) TestAllStores() {
 		suite.NoError(err)
 		suite.Equal(len(podWithEvents), 1)
 		suite.Equal(podWithEvents[*sourceEntityPod][0].Name, "test event 3")
+
+		resourceUsages, err := store.GetResourceUsage(Conditions{"pod_name": "pod2"}, "", 0)
+		suite.Nil(err, "able to get resource usage by name")
+		suite.Equal(len(resourceUsages), 1, fmt.Sprintf("able to get resource usage by pod name using %s store", key))
+		suite.Equal(resourceUsages[0].PodName, "pod2", fmt.Sprintf("able to get resource usage pod name using %s store", key))
+
 	}
 }
 
