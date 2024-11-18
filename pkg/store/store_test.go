@@ -135,6 +135,9 @@ func (suite *StoreTestSuite) TestAllStores() {
 		suite.Equal(len(testRuns), 1, fmt.Sprintf("able to get test run by name using %s store", key))
 		suite.Equal(testRuns[0].Name, "test run 1", fmt.Sprintf("able to get test run name using %s store", key))
 
+		_, err = store.GetTestRuns(Conditions{"fake_param": "test run 1"}, "", 0)
+		suite.EqualError(err, "no such column: fake_param")
+
 		events, err := store.GetEvents(Conditions{"name": "test event 1"}, "", 0)
 		suite.Nil(err, "able to get event by name")
 		suite.Equal(len(events), 1, fmt.Sprintf("able to get event by name using %s store", key))
@@ -230,6 +233,8 @@ func (suite *StoreTestSuite) TestAllStores() {
 		suite.Equal(len(resourceUsages), 1, fmt.Sprintf("able to get resource usage by pod name using %s store", key))
 		suite.Equal(resourceUsages[0].PodName, "pod2", fmt.Sprintf("able to get resource usage pod name using %s store", key))
 
+		_, err = store.GetResourceUsage(Conditions{"fake_param": "pod2"}, "", 0)
+		suite.EqualError(err, "no such column: fake_param")
 	}
 }
 
