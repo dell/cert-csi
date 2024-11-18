@@ -13,12 +13,15 @@
  * limitations under the License.
  *
  */
+
 package suites
 
 import (
 	"errors"
+	"reflect"
 	"testing"
 
+	"github.com/dell/cert-csi/pkg/observer"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -48,4 +51,135 @@ func TestGetTopologyCount(t *testing.T) {
 	topologyCount, err = getTopologyCount([]string{})
 	assert.Error(t, err)
 	assert.Equal(t, 0, topologyCount)
+}
+
+func TestVolumeDeletionSuite_GetName(t *testing.T) {
+	tests := []struct {
+		name string
+		vds  *VolumeDeletionSuite
+		want string
+	}{
+		{
+			name: "Testing GetName when Description is not empty",
+			vds: &VolumeDeletionSuite{
+				DeletionStruct: &DeletionStruct{
+					Name:        "test-volume",
+					Namespace:   "test-namespace",
+					Description: "test-description",
+				},
+			},
+			want: "test-description",
+		},
+		{
+			name: "Testing GetName when Description is empty",
+			vds: &VolumeDeletionSuite{
+				DeletionStruct: &DeletionStruct{
+					Name:      "test-volume",
+					Namespace: "test-namespace",
+				},
+			},
+			want: "VolumeDeletionSuite",
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if got := tt.vds.GetName(); got != tt.want {
+				t.Errorf("VolumeDeletionSuite.GetName() = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}
+
+func TestVolumeDeletionSuite_GetObservers(t *testing.T) {
+	type args struct {
+		obsType observer.Type
+	}
+	tests := []struct {
+		name string
+		v    *VolumeDeletionSuite
+		args args
+		want []observer.Interface
+	}{
+		{
+			name: "Testing GetObservers with event type",
+			v:    &VolumeDeletionSuite{},
+			args: args{
+				obsType: observer.EVENT,
+			},
+			want: []observer.Interface{
+				&observer.PvcObserver{},
+				&observer.EntityNumberObserver{},
+				&observer.ContainerMetricsObserver{},
+			},
+		},
+		{
+			name: "Testing GetObservers with list type",
+			v:    &VolumeDeletionSuite{},
+			args: args{
+				obsType: observer.LIST,
+			},
+			want: []observer.Interface{},
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if got := tt.v.GetObservers(tt.args.obsType); !reflect.DeepEqual(got, tt.want) {
+				t.Errorf("VolumeDeletionSuite.GetObservers() = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}
+func TestVolumeDeletionSuite_GetNamespace(t *testing.T) {
+	tests := []struct {
+		name string
+		vds  *VolumeDeletionSuite
+		want string
+	}{
+		{
+			name: "Testing GetNamespace when Namespace is not empty",
+			vds: &VolumeDeletionSuite{
+				DeletionStruct: &DeletionStruct{
+					Namespace: "test-namespace",
+				},
+			},
+			want: "test-namespace",
+		},
+		{
+			name: "Testing GetNamespace when Namespace is empty",
+			vds: &VolumeDeletionSuite{
+				DeletionStruct: &DeletionStruct{
+					Namespace: "",
+				},
+			},
+			want: "",
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if got := tt.vds.GetNamespace(); got != tt.want {
+				t.Errorf("VolumeDeletionSuite.GetNamespace() = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}
+
+func TestVolumeDeletionSuite_Parameters(t *testing.T) {
+	tests := []struct {
+		name string
+		vds  *VolumeDeletionSuite
+		want string
+	}{
+		{
+			name: "Testing Parameters",
+			vds:  &VolumeDeletionSuite{},
+			want: "{}",
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if got := tt.vds.Parameters(); got != tt.want {
+				t.Errorf("VolumeDeletionSuite.Parameters() = %v, want %v", got, tt.want)
+			}
+		})
+	}
 }

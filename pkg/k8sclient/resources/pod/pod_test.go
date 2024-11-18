@@ -171,6 +171,54 @@ func (suite *PodTestSuite) TestCreatePod() {
 	}
 }
 
+func (suite *PodTestSuite) TestDelete() {
+	podconf := &pod.Config{
+		NamePrefix:     "pod-prov-test-",
+		PvcNames:       []string{"pvc1", "pvc2", "pvc3"},
+		VolumeName:     "vol",
+		MountPath:      "/data",
+		ContainerName:  "prov-test",
+		ContainerImage: "quay.io/centos/centos:latest",
+		Command:        []string{"/app/run.sh"},
+	}
+
+	client, err := suite.kubeClient.CreatePodClient("test-namespace")
+	suite.NoError(err)
+
+	podTmpl := client.MakePod(podconf)
+	suite.Equal("test-namespace", podTmpl.Namespace)
+
+	suite.Run("Delete pod test", func() {
+		result := client.Delete(context.Background(), podTmpl)
+
+		suite.NoError(result.GetError())
+	})
+}
+
+func (suite *PodTestSuite) TestDeleteAll() {
+	podconf := &pod.Config{
+		NamePrefix:     "pod-prov-test-",
+		PvcNames:       []string{"pvc1", "pvc2", "pvc3"},
+		VolumeName:     "vol",
+		MountPath:      "/data",
+		ContainerName:  "prov-test",
+		ContainerImage: "quay.io/centos/centos:latest",
+		Command:        []string{"/app/run.sh"},
+	}
+
+	client, err := suite.kubeClient.CreatePodClient("test-namespace")
+	suite.NoError(err)
+
+	podTmpl := client.MakePod(podconf)
+	suite.Equal("test-namespace", podTmpl.Namespace)
+
+	suite.Run("Delete all pod test", func() {
+		err := client.DeleteAll(context.Background())
+
+		suite.NoError(err)
+	})
+}
+
 func TestPodTestSuite(t *testing.T) {
 	suite.Run(t, new(PodTestSuite))
 }
