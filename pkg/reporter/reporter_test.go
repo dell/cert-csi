@@ -469,6 +469,96 @@ func (suite *ReporterTestSuite) TestUpdateTestCounts() {
 	suite.Equal(0, skippedCount, "Expected skipped count to be 0 (None were truly skipped)")
 }
 
+//------------------------------------------------------------------------------------------------
+
+// Test for getResultStatus in table-reporter.go
+func (suite *ReporterTestSuite) TestTabularReporterGetResultStatus() {
+	// Create an instance of TabularReporter
+	tr := &TabularReporter{}
+
+	// Test cases for getResultStatus
+	tests := []struct {
+		input    bool
+		expected string
+	}{
+		{true, "SUCCESS"},
+		{false, "FAILURE"},
+	}
+
+	for _, tt := range tests {
+		result := tr.getResultStatus(tt.input)
+		suite.Equal(tt.expected, result, "Expected result status for input %v to be %s, but got %s", tt.input, tt.expected, result)
+	}
+}
+
+// Test for getColorResultStatus in table-reporter.go
+func (suite *ReporterTestSuite) TestTabularReporterGetColorResultStatus() {
+	// Create an instance of TabularReporter
+	tr := &TabularReporter{}
+
+	// Test cases for getColorResultStatus
+	tests := []struct {
+		input    bool
+		expected string
+	}{
+		{true, "green"},
+		{false, "red"},
+	}
+
+	for _, tt := range tests {
+		result := tr.getColorResultStatus(tt.input)
+		suite.Equal(tt.expected, result, "Expected color result status for input %v to be %s, but got %s", tt.input, tt.expected, result)
+	}
+}
+
+// Test for getSlNo in table-reporter.go
+func (suite *ReporterTestSuite) TestTabularReporterGetSlNo() {
+	// Create an instance of TabularReporter
+	tr := &TabularReporter{}
+
+	// Test cases for getSlNo
+	tests := []struct {
+		input    int
+		expected int
+	}{
+		{0, 1},   // The first index should return 1
+		{1, 2},   // The second index should return 2
+		{10, 11}, // The eleventh index should return 11
+		{-1, 0},  // Testing a negative index, should return 0 (if negative handling is desired)
+	}
+
+	for _, tt := range tests {
+		result := tr.getSlNo(tt.input)
+		suite.Equal(tt.expected, result, "Expected serial number for index %d to be %d, but got %d", tt.input, tt.expected, result)
+	}
+}
+
+// Test for getArrays in table-reporter.go
+func (suite *ReporterTestSuite) TestTabularReporterGetArrays() {
+	// Create an instance of TabularReporter
+	tr := &TabularReporter{}
+
+	// Test scenario 1: arrayConfig has arrayIPs set
+	arrayConfig = map[string]string{
+		"name":     "testArray",
+		"arrayIPs": "192.168.1.1,192.168.1.2",
+	}
+
+	result := tr.getArrays()
+	suite.Equal("192.168.1.1,192.168.1.2", result, "Expected arrayIPs to match the configured value")
+
+	// Test scenario 2: arrayConfig does not have arrayIPs set
+	arrayConfig = map[string]string{
+		"name": "testArray",
+		// No arrayIPs key
+	}
+
+	result = tr.getArrays()
+	suite.Empty(result, "Expected arrayIPs to be empty when not set in config")
+}
+
+//------------------------------------------------------------------------------------------------
+
 func TestReporterTestSuite(t *testing.T) {
 	suite.Run(t, new(ReporterTestSuite))
 }
