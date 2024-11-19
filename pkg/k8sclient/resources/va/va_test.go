@@ -23,7 +23,9 @@ import (
 
 	"github.com/dell/cert-csi/pkg/k8sclient"
 	"github.com/stretchr/testify/suite"
+	corev1 "k8s.io/api/core/v1"
 	storagev1 "k8s.io/api/storage/v1"
+	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes/fake"
 )
@@ -43,6 +45,57 @@ func (suite *VaTestSuite) SetupSuite() {
 		VersionInfo: nil,
 	}
 	suite.kubeClient.SetTimeout(1)
+}
+
+func (suite *VaTestSuite) TestDeleteVaBasedOnPVName() {
+	pvName := "test-pv1"
+	vaName := "test-va"
+
+	pv, err := suite.kubeClient.ClientSet.CoreV1().PersistentVolumes().Create(context.Background(), &corev1.PersistentVolume{
+		ObjectMeta: metav1.ObjectMeta{
+			Name: pvName,
+		},
+		Spec: corev1.PersistentVolumeSpec{
+			Capacity: corev1.ResourceList{
+				corev1.ResourceStorage: resource.MustParse("1Gi"),
+			},
+			AccessModes: []corev1.PersistentVolumeAccessMode{
+				corev1.ReadWriteOnce,
+			},
+			PersistentVolumeSource: corev1.PersistentVolumeSource{
+				HostPath: &corev1.HostPathVolumeSource{
+					Path: "/tmp/data",
+				},
+			},
+		},
+	}, metav1.CreateOptions{})
+	suite.NoError(err)
+
+	va, err := suite.kubeClient.ClientSet.StorageV1().VolumeAttachments().Create(context.Background(), &storagev1.VolumeAttachment{
+		ObjectMeta: metav1.ObjectMeta{
+			Name: vaName,
+		},
+		Spec: storagev1.VolumeAttachmentSpec{
+			Source: storagev1.VolumeAttachmentSource{
+				PersistentVolumeName: &pv.Name,
+			},
+		},
+	}, metav1.CreateOptions{})
+	suite.NoError(err)
+
+	vaClient, err := suite.kubeClient.CreateVaClient("test-namespace")
+	suite.NoError(err)
+
+	suite.Run("delete non existent pv", func() {
+		err = vaClient.DeleteVaBasedOnPVName(context.Background(), "non-existent-pv")
+		suite.NoError(err)
+
+		err = suite.kubeClient.ClientSet.StorageV1().VolumeAttachments().Delete(context.Background(), va.Name, metav1.DeleteOptions{})
+		suite.NoError(err)
+
+		_, err = suite.kubeClient.ClientSet.StorageV1().VolumeAttachments().Get(context.Background(), va.Name, metav1.GetOptions{})
+		suite.Error(err)
+	})
 }
 
 func (suite *VaTestSuite) TestVaClient_WaitUntilNoneLeft() {
@@ -73,15 +126,37 @@ func (suite *VaTestSuite) TestVaClient_WaitUntilNoneLeft() {
 	})
 }
 
-func (suite *VaTestSuite) TestWaitUntilVaGone() {
-	pvName := "test-pv"
+func (suite *VaTestSuite) TestVaClient_WaitUntilVaGone() {
+	pvName := "test-pv2"
+	vaName := "test-va"
+
+	pv, err := suite.kubeClient.ClientSet.CoreV1().PersistentVolumes().Create(context.Background(), &corev1.PersistentVolume{
+		ObjectMeta: metav1.ObjectMeta{
+			Name: pvName,
+		},
+		Spec: corev1.PersistentVolumeSpec{
+			Capacity: corev1.ResourceList{
+				corev1.ResourceStorage: resource.MustParse("1Gi"),
+			},
+			AccessModes: []corev1.PersistentVolumeAccessMode{
+				corev1.ReadWriteOnce,
+			},
+			PersistentVolumeSource: corev1.PersistentVolumeSource{
+				HostPath: &corev1.HostPathVolumeSource{
+					Path: "/tmp/data",
+				},
+			},
+		},
+	}, metav1.CreateOptions{})
+	suite.NoError(err)
+
 	va, err := suite.kubeClient.ClientSet.StorageV1().VolumeAttachments().Create(context.Background(), &storagev1.VolumeAttachment{
 		ObjectMeta: metav1.ObjectMeta{
-			Name: "test-va",
+			Name: vaName,
 		},
 		Spec: storagev1.VolumeAttachmentSpec{
 			Source: storagev1.VolumeAttachmentSource{
-				PersistentVolumeName: &pvName,
+				PersistentVolumeName: &pv.Name,
 			},
 		},
 	}, metav1.CreateOptions{})
