@@ -234,6 +234,67 @@ func (suite *ReporterTestSuite) TestGetColorResultStatus() {
 	suite.Equal("red", result, "Expected color result status to be red")
 }
 
+func (suite *ReporterTestSuite) TestShouldBeIncluded() {
+	tests := []struct {
+		name     string
+		metric   collector.DurationOfStage
+		expected bool
+	}{
+		{
+			name: "All metrics are valid",
+			metric: collector.DurationOfStage{
+				Max: 10,
+				Min: 1,
+				Avg: 5,
+			},
+			expected: true,
+		},
+		{
+			name: "Max is negative",
+			metric: collector.DurationOfStage{
+				Max: -1,
+				Min: 1,
+				Avg: 5,
+			},
+			expected: false,
+		},
+		{
+			name: "Min is negative",
+			metric: collector.DurationOfStage{
+				Max: 10,
+				Min: -1,
+				Avg: 5,
+			},
+			expected: false,
+		},
+		{
+			name: "Avg is negative",
+			metric: collector.DurationOfStage{
+				Max: 10,
+				Min: 1,
+				Avg: -5,
+			},
+			expected: false,
+		},
+		{
+			name: "All metrics are zero",
+			metric: collector.DurationOfStage{
+				Max: 0,
+				Min: 0,
+				Avg: 0,
+			},
+			expected: false,
+		},
+	}
+
+	for _, tt := range tests {
+		suite.Run(tt.name, func() {
+			result := shouldBeIncluded(tt.metric)
+			suite.Equal(tt.expected, result, "Expected %v but got %v", tt.expected, result)
+		})
+	}
+}
+
 func TestReporterTestSuite(t *testing.T) {
 	suite.Run(t, new(ReporterTestSuite))
 }
