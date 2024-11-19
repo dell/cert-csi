@@ -194,6 +194,19 @@ func (suite *ReporterTestSuite) TestGenerateAllReports() {
 	}
 }
 
+func (suite *ReporterTestSuite) TestGenerateFunctionalReport() {
+	// Create a mock store
+	mockDB := store.NewSQLiteStore("file:testdata/mock_functional_report.db")
+	// Define report types to test
+	reportTypes := []ReportType{TabularReport, XMLReport}
+
+	// Execute the GenerateFunctionalReport function
+	err := GenerateFunctionalReport(mockDB, reportTypes)
+
+	// Verify the results
+	suite.NoError(err, "Expected no error while generating functional reports")
+}
+
 func TestReporterTestSuite(t *testing.T) {
 	suite.Run(t, new(ReporterTestSuite))
 }
