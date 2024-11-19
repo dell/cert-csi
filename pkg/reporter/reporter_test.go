@@ -208,6 +208,19 @@ func (suite *ReporterTestSuite) TestGenerateFunctionalReport() {
 	suite.NoError(err, "Expected no error while generating functional reports")
 }
 
+// Test GetRestultStatus method in html-reporter.go
+func (suite *ReporterTestSuite) TestGetResultStatus() {
+	hr := &HTMLReporter{}
+
+	// Test case: result is true
+	result := hr.getResultStatus(true)
+	suite.Equal("SUCCESS", result, "Expected result status to be SUCCESS")
+
+	// Test case: result is false
+	result = hr.getResultStatus(false)
+	suite.Equal("FAILURE", result, "Expected result status to be FAILURE")
+}
+
 func TestReporterTestSuite(t *testing.T) {
 	suite.Run(t, new(ReporterTestSuite))
 }
