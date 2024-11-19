@@ -234,6 +234,39 @@ func (suite *ReporterTestSuite) TestGetColorResultStatus() {
 	suite.Equal("red", result, "Expected color result status to be red")
 }
 
+// Test the inc function in tools.go
+func (suite *ReporterTestSuite) TestInc() {
+	tests := []struct {
+		name     string
+		input    int
+		expected int
+	}{
+		{
+			name:     "Increment positive number",
+			input:    5,
+			expected: 6,
+		},
+		{
+			name:     "Increment zero",
+			input:    0,
+			expected: 1,
+		},
+		{
+			name:     "Increment negative number",
+			input:    -3,
+			expected: -2,
+		},
+	}
+
+	for _, tt := range tests {
+		suite.Run(tt.name, func() {
+			result := inc(tt.input)
+			suite.Equal(tt.expected, result, "Expected %d but got %d", tt.expected, result)
+		})
+	}
+}
+
+// Tests the shouldBeIncluded function in tools.go
 func (suite *ReporterTestSuite) TestShouldBeIncluded() {
 	tests := []struct {
 		name     string
