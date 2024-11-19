@@ -23,6 +23,7 @@ import (
 	"os"
 	"path/filepath"
 	"testing"
+	"time"
 
 	"github.com/dell/cert-csi/pkg/collector"
 	"github.com/dell/cert-csi/pkg/plotter"
@@ -326,6 +327,113 @@ func (suite *ReporterTestSuite) TestShouldBeIncluded() {
 			suite.Equal(tt.expected, result, "Expected %v but got %v", tt.expected, result)
 		})
 	}
+}
+
+// Setup for XMLReporterTestSuite
+type XMLReporterTestSuite struct {
+	suite.Suite
+	reporter *XMLReporter
+}
+
+func (suite *XMLReporterTestSuite) SetupTest() {
+	suite.reporter = &XMLReporter{}
+}
+
+func (xr *XMLReporter) SetPassedCount(count int) {
+	passedCount = count // Assuming passedCount is scoped properly.
+}
+
+func (suite *XMLReporterTestSuite) TestGetResultStatus() {
+	// Test case when result is true
+	result := suite.reporter.getResultStatus(true)
+	suite.Equal("PASSED", result, "Expected result status to be PASSED")
+
+	// Test case when result is false
+	result = suite.reporter.getResultStatus(false)
+	suite.Equal("FAILED", result, "Expected result status to be FAILED")
+}
+
+// Test for getResultStatus method in xml-reporter.go
+func TestXMLReporterTestSuite(t *testing.T) {
+	suite.Run(t, new(XMLReporterTestSuite))
+}
+
+// Test for getPassedCount method in xml-reporter.go
+func (suite *XMLReporterTestSuite) TestGetPassedCount() {
+	// Setup the reporter
+	suite.reporter = &XMLReporter{}
+
+	// Use the setter method to set the passedCount for testing
+	suite.reporter.SetPassedCount(5) // Simulating that 5 tests have passed
+
+	// Call the getPassedCount method
+	result := suite.reporter.getPassedCount()
+
+	// Assert that the result matches the expected value
+	suite.Equal(5, result, "Expected passed count to be 5")
+}
+
+// Test for getFailedCountFromMC method in xml-reporter.go
+func (suite *XMLReporterTestSuite) TestGetFailedCountFromMC() {
+	// Create a sample MetricsCollection with test cases
+	testCases := []collector.TestCaseMetrics{
+		{TestCase: store.TestCase{Success: true}},  // Passed
+		{TestCase: store.TestCase{Success: false}}, // Failed
+		{TestCase: store.TestCase{Success: true}},  // Passed
+		{TestCase: store.TestCase{Success: false}}, // Failed
+		{TestCase: store.TestCase{Success: false}}, // Failed
+	}
+
+	mc := &collector.MetricsCollection{
+		TestCasesMetrics: testCases,
+	}
+
+	// Call the getFailedCountFromMC function
+	failedCount := getFailedCountFromMC(mc)
+
+	// Assert that the number of failed test cases is correct
+	suite.Equal(3, failedCount, "Expected failed count to be 3")
+}
+
+// Test for getPassedCountFromMC method in xml-reporter.go
+func (suite *XMLReporterTestSuite) TestGetPassedCountFromMC() {
+	// Create a sample MetricsCollection with test cases
+	testCases := []collector.TestCaseMetrics{
+		{TestCase: store.TestCase{Success: true}},  // Passed
+		{TestCase: store.TestCase{Success: false}}, // Failed
+		{TestCase: store.TestCase{Success: true}},  // Passed
+		{TestCase: store.TestCase{Success: false}}, // Failed
+		{TestCase: store.TestCase{Success: true}},  // Passed
+	}
+
+	mc := &collector.MetricsCollection{
+		TestCasesMetrics: testCases,
+	}
+
+	// Call the getPassedCountFromMC function
+	passedCount := getPassedCountFromMC(mc)
+
+	// Assert that the number of passed test cases is correct
+	suite.Equal(3, passedCount, "Expected passed count to be 3")
+}
+
+func (suite *XMLReporterTestSuite) TestGetTestDuration() {
+	// Define a start and end time for the test case
+	startTime := time.Now()
+	endTime := startTime.Add(2 * time.Minute) // Add 2 minutes to the start time
+
+	// Create a TestCase instance with the specified timestamps
+	tc := store.TestCase{
+		StartTimestamp: startTime,
+		EndTimestamp:   endTime,
+	}
+
+	// Call the getTestDuration function
+	duration := getTestDuration(tc)
+
+	// Assert that the duration is correctly formatted
+	expectedDuration := "02:00" // 2 minutes
+	suite.Equal(expectedDuration, duration, "Expected duration to be 02:00")
 }
 
 func TestReporterTestSuite(t *testing.T) {
