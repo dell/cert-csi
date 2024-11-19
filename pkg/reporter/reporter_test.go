@@ -194,6 +194,107 @@ func (suite *ReporterTestSuite) TestGenerateAllReports() {
 	}
 }
 
+// Test GenerateFunctionalReport method in functional-reporter.go
+func (suite *ReporterTestSuite) TestGenerateFunctionalReport() {
+	// Create a mock store
+	mockDB := store.NewSQLiteStore("file:testdata/mock_functional_report.db")
+	// Define report types to test
+	reportTypes := []ReportType{TabularReport, XMLReport}
+
+	// Execute the GenerateFunctionalReport function
+	err := GenerateFunctionalReport(mockDB, reportTypes)
+
+	// Verify the results
+	suite.NoError(err, "Expected no error while generating functional reports")
+}
+
+// Test GetRestultStatus method in html-reporter.go
+func (suite *ReporterTestSuite) TestGetResultStatus() {
+	hr := &HTMLReporter{}
+
+	// Test case: result is true
+	result := hr.getResultStatus(true)
+	suite.Equal("SUCCESS", result, "Expected result status to be SUCCESS")
+
+	// Test case: result is false
+	result = hr.getResultStatus(false)
+	suite.Equal("FAILURE", result, "Expected result status to be FAILURE")
+}
+
+// Test GetColorResultStatus method in html-reporter.go
+func (suite *ReporterTestSuite) TestGetColorResultStatus() {
+	hr := &HTMLReporter{}
+
+	// Test case: result is true
+	result := hr.getColorResultStatus(true)
+	suite.Equal("green", result, "Expected color result status to be green")
+
+	// Test case: result is false
+	result = hr.getColorResultStatus(false)
+	suite.Equal("red", result, "Expected color result status to be red")
+}
+
+func (suite *ReporterTestSuite) TestShouldBeIncluded() {
+	tests := []struct {
+		name     string
+		metric   collector.DurationOfStage
+		expected bool
+	}{
+		{
+			name: "All metrics are valid",
+			metric: collector.DurationOfStage{
+				Max: 10,
+				Min: 1,
+				Avg: 5,
+			},
+			expected: true,
+		},
+		{
+			name: "Max is negative",
+			metric: collector.DurationOfStage{
+				Max: -1,
+				Min: 1,
+				Avg: 5,
+			},
+			expected: false,
+		},
+		{
+			name: "Min is negative",
+			metric: collector.DurationOfStage{
+				Max: 10,
+				Min: -1,
+				Avg: 5,
+			},
+			expected: false,
+		},
+		{
+			name: "Avg is negative",
+			metric: collector.DurationOfStage{
+				Max: 10,
+				Min: 1,
+				Avg: -5,
+			},
+			expected: false,
+		},
+		{
+			name: "All metrics are zero",
+			metric: collector.DurationOfStage{
+				Max: 0,
+				Min: 0,
+				Avg: 0,
+			},
+			expected: false,
+		},
+	}
+
+	for _, tt := range tests {
+		suite.Run(tt.name, func() {
+			result := shouldBeIncluded(tt.metric)
+			suite.Equal(tt.expected, result, "Expected %v but got %v", tt.expected, result)
+		})
+	}
+}
+
 func TestReporterTestSuite(t *testing.T) {
 	suite.Run(t, new(ReporterTestSuite))
 }
