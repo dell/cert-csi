@@ -221,6 +221,19 @@ func (suite *ReporterTestSuite) TestGetResultStatus() {
 	suite.Equal("FAILURE", result, "Expected result status to be FAILURE")
 }
 
+// Test GetColorResultStatus method in html-reporter.go
+func (suite *ReporterTestSuite) TestGetColorResultStatus() {
+	hr := &HTMLReporter{}
+
+	// Test case: result is true
+	result := hr.getColorResultStatus(true)
+	suite.Equal("green", result, "Expected color result status to be green")
+
+	// Test case: result is false
+	result = hr.getColorResultStatus(false)
+	suite.Equal("red", result, "Expected color result status to be red")
+}
+
 func TestReporterTestSuite(t *testing.T) {
 	suite.Run(t, new(ReporterTestSuite))
 }
