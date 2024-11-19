@@ -194,6 +194,7 @@ func (suite *ReporterTestSuite) TestGenerateAllReports() {
 	}
 }
 
+// Test GenerateFunctionalReport method in functional-reporter.go
 func (suite *ReporterTestSuite) TestGenerateFunctionalReport() {
 	// Create a mock store
 	mockDB := store.NewSQLiteStore("file:testdata/mock_functional_report.db")
