@@ -20,6 +20,7 @@ import (
 	"errors"
 	"reflect"
 	"testing"
+	"time"
 
 	"github.com/dell/cert-csi/pkg/observer"
 	"github.com/stretchr/testify/assert"
@@ -667,7 +668,7 @@ func TestEphemeralVolumeSuite_GetName(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			if got := tt.ep.GetName(); got == tt.want {
+			if got := tt.ep.GetName(); got != tt.want {
 				t.Errorf("EphemeralVolumeSuite.GetName() = %v, want %v", got, tt.want)
 			}
 		})
@@ -730,7 +731,7 @@ func TestNodeDrainSuite_GetName(t *testing.T) {
 		}}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			if got := tt.nds.GetName(); got == tt.want {
+			if got := tt.nds.GetName(); got != tt.want {
 				t.Errorf("NodeDrainSuite.GetName() = %v, want %v", got, tt.want)
 			}
 		})
@@ -844,7 +845,7 @@ func TestNodeUncordonSuite_GetName(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			if got := tt.nds.GetName(); got == tt.want {
+			if got := tt.nds.GetName(); got != tt.want {
 				t.Errorf("NodeUncordonSuite.GetName() = %v, want %v", got, tt.want)
 			}
 		})
@@ -929,6 +930,226 @@ func TestNodeUncordonSuite_Parameters(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			if got := tt.nds.Parameters(); got != tt.want {
 				t.Errorf("NodeUncordonSuite.Parameters() = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}
+func Test_removeDuplicates(t *testing.T) {
+	type args struct {
+		strSlice []string
+	}
+	tests := []struct {
+		name string
+		args args
+		want []string
+	}{
+		{
+			name: "Testing removeDuplicates with no duplicates",
+			args: args{
+				strSlice: []string{"csi-powerstore.dellemc.com/10.230.24.67-iscsi", "csi-powerstore.dellemc.com/10.230.24.67-nfs", "csi-powerstore.dellemc.com/10.230.24.67-nvmetcp"},
+			},
+			want: []string{"csi-powerstore.dellemc.com/10.230.24.67-iscsi", "csi-powerstore.dellemc.com/10.230.24.67-nfs", "csi-powerstore.dellemc.com/10.230.24.67-nvmetcp"},
+		},
+		{
+			name: "Testing removeDuplicates with duplicates",
+			args: args{
+				strSlice: []string{"csi-powerstore.dellemc.com/10.230.24.67-iscsi", "csi-powerstore.dellemc.com/10.230.24.67-nfs", "csi-powerstore.dellemc.com/10.230.24.67-iscsi", "csi-powerstore.dellemc.com/10.230.24.67-nfs", "csi-powerstore.dellemc.com/10.230.24.67-nvmetcp"},
+			},
+			want: []string{"csi-powerstore.dellemc.com/10.230.24.67-iscsi", "csi-powerstore.dellemc.com/10.230.24.67-nfs", "csi-powerstore.dellemc.com/10.230.24.67-nvmetcp"},
+		},
+		{
+			name: "Testing removeDuplicates with empty slice",
+			args: args{
+				strSlice: []string{},
+			},
+			want: []string{},
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if got := removeDuplicates(tt.args.strSlice); !reflect.DeepEqual(got, tt.want) {
+				t.Errorf("removeDuplicates() = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}
+
+func Test_filterArrayForMatches(t *testing.T) {
+	type args struct {
+		listToFilter []string
+		filterValues []string
+	}
+	tests := []struct {
+		name string
+		args args
+		want []string
+	}{
+		{
+			name: "Testing filterArrayForMatches with no matching values",
+			args: args{
+				listToFilter: []string{"csi-powerstore.dellemc.com/10.230.24.67-iscsi", "csi-powerstore.dellemc.com/10.230.24.67-nfs", "csi-powerstore.dellemc.com/10.230.24.67-nvmetcp"},
+				filterValues: []string{"csi-powerstore.dellemc.com/10.230.24.68-iscsi", "csi-powerstore.dellemc.com/10.230.24.68-nfs", "csi-powerstore.dellemc.com/10.230.24.68-nvmetcp"},
+			},
+			want: []string{},
+		},
+		{
+			name: "Testing filterArrayForMatches with matching values",
+			args: args{
+				listToFilter: []string{"csi-powerstore.dellemc.com/10.230.24.67-iscsi", "csi-powerstore.dellemc.com/10.230.24.67-nfs", "csi-powerstore.dellemc.com/10.230.24.67-nvmetcp"},
+				filterValues: []string{"csi-powerstore.dellemc.com/10.230.24.67-iscsi", "csi-powerstore.dellemc.com/10.230.24.67-nfs", "csi-powerstore.dellemc.com/10.230.24.67-nvmetcp"},
+			},
+			want: []string{"csi-powerstore.dellemc.com/10.230.24.67-iscsi", "csi-powerstore.dellemc.com/10.230.24.67-nfs", "csi-powerstore.dellemc.com/10.230.24.67-nvmetcp"},
+		},
+		{
+			name: "Testing filterArrayForMatches with empty filterValues",
+			args: args{
+				listToFilter: []string{"csi-powerstore.dellemc.com/10.230.24.67-iscsi", "csi-powerstore.dellemc.com/10.230.24.67-nfs", "csi-powerstore.dellemc.com/10.230.24.67-nvmetcp"},
+				filterValues: []string{},
+			},
+			want: []string{},
+		},
+		{
+			name: "Testing filterArrayForMatches with empty listToFilter",
+			args: args{
+				listToFilter: []string{},
+				filterValues: []string{"csi-powerstore.dellemc.com/10.230.24.67-iscsi", "csi-powerstore.dellemc.com/10.230.24.67-nfs", "csi-powerstore.dellemc.com/10.230.24.67-nvmetcp"},
+			},
+			want: []string{},
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if got := filterArrayForMatches(tt.args.listToFilter, tt.args.filterValues); !reflect.DeepEqual(got, tt.want) {
+				t.Errorf("filterArrayForMatches() = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}
+
+func TestCapacityTrackingSuite_GetName(t *testing.T) {
+	tests := []struct {
+		name string
+		cts  *CapacityTrackingSuite
+		want string
+	}{
+		{
+			name: "Testing GetName",
+			cts:  &CapacityTrackingSuite{},
+			want: "CapacityTrackingSuite",
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if got := tt.cts.GetName(); got != tt.want {
+				t.Errorf("CapacityTrackingSuite.GetName() = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}
+
+func TestCapacityTrackingSuite_Parameters(t *testing.T) {
+	tests := []struct {
+		name string
+		cts  *CapacityTrackingSuite
+		want string
+	}{
+		{
+			name: "Testing Parameters",
+			cts: &CapacityTrackingSuite{
+				DriverNamespace: "test-driver",
+				StorageClass:    "test-sc",
+				VolumeSize:      "10Gi",
+				Image:           "test-image",
+				PollInterval:    10 * time.Second,
+			},
+			want: "{DriverNamespace: test-driver, volumeSize: 10Gi, pollInterval: 10s}",
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if got := tt.cts.Parameters(); got != tt.want {
+				t.Errorf("CapacityTrackingSuite.Parameters() = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}
+
+func TestCapacityTrackingSuite_GetObservers(t *testing.T) {
+	type args struct {
+		obsType observer.Type
+	}
+	tests := []struct {
+		name string
+		cts  *CapacityTrackingSuite
+		args args
+		want []observer.Interface
+	}{
+		{
+			name: "Testing GetObservers with event type",
+			cts: &CapacityTrackingSuite{
+				DriverNamespace: "test-driver",
+				StorageClass:    "test-sc",
+				VolumeSize:      "10Gi",
+				Image:           "test-image",
+				PollInterval:    10 * time.Second,
+			},
+			args: args{
+				obsType: observer.EVENT,
+			},
+			want: []observer.Interface{
+				&observer.PvcObserver{},
+				&observer.VaObserver{},
+				&observer.PodObserver{},
+				&observer.EntityNumberObserver{},
+				&observer.ContainerMetricsObserver{},
+			},
+		},
+		{
+			name: "Testing GetObservers with list type",
+			cts: &CapacityTrackingSuite{
+				DriverNamespace: "test-driver",
+				StorageClass:    "test-sc",
+				VolumeSize:      "10Gi",
+				Image:           "test-image",
+				PollInterval:    10 * time.Second,
+			},
+			args: args{
+				obsType: observer.LIST,
+			},
+			want: []observer.Interface{
+				&observer.PvcListObserver{},
+				&observer.VaListObserver{},
+				&observer.PodListObserver{},
+				&observer.EntityNumberObserver{},
+				&observer.ContainerMetricsObserver{},
+			},
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if got := tt.cts.GetObservers(tt.args.obsType); !reflect.DeepEqual(got, tt.want) {
+				t.Errorf("CapacityTrackingSuite.GetObservers() = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}
+
+func TestCapacityTrackingSuite_GetNamespace(t *testing.T) {
+	tests := []struct {
+		name string
+		cts  *CapacityTrackingSuite
+		want string
+	}{
+		{
+			name: "Testing GetNamespace",
+			cts:  &CapacityTrackingSuite{},
+			want: "capacity-tracking-test",
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if got := tt.cts.GetNamespace(); got != tt.want {
+				t.Errorf("CapacityTrackingSuite.GetNamespace() = %v, want %v", got, tt.want)
 			}
 		})
 	}
