@@ -436,6 +436,39 @@ func (suite *XMLReporterTestSuite) TestGetTestDuration() {
 	suite.Equal(expectedDuration, duration, "Expected duration to be 02:00")
 }
 
+func (suite *ReporterTestSuite) TestUpdateTestCounts() {
+	// Reset the counts before the test
+	passedCount = 0
+	failedCount = 0
+	skippedCount = 0
+
+	// Create a sample MetricsCollection with a mix of test cases
+	testCases := []collector.TestCaseMetrics{
+		{TestCase: store.TestCase{Success: true}},  // Passed
+		{TestCase: store.TestCase{Success: true}},  // Passed
+		{TestCase: store.TestCase{Success: false}}, // Failed
+		{TestCase: store.TestCase{Success: true}},  // Passed
+		{TestCase: store.TestCase{Success: false}}, // Failed
+		{TestCase: store.TestCase{Success: false}}, // Failed
+		{TestCase: store.TestCase{Success: false}}, // Failed
+		{TestCase: store.TestCase{Success: true}},  // Passed
+		{TestCase: store.TestCase{Success: true}},  // Passed (simulating a skipped test case just for testing)
+	}
+
+	// Create a `MetricsCollection` with the test cases
+	mc := &collector.MetricsCollection{
+		TestCasesMetrics: testCases,
+	}
+
+	// Call the updateTestCounts function
+	updateTestCounts(mc)
+
+	// Assert the counts
+	suite.Equal(5, passedCount, "Expected passed count to be 5")
+	suite.Equal(4, failedCount, "Expected failed count to be 4")
+	suite.Equal(0, skippedCount, "Expected skipped count to be 0 (None were truly skipped)")
+}
+
 func TestReporterTestSuite(t *testing.T) {
 	suite.Run(t, new(ReporterTestSuite))
 }
