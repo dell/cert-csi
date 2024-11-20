@@ -196,6 +196,24 @@ func (suite *ReporterTestSuite) TestGenerateAllReports() {
 	}
 }
 
+// TestGenerateReportsFromMultipleDBsSimple is a simple unit test for GenerateReportsFromMultipleDBs
+func (suite *ReporterTestSuite) TestGenerateReportsFromMultipleDBsSimple() {
+	// Define the report types to generate
+	reportTypes := []ReportType{
+		TabularReport,
+		XMLReport,
+	}
+
+	// Use the existing successRunIndbs from the setup
+	dbs := suite.successRunIndbs
+
+	// Call the function under test
+	err := GenerateReportsFromMultipleDBs(reportTypes, dbs)
+
+	// Assert that no error was returned
+	suite.NoError(err, "GenerateReportsFromMultipleDBs should not return an error")
+}
+
 // Test the getPlotStageMetricHistogramPath method in reporter.go
 func TestGetPlotStageMetricHistogramPath(t *testing.T) {
 	// Arrange
