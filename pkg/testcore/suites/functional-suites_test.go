@@ -656,14 +656,14 @@ func TestEphemeralVolumeSuite_GetName(t *testing.T) {
 			ep: &EphemeralVolumeSuite{
 				Description: "test-description",
 			},
-			want: "EphemeralVolumeSuite",
+			want: "test-description",
 		},
 		{
 			name: "Testing GetName when Description is empty",
 			ep: &EphemeralVolumeSuite{
 				Description: "",
 			},
-			want: "",
+			want: "EphemeralVolumeSuite",
 		},
 	}
 	for _, tt := range tests {
@@ -720,14 +720,14 @@ func TestNodeDrainSuite_GetName(t *testing.T) {
 			nds: &NodeDrainSuite{
 				Description: "test-description",
 			},
-			want: "NodeDrainSuite",
+			want: "test-description",
 		},
 		{
 			name: "Testing GetName when Description is empty",
 			nds: &NodeDrainSuite{
 				Description: "",
 			},
-			want: "",
+			want: "NodeDrainSuite",
 		}}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -833,14 +833,14 @@ func TestNodeUncordonSuite_GetName(t *testing.T) {
 			nds: &NodeUncordonSuite{
 				Description: "test-description",
 			},
-			want: "NodeUncordonSuite",
+			want: "test-description",
 		},
 		{
 			name: "Testing GetName when Description is empty",
 			nds: &NodeUncordonSuite{
 				Description: "",
 			},
-			want: "",
+			want: "NodeUncordonSuite",
 		},
 	}
 	for _, tt := range tests {
