@@ -572,6 +572,26 @@ func (suite *ReporterTestSuite) TestTabularReporterGetArrays() {
 	suite.Empty(result, "Expected arrayIPs to be empty when not set in config")
 }
 
+// Test for getArrayConfig function in table-reporter.go
+func (suite *ReporterTestSuite) TestGetArrayConfig() {
+	// Create a temporary properties file for testing
+	file, err := os.Create("test-config.properties")
+	suite.NoError(err)
+	defer os.Remove("test-config.properties") // Clean up after test
+
+	_, err = file.WriteString("name=testArray\narrayIPs=192.168.1.1,192.168.1.2\n")
+	suite.NoError(err)
+	file.Close()
+
+	// Call the function to test
+	config, err := getArrayConfig("test-config.properties")
+
+	// Validate the results
+	suite.NoError(err)
+	suite.Equal("testArray", config["name"])
+	suite.Equal("192.168.1.1,192.168.1.2", config["arrayIPs"])
+}
+
 //------------------------------------------------------------------------------------------------
 
 func TestReporterTestSuite(t *testing.T) {
