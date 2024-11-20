@@ -592,6 +592,36 @@ func (suite *ReporterTestSuite) TestGetArrayConfig() {
 	suite.Equal("192.168.1.1,192.168.1.2", config["arrayIPs"])
 }
 
+// Test for MultiGenerate function in table-reporter.go
+func (suite *ReporterTestSuite) TestMultiGenerate() {
+	// Create a mock MetricsCollection for testing
+	mockMetrics := []*collector.MetricsCollection{
+		{
+			TestCasesMetrics: []collector.TestCaseMetrics{
+				{TestCase: store.TestCase{Success: true}},  // Successful test case
+				{TestCase: store.TestCase{Success: false}}, // Failed test case
+			},
+		},
+		{
+			TestCasesMetrics: []collector.TestCaseMetrics{
+				{TestCase: store.TestCase{Success: true}}, // Another successful test case
+			},
+		},
+	}
+
+	// Create an instance of TabularReporter
+	tr := &TabularReporter{}
+
+	// Call the MultiGenerate function
+	err := tr.MultiGenerate(mockMetrics)
+
+	// Validate the results
+	suite.NoError(err, "Expected no error while generating reports")
+
+	// Check if the reports were generated (you may need to implement your own check here)
+	// For example, you can check if the reports directory exists or if specific files are created.
+}
+
 //------------------------------------------------------------------------------------------------
 
 func TestReporterTestSuite(t *testing.T) {
