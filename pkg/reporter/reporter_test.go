@@ -469,6 +469,21 @@ func (suite *ReporterTestSuite) TestUpdateTestCounts() {
 	suite.Equal(0, skippedCount, "Expected skipped count to be 0 (None were truly skipped)")
 }
 
+func (suite *XMLReporterTestSuite) TestMultiGenerate() {
+	// Create a mock MetricsCollection for testing
+	mockMetrics := &collector.MetricsCollection{
+		TestCasesMetrics: []collector.TestCaseMetrics{
+			{TestCase: store.TestCase{Success: true}}, // Example successful test case
+		},
+	}
+
+	// Run the MultiGenerate method
+	err := suite.reporter.MultiGenerate([]*collector.MetricsCollection{mockMetrics})
+
+	// Assert no error occurred
+	suite.NoError(err, "Expected no error while generating the report")
+}
+
 //------------------------------------------------------------------------------------------------
 
 // Test for getResultStatus in table-reporter.go
