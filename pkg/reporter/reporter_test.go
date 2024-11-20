@@ -599,7 +599,7 @@ func (suite *XMLReporterTestSuite) TestXMLGetPassedCount() {
 	passedCount := suite.reporter.getPassedCount()
 
 	// Validate the results
-	suite.Equal(2, passedCount, "Expected passed count to be 2")
+	suite.Equal(2, passedCount, "Expected passed count to be 8")
 }
 
 // Test for getFailedCount function in xml-reporter.go
@@ -621,6 +621,31 @@ func (suite *XMLReporterTestSuite) TestXMLGetFailedCount() {
 
 	// Validate the results
 	suite.Equal(2, failedCount, "Expected failed count to be 2")
+}
+
+// Test for getResultStatus method in text-reporter.go
+func (suite *ReporterTestSuite) TestTextGetResultStatus() {
+	// Create an instance of TextReporter
+	tr := &TextReporter{}
+
+	// Test cases for getResultStatus
+	tests := []struct {
+		input    bool
+		expected string
+	}{
+		{true, "SUCCESS"},  // This should be in green color
+		{false, "FAILURE"}, // This should be in red color
+	}
+
+	for _, tt := range tests {
+		result := tr.getResultStatus(tt.input)
+		// Check if result matches expected value without considering color formatting
+		if tt.input {
+			suite.Contains(result, "SUCCESS", "Expected result status for input true to be SUCCESS")
+		} else {
+			suite.Contains(result, "FAILURE", "Expected result status for input false to be FAILURE")
+		}
+	}
 }
 
 //------------------------------------------------------------------------------------------------
