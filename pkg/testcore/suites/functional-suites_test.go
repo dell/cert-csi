@@ -18,11 +18,16 @@ package suites
 
 import (
 	"errors"
+	"fmt"
 	"reflect"
 	"testing"
+	"time"
 
+	"github.com/dell/cert-csi/pkg/k8sclient"
 	"github.com/dell/cert-csi/pkg/observer"
 	"github.com/stretchr/testify/assert"
+	"k8s.io/client-go/kubernetes/fake"
+	"k8s.io/client-go/rest"
 )
 
 func TestGetTopologyCount(t *testing.T) {
@@ -655,19 +660,19 @@ func TestEphemeralVolumeSuite_GetName(t *testing.T) {
 			ep: &EphemeralVolumeSuite{
 				Description: "test-description",
 			},
-			want: "EphemeralVolumeSuite",
+			want: "test-description",
 		},
 		{
 			name: "Testing GetName when Description is empty",
 			ep: &EphemeralVolumeSuite{
 				Description: "",
 			},
-			want: "",
+			want: "EphemeralVolumeSuite",
 		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			if got := tt.ep.GetName(); got == tt.want {
+			if got := tt.ep.GetName(); got != tt.want {
 				t.Errorf("EphemeralVolumeSuite.GetName() = %v, want %v", got, tt.want)
 			}
 		})
@@ -719,18 +724,18 @@ func TestNodeDrainSuite_GetName(t *testing.T) {
 			nds: &NodeDrainSuite{
 				Description: "test-description",
 			},
-			want: "NodeDrainSuite",
+			want: "test-description",
 		},
 		{
 			name: "Testing GetName when Description is empty",
 			nds: &NodeDrainSuite{
 				Description: "",
 			},
-			want: "",
+			want: "NodeDrainSuite",
 		}}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			if got := tt.nds.GetName(); got == tt.want {
+			if got := tt.nds.GetName(); got != tt.want {
 				t.Errorf("NodeDrainSuite.GetName() = %v, want %v", got, tt.want)
 			}
 		})
@@ -832,19 +837,19 @@ func TestNodeUncordonSuite_GetName(t *testing.T) {
 			nds: &NodeUncordonSuite{
 				Description: "test-description",
 			},
-			want: "NodeUncordonSuite",
+			want: "test-description",
 		},
 		{
 			name: "Testing GetName when Description is empty",
 			nds: &NodeUncordonSuite{
 				Description: "",
 			},
-			want: "",
+			want: "NodeUncordonSuite",
 		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			if got := tt.nds.GetName(); got == tt.want {
+			if got := tt.nds.GetName(); got != tt.want {
 				t.Errorf("NodeUncordonSuite.GetName() = %v, want %v", got, tt.want)
 			}
 		})
@@ -929,6 +934,733 @@ func TestNodeUncordonSuite_Parameters(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			if got := tt.nds.Parameters(); got != tt.want {
 				t.Errorf("NodeUncordonSuite.Parameters() = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}
+func Test_removeDuplicates(t *testing.T) {
+	type args struct {
+		strSlice []string
+	}
+	tests := []struct {
+		name string
+		args args
+		want []string
+	}{
+		{
+			name: "Testing removeDuplicates with no duplicates",
+			args: args{
+				strSlice: []string{"csi-powerstore.dellemc.com/10.230.24.67-iscsi", "csi-powerstore.dellemc.com/10.230.24.67-nfs", "csi-powerstore.dellemc.com/10.230.24.67-nvmetcp"},
+			},
+			want: []string{"csi-powerstore.dellemc.com/10.230.24.67-iscsi", "csi-powerstore.dellemc.com/10.230.24.67-nfs", "csi-powerstore.dellemc.com/10.230.24.67-nvmetcp"},
+		},
+		{
+			name: "Testing removeDuplicates with duplicates",
+			args: args{
+				strSlice: []string{"csi-powerstore.dellemc.com/10.230.24.67-iscsi", "csi-powerstore.dellemc.com/10.230.24.67-nfs", "csi-powerstore.dellemc.com/10.230.24.67-iscsi", "csi-powerstore.dellemc.com/10.230.24.67-nfs", "csi-powerstore.dellemc.com/10.230.24.67-nvmetcp"},
+			},
+			want: []string{"csi-powerstore.dellemc.com/10.230.24.67-iscsi", "csi-powerstore.dellemc.com/10.230.24.67-nfs", "csi-powerstore.dellemc.com/10.230.24.67-nvmetcp"},
+		},
+		{
+			name: "Testing removeDuplicates with empty slice",
+			args: args{
+				strSlice: []string{},
+			},
+			want: []string{},
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if got := removeDuplicates(tt.args.strSlice); !reflect.DeepEqual(got, tt.want) {
+				t.Errorf("removeDuplicates() = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}
+
+func Test_filterArrayForMatches(t *testing.T) {
+	type args struct {
+		listToFilter []string
+		filterValues []string
+	}
+	tests := []struct {
+		name string
+		args args
+		want []string
+	}{
+		{
+			name: "Testing filterArrayForMatches with no matching values",
+			args: args{
+				listToFilter: []string{"csi-powerstore.dellemc.com/10.230.24.67-iscsi", "csi-powerstore.dellemc.com/10.230.24.67-nfs", "csi-powerstore.dellemc.com/10.230.24.67-nvmetcp"},
+				filterValues: []string{"csi-powerstore.dellemc.com/10.230.24.68-iscsi", "csi-powerstore.dellemc.com/10.230.24.68-nfs", "csi-powerstore.dellemc.com/10.230.24.68-nvmetcp"},
+			},
+			want: []string{},
+		},
+		{
+			name: "Testing filterArrayForMatches with matching values",
+			args: args{
+				listToFilter: []string{"csi-powerstore.dellemc.com/10.230.24.67-iscsi", "csi-powerstore.dellemc.com/10.230.24.67-nfs", "csi-powerstore.dellemc.com/10.230.24.67-nvmetcp"},
+				filterValues: []string{"csi-powerstore.dellemc.com/10.230.24.67-iscsi", "csi-powerstore.dellemc.com/10.230.24.67-nfs", "csi-powerstore.dellemc.com/10.230.24.67-nvmetcp"},
+			},
+			want: []string{"csi-powerstore.dellemc.com/10.230.24.67-iscsi", "csi-powerstore.dellemc.com/10.230.24.67-nfs", "csi-powerstore.dellemc.com/10.230.24.67-nvmetcp"},
+		},
+		{
+			name: "Testing filterArrayForMatches with empty filterValues",
+			args: args{
+				listToFilter: []string{"csi-powerstore.dellemc.com/10.230.24.67-iscsi", "csi-powerstore.dellemc.com/10.230.24.67-nfs", "csi-powerstore.dellemc.com/10.230.24.67-nvmetcp"},
+				filterValues: []string{},
+			},
+			want: []string{},
+		},
+		{
+			name: "Testing filterArrayForMatches with empty listToFilter",
+			args: args{
+				listToFilter: []string{},
+				filterValues: []string{"csi-powerstore.dellemc.com/10.230.24.67-iscsi", "csi-powerstore.dellemc.com/10.230.24.67-nfs", "csi-powerstore.dellemc.com/10.230.24.67-nvmetcp"},
+			},
+			want: []string{},
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if got := filterArrayForMatches(tt.args.listToFilter, tt.args.filterValues); !reflect.DeepEqual(got, tt.want) {
+				t.Errorf("filterArrayForMatches() = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}
+
+func TestCapacityTrackingSuite_GetName(t *testing.T) {
+	tests := []struct {
+		name string
+		cts  *CapacityTrackingSuite
+		want string
+	}{
+		{
+			name: "Testing GetName",
+			cts:  &CapacityTrackingSuite{},
+			want: "CapacityTrackingSuite",
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if got := tt.cts.GetName(); got != tt.want {
+				t.Errorf("CapacityTrackingSuite.GetName() = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}
+
+func TestCapacityTrackingSuite_Parameters(t *testing.T) {
+	tests := []struct {
+		name string
+		cts  *CapacityTrackingSuite
+		want string
+	}{
+		{
+			name: "Testing Parameters",
+			cts: &CapacityTrackingSuite{
+				DriverNamespace: "test-driver",
+				StorageClass:    "test-sc",
+				VolumeSize:      "10Gi",
+				Image:           "test-image",
+				PollInterval:    10 * time.Second,
+			},
+			want: "{DriverNamespace: test-driver, volumeSize: 10Gi, pollInterval: 10s}",
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if got := tt.cts.Parameters(); got != tt.want {
+				t.Errorf("CapacityTrackingSuite.Parameters() = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}
+
+func TestCapacityTrackingSuite_GetObservers(t *testing.T) {
+	type args struct {
+		obsType observer.Type
+	}
+	tests := []struct {
+		name string
+		cts  *CapacityTrackingSuite
+		args args
+		want []observer.Interface
+	}{
+		{
+			name: "Testing GetObservers with event type",
+			cts: &CapacityTrackingSuite{
+				DriverNamespace: "test-driver",
+				StorageClass:    "test-sc",
+				VolumeSize:      "10Gi",
+				Image:           "test-image",
+				PollInterval:    10 * time.Second,
+			},
+			args: args{
+				obsType: observer.EVENT,
+			},
+			want: []observer.Interface{
+				&observer.PvcObserver{},
+				&observer.VaObserver{},
+				&observer.PodObserver{},
+				&observer.EntityNumberObserver{},
+				&observer.ContainerMetricsObserver{},
+			},
+		},
+		{
+			name: "Testing GetObservers with list type",
+			cts: &CapacityTrackingSuite{
+				DriverNamespace: "test-driver",
+				StorageClass:    "test-sc",
+				VolumeSize:      "10Gi",
+				Image:           "test-image",
+				PollInterval:    10 * time.Second,
+			},
+			args: args{
+				obsType: observer.LIST,
+			},
+			want: []observer.Interface{
+				&observer.PvcListObserver{},
+				&observer.VaListObserver{},
+				&observer.PodListObserver{},
+				&observer.EntityNumberObserver{},
+				&observer.ContainerMetricsObserver{},
+			},
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if got := tt.cts.GetObservers(tt.args.obsType); !reflect.DeepEqual(got, tt.want) {
+				t.Errorf("CapacityTrackingSuite.GetObservers() = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}
+
+func TestCapacityTrackingSuite_GetNamespace(t *testing.T) {
+	tests := []struct {
+		name string
+		cts  *CapacityTrackingSuite
+		want string
+	}{
+		{
+			name: "Testing GetNamespace",
+			cts:  &CapacityTrackingSuite{},
+			want: "capacity-tracking-test",
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if got := tt.cts.GetNamespace(); got != tt.want {
+				t.Errorf("CapacityTrackingSuite.GetNamespace() = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}
+func TestVolumeDeletionSuite_GetClients(t *testing.T) {
+
+	client := fake.NewSimpleClientset()
+
+	kubeClient := k8sclient.KubeClient{
+		ClientSet:   client,
+		Config:      &rest.Config{},
+		VersionInfo: nil,
+	}
+
+	pvcClient, _ := kubeClient.CreatePVCClient("test-namespace")
+
+	metricsClient, _ := kubeClient.CreateMetricsClient("test-namespace")
+
+	type args struct {
+		in0    string
+		client *k8sclient.KubeClient
+	}
+	tests := []struct {
+		name    string
+		vds     *VolumeDeletionSuite
+		args    args
+		want    *k8sclient.Clients
+		wantErr bool
+	}{
+		{
+			name: "Testing GetClients",
+			vds: &VolumeDeletionSuite{
+				DeletionStruct: &DeletionStruct{
+					Namespace: "test-namespace",
+				},
+			},
+			args: args{
+				client: &kubeClient,
+			},
+			want: &k8sclient.Clients{
+				PVCClient:     pvcClient,
+				MetricsClient: metricsClient,
+			},
+			wantErr: false,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got, err := tt.vds.GetClients(tt.args.in0, tt.args.client)
+			fmt.Println(got, err)
+
+			if (err != nil) != tt.wantErr {
+				t.Errorf("VolumeDeletionSuite.GetClients() error = %v, wantErr %v", err, tt.wantErr)
+				return
+			}
+			fmt.Println(reflect.TypeOf(got), reflect.TypeOf(tt.want))
+			if reflect.TypeOf(got) != reflect.TypeOf(tt.want) {
+				t.Errorf("VolumeDeletionSuite.GetClients() = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}
+
+func TestPodDeletionSuite_GetClients(t *testing.T) {
+	client := fake.NewSimpleClientset()
+
+	kubeClient := k8sclient.KubeClient{
+		ClientSet:   client,
+		Config:      &rest.Config{},
+		VersionInfo: nil,
+	}
+	namespace := "test-namespace"
+	pvcClient, _ := kubeClient.CreatePVCClient(namespace)
+
+	metricsClient, _ := kubeClient.CreateMetricsClient(namespace)
+	vaClient, _ := kubeClient.CreateVaClient(namespace)
+
+	podlient, _ := kubeClient.CreatePodClient(namespace)
+	type args struct {
+		in0    string
+		client *k8sclient.KubeClient
+	}
+	tests := []struct {
+		name    string
+		pds     *PodDeletionSuite
+		args    args
+		want    *k8sclient.Clients
+		wantErr bool
+	}{
+		{
+			name: "Testing GetClients",
+			pds: &PodDeletionSuite{
+				DeletionStruct: &DeletionStruct{
+					Namespace: "test-namespace",
+				},
+			},
+			args: args{
+				client: &kubeClient,
+			},
+			want: &k8sclient.Clients{
+				PVCClient:     pvcClient,
+				MetricsClient: metricsClient,
+				VaClient:      vaClient,
+				PodClient:     podlient,
+			},
+			wantErr: false,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got, err := tt.pds.GetClients(tt.args.in0, tt.args.client)
+			if (err != nil) != tt.wantErr {
+				t.Errorf("PodDeletionSuite.GetClients() error = %v, wantErr %v", err, tt.wantErr)
+				return
+			}
+			fmt.Println(reflect.TypeOf(got), reflect.TypeOf(tt.want))
+			if reflect.TypeOf(got) != reflect.TypeOf(tt.want) {
+				t.Errorf("PodDeletionSuite.GetClients() = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}
+
+func TestClonedVolDeletionSuite_GetClients(t *testing.T) {
+	client := fake.NewSimpleClientset()
+
+	kubeClient := k8sclient.KubeClient{
+		ClientSet:   client,
+		Config:      &rest.Config{},
+		VersionInfo: nil,
+	}
+	namespace := "test-namespace"
+	pvcClient, _ := kubeClient.CreatePVCClient(namespace)
+
+	metricsClient, _ := kubeClient.CreateMetricsClient(namespace)
+	vaClient, _ := kubeClient.CreateVaClient(namespace)
+
+	podlient, _ := kubeClient.CreatePodClient(namespace)
+
+	type args struct {
+		in0    string
+		client *k8sclient.KubeClient
+	}
+	tests := []struct {
+		name    string
+		pds     *ClonedVolDeletionSuite
+		args    args
+		want    *k8sclient.Clients
+		wantErr bool
+	}{
+		{
+			name: "Testing GetClients",
+			pds: &ClonedVolDeletionSuite{
+				DeletionStruct: &DeletionStruct{
+					Namespace: "test-namespace",
+				},
+			},
+			args: args{
+				client: &kubeClient,
+			},
+			want: &k8sclient.Clients{
+				PVCClient:     pvcClient,
+				MetricsClient: metricsClient,
+				VaClient:      vaClient,
+				PodClient:     podlient,
+			},
+			wantErr: false,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got, err := tt.pds.GetClients(tt.args.in0, tt.args.client)
+			if (err != nil) != tt.wantErr {
+				t.Errorf("ClonedVolDeletionSuite.GetClients() error = %v, wantErr %v", err, tt.wantErr)
+				return
+			}
+			fmt.Println(reflect.TypeOf(got), reflect.TypeOf(tt.want))
+			if reflect.TypeOf(got) != reflect.TypeOf(tt.want) {
+				t.Errorf("ClonedVolDeletionSuite.GetClients() = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}
+
+func TestSnapshotDeletionSuite_GetClients(t *testing.T) {
+	client := fake.NewSimpleClientset()
+
+	kubeClient := k8sclient.KubeClient{
+		ClientSet:   client,
+		Config:      &rest.Config{},
+		VersionInfo: nil,
+	}
+	kubeClient2 := k8sclient.KubeClient{
+		ClientSet:   client,
+		Config:      &rest.Config{},
+		VersionInfo: nil,
+		Minor:       18,
+	}
+	namespace := "test-namespace"
+	pvcClient, _ := kubeClient.CreatePVCClient(namespace)
+
+	metricsClient, _ := kubeClient.CreateMetricsClient(namespace)
+	vaClient, _ := kubeClient.CreateVaClient(namespace)
+
+	podClient, _ := kubeClient.CreatePodClient(namespace)
+	snapClient, _ := kubeClient.CreateSnapshotGAClient(namespace)
+
+	snapBetaClient, _ := kubeClient.CreateSnapshotBetaClient(namespace)
+
+	type args struct {
+		namespace string
+		client    *k8sclient.KubeClient
+	}
+	tests := []struct {
+		name    string
+		sds     *SnapshotDeletionSuite
+		args    args
+		want    *k8sclient.Clients
+		wantErr bool
+	}{
+		{
+			name: "Testing GetClients",
+			sds: &SnapshotDeletionSuite{
+				DeletionStruct: &DeletionStruct{
+					Namespace: "test-namespace",
+				},
+			},
+			args: args{
+				client: &kubeClient,
+			},
+			want: &k8sclient.Clients{
+				PVCClient:      pvcClient,
+				MetricsClient:  metricsClient,
+				VaClient:       vaClient,
+				PodClient:      podClient,
+				SnapClientGA:   snapClient,
+				SnapClientBeta: snapBetaClient,
+			},
+			wantErr: false,
+		},
+		{
+			name: "Testing GetClients with Minor >17",
+			sds: &SnapshotDeletionSuite{
+				DeletionStruct: &DeletionStruct{
+					Namespace: "test-namespace",
+				},
+			},
+			args: args{
+				client: &kubeClient2,
+			},
+			want: &k8sclient.Clients{
+				PVCClient:      pvcClient,
+				MetricsClient:  metricsClient,
+				VaClient:       vaClient,
+				PodClient:      podClient,
+				SnapClientGA:   snapClient,
+				SnapClientBeta: snapBetaClient,
+			},
+			wantErr: false,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got, err := tt.sds.GetClients(tt.args.namespace, tt.args.client)
+			if (err != nil) != tt.wantErr {
+				t.Errorf("SnapshotDeletionSuite.GetClients() error = %v, wantErr %v", err, tt.wantErr)
+				return
+			}
+			fmt.Println(reflect.TypeOf(got), reflect.TypeOf(tt.want))
+			if reflect.TypeOf(got) != reflect.TypeOf(tt.want) {
+				t.Errorf("SnapshotDeletionSuite.GetClients() = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}
+
+func TestEphemeralVolumeSuite_GetClients(t *testing.T) {
+
+	client := fake.NewSimpleClientset()
+
+	kubeClient := k8sclient.KubeClient{
+		ClientSet:   client,
+		Config:      &rest.Config{},
+		VersionInfo: nil,
+	}
+	namespace := "test-namespace"
+
+	metricsClient, _ := kubeClient.CreateMetricsClient(namespace)
+	vaClient, _ := kubeClient.CreateVaClient(namespace)
+
+	podClient, _ := kubeClient.CreatePodClient(namespace)
+	type args struct {
+		namespace string
+		client    *k8sclient.KubeClient
+	}
+	tests := []struct {
+		name    string
+		e       *EphemeralVolumeSuite
+		args    args
+		want    *k8sclient.Clients
+		wantErr bool
+	}{
+		{
+			name: "Testing GetClients",
+			e:    &EphemeralVolumeSuite{},
+			args: args{
+				client: &kubeClient,
+			},
+			want: &k8sclient.Clients{
+				MetricsClient: metricsClient,
+				VaClient:      vaClient,
+				PodClient:     podClient,
+			},
+			wantErr: false,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got, err := tt.e.GetClients(tt.args.namespace, tt.args.client)
+			if (err != nil) != tt.wantErr {
+				t.Errorf("EphemeralVolumeSuite.GetClients() error = %v, wantErr %v", err, tt.wantErr)
+				return
+			}
+			fmt.Println(reflect.TypeOf(got), reflect.TypeOf(tt.want))
+			if reflect.TypeOf(got) != reflect.TypeOf(tt.want) {
+				t.Errorf("EphemeralVolumeSuite.GetClients() = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}
+
+func TestNodeDrainSuite_GetClients(t *testing.T) {
+	client := fake.NewSimpleClientset()
+
+	kubeClient := k8sclient.KubeClient{
+		ClientSet:   client,
+		Config:      &rest.Config{},
+		VersionInfo: nil,
+	}
+	namespace := "test-namespace"
+
+	metricsClient, _ := kubeClient.CreateMetricsClient(namespace)
+	vaClient, _ := kubeClient.CreateVaClient(namespace)
+
+	podClient, _ := kubeClient.CreatePodClient(namespace)
+	nodeClient, _ := kubeClient.CreateNodeClient()
+	stsClient, _ := kubeClient.CreateStatefulSetClient(namespace)
+	pvcClient, _ := kubeClient.CreatePVCClient(namespace)
+
+	type args struct {
+		in0    string
+		client *k8sclient.KubeClient
+	}
+	tests := []struct {
+		name    string
+		nds     *NodeDrainSuite
+		args    args
+		want    *k8sclient.Clients
+		wantErr bool
+	}{
+		{
+			name: "Testing GetClients",
+			nds:  &NodeDrainSuite{},
+			args: args{
+				client: &kubeClient,
+			},
+			want: &k8sclient.Clients{
+				PodClient:         podClient,
+				PVCClient:         pvcClient,
+				VaClient:          vaClient,
+				StatefulSetClient: stsClient,
+				MetricsClient:     metricsClient,
+				NodeClient:        nodeClient,
+			},
+			wantErr: false,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got, err := tt.nds.GetClients(tt.args.in0, tt.args.client)
+			if (err != nil) != tt.wantErr {
+				t.Errorf("NodeDrainSuite.GetClients() error = %v, wantErr %v", err, tt.wantErr)
+				return
+			}
+			fmt.Println(reflect.TypeOf(got), reflect.TypeOf(tt.want))
+			if reflect.TypeOf(got) != reflect.TypeOf(tt.want) {
+				t.Errorf("NodeDrainSuite.GetClients() = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}
+
+func TestNodeUncordonSuite_GetClients(t *testing.T) {
+	client := fake.NewSimpleClientset()
+
+	kubeClient := k8sclient.KubeClient{
+		ClientSet:   client,
+		Config:      &rest.Config{},
+		VersionInfo: nil,
+	}
+	namespace := "test-namespace"
+
+	metricsClient, _ := kubeClient.CreateMetricsClient(namespace)
+	vaClient, _ := kubeClient.CreateVaClient(namespace)
+	podClient, _ := kubeClient.CreatePodClient(namespace)
+	nodeClient, _ := kubeClient.CreateNodeClient()
+	pvcClient, _ := kubeClient.CreatePVCClient(namespace)
+
+	type args struct {
+		in0    string
+		client *k8sclient.KubeClient
+	}
+	tests := []struct {
+		name    string
+		nds     *NodeUncordonSuite
+		args    args
+		want    *k8sclient.Clients
+		wantErr bool
+	}{
+		{
+			name: "Testing GetClients",
+			nds:  &NodeUncordonSuite{},
+			args: args{
+				client: &kubeClient,
+			},
+			want: &k8sclient.Clients{
+				PodClient:         podClient,
+				PVCClient:         pvcClient,
+				VaClient:          vaClient,
+				StatefulSetClient: nil,
+				MetricsClient:     metricsClient,
+				NodeClient:        nodeClient,
+			},
+			wantErr: false,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got, err := tt.nds.GetClients(tt.args.in0, tt.args.client)
+			if (err != nil) != tt.wantErr {
+				t.Errorf("NodeUncordonSuite.GetClients() error = %v, wantErr %v", err, tt.wantErr)
+				return
+			}
+			fmt.Println(reflect.TypeOf(got), reflect.TypeOf(tt.want))
+			if reflect.TypeOf(got) != reflect.TypeOf(tt.want) {
+				t.Errorf("NodeUncordonSuite.GetClients() = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}
+
+func TestCapacityTrackingSuite_GetClients(t *testing.T) {
+	client := fake.NewSimpleClientset()
+
+	kubeClient := k8sclient.KubeClient{
+		ClientSet:   client,
+		Config:      &rest.Config{},
+		VersionInfo: nil,
+	}
+	namespace := "test-namespace"
+
+	scClient, _ := kubeClient.CreateSCClient()
+	csiscClient, _ := kubeClient.CreateCSISCClient(namespace)
+
+	metricsClient, _ := kubeClient.CreateMetricsClient(namespace)
+	vaClient, _ := kubeClient.CreateVaClient(namespace)
+	podClient, _ := kubeClient.CreatePodClient(namespace)
+	pvcClient, _ := kubeClient.CreatePVCClient(namespace)
+	type args struct {
+		namespace string
+		client    *k8sclient.KubeClient
+	}
+	tests := []struct {
+		name    string
+		cts     *CapacityTrackingSuite
+		args    args
+		want    *k8sclient.Clients
+		wantErr bool
+	}{
+		{
+			name: "Testing GetClients",
+			cts:  &CapacityTrackingSuite{},
+			args: args{
+				client: &kubeClient,
+			},
+			want: &k8sclient.Clients{
+				KubeClient:    &kubeClient,
+				PVCClient:     pvcClient,
+				PodClient:     podClient,
+				VaClient:      vaClient,
+				MetricsClient: metricsClient,
+				SCClient:      scClient,
+				CSISCClient:   csiscClient,
+			},
+			wantErr: false,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got, err := tt.cts.GetClients(tt.args.namespace, tt.args.client)
+			if (err != nil) != tt.wantErr {
+				t.Errorf("CapacityTrackingSuite.GetClients() error = %v, wantErr %v", err, tt.wantErr)
+				return
+			}
+			fmt.Println(reflect.TypeOf(got), reflect.TypeOf(tt.want))
+			if reflect.TypeOf(got) != reflect.TypeOf(tt.want) {
+				t.Errorf("CapacityTrackingSuite.GetClients() = %v, want %v", got, tt.want)
 			}
 		})
 	}

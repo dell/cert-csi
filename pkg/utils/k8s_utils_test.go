@@ -160,6 +160,7 @@ func TestGetURL(t *testing.T) {
 		want    string
 		wantErr bool
 	}{
+		{"valid version28", args{"v1.28.0"}, BinaryPrefix + "v1.28.0" + BinarySuffix, false},
 		{"valid version27", args{"v1.27.0"}, BinaryPrefix + "v1.27.0" + BinarySuffix, false},
 		{"valid version26", args{"v1.26.0"}, BinaryPrefix + "v1.26.0" + BinarySuffix, false},
 		{"valid version25", args{"v1.25.0"}, BinaryPrefix + "v1.25.0" + BinarySuffix, false},
@@ -278,11 +279,32 @@ func TestBuildE2eCommand(t *testing.T) {
 	set := flag.NewFlagSet("test", 0)
 	set.String("driver-config", "config.yaml", "driver config file")
 	x1 := cli.NewContext(nil, set, nil)
-	set1 := flag.NewFlagSet("test", 0)
-	set1.String("driver-config", "testdata/config-nfs.yaml", "driver config file")
-	x2 := cli.NewContext(nil, set1, nil)
+
+	set2 := flag.NewFlagSet("test", 0)
+	set2.String("driver-config", "testdata/config-nfs.yaml", "driver config file")
+	x2 := cli.NewContext(nil, set2, nil)
+
+	set3 := flag.NewFlagSet("test", 0)
+	set3.String("driver-config", "testdata/config-nfs.yaml", "driver config file")
+	set3.String("skip", "skip", "skip string")
+	set3.String("focus", "focus", "focus string")
+	set3.String("focus-file", "focus-file", "focus file")
+	set3.String("skip-file", "skip-file", "skip file")
+	set3.String("skip-tests", "skip-tests", "skip tests")
+	set3.String("timeout", "1", "timeout")
+	x3 := cli.NewContext(nil, set3, nil)
 
 	defaultDir := os.Getenv("HOME") + "/reports/"
+
+	set4 := flag.NewFlagSet("test", 0)
+	set4.String("driver-config", "testdata/config-nfs.yaml", "driver config file")
+	set4.String("reportPath", defaultDir+"test/execution_powerstore-nfs.xml", "report path")
+	x4 := cli.NewContext(nil, set4, nil)
+
+	set5 := flag.NewFlagSet("test", 0)
+	set5.String("driver-config", "testdata/config-nfs.yaml", "driver config file")
+	set5.String("reportPath", defaultDir, "report path")
+	x5 := cli.NewContext(nil, set5, nil)
 
 	tests := []struct {
 		name    string
@@ -300,6 +322,36 @@ func TestBuildE2eCommand(t *testing.T) {
 			name:    "send good config file",
 			args:    args{ctx: x2},
 			want:    []string{"-kubeconfig", "/root/.kube/config", "-storage.testdriver", "testdata/config-nfs.yaml", "--ginkgo.junit-report", defaultDir + "execution_powerstore-nfs.xml"},
+			wantErr: false,
+		},
+		{
+			name: "send good config file with extra params",
+			args: args{ctx: x3},
+			want: []string{"-kubeconfig", "/root/.kube/config", "-storage.testdriver", "testdata/config-nfs.yaml",
+				"--ginkgo.focus", "focus",
+				"--ginkgo.skip", "skip",
+				"--ginkgo.focus-file", "focus-file",
+				"--ginkgo.skip-file", "skip-file",
+				"--ginkgo.timeout", "1",
+				"--ginkgo.junit-report", defaultDir + "execution_powerstore-nfs.xml"},
+			wantErr: false,
+		},
+		{
+			name:    "send good config file with report path",
+			args:    args{ctx: x4},
+			want:    []string{"-kubeconfig", "/root/.kube/config", "-storage.testdriver", "testdata/config-nfs.yaml", "--ginkgo.junit-report", "/root/reports/test/execution_powerstore-nfs.xml"},
+			wantErr: false,
+		},
+		{
+			name:    "send good config file with report path again to test remove",
+			args:    args{ctx: x4},
+			want:    []string{"-kubeconfig", "/root/.kube/config", "-storage.testdriver", "testdata/config-nfs.yaml", "--ginkgo.junit-report", "/root/reports/test/execution_powerstore-nfs.xml"},
+			wantErr: false,
+		},
+		{
+			name:    "send good config file with invalid report path",
+			args:    args{ctx: x5},
+			want:    []string{"-kubeconfig", "/root/.kube/config", "-storage.testdriver", "testdata/config-nfs.yaml", "--ginkgo.junit-report", "/root/reports/"},
 			wantErr: false,
 		},
 	}
@@ -343,6 +395,14 @@ func TestExecuteE2ECommand(t *testing.T) {
 				ch:   nil,
 			},
 			wantErr: false,
+		},
+		{
+			name: "throws for invalid file",
+			args: args{
+				args: []string{"-kubeconfig", "/root/.kube/config", "-storage.testdriver", "testdata/config-nfs.y/aml", "--ginkgo.skip", ".*"},
+				ch:   nil,
+			},
+			wantErr: true,
 		},
 	}
 	for _, tt := range tests {

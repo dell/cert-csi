@@ -23,6 +23,7 @@ import (
 	"os"
 	"path/filepath"
 	"testing"
+	"time"
 
 	"github.com/dell/cert-csi/pkg/collector"
 	"github.com/dell/cert-csi/pkg/plotter"
@@ -193,6 +194,370 @@ func (suite *ReporterTestSuite) TestGenerateAllReports() {
 		})
 	}
 }
+
+// Test GenerateFunctionalReport method in functional-reporter.go
+func (suite *ReporterTestSuite) TestGenerateFunctionalReport() {
+	// Create a mock store
+	mockDB := store.NewSQLiteStore("file:testdata/mock_functional_report.db")
+	// Define report types to test
+	reportTypes := []ReportType{TabularReport, XMLReport}
+
+	// Execute the GenerateFunctionalReport function
+	err := GenerateFunctionalReport(mockDB, reportTypes)
+
+	// Verify the results
+	suite.NoError(err, "Expected no error while generating functional reports")
+}
+
+// Test GetRestultStatus method in html-reporter.go
+func (suite *ReporterTestSuite) TestGetResultStatus() {
+	hr := &HTMLReporter{}
+
+	// Test case: result is true
+	result := hr.getResultStatus(true)
+	suite.Equal("SUCCESS", result, "Expected result status to be SUCCESS")
+
+	// Test case: result is false
+	result = hr.getResultStatus(false)
+	suite.Equal("FAILURE", result, "Expected result status to be FAILURE")
+}
+
+// Test GetColorResultStatus method in html-reporter.go
+func (suite *ReporterTestSuite) TestGetColorResultStatus() {
+	hr := &HTMLReporter{}
+
+	// Test case: result is true
+	result := hr.getColorResultStatus(true)
+	suite.Equal("green", result, "Expected color result status to be green")
+
+	// Test case: result is false
+	result = hr.getColorResultStatus(false)
+	suite.Equal("red", result, "Expected color result status to be red")
+}
+
+// Test the inc function in tools.go
+func (suite *ReporterTestSuite) TestInc() {
+	tests := []struct {
+		name     string
+		input    int
+		expected int
+	}{
+		{
+			name:     "Increment positive number",
+			input:    5,
+			expected: 6,
+		},
+		{
+			name:     "Increment zero",
+			input:    0,
+			expected: 1,
+		},
+		{
+			name:     "Increment negative number",
+			input:    -3,
+			expected: -2,
+		},
+	}
+
+	for _, tt := range tests {
+		suite.Run(tt.name, func() {
+			result := inc(tt.input)
+			suite.Equal(tt.expected, result, "Expected %d but got %d", tt.expected, result)
+		})
+	}
+}
+
+// Tests the shouldBeIncluded function in tools.go
+func (suite *ReporterTestSuite) TestShouldBeIncluded() {
+	tests := []struct {
+		name     string
+		metric   collector.DurationOfStage
+		expected bool
+	}{
+		{
+			name: "All metrics are valid",
+			metric: collector.DurationOfStage{
+				Max: 10,
+				Min: 1,
+				Avg: 5,
+			},
+			expected: true,
+		},
+		{
+			name: "Max is negative",
+			metric: collector.DurationOfStage{
+				Max: -1,
+				Min: 1,
+				Avg: 5,
+			},
+			expected: false,
+		},
+		{
+			name: "Min is negative",
+			metric: collector.DurationOfStage{
+				Max: 10,
+				Min: -1,
+				Avg: 5,
+			},
+			expected: false,
+		},
+		{
+			name: "Avg is negative",
+			metric: collector.DurationOfStage{
+				Max: 10,
+				Min: 1,
+				Avg: -5,
+			},
+			expected: false,
+		},
+		{
+			name: "All metrics are zero",
+			metric: collector.DurationOfStage{
+				Max: 0,
+				Min: 0,
+				Avg: 0,
+			},
+			expected: false,
+		},
+	}
+
+	for _, tt := range tests {
+		suite.Run(tt.name, func() {
+			result := shouldBeIncluded(tt.metric)
+			suite.Equal(tt.expected, result, "Expected %v but got %v", tt.expected, result)
+		})
+	}
+}
+
+// Setup for XMLReporterTestSuite
+type XMLReporterTestSuite struct {
+	suite.Suite
+	reporter *XMLReporter
+}
+
+func (suite *XMLReporterTestSuite) SetupTest() {
+	suite.reporter = &XMLReporter{}
+}
+
+func (xr *XMLReporter) SetPassedCount(count int) {
+	passedCount = count // Assuming passedCount is scoped properly.
+}
+
+func (suite *XMLReporterTestSuite) TestGetResultStatus() {
+	// Test case when result is true
+	result := suite.reporter.getResultStatus(true)
+	suite.Equal("PASSED", result, "Expected result status to be PASSED")
+
+	// Test case when result is false
+	result = suite.reporter.getResultStatus(false)
+	suite.Equal("FAILED", result, "Expected result status to be FAILED")
+}
+
+// Test for getResultStatus method in xml-reporter.go
+func TestXMLReporterTestSuite(t *testing.T) {
+	suite.Run(t, new(XMLReporterTestSuite))
+}
+
+// Test for getPassedCount method in xml-reporter.go
+func (suite *XMLReporterTestSuite) TestGetPassedCount() {
+	// Setup the reporter
+	suite.reporter = &XMLReporter{}
+
+	// Use the setter method to set the passedCount for testing
+	suite.reporter.SetPassedCount(5) // Simulating that 5 tests have passed
+
+	// Call the getPassedCount method
+	result := suite.reporter.getPassedCount()
+
+	// Assert that the result matches the expected value
+	suite.Equal(5, result, "Expected passed count to be 5")
+}
+
+// Test for getFailedCountFromMC method in xml-reporter.go
+func (suite *XMLReporterTestSuite) TestGetFailedCountFromMC() {
+	// Create a sample MetricsCollection with test cases
+	testCases := []collector.TestCaseMetrics{
+		{TestCase: store.TestCase{Success: true}},  // Passed
+		{TestCase: store.TestCase{Success: false}}, // Failed
+		{TestCase: store.TestCase{Success: true}},  // Passed
+		{TestCase: store.TestCase{Success: false}}, // Failed
+		{TestCase: store.TestCase{Success: false}}, // Failed
+	}
+
+	mc := &collector.MetricsCollection{
+		TestCasesMetrics: testCases,
+	}
+
+	// Call the getFailedCountFromMC function
+	failedCount := getFailedCountFromMC(mc)
+
+	// Assert that the number of failed test cases is correct
+	suite.Equal(3, failedCount, "Expected failed count to be 3")
+}
+
+// Test for getPassedCountFromMC method in xml-reporter.go
+func (suite *XMLReporterTestSuite) TestGetPassedCountFromMC() {
+	// Create a sample MetricsCollection with test cases
+	testCases := []collector.TestCaseMetrics{
+		{TestCase: store.TestCase{Success: true}},  // Passed
+		{TestCase: store.TestCase{Success: false}}, // Failed
+		{TestCase: store.TestCase{Success: true}},  // Passed
+		{TestCase: store.TestCase{Success: false}}, // Failed
+		{TestCase: store.TestCase{Success: true}},  // Passed
+	}
+
+	mc := &collector.MetricsCollection{
+		TestCasesMetrics: testCases,
+	}
+
+	// Call the getPassedCountFromMC function
+	passedCount := getPassedCountFromMC(mc)
+
+	// Assert that the number of passed test cases is correct
+	suite.Equal(3, passedCount, "Expected passed count to be 3")
+}
+
+func (suite *XMLReporterTestSuite) TestGetTestDuration() {
+	// Define a start and end time for the test case
+	startTime := time.Now()
+	endTime := startTime.Add(2 * time.Minute) // Add 2 minutes to the start time
+
+	// Create a TestCase instance with the specified timestamps
+	tc := store.TestCase{
+		StartTimestamp: startTime,
+		EndTimestamp:   endTime,
+	}
+
+	// Call the getTestDuration function
+	duration := getTestDuration(tc)
+
+	// Assert that the duration is correctly formatted
+	expectedDuration := "02:00" // 2 minutes
+	suite.Equal(expectedDuration, duration, "Expected duration to be 02:00")
+}
+
+func (suite *ReporterTestSuite) TestUpdateTestCounts() {
+	// Reset the counts before the test
+	passedCount = 0
+	failedCount = 0
+	skippedCount = 0
+
+	// Create a sample MetricsCollection with a mix of test cases
+	testCases := []collector.TestCaseMetrics{
+		{TestCase: store.TestCase{Success: true}},  // Passed
+		{TestCase: store.TestCase{Success: true}},  // Passed
+		{TestCase: store.TestCase{Success: false}}, // Failed
+		{TestCase: store.TestCase{Success: true}},  // Passed
+		{TestCase: store.TestCase{Success: false}}, // Failed
+		{TestCase: store.TestCase{Success: false}}, // Failed
+		{TestCase: store.TestCase{Success: false}}, // Failed
+		{TestCase: store.TestCase{Success: true}},  // Passed
+		{TestCase: store.TestCase{Success: true}},  // Passed (simulating a skipped test case just for testing)
+	}
+
+	// Create a `MetricsCollection` with the test cases
+	mc := &collector.MetricsCollection{
+		TestCasesMetrics: testCases,
+	}
+
+	// Call the updateTestCounts function
+	updateTestCounts(mc)
+
+	// Assert the counts
+	suite.Equal(5, passedCount, "Expected passed count to be 5")
+	suite.Equal(4, failedCount, "Expected failed count to be 4")
+	suite.Equal(0, skippedCount, "Expected skipped count to be 0 (None were truly skipped)")
+}
+
+//------------------------------------------------------------------------------------------------
+
+// Test for getResultStatus in table-reporter.go
+func (suite *ReporterTestSuite) TestTabularReporterGetResultStatus() {
+	// Create an instance of TabularReporter
+	tr := &TabularReporter{}
+
+	// Test cases for getResultStatus
+	tests := []struct {
+		input    bool
+		expected string
+	}{
+		{true, "SUCCESS"},
+		{false, "FAILURE"},
+	}
+
+	for _, tt := range tests {
+		result := tr.getResultStatus(tt.input)
+		suite.Equal(tt.expected, result, "Expected result status for input %v to be %s, but got %s", tt.input, tt.expected, result)
+	}
+}
+
+// Test for getColorResultStatus in table-reporter.go
+func (suite *ReporterTestSuite) TestTabularReporterGetColorResultStatus() {
+	// Create an instance of TabularReporter
+	tr := &TabularReporter{}
+
+	// Test cases for getColorResultStatus
+	tests := []struct {
+		input    bool
+		expected string
+	}{
+		{true, "green"},
+		{false, "red"},
+	}
+
+	for _, tt := range tests {
+		result := tr.getColorResultStatus(tt.input)
+		suite.Equal(tt.expected, result, "Expected color result status for input %v to be %s, but got %s", tt.input, tt.expected, result)
+	}
+}
+
+// Test for getSlNo in table-reporter.go
+func (suite *ReporterTestSuite) TestTabularReporterGetSlNo() {
+	// Create an instance of TabularReporter
+	tr := &TabularReporter{}
+
+	// Test cases for getSlNo
+	tests := []struct {
+		input    int
+		expected int
+	}{
+		{0, 1},   // The first index should return 1
+		{1, 2},   // The second index should return 2
+		{10, 11}, // The eleventh index should return 11
+		{-1, 0},  // Testing a negative index, should return 0 (if negative handling is desired)
+	}
+
+	for _, tt := range tests {
+		result := tr.getSlNo(tt.input)
+		suite.Equal(tt.expected, result, "Expected serial number for index %d to be %d, but got %d", tt.input, tt.expected, result)
+	}
+}
+
+// Test for getArrays in table-reporter.go
+func (suite *ReporterTestSuite) TestTabularReporterGetArrays() {
+	// Create an instance of TabularReporter
+	tr := &TabularReporter{}
+
+	// Test scenario 1: arrayConfig has arrayIPs set
+	arrayConfig = map[string]string{
+		"name":     "testArray",
+		"arrayIPs": "192.168.1.1,192.168.1.2",
+	}
+
+	result := tr.getArrays()
+	suite.Equal("192.168.1.1,192.168.1.2", result, "Expected arrayIPs to match the configured value")
+
+	// Test scenario 2: arrayConfig does not have arrayIPs set
+	arrayConfig = map[string]string{
+		"name": "testArray",
+		// No arrayIPs key
+	}
+
+	result = tr.getArrays()
+	suite.Empty(result, "Expected arrayIPs to be empty when not set in config")
+}
+
+//------------------------------------------------------------------------------------------------
 
 func TestReporterTestSuite(t *testing.T) {
 	suite.Run(t, new(ReporterTestSuite))
