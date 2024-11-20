@@ -339,19 +339,19 @@ func TestBuildE2eCommand(t *testing.T) {
 		{
 			name:    "send good config file with report path",
 			args:    args{ctx: x4},
-			want:    []string{"-kubeconfig", "/root/.kube/config", "-storage.testdriver", "testdata/config-nfs.yaml", "--ginkgo.junit-report", "/root/reports/test/execution_powerstore-nfs.xml"},
+			want:    []string{"-kubeconfig", "/root/.kube/config", "-storage.testdriver", "testdata/config-nfs.yaml", "--ginkgo.junit-report", defaultDir + "test/execution_powerstore-nfs.xml"},
 			wantErr: false,
 		},
 		{
 			name:    "send good config file with report path again to test remove",
 			args:    args{ctx: x4},
-			want:    []string{"-kubeconfig", "/root/.kube/config", "-storage.testdriver", "testdata/config-nfs.yaml", "--ginkgo.junit-report", "/root/reports/test/execution_powerstore-nfs.xml"},
+			want:    []string{"-kubeconfig", "/root/.kube/config", "-storage.testdriver", "testdata/config-nfs.yaml", "--ginkgo.junit-report", defaultDir + "test/execution_powerstore-nfs.xml"},
 			wantErr: false,
 		},
 		{
 			name:    "send good config file with invalid report path",
 			args:    args{ctx: x5},
-			want:    []string{"-kubeconfig", "/root/.kube/config", "-storage.testdriver", "testdata/config-nfs.yaml", "--ginkgo.junit-report", "/root/reports/"},
+			want:    []string{"-kubeconfig", "/root/.kube/config", "-storage.testdriver", "testdata/config-nfs.yaml", "--ginkgo.junit-report", defaultDir},
 			wantErr: false,
 		},
 	}
