@@ -30,6 +30,7 @@ import (
 	"github.com/dell/cert-csi/pkg/store"
 
 	log "github.com/sirupsen/logrus"
+	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/suite"
 )
 
@@ -193,6 +194,70 @@ func (suite *ReporterTestSuite) TestGenerateAllReports() {
 			}
 		})
 	}
+}
+
+// Test the getPlotStageMetricHistogramPath method in reporter.go
+func TestGetPlotStageMetricHistogramPath(t *testing.T) {
+	// Arrange
+	tc := collector.TestCaseMetrics{
+		TestCase: store.TestCase{
+			Name: "ExampleTestCase",
+			ID:   123,
+		},
+	}
+
+	stage := collector.PVCStage("exampleStage")
+	reportName := "test-report"
+
+	// Act
+	path := getPlotStageMetricHistogramPath(tc, stage, reportName)
+
+	// Assert
+	expectedPath := "ExampleTestCase123/exampleStage.png"
+	assert.Equal(t, expectedPath, path.Path, "The constructed path should match the expected path")
+	assert.Equal(t, reportName, path.ReportName, "The report name should match")
+}
+
+// Test for getPlotStageBoxPath in reporter.go
+func TestGetPlotStageBoxPath(t *testing.T) {
+	// Arrange
+	tc := collector.TestCaseMetrics{
+		TestCase: store.TestCase{
+			Name: "ExampleTestCase",
+			ID:   123,
+		},
+	}
+
+	stage := collector.PVCStage("exampleStage")
+	reportName := "test-report"
+
+	// Act
+	path := getPlotStageBoxPath(tc, stage, reportName)
+
+	// Assert
+	expectedPath := "ExampleTestCase123/exampleStage_boxplot.png"
+	assert.Equal(t, expectedPath, path.Path, "The constructed path should match the expected path")
+	assert.Equal(t, reportName, path.ReportName, "The report name should match")
+}
+
+// Test for getPlotEntityOverTimePath in reporter.go
+func TestGetPlotEntityOverTimePath(t *testing.T) {
+	// Arrange
+	tc := collector.TestCaseMetrics{
+		TestCase: store.TestCase{
+			Name: "ExampleTestCase",
+			ID:   123,
+		},
+	}
+	reportName := "test-report"
+
+	// Act
+	path := getPlotEntityOverTimePath(tc, reportName)
+
+	// Assert
+	expectedPath := "ExampleTestCase123/EntityNumberOverTime.png" // Adjust the expected output based on your logic
+	assert.Equal(t, expectedPath, path.Path, "The constructed path should match the expected path")
+	assert.Equal(t, reportName, path.ReportName, "The report name should match")
 }
 
 // Test GenerateFunctionalReport method in functional-reporter.go
@@ -482,6 +547,62 @@ func (suite *XMLReporterTestSuite) TestMultiGenerate() {
 
 	// Assert no error occurred
 	suite.NoError(err, "Expected no error while generating the report")
+}
+
+func (suite *XMLReporterTestSuite) TestGetCustomReportName() {
+	// Set up the arrayConfig for testing
+	arrayConfig = map[string]string{
+		"name": "testArray",
+	}
+
+	// Call the method to test
+	reportName := suite.reporter.getCustomReportName()
+
+	// Validate the results
+	expectedReportName := "csi-testArray-test-results"
+	suite.Equal(expectedReportName, reportName, "Expected report name did not match")
+}
+
+// Test for getPassedCount function in xml-reporter.go
+func (suite *XMLReporterTestSuite) TestXMLGetPassedCount() {
+	// Mock a MetricsCollection with test cases
+	mockMetrics := &collector.MetricsCollection{
+		TestCasesMetrics: []collector.TestCaseMetrics{
+			{TestCase: store.TestCase{Success: true}},  // Passed
+			{TestCase: store.TestCase{Success: false}}, // Failed
+			{TestCase: store.TestCase{Success: true}},  // Passed
+		},
+	}
+
+	// Update global state by calling updateTestCounts
+	updateTestCounts(mockMetrics)
+
+	// Call the method to test
+	passedCount := suite.reporter.getPassedCount()
+
+	// Validate the results
+	suite.Equal(2, passedCount, "Expected passed count to be 2")
+}
+
+// Test for getFailedCount function in xml-reporter.go
+func (suite *XMLReporterTestSuite) TestXMLGetFailedCount() {
+	// Mock a MetricsCollection with test cases
+	mockMetrics := &collector.MetricsCollection{
+		TestCasesMetrics: []collector.TestCaseMetrics{
+			{TestCase: store.TestCase{Success: true}},  // Passed
+			{TestCase: store.TestCase{Success: false}}, // Failed
+			{TestCase: store.TestCase{Success: false}}, // Failed
+		},
+	}
+
+	// Update global state by calling updateTestCounts
+	updateTestCounts(mockMetrics)
+
+	// Call the method to test
+	failedCount := suite.reporter.getFailedCount()
+
+	// Validate the results
+	suite.Equal(2, failedCount, "Expected failed count to be 2")
 }
 
 //------------------------------------------------------------------------------------------------
