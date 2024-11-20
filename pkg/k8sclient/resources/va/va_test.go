@@ -86,15 +86,16 @@ func (suite *VaTestSuite) TestDeleteVaBasedOnPVName() {
 	vaClient, err := suite.kubeClient.CreateVaClient("test-namespace")
 	suite.NoError(err)
 
+	suite.Run("Successful deletion", func() {
+		err = vaClient.DeleteVaBasedOnPVName(context.Background(), pvName)
+		suite.NoError(err)
+		_, err = suite.kubeClient.ClientSet.StorageV1().VolumeAttachments().Get(context.Background(), va.Name, metav1.GetOptions{})
+		suite.Error(err)
+	})
+
 	suite.Run("delete non existent pv", func() {
 		err = vaClient.DeleteVaBasedOnPVName(context.Background(), "non-existent-pv")
 		suite.NoError(err)
-
-		err = suite.kubeClient.ClientSet.StorageV1().VolumeAttachments().Delete(context.Background(), va.Name, metav1.DeleteOptions{})
-		suite.NoError(err)
-
-		_, err = suite.kubeClient.ClientSet.StorageV1().VolumeAttachments().Get(context.Background(), va.Name, metav1.GetOptions{})
-		suite.Error(err)
 	})
 }
 
