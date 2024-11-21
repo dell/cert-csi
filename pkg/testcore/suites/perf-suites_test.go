@@ -14,8 +14,10 @@ import (
 	v1 "k8s.io/api/core/v1"
 	storagev1 "k8s.io/api/storage/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/client-go/kubernetes/fake"
 	"k8s.io/client-go/rest"
+	k8stesting "k8s.io/client-go/testing"
 )
 
 // TestVolumeCreationSuite_Run
@@ -304,7 +306,93 @@ func TestVolumeCreationSuite_Parameters(t *testing.T) {
 	}
 }
 
-// TODO TestProvisioningSuite_Run
+// TestProvisioningSuite_Run
+func TestProvisioningSuite_Run(t *testing.T) {
+	// Create a new context
+	ctx := context.Background()
+
+	// Create a new ProvisioningSuite instance
+	ps := &ProvisioningSuite{
+		VolumeNumber: 1,
+		PodNumber:    1,
+		VolumeSize:   "1Gi",
+		Image:        "quay.io/centos/centos:latest",
+	}
+
+	// Create a fake storage class with VolumeBindingMode set to WaitForFirstConsumer
+	storageClass := &storagev1.StorageClass{
+		ObjectMeta: metav1.ObjectMeta{Name: "test-storage-class"},
+		VolumeBindingMode: func() *storagev1.VolumeBindingMode {
+			mode := storagev1.VolumeBindingWaitForFirstConsumer
+			return &mode
+		}(),
+	}
+
+	// Create a fake k8s clientset with the storage class
+	clientset := fake.NewSimpleClientset(storageClass)
+
+	// Set up a reactor to simulate Pods becoming Ready
+	clientset.Fake.PrependReactor("create", "pods", func(action k8stesting.Action) (bool, runtime.Object, error) {
+		createAction := action.(k8stesting.CreateAction)
+		pod := createAction.GetObject().(*v1.Pod)
+		// Set pod phase to Running
+		pod.Status.Phase = v1.PodRunning
+		// Simulate the Ready condition
+		pod.Status.Conditions = append(pod.Status.Conditions, v1.PodCondition{
+			Type:   v1.PodReady,
+			Status: v1.ConditionTrue,
+		})
+		return false, nil, nil // Allow normal processing to continue
+	})
+
+	// Also, when getting pods, return the pod with Running status and Ready condition
+	clientset.Fake.PrependReactor("get", "pods", func(action k8stesting.Action) (bool, runtime.Object, error) {
+		getAction := action.(k8stesting.GetAction)
+		podName := getAction.GetName()
+		// Create a pod object with the expected name and Ready status
+		pod := &v1.Pod{
+			ObjectMeta: metav1.ObjectMeta{
+				Name:      podName,
+				Namespace: "test-namespace",
+			},
+			Status: v1.PodStatus{
+				Phase: v1.PodRunning,
+				Conditions: []v1.PodCondition{
+					{
+						Type:   v1.PodReady,
+						Status: v1.ConditionTrue,
+					},
+				},
+			},
+		}
+		return true, pod, nil
+	})
+
+	// Create a fake k8sclient.KubeClient
+	kubeClient := &k8sclient.KubeClient{
+		ClientSet: clientset,
+	}
+
+	// Create PVC client
+	pvcClient, _ := kubeClient.CreatePVCClient("test-namespace")
+
+	// Create Pod client
+	podClient, _ := kubeClient.CreatePodClient("test-namespace")
+
+	// Update the k8sclient.Clients instance with the fake clients
+	clients := &k8sclient.Clients{
+		PVCClient: pvcClient,
+		PodClient: podClient,
+	}
+
+	// Call the Run method
+	_, err := ps.Run(ctx, "test-storage-class", clients)
+
+	// Check if there was an error
+	if err != nil {
+		t.Errorf("Error running ProvisioningSuite.Run(): %v", err)
+	}
+}
 
 func TestProvisioningSuite_GetObservers(t *testing.T) {
 	ps := &ProvisioningSuite{}
