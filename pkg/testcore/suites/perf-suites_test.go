@@ -1,21 +1,96 @@
 package suites
 
 import (
+	"context"
 	"fmt"
 	"reflect"
 	"testing"
 
 	"github.com/dell/cert-csi/pkg/k8sclient"
+	"github.com/dell/cert-csi/pkg/k8sclient/resources/pvc"
 	"github.com/dell/cert-csi/pkg/observer"
 	"github.com/stretchr/testify/assert"
 
 	v1 "k8s.io/api/core/v1"
+	storagev1 "k8s.io/api/storage/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes/fake"
 	"k8s.io/client-go/rest"
 )
 
-// TODO TestVolumeCreationSuite_Run
-// TODO Testshouldwaitforfirstconsumer
+// TestVolumeCreationSuite_Run
+func TestVolumeCreationSuite_Run(t *testing.T) {
+	// Create a new context
+	ctx := context.Background()
+
+	// Create a new VolumeCreationSuite instance
+	vcs := &VolumeCreationSuite{
+		VolumeNumber: 1,
+		VolumeSize:   "1Gi",
+		AccessMode:   "ReadWriteOnce",
+	}
+
+	// Create a fake storage class with VolumeBindingMode set to WaitForFirstConsumer
+	storageClass := &storagev1.StorageClass{
+		ObjectMeta: metav1.ObjectMeta{Name: "test-storage-class"},
+		VolumeBindingMode: func() *storagev1.VolumeBindingMode {
+			mode := storagev1.VolumeBindingWaitForFirstConsumer
+			return &mode
+		}(),
+	}
+
+	// Create a fake k8s clientset with the storage class
+	clientset := fake.NewSimpleClientset(storageClass)
+
+	// Create a fake k8sclient.KubeClient
+	kubeClient := &k8sclient.KubeClient{
+		ClientSet: clientset,
+		// Other fields can be left as zero values for simplicity
+	}
+
+	// Create a PVC client
+	pvcClient, _ := kubeClient.CreatePVCClient("test-namespace")
+
+	// Update the k8sclient.Clients instance with the fake PVC client
+	clients := &k8sclient.Clients{
+		PVCClient: pvcClient,
+	}
+
+	// Call the Run method
+	_, err := vcs.Run(ctx, "test-storage-class", clients)
+
+	// Check if there was an error
+	if err != nil {
+		t.Errorf("Error running VolumeCreationSuite.Run(): %v", err)
+	}
+}
+
+// Testshouldwaitforfirstconsumer
+func TestShouldWaitForFirstConsumer(t *testing.T) {
+	// Create a fake storage class with VolumeBindingWaitForFirstConsumer mode.
+	storageClass := &storagev1.StorageClass{
+		ObjectMeta: metav1.ObjectMeta{Name: "test-storage-class"}, // Use metav1.ObjectMeta
+		VolumeBindingMode: func() *storagev1.VolumeBindingMode {
+			mode := storagev1.VolumeBindingWaitForFirstConsumer
+			return &mode
+		}(),
+	}
+
+	client := fake.NewSimpleClientset(storageClass)
+	pvcClient := &pvc.Client{ClientSet: client} // Assuming pvc.Client is defined
+
+	// Call the function under test
+	result, err := shouldWaitForFirstConsumer(context.Background(), storageClass.Name, pvcClient)
+	if err != nil {
+		t.Fatalf("Unexpected error: %v", err)
+	}
+
+	// Check the expected result
+	expected := true
+	if result != expected {
+		t.Errorf("Expected %v, got %v", expected, result)
+	}
+}
 
 func TestVolumeCreationSuite_GetName(t *testing.T) {
 	tests := []struct {
@@ -1041,6 +1116,44 @@ func TestCloneVolumeSuite_Parameters(t *testing.T) {
 }
 
 // TODO TestMultiAttachSuite_Run
+func TestMultiAttachSuite_Run(t *testing.T) {
+	// Create a context
+	ctx := context.Background()
+
+	// Create a MultiAttachSuite instance
+	mas := &MultiAttachSuite{
+		PodNumber:  2,
+		RawBlock:   false,
+		AccessMode: "ReadWriteMany",
+		VolumeSize: "1Gi",
+		Image:      "quay.io/centos/centos:latest",
+	}
+
+	// Mock storageClass
+	storageClass := "test-storage-class"
+
+	// Create a fake KubeClient
+	kubeClient := &k8sclient.KubeClient{
+		ClientSet: fake.NewSimpleClientset(),
+		Config:    &rest.Config{},
+	}
+
+	// Create the necessary clients
+	clients, err := mas.GetClients(mas.GetNamespace(), kubeClient)
+	assert.NoError(t, err)
+
+	// Mock PVCClient and PodClient methods if needed (e.g., using a mocking library)
+
+	// Run the suite
+	delFunc, err := mas.Run(ctx, storageClass, clients)
+	assert.NoError(t, err)
+	assert.NotNil(t, delFunc)
+
+	// Optionally, invoke delFunc to test deletion logic
+	err = delFunc()
+	assert.NoError(t, err)
+}
+
 func TestMultiAttachSuite_GenerateTopologySpreadConstraints(t *testing.T) {
 	mas := &MultiAttachSuite{PodNumber: 5}
 	nodeCount := 3
