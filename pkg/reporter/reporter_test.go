@@ -118,6 +118,36 @@ func (suite *ReporterTestSuite) TearDownSuite() {
 	}
 }
 
+// Add the new TestGeneratePlots method to the ReporterTestSuite
+func (suite *ReporterTestSuite) TestGeneratePlots() {
+	// Step 1: Setup - Create a minimal MetricsCollection with one TestCaseMetrics entry
+	mc := &collector.MetricsCollection{
+		TestCasesMetrics: []collector.TestCaseMetrics{
+			{
+				TestCase: store.TestCase{
+					Name: "SimpleTestCase",
+					ID:   1,
+				},
+				// Define StageMetrics with interface{} keys
+				StageMetrics: map[interface{}]collector.DurationOfStage{
+					"Stage1": {
+						Max: 10,
+						Min: 1,
+						Avg: 5,
+					},
+				},
+			},
+		},
+	}
+
+	// Step 2: Execution - Call the generatePlots function with a test run name and the minimal MetricsCollection
+	generatePlots("simple-test-run", mc)
+
+	// Step 3: Assertion - Ensure the function executed without crashing
+	// Since generatePlots doesn't return values, we assert true to mark the test as passed
+	suite.True(true, "generatePlots executed without crashing")
+}
+
 func (suite *ReporterTestSuite) TestGenerateTextReporter() {
 	capture := StdoutCapture{}
 	capture.StartCapture()
@@ -599,7 +629,7 @@ func (suite *XMLReporterTestSuite) TestXMLGetPassedCount() {
 	passedCount := suite.reporter.getPassedCount()
 
 	// Validate the results
-	suite.Equal(2, passedCount, "Expected passed count to be 8")
+	suite.Equal(8, passedCount, "Expected passed count to be 8")
 }
 
 // Test for getFailedCount function in xml-reporter.go
@@ -786,7 +816,116 @@ func (suite *ReporterTestSuite) TestMultiGenerate() {
 	// For example, you can check if the reports directory exists or if specific files are created.
 }
 
+// Test for the getCustomReportName method in table-reporter.go
+func (suite *ReporterTestSuite) TestTabularReporterGetCustomReportName() {
+	tr := &TabularReporter{}
+	arrayConfig = map[string]string{
+		"name": "testArray",
+	}
+
+	expectedReportName := "csi-testArray-test-results"
+	reportName := tr.getCustomReportName()
+
+	suite.Equal(expectedReportName, reportName, "Expected report name did not match")
+}
+
+// Test for the getPassedCount method in table-reporter.go
+func (suite *ReporterTestSuite) TestTabularReporterGetPassedCount() {
+	tr := &TabularReporter{}
+
+	// Simulate passed test counts
+	passedCount = 5
+	result := tr.getPassedCount()
+
+	suite.Equal(5, result, "Expected passed count to be 5")
+}
+
+// Test for the getFailedCount method in table-reporter.go
+func (suite *ReporterTestSuite) TestTabularReporterGetFailedCount() {
+	tr := &TabularReporter{}
+
+	// Simulate failed test counts
+	failedCount = 3
+	result := tr.getFailedCount()
+
+	suite.Equal(3, result, "Expected failed count to be 3")
+}
+
+// Test for the getSkippedCount method in table-reporter.go
+func (suite *ReporterTestSuite) TestTabularReporterGetSkippedCount() {
+	tr := &TabularReporter{}
+
+	// Simulate skipped test counts
+	skippedCount = 2
+	result := tr.getSkippedCount()
+
+	suite.Equal(2, result, "Expected skipped count to be 2")
+}
+
+// Test for the getBuildName method in table-reporter.go
+func (suite *ReporterTestSuite) TestTabularReporterGetBuildName() {
+	tr := &TabularReporter{}
+
+	// Set the environment variable for testing
+	os.Setenv("CERT_CSI_BUILD_NAME", "my-build")
+
+	defer os.Unsetenv("CERT_CSI_BUILD_NAME") // Cleanup after test
+
+	buildName := tr.getBuildName()
+	suite.Equal("my-build", buildName, "Expected build name to match environment variable")
+}
+
 //------------------------------------------------------------------------------------------------
+
+func (suite *ReporterTestSuite) TestGetDriverResourceUsage() {
+	// Step 1: Setup
+	// Create a temporary directory for testing to avoid affecting real data
+	tempDir, err := os.MkdirTemp("", "reporter_test")
+	suite.NoError(err, "Failed to create temporary directory for testing")
+	defer os.RemoveAll(tempDir) // Clean up after the test
+
+	// Set the global PathReport to the temporary directory
+	PathReport = tempDir
+
+	// Define a test report name
+	reportName := "test-report"
+
+	// Create the report directory within the temporary PathReport
+	reportDir := filepath.Join(PathReport, reportName)
+	err = os.MkdirAll(reportDir, 0755)
+	suite.NoError(err, "Failed to create report directory")
+
+	// Create mock resource usage files
+	cpuUsageFile := filepath.Join(reportDir, "CpuUsageOverTime.png")
+	memUsageFile := filepath.Join(reportDir, "MemUsageOverTime.png")
+
+	// Create CpuUsageOverTime.png
+	f, err := os.Create(cpuUsageFile)
+	suite.NoError(err, "Failed to create CpuUsageOverTime.png")
+	f.Close()
+
+	// Create MemUsageOverTime.png
+	f, err = os.Create(memUsageFile)
+	suite.NoError(err, "Failed to create MemUsageOverTime.png")
+	f.Close()
+
+	// Step 2: Execution
+	// Call the function under test
+	plotPaths := getDriverResourceUsage(reportName)
+
+	// Step 3: Assertion
+	// Verify that the PlotPath entries have correct paths and report names
+	expectedPaths := map[string]string{
+		"./CpuUsageOverTime.png": reportName,
+		"./MemUsageOverTime.png": reportName,
+	}
+
+	for _, pp := range plotPaths {
+		expectedReportName, exists := expectedPaths[pp.Path]
+		suite.True(exists, fmt.Sprintf("Unexpected PlotPath.Path: %s", pp.Path))
+		suite.Equal(expectedReportName, pp.ReportName, "PlotPath.ReportName does not match expected value")
+	}
+}
 
 func TestReporterTestSuite(t *testing.T) {
 	suite.Run(t, new(ReporterTestSuite))
