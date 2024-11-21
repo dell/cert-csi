@@ -139,7 +139,6 @@ func (suite *ReporterTestSuite) TestGeneratePlots() {
 		},
 	}
 
-	// Call generatePlotsMethod
 	generatePlots("simple-test-run", mc)
 
 	// Ensure the function executed without crashing
@@ -440,6 +439,7 @@ func (xr *XMLReporter) SetPassedCount(count int) {
 	passedCount = count // Assuming passedCount is scoped properly.
 }
 
+// Test for the getResultStatus method in xml-reporter.go
 func (suite *XMLReporterTestSuite) TestGetResultStatus() {
 	// Test case when result is true
 	result := suite.reporter.getResultStatus(true)
@@ -450,7 +450,6 @@ func (suite *XMLReporterTestSuite) TestGetResultStatus() {
 	suite.Equal("FAILED", result, "Expected result status to be FAILED")
 }
 
-// Test for getResultStatus method in xml-reporter.go
 func TestXMLReporterTestSuite(t *testing.T) {
 	suite.Run(t, new(XMLReporterTestSuite))
 }
@@ -510,6 +509,7 @@ func (suite *XMLReporterTestSuite) TestGetPassedCountFromMC() {
 	suite.Equal(3, passedCount, "Expected passed count to be 3")
 }
 
+// Test for the getTestDuration method in xml-reporter.go
 func (suite *XMLReporterTestSuite) TestGetTestDuration() {
 	// Define a start and end time for the test case
 	startTime := time.Now()
@@ -561,6 +561,7 @@ func (suite *ReporterTestSuite) TestUpdateTestCounts() {
 	suite.Equal(0, skippedCount, "Expected skipped count to be 0 (None were truly skipped)")
 }
 
+// Test for the multiGenerate function in xml-reporter.go
 func (suite *XMLReporterTestSuite) TestMultiGenerate() {
 	// Create a mock MetricsCollection for testing
 	mockMetrics := &collector.MetricsCollection{
@@ -574,6 +575,7 @@ func (suite *XMLReporterTestSuite) TestMultiGenerate() {
 	suite.NoError(err, "Expected no error while generating the report")
 }
 
+// Test for the getCustomReportName method in xml-reporter.go
 func (suite *XMLReporterTestSuite) TestGetCustomReportName() {
 	arrayConfig = map[string]string{
 		"name": "testArray",
