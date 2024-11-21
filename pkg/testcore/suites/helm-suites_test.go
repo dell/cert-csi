@@ -17,11 +17,80 @@
 package suites
 
 import (
+	"context"
 	"reflect"
 	"testing"
 
+	"github.com/dell/cert-csi/pkg/k8sclient"
 	"github.com/dell/cert-csi/pkg/observer"
+	"k8s.io/client-go/kubernetes/fake"
+	"k8s.io/client-go/rest"
 )
+
+func TestPostgresqlSuite_Run(t *testing.T) {
+	client := fake.NewSimpleClientset()
+
+	kubeClient := k8sclient.KubeClient{
+		ClientSet:   client,
+		Config:      &rest.Config{},
+		VersionInfo: nil,
+	}
+	kubeClient.SetTimeout(1)
+
+	// Create a test PostgresqlSuite
+	ps := PostgresqlSuite{
+		ConfigPath:        "/root/.kube/config",
+		VolumeSize:        "10Gi",
+		EnableReplication: true,
+		Image:             "docker.io/bitnami/postgresql:11.8.0-debian-10-r72",
+		SlaveReplicas:     2,
+	}
+
+	pvcClient, _ := kubeClient.CreatePVCClient("test-namespace")
+	podClient, _ := kubeClient.CreatePodClient("test-namespace")
+
+	// Create test clients
+	clients := &k8sclient.Clients{
+		PVCClient: pvcClient,
+		PodClient: podClient,
+	}
+
+	// Create a test context
+	ctx := context.Background()
+
+	type args struct {
+		ctx          context.Context
+		storageClass string
+		clients      *k8sclient.Clients
+	}
+
+	tests := []struct {
+		name           string
+		args           args
+		wantDelFunc    bool
+		wantErr        bool
+		wantDelFuncErr bool
+	}{
+		{"invalid namespace run", args{ctx, "test-storage-class", clients}, false, true, false},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			gotDelFunc, err := ps.Run(ctx, "test-storage-class", clients)
+			if (err != nil) != tt.wantErr {
+				t.Errorf("Run() error = %v, wantErr %v", err, tt.wantErr)
+				return
+			}
+			if (gotDelFunc != nil) != tt.wantDelFunc {
+				t.Errorf("Run() delFunc error = %v, wantErr %v", err, tt.wantDelFunc)
+				return
+			}
+			if (gotDelFunc != nil && gotDelFunc() != nil) != tt.wantDelFuncErr {
+				t.Errorf("Run() delFunc run error = %v, wantErr %v", err, tt.wantErr)
+				return
+			}
+		})
+	}
+}
 
 func TestPostgresqlSuite_GetObservers(t *testing.T) {
 	type args struct {
