@@ -242,11 +242,7 @@ func (suite *PodTestSuite) TestDeleteAll() {
 //         podTmpl := client.MakePod(podconf)
 //         suite.NotNil(podTmpl) // Ensure podTmpl is not nil
 
-//         // Create a mock stdout and stderr
-//         var stdout, stderr bytes.Buffer
-
-//         // Execute the function
-//         err = client.Exec(context.Background(), podTmpl, []string{"/bin/bash"}, &stdout, &stderr, false)
+// 		err = client.Exec(context.Background(), podTmpl, []string{"/bin/bash"}, os.Stdout, os.Stderr, false)
 //         suite.NoError(err)
 //     })
 // }
@@ -296,6 +292,21 @@ func (suite *PodTestSuite) TestWaitForAllToBeReady() {
 		err := client.WaitForAllToBeReady(context.Background())
 		suite.NoError(err)
 	})
+}
+
+func (suite *PodTestSuite) TestMakeEphemeralPod() {
+	podconf := &pod.Config{
+		Name: "test-pod",
+	}
+
+	podClient, err := suite.kubeClient.CreatePodClient("test-namespace")
+	suite.NoError(err)
+	podClient.MakeEphemeralPod(podconf)
+
+	suite.Equal(podconf.NamePrefix, "pod-")
+	suite.Equal(podconf.MountPath, "/data")
+	suite.Equal(podconf.ContainerName, "test-container")
+	suite.Equal(podconf.ContainerImage, "quay.io/centos/centos:latest")
 }
 
 func TestPodTestSuite(t *testing.T) {
