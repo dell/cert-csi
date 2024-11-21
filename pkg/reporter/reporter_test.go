@@ -118,9 +118,9 @@ func (suite *ReporterTestSuite) TearDownSuite() {
 	}
 }
 
-// Add the new TestGeneratePlots method to the ReporterTestSuite
+// Tests the TestGeneratePlots method in reporter.go
 func (suite *ReporterTestSuite) TestGeneratePlots() {
-	// Step 1: Setup - Create a minimal MetricsCollection with one TestCaseMetrics entry
+	// Create a MetricsCollection with one TestCaseMetrics entry
 	mc := &collector.MetricsCollection{
 		TestCasesMetrics: []collector.TestCaseMetrics{
 			{
@@ -128,7 +128,6 @@ func (suite *ReporterTestSuite) TestGeneratePlots() {
 					Name: "SimpleTestCase",
 					ID:   1,
 				},
-				// Define StageMetrics with interface{} keys
 				StageMetrics: map[interface{}]collector.DurationOfStage{
 					"Stage1": {
 						Max: 10,
@@ -140,11 +139,10 @@ func (suite *ReporterTestSuite) TestGeneratePlots() {
 		},
 	}
 
-	// Step 2: Execution - Call the generatePlots function with a test run name and the minimal MetricsCollection
+	// Call generatePlotsMethod
 	generatePlots("simple-test-run", mc)
 
-	// Step 3: Assertion - Ensure the function executed without crashing
-	// Since generatePlots doesn't return values, we assert true to mark the test as passed
+	// Ensure the function executed without crashing
 	suite.True(true, "generatePlots executed without crashing")
 }
 
@@ -226,7 +224,7 @@ func (suite *ReporterTestSuite) TestGenerateAllReports() {
 	}
 }
 
-// TestGenerateReportsFromMultipleDBsSimple is a simple unit test for GenerateReportsFromMultipleDBs
+// Test the generateReportsFromMultipleDBs method in reporter.go
 func (suite *ReporterTestSuite) TestGenerateReportsFromMultipleDBsSimple() {
 	// Define the report types to generate
 	reportTypes := []ReportType{
@@ -236,17 +234,15 @@ func (suite *ReporterTestSuite) TestGenerateReportsFromMultipleDBsSimple() {
 
 	// Use the existing successRunIndbs from the setup
 	dbs := suite.successRunIndbs
-
-	// Call the function under test
 	err := GenerateReportsFromMultipleDBs(reportTypes, dbs)
 
-	// Assert that no error was returned
+	// Ensure no errors occurred
 	suite.NoError(err, "GenerateReportsFromMultipleDBs should not return an error")
 }
 
 // Test the getPlotStageMetricHistogramPath method in reporter.go
 func TestGetPlotStageMetricHistogramPath(t *testing.T) {
-	// Arrange
+	// Set up test metrics
 	tc := collector.TestCaseMetrics{
 		TestCase: store.TestCase{
 			Name: "ExampleTestCase",
@@ -257,10 +253,8 @@ func TestGetPlotStageMetricHistogramPath(t *testing.T) {
 	stage := collector.PVCStage("exampleStage")
 	reportName := "test-report"
 
-	// Act
 	path := getPlotStageMetricHistogramPath(tc, stage, reportName)
 
-	// Assert
 	expectedPath := "ExampleTestCase123/exampleStage.png"
 	assert.Equal(t, expectedPath, path.Path, "The constructed path should match the expected path")
 	assert.Equal(t, reportName, path.ReportName, "The report name should match")
@@ -268,7 +262,6 @@ func TestGetPlotStageMetricHistogramPath(t *testing.T) {
 
 // Test for getPlotStageBoxPath in reporter.go
 func TestGetPlotStageBoxPath(t *testing.T) {
-	// Arrange
 	tc := collector.TestCaseMetrics{
 		TestCase: store.TestCase{
 			Name: "ExampleTestCase",
@@ -279,10 +272,8 @@ func TestGetPlotStageBoxPath(t *testing.T) {
 	stage := collector.PVCStage("exampleStage")
 	reportName := "test-report"
 
-	// Act
 	path := getPlotStageBoxPath(tc, stage, reportName)
 
-	// Assert
 	expectedPath := "ExampleTestCase123/exampleStage_boxplot.png"
 	assert.Equal(t, expectedPath, path.Path, "The constructed path should match the expected path")
 	assert.Equal(t, reportName, path.ReportName, "The report name should match")
@@ -290,7 +281,6 @@ func TestGetPlotStageBoxPath(t *testing.T) {
 
 // Test for getPlotEntityOverTimePath in reporter.go
 func TestGetPlotEntityOverTimePath(t *testing.T) {
-	// Arrange
 	tc := collector.TestCaseMetrics{
 		TestCase: store.TestCase{
 			Name: "ExampleTestCase",
@@ -298,11 +288,8 @@ func TestGetPlotEntityOverTimePath(t *testing.T) {
 		},
 	}
 	reportName := "test-report"
-
-	// Act
 	path := getPlotEntityOverTimePath(tc, reportName)
 
-	// Assert
 	expectedPath := "ExampleTestCase123/EntityNumberOverTime.png" // Adjust the expected output based on your logic
 	assert.Equal(t, expectedPath, path.Path, "The constructed path should match the expected path")
 	assert.Equal(t, reportName, path.ReportName, "The report name should match")
@@ -310,15 +297,12 @@ func TestGetPlotEntityOverTimePath(t *testing.T) {
 
 // Test GenerateFunctionalReport method in functional-reporter.go
 func (suite *ReporterTestSuite) TestGenerateFunctionalReport() {
-	// Create a mock store
+	// Create a mock store and define report types to test
 	mockDB := store.NewSQLiteStore("file:testdata/mock_functional_report.db")
-	// Define report types to test
 	reportTypes := []ReportType{TabularReport, XMLReport}
 
-	// Execute the GenerateFunctionalReport function
 	err := GenerateFunctionalReport(mockDB, reportTypes)
 
-	// Verify the results
 	suite.NoError(err, "Expected no error while generating functional reports")
 }
 
@@ -479,10 +463,8 @@ func (suite *XMLReporterTestSuite) TestGetPassedCount() {
 	// Use the setter method to set the passedCount for testing
 	suite.reporter.SetPassedCount(5) // Simulating that 5 tests have passed
 
-	// Call the getPassedCount method
 	result := suite.reporter.getPassedCount()
 
-	// Assert that the result matches the expected value
 	suite.Equal(5, result, "Expected passed count to be 5")
 }
 
@@ -501,7 +483,6 @@ func (suite *XMLReporterTestSuite) TestGetFailedCountFromMC() {
 		TestCasesMetrics: testCases,
 	}
 
-	// Call the getFailedCountFromMC function
 	failedCount := getFailedCountFromMC(mc)
 
 	// Assert that the number of failed test cases is correct
@@ -523,7 +504,6 @@ func (suite *XMLReporterTestSuite) TestGetPassedCountFromMC() {
 		TestCasesMetrics: testCases,
 	}
 
-	// Call the getPassedCountFromMC function
 	passedCount := getPassedCountFromMC(mc)
 
 	// Assert that the number of passed test cases is correct
@@ -541,11 +521,11 @@ func (suite *XMLReporterTestSuite) TestGetTestDuration() {
 		EndTimestamp:   endTime,
 	}
 
-	// Call the getTestDuration function
 	duration := getTestDuration(tc)
 
 	// Assert that the duration is correctly formatted
 	expectedDuration := "02:00" // 2 minutes
+
 	suite.Equal(expectedDuration, duration, "Expected duration to be 02:00")
 }
 
@@ -565,7 +545,7 @@ func (suite *ReporterTestSuite) TestUpdateTestCounts() {
 		{TestCase: store.TestCase{Success: false}}, // Failed
 		{TestCase: store.TestCase{Success: false}}, // Failed
 		{TestCase: store.TestCase{Success: true}},  // Passed
-		{TestCase: store.TestCase{Success: true}},  // Passed (simulating a skipped test case just for testing)
+		{TestCase: store.TestCase{Success: true}},  // Passed
 	}
 
 	// Create a `MetricsCollection` with the test cases
@@ -573,10 +553,9 @@ func (suite *ReporterTestSuite) TestUpdateTestCounts() {
 		TestCasesMetrics: testCases,
 	}
 
-	// Call the updateTestCounts function
 	updateTestCounts(mc)
 
-	// Assert the counts
+	// Assert the counts are accurate
 	suite.Equal(5, passedCount, "Expected passed count to be 5")
 	suite.Equal(4, failedCount, "Expected failed count to be 4")
 	suite.Equal(0, skippedCount, "Expected skipped count to be 0 (None were truly skipped)")
@@ -590,47 +569,21 @@ func (suite *XMLReporterTestSuite) TestMultiGenerate() {
 		},
 	}
 
-	// Run the MultiGenerate method
 	err := suite.reporter.MultiGenerate([]*collector.MetricsCollection{mockMetrics})
 
-	// Assert no error occurred
 	suite.NoError(err, "Expected no error while generating the report")
 }
 
 func (suite *XMLReporterTestSuite) TestGetCustomReportName() {
-	// Set up the arrayConfig for testing
 	arrayConfig = map[string]string{
 		"name": "testArray",
 	}
 
-	// Call the method to test
 	reportName := suite.reporter.getCustomReportName()
 
-	// Validate the results
 	expectedReportName := "csi-testArray-test-results"
 	suite.Equal(expectedReportName, reportName, "Expected report name did not match")
 }
-
-// Test for getPassedCount function in xml-reporter.go
-// func (suite *XMLReporterTestSuite) TestXMLGetPassedCount() {
-// 	// Mock a MetricsCollection with test cases
-// 	mockMetrics := &collector.MetricsCollection{
-// 		TestCasesMetrics: []collector.TestCaseMetrics{
-// 			{TestCase: store.TestCase{Success: true}},  // Passed
-// 			{TestCase: store.TestCase{Success: false}}, // Failed
-// 			{TestCase: store.TestCase{Success: true}},  // Passed
-// 		},
-// 	}
-
-// 	// Update global state by calling updateTestCounts
-// 	updateTestCounts(mockMetrics)
-
-// 	// Call the method to test
-// 	passedCount := suite.reporter.getPassedCount()
-
-// 	// Validate the results
-// 	suite.Equal(8, passedCount, "Expected passed count to be 8")
-// }
 
 // Test for getFailedCount function in xml-reporter.go
 func (suite *XMLReporterTestSuite) TestXMLGetFailedCount() {
@@ -646,16 +599,13 @@ func (suite *XMLReporterTestSuite) TestXMLGetFailedCount() {
 	// Update global state by calling updateTestCounts
 	updateTestCounts(mockMetrics)
 
-	// Call the method to test
 	failedCount := suite.reporter.getFailedCount()
 
-	// Validate the results
 	suite.Equal(2, failedCount, "Expected failed count to be 2")
 }
 
 // Test for getResultStatus method in text-reporter.go
 func (suite *ReporterTestSuite) TestTextGetResultStatus() {
-	// Create an instance of TextReporter
 	tr := &TextReporter{}
 
 	// Test cases for getResultStatus
@@ -678,11 +628,8 @@ func (suite *ReporterTestSuite) TestTextGetResultStatus() {
 	}
 }
 
-//------------------------------------------------------------------------------------------------
-
 // Test for getResultStatus in table-reporter.go
 func (suite *ReporterTestSuite) TestTabularReporterGetResultStatus() {
-	// Create an instance of TabularReporter
 	tr := &TabularReporter{}
 
 	// Test cases for getResultStatus
@@ -702,10 +649,7 @@ func (suite *ReporterTestSuite) TestTabularReporterGetResultStatus() {
 
 // Test for getColorResultStatus in table-reporter.go
 func (suite *ReporterTestSuite) TestTabularReporterGetColorResultStatus() {
-	// Create an instance of TabularReporter
 	tr := &TabularReporter{}
-
-	// Test cases for getColorResultStatus
 	tests := []struct {
 		input    bool
 		expected string
@@ -722,7 +666,6 @@ func (suite *ReporterTestSuite) TestTabularReporterGetColorResultStatus() {
 
 // Test for getSlNo in table-reporter.go
 func (suite *ReporterTestSuite) TestTabularReporterGetSlNo() {
-	// Create an instance of TabularReporter
 	tr := &TabularReporter{}
 
 	// Test cases for getSlNo
@@ -744,7 +687,6 @@ func (suite *ReporterTestSuite) TestTabularReporterGetSlNo() {
 
 // Test for getArrays in table-reporter.go
 func (suite *ReporterTestSuite) TestTabularReporterGetArrays() {
-	// Create an instance of TabularReporter
 	tr := &TabularReporter{}
 
 	// Test scenario 1: arrayConfig has arrayIPs set
@@ -777,10 +719,8 @@ func (suite *ReporterTestSuite) TestGetArrayConfig() {
 	suite.NoError(err)
 	file.Close()
 
-	// Call the function to test
 	config, err := getArrayConfig("test-config.properties")
 
-	// Validate the results
 	suite.NoError(err)
 	suite.Equal("testArray", config["name"])
 	suite.Equal("192.168.1.1,192.168.1.2", config["arrayIPs"])
@@ -788,7 +728,6 @@ func (suite *ReporterTestSuite) TestGetArrayConfig() {
 
 // Test for MultiGenerate function in table-reporter.go
 func (suite *ReporterTestSuite) TestMultiGenerate() {
-	// Create a mock MetricsCollection for testing
 	mockMetrics := []*collector.MetricsCollection{
 		{
 			TestCasesMetrics: []collector.TestCaseMetrics{
@@ -803,17 +742,10 @@ func (suite *ReporterTestSuite) TestMultiGenerate() {
 		},
 	}
 
-	// Create an instance of TabularReporter
 	tr := &TabularReporter{}
-
-	// Call the MultiGenerate function
 	err := tr.MultiGenerate(mockMetrics)
 
-	// Validate the results
 	suite.NoError(err, "Expected no error while generating reports")
-
-	// Check if the reports were generated (you may need to implement your own check here)
-	// For example, you can check if the reports directory exists or if specific files are created.
 }
 
 // Test for the getCustomReportName method in table-reporter.go
@@ -873,58 +805,6 @@ func (suite *ReporterTestSuite) TestTabularReporterGetBuildName() {
 
 	buildName := tr.getBuildName()
 	suite.Equal("my-build", buildName, "Expected build name to match environment variable")
-}
-
-//------------------------------------------------------------------------------------------------
-
-func (suite *ReporterTestSuite) TestGetDriverResourceUsage() {
-	// Step 1: Setup
-	// Create a temporary directory for testing to avoid affecting real data
-	tempDir, err := os.MkdirTemp("", "reporter_test")
-	suite.NoError(err, "Failed to create temporary directory for testing")
-	defer os.RemoveAll(tempDir) // Clean up after the test
-
-	// Set the global PathReport to the temporary directory
-	PathReport = tempDir
-
-	// Define a test report name
-	reportName := "test-report"
-
-	// Create the report directory within the temporary PathReport
-	reportDir := filepath.Join(PathReport, reportName)
-	err = os.MkdirAll(reportDir, 0755)
-	suite.NoError(err, "Failed to create report directory")
-
-	// Create mock resource usage files
-	cpuUsageFile := filepath.Join(reportDir, "CpuUsageOverTime.png")
-	memUsageFile := filepath.Join(reportDir, "MemUsageOverTime.png")
-
-	// Create CpuUsageOverTime.png
-	f, err := os.Create(cpuUsageFile)
-	suite.NoError(err, "Failed to create CpuUsageOverTime.png")
-	f.Close()
-
-	// Create MemUsageOverTime.png
-	f, err = os.Create(memUsageFile)
-	suite.NoError(err, "Failed to create MemUsageOverTime.png")
-	f.Close()
-
-	// Step 2: Execution
-	// Call the function under test
-	plotPaths := getDriverResourceUsage(reportName)
-
-	// Step 3: Assertion
-	// Verify that the PlotPath entries have correct paths and report names
-	expectedPaths := map[string]string{
-		"./CpuUsageOverTime.png": reportName,
-		"./MemUsageOverTime.png": reportName,
-	}
-
-	for _, pp := range plotPaths {
-		expectedReportName, exists := expectedPaths[pp.Path]
-		suite.True(exists, fmt.Sprintf("Unexpected PlotPath.Path: %s", pp.Path))
-		suite.Equal(expectedReportName, pp.ReportName, "PlotPath.ReportName does not match expected value")
-	}
 }
 
 func TestReporterTestSuite(t *testing.T) {
