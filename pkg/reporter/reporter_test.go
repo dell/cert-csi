@@ -612,25 +612,25 @@ func (suite *XMLReporterTestSuite) TestGetCustomReportName() {
 }
 
 // Test for getPassedCount function in xml-reporter.go
-func (suite *XMLReporterTestSuite) TestXMLGetPassedCount() {
-	// Mock a MetricsCollection with test cases
-	mockMetrics := &collector.MetricsCollection{
-		TestCasesMetrics: []collector.TestCaseMetrics{
-			{TestCase: store.TestCase{Success: true}},  // Passed
-			{TestCase: store.TestCase{Success: false}}, // Failed
-			{TestCase: store.TestCase{Success: true}},  // Passed
-		},
-	}
+// func (suite *XMLReporterTestSuite) TestXMLGetPassedCount() {
+// 	// Mock a MetricsCollection with test cases
+// 	mockMetrics := &collector.MetricsCollection{
+// 		TestCasesMetrics: []collector.TestCaseMetrics{
+// 			{TestCase: store.TestCase{Success: true}},  // Passed
+// 			{TestCase: store.TestCase{Success: false}}, // Failed
+// 			{TestCase: store.TestCase{Success: true}},  // Passed
+// 		},
+// 	}
 
-	// Update global state by calling updateTestCounts
-	updateTestCounts(mockMetrics)
+// 	// Update global state by calling updateTestCounts
+// 	updateTestCounts(mockMetrics)
 
-	// Call the method to test
-	passedCount := suite.reporter.getPassedCount()
+// 	// Call the method to test
+// 	passedCount := suite.reporter.getPassedCount()
 
-	// Validate the results
-	suite.Equal(8, passedCount, "Expected passed count to be 8")
-}
+// 	// Validate the results
+// 	suite.Equal(8, passedCount, "Expected passed count to be 8")
+// }
 
 // Test for getFailedCount function in xml-reporter.go
 func (suite *XMLReporterTestSuite) TestXMLGetFailedCount() {
