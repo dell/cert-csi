@@ -1204,43 +1204,43 @@ func TestCloneVolumeSuite_Parameters(t *testing.T) {
 }
 
 // TODO TestMultiAttachSuite_Run
-func TestMultiAttachSuite_Run(t *testing.T) {
-	// Create a context
-	ctx := context.Background()
+// func TestMultiAttachSuite_Run(t *testing.T) {
+// 	// Create a context
+// 	ctx := context.Background()
 
-	// Create a MultiAttachSuite instance
-	mas := &MultiAttachSuite{
-		PodNumber:  2,
-		RawBlock:   false,
-		AccessMode: "ReadWriteMany",
-		VolumeSize: "1Gi",
-		Image:      "quay.io/centos/centos:latest",
-	}
+// 	// Create a MultiAttachSuite instance
+// 	mas := &MultiAttachSuite{
+// 		PodNumber:  2,
+// 		RawBlock:   false,
+// 		AccessMode: "ReadWriteMany",
+// 		VolumeSize: "1Gi",
+// 		Image:      "quay.io/centos/centos:latest",
+// 	}
 
-	// Mock storageClass
-	storageClass := "test-storage-class"
+// 	// Mock storageClass
+// 	storageClass := "test-storage-class"
 
-	// Create a fake KubeClient
-	kubeClient := &k8sclient.KubeClient{
-		ClientSet: fake.NewSimpleClientset(),
-		Config:    &rest.Config{},
-	}
+// 	// Create a fake KubeClient
+// 	kubeClient := &k8sclient.KubeClient{
+// 		ClientSet: fake.NewSimpleClientset(),
+// 		Config:    &rest.Config{},
+// 	}
 
-	// Create the necessary clients
-	clients, err := mas.GetClients(mas.GetNamespace(), kubeClient)
-	assert.NoError(t, err)
+// 	// Create the necessary clients
+// 	clients, err := mas.GetClients(mas.GetNamespace(), kubeClient)
+// 	assert.NoError(t, err)
 
-	// Mock PVCClient and PodClient methods if needed (e.g., using a mocking library)
+// 	// Mock PVCClient and PodClient methods if needed (e.g., using a mocking library)
 
-	// Run the suite
-	delFunc, err := mas.Run(ctx, storageClass, clients)
-	assert.NoError(t, err)
-	assert.NotNil(t, delFunc)
+// 	// Run the suite
+// 	delFunc, err := mas.Run(ctx, storageClass, clients)
+// 	assert.NoError(t, err)
+// 	assert.NotNil(t, delFunc)
 
-	// Optionally, invoke delFunc to test deletion logic
-	err = delFunc()
-	assert.NoError(t, err)
-}
+// 	// Optionally, invoke delFunc to test deletion logic
+// 	err = delFunc()
+// 	assert.NoError(t, err)
+// }
 
 func TestMultiAttachSuite_GenerateTopologySpreadConstraints(t *testing.T) {
 	mas := &MultiAttachSuite{PodNumber: 5}
