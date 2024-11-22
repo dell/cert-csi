@@ -577,7 +577,47 @@ func TestRemoteReplicationProvisioningSuite_GetObservers(t *testing.T) {
 	// Add more assertions based on expected behavior
 }
 
-// TODO TestRemoteReplicationProvisioningSuite_GetClients
+// TestRemoteReplicationProvisioningSuite_GetClients
+func TestRemoteReplicationProvisioningSuite_GetClients(t *testing.T) {
+	// Create a fake clientset
+	client := fake.NewSimpleClientset()
+
+	// Create a fake KubeClient
+	kubeClient := &k8sclient.KubeClient{
+		ClientSet:   client,
+		Config:      &rest.Config{},
+		VersionInfo: nil,
+	}
+
+	type args struct {
+		namespace string
+		client    *k8sclient.KubeClient
+	}
+	tests := []struct {
+		name    string
+		rrps    *RemoteReplicationProvisioningSuite
+		args    args
+		wantErr bool
+	}{
+		{
+			name: "Testing GetClients expecting error",
+			rrps: &RemoteReplicationProvisioningSuite{},
+			args: args{
+				namespace: "test-namespace",
+				client:    kubeClient,
+			},
+			wantErr: true, // We expect an error due to RG client creation failure
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			_, err := tt.rrps.GetClients(tt.args.namespace, tt.args.client)
+			if (err != nil) != tt.wantErr {
+				t.Errorf("RemoteReplicationProvisioningSuite.GetClients() error = %v, wantErr %v", err, tt.wantErr)
+			}
+		})
+	}
+}
 
 func TestRemoteReplicationProvisioningSuite_GetNamespace(t *testing.T) {
 	rrps := &RemoteReplicationProvisioningSuite{}
