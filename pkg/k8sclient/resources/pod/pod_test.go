@@ -223,32 +223,6 @@ func (suite *PodTestSuite) TestDeleteAll() {
 	})
 }
 
-// func (suite *PodTestSuite) TestExec() {
-//     // Test case: Execute command and return no error
-//     suite.Run("Execute command and return no error", func() {
-//         // Create a mock client and logger
-//         client, err := suite.kubeClient.CreatePodClient("test-namespace")
-//         suite.NoError(err)
-//         suite.NotNil(client.ClientSet) // Ensure ClientSet is not nil
-
-//         // Create a mock pod
-//         podconf := &pod.Config{
-//             NamePrefix:     "pod-prov-test-",
-//             PvcNames:       []string{"pvc1", "pvc2", "pvc3"},
-//             VolumeName:     "vol",
-//             MountPath:      "/data",
-//             ContainerName:  "prov-test",
-//             ContainerImage: "quay.io/centos/centos:latest",
-//             Command:        []string{"/app/run.sh"},
-//         }
-//         podTmpl := client.MakePod(podconf)
-//         suite.NotNil(podTmpl) // Ensure podTmpl is not nil
-
-// 		err = client.Exec(context.Background(), podTmpl, []string{"/bin/bash"}, os.Stdout, os.Stderr, false)
-//         suite.NoError(err)
-//     })
-// }
-
 func (suite *PodTestSuite) TestReadyPodsCount() {
 	podconf := &pod.Config{
 		NamePrefix:     "pod-prov-test-",
@@ -296,19 +270,67 @@ func (suite *PodTestSuite) TestWaitForAllToBeReady() {
 	})
 }
 
+func (suite *PodTestSuite) TestWaitForRunning() {
+	podClient, err := suite.kubeClient.CreatePodClient("test-namespace")
+	suite.NoError(err)
+
+	podObj := &pod.Pod{
+		Client:  podClient,
+		Object:  &v1.Pod{},
+		Deleted: false,
+	}
+
+	err = podObj.WaitForRunning(context.Background())
+	suite.Error(err)
+}
+
 func (suite *PodTestSuite) TestMakeEphemeralPod() {
+	podClient, err := suite.kubeClient.CreatePodClient("test-namespace")
+	suite.NoError(err)
+
 	podconf := &pod.Config{
 		Name: "test-pod",
 	}
-
-	podClient, err := suite.kubeClient.CreatePodClient("test-namespace")
-	suite.NoError(err)
 	podClient.MakeEphemeralPod(podconf)
 
 	suite.Equal(podconf.NamePrefix, "pod-")
 	suite.Equal(podconf.MountPath, "/data")
 	suite.Equal(podconf.ContainerName, "test-container")
 	suite.Equal(podconf.ContainerImage, "quay.io/centos/centos:latest")
+}
+
+func (suite *PodTestSuite) TestDeleteOrEvictPods() {
+	podClient, err := suite.kubeClient.CreatePodClient("test-namespace")
+	suite.NoError(err)
+
+	err = podClient.DeleteOrEvictPods(context.Background(), "", 10)
+	suite.NoError(err)
+}
+
+func (suite *PodTestSuite) TestEvictPod() {
+	podClient, err := suite.kubeClient.CreatePodClient("test-namespace")
+	suite.NoError(err)
+
+	pod1 := podClient.MakeEphemeralPod(&pod.Config{
+		Name: "test-pod-1",
+	})
+
+	err = podClient.EvictPod(context.Background(), *pod1, "", 10)
+	suite.Error(err)
+}
+
+func (suite *PodTestSuite) TestIsInPendingState() {
+	podClient, err := suite.kubeClient.CreatePodClient("test-namespace")
+	suite.NoError(err)
+
+	podObj := &pod.Pod{
+		Client:  podClient,
+		Object:  &v1.Pod{},
+		Deleted: false,
+	}
+
+	err = podObj.IsInPendingState(context.Background())
+	suite.Error(err)
 }
 
 func TestPodTestSuite(t *testing.T) {
