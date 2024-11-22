@@ -198,9 +198,11 @@ func (suite *PodTestSuite) TestDelete() {
 	suite.Run("Delete pod test", func() {
 		result := client.Delete(context.Background(), podTmpl)
 		suite.NoError(result.GetError())
+		suite.Equal(result.HasError(), false)
 
 		result = client.Delete(context.Background(), podTmpl)
 		suite.Error(result.GetError())
+		suite.Equal(result.HasError(), true)
 	})
 }
 
