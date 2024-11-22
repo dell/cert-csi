@@ -616,7 +616,66 @@ func TestScalingSuite_GetObservers(t *testing.T) {
 	// Add more assertions based on expected behavior
 }
 
-// TODO TestScalingSuite_GetClients
+// TestScalingSuite_GetClients
+func TestScalingSuite_GetClients(t *testing.T) {
+	client := fake.NewSimpleClientset()
+
+	kubeClient := k8sclient.KubeClient{
+		ClientSet:   client,
+		Config:      &rest.Config{},
+		VersionInfo: nil,
+	}
+
+	pvcClient, _ := kubeClient.CreatePVCClient("test-namespace")
+	podClient, _ := kubeClient.CreatePodClient("test-namespace")
+	vaClient, _ := kubeClient.CreateVaClient("test-namespace")
+	stsClient, _ := kubeClient.CreateStatefulSetClient("test-namespace")
+	metricsClient, _ := kubeClient.CreateMetricsClient("test-namespace")
+
+	type args struct {
+		namespace string
+		client    *k8sclient.KubeClient
+	}
+	tests := []struct {
+		name    string
+		ss      *ScalingSuite
+		args    args
+		want    *k8sclient.Clients
+		wantErr bool
+	}{
+		{
+			name: "Testing GetClients",
+			ss:   &ScalingSuite{},
+			args: args{
+				namespace: "test-namespace",
+				client:    &kubeClient,
+			},
+			want: &k8sclient.Clients{
+				PVCClient:         pvcClient,
+				PodClient:         podClient,
+				VaClient:          vaClient,
+				StatefulSetClient: stsClient,
+				MetricsClient:     metricsClient,
+			},
+			wantErr: false,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got, err := tt.ss.GetClients(tt.args.namespace, tt.args.client)
+			fmt.Println(got, err)
+
+			if (err != nil) != tt.wantErr {
+				t.Errorf("ScalingSuite.GetClients() error = %v, wantErr %v", err, tt.wantErr)
+				return
+			}
+			fmt.Println(reflect.TypeOf(got), reflect.TypeOf(tt.want))
+			if reflect.TypeOf(got) != reflect.TypeOf(tt.want) {
+				t.Errorf("ScalingSuite.GetClients() = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}
 
 func TestScalingSuite_GetNamespace(t *testing.T) {
 	ss := &ScalingSuite{}
@@ -651,6 +710,65 @@ func TestVolumeIoSuite_GetObservers(t *testing.T) {
 		t.Errorf("Expected observers, got nil")
 	}
 	// Add more assertions based on expected behavior
+}
+
+func TestVolumeIoSuite_GetClients(t *testing.T) {
+	client := fake.NewSimpleClientset()
+
+	kubeClient := k8sclient.KubeClient{
+		ClientSet:   client,
+		Config:      &rest.Config{},
+		VersionInfo: nil,
+	}
+
+	pvcClient, _ := kubeClient.CreatePVCClient("test-namespace")
+	podClient, _ := kubeClient.CreatePodClient("test-namespace")
+	vaClient, _ := kubeClient.CreateVaClient("test-namespace")
+	metricsClient, _ := kubeClient.CreateMetricsClient("test-namespace")
+
+	type args struct {
+		namespace string
+		client    *k8sclient.KubeClient
+	}
+	tests := []struct {
+		name    string
+		vis     *VolumeIoSuite
+		args    args
+		want    *k8sclient.Clients
+		wantErr bool
+	}{
+		{
+			name: "Testing GetClients",
+			vis:  &VolumeIoSuite{},
+			args: args{
+				namespace: "test-namespace",
+				client:    &kubeClient,
+			},
+			want: &k8sclient.Clients{
+				PVCClient:         pvcClient,
+				PodClient:         podClient,
+				VaClient:          vaClient,
+				StatefulSetClient: nil,
+				MetricsClient:     metricsClient,
+			},
+			wantErr: false,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got, err := tt.vis.GetClients(tt.args.namespace, tt.args.client)
+			fmt.Println(got, err)
+
+			if (err != nil) != tt.wantErr {
+				t.Errorf("VolumeIoSuite.GetClients() error = %v, wantErr %v", err, tt.wantErr)
+				return
+			}
+			fmt.Println(reflect.TypeOf(got), reflect.TypeOf(tt.want))
+			if reflect.TypeOf(got) != reflect.TypeOf(tt.want) {
+				t.Errorf("VolumeIoSuite.GetClients() = %v, want %v", got, tt.want)
+			}
+		})
+	}
 }
 
 func TestVolumeIoSuite_GetNamespace(t *testing.T) {
@@ -722,6 +840,7 @@ func TestVolumeIoSuite_Parameters(t *testing.T) {
 }
 
 // TODO TestVolumeGroupSnapSuite_Run
+
 func TestVolumeGroupSnapSuite_GetObservers(t *testing.T) {
 	vgs := &VolumeGroupSnapSuite{}
 	obsType := observer.Type("someType")
@@ -812,7 +931,7 @@ func TestSnapSuite_GetObservers(t *testing.T) {
 	// Add more assertions based on expected behavior
 }
 
-//TODO TestSnapSuite_GetClients
+// TODO TestSnapSuite_GetClients
 
 func TestSnapSuite_GetNamespace(t *testing.T) {
 	tests := []struct {
@@ -942,7 +1061,7 @@ func TestReplicationSuite_GetObservers(t *testing.T) {
 	// Add more assertions based on expected behavior
 }
 
-//TODO TestReplicationSuite_GetClients
+// TODO TestReplicationSuite_GetClients
 
 func TestReplicationSuite_GetNamespace(t *testing.T) {
 	tests := []struct {
@@ -1025,7 +1144,65 @@ func TestVolumeExpansionSuite_GetObservers(t *testing.T) {
 	// Add more assertions based on expected behavior
 }
 
-//TODO TestVolumeExpansionSuite_GetClients
+// TestVolumeExpansionSuite_GetClients
+func TestVolumeExpansionSuite_GetClients(t *testing.T) {
+	client := fake.NewSimpleClientset()
+
+	kubeClient := k8sclient.KubeClient{
+		ClientSet:   client,
+		Config:      &rest.Config{},
+		VersionInfo: nil,
+	}
+
+	pvcClient, _ := kubeClient.CreatePVCClient("test-namespace")
+	podClient, _ := kubeClient.CreatePodClient("test-namespace")
+	vaClient, _ := kubeClient.CreateVaClient("test-namespace")
+	metricsClient, _ := kubeClient.CreateMetricsClient("test-namespace")
+
+	type args struct {
+		namespace string
+		client    *k8sclient.KubeClient
+	}
+	tests := []struct {
+		name    string
+		ves     *VolumeExpansionSuite
+		args    args
+		want    *k8sclient.Clients
+		wantErr bool
+	}{
+		{
+			name: "Testing GetClients",
+			ves:  &VolumeExpansionSuite{},
+			args: args{
+				namespace: "test-namespace",
+				client:    &kubeClient,
+			},
+			want: &k8sclient.Clients{
+				PVCClient:         pvcClient,
+				PodClient:         podClient,
+				VaClient:          vaClient,
+				StatefulSetClient: nil,
+				MetricsClient:     metricsClient,
+			},
+			wantErr: false,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got, err := tt.ves.GetClients(tt.args.namespace, tt.args.client)
+			fmt.Println(got, err)
+
+			if (err != nil) != tt.wantErr {
+				t.Errorf("VolumeExpansionSuite.GetClients() error = %v, wantErr %v", err, tt.wantErr)
+				return
+			}
+			fmt.Println(reflect.TypeOf(got), reflect.TypeOf(tt.want))
+			if reflect.TypeOf(got) != reflect.TypeOf(tt.want) {
+				t.Errorf("VolumeExpansionSuite.GetClients() = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}
 
 func TestVolumeExpansionSuite_GetNamespace(t *testing.T) {
 	tests := []struct {
@@ -1113,8 +1290,68 @@ func TestVolumeHealthMetricsSuite_GetObservers(t *testing.T) {
 	// Add more assertions based on expected behavior
 }
 
-//TODO TestVolumeHealthMetricsSuite_GetClients
+// TestVolumeHealthMetricsSuite_GetClients
+func TestVolumeHealthMetricsSuite_GetClients(t *testing.T) {
+	client := fake.NewSimpleClientset()
 
+	kubeClient := k8sclient.KubeClient{
+		ClientSet:   client,
+		Config:      &rest.Config{},
+		VersionInfo: nil,
+	}
+
+	pvcClient, _ := kubeClient.CreatePVCClient("test-namespace")
+	podClient, _ := kubeClient.CreatePodClient("test-namespace")
+	pvClient, _ := kubeClient.CreatePVClient()
+	vaClient, _ := kubeClient.CreateVaClient("test-namespace")
+	metricsClient, _ := kubeClient.CreateMetricsClient("test-namespace")
+
+	type args struct {
+		namespace string
+		client    *k8sclient.KubeClient
+	}
+	tests := []struct {
+		name    string
+		vhms    *VolumeHealthMetricsSuite
+		args    args
+		want    *k8sclient.Clients
+		wantErr bool
+	}{
+		{
+			name: "Testing GetClients",
+			vhms: &VolumeHealthMetricsSuite{},
+			args: args{
+				namespace: "test-namespace",
+				client:    &kubeClient,
+			},
+			want: &k8sclient.Clients{
+				PVCClient:              pvcClient,
+				PodClient:              podClient,
+				VaClient:               vaClient,
+				StatefulSetClient:      nil,
+				MetricsClient:          metricsClient,
+				KubeClient:             &kubeClient,
+				PersistentVolumeClient: pvClient,
+			},
+			wantErr: false,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got, err := tt.vhms.GetClients(tt.args.namespace, tt.args.client)
+			fmt.Println(got, err)
+
+			if (err != nil) != tt.wantErr {
+				t.Errorf("VolumeHealthMetricsSuite.GetClients() error = %v, wantErr %v", err, tt.wantErr)
+				return
+			}
+			fmt.Println(reflect.TypeOf(got), reflect.TypeOf(tt.want))
+			if reflect.TypeOf(got) != reflect.TypeOf(tt.want) {
+				t.Errorf("VolumeHealthMetricsSuite.GetClients() = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}
 func TestVolumeHealthMetricsSuite_GetNamespace(t *testing.T) {
 	vh := &VolumeHealthMetricsSuite{}
 	namespace := vh.GetNamespace()
@@ -1163,7 +1400,67 @@ func TestCloneVolumeSuite_GetObservers(t *testing.T) {
 	// Add more assertions based on expected behavior
 }
 
-//TODO TestCloneVolumeSuite_GetClients
+// TestCloneVolumeSuite_GetClients
+func TestCloneVolumeSuite_GetClients(t *testing.T) {
+	client := fake.NewSimpleClientset()
+
+	kubeClient := k8sclient.KubeClient{
+		ClientSet:   client,
+		Config:      &rest.Config{},
+		VersionInfo: nil,
+	}
+
+	pvcClient, _ := kubeClient.CreatePVCClient("test-namespace")
+	podClient, _ := kubeClient.CreatePodClient("test-namespace")
+	vaClient, _ := kubeClient.CreateVaClient("test-namespace")
+	metricsClient, _ := kubeClient.CreateMetricsClient("test-namespace")
+
+	type args struct {
+		namespace string
+		client    *k8sclient.KubeClient
+	}
+	tests := []struct {
+		name    string
+		cs      *CloneVolumeSuite
+		args    args
+		want    *k8sclient.Clients
+		wantErr bool
+	}{
+		{
+			name: "Testing GetClients",
+			cs:   &CloneVolumeSuite{},
+			args: args{
+				namespace: "test-namespace",
+				client:    &kubeClient,
+			},
+			want: &k8sclient.Clients{
+				PVCClient:         pvcClient,
+				PodClient:         podClient,
+				VaClient:          vaClient,
+				StatefulSetClient: nil,
+				MetricsClient:     metricsClient,
+				SnapClientGA:      nil,
+				SnapClientBeta:    nil,
+			},
+			wantErr: false,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got, err := tt.cs.GetClients(tt.args.namespace, tt.args.client)
+			fmt.Println(got, err)
+
+			if (err != nil) != tt.wantErr {
+				t.Errorf("CloneVolumeSuite.GetClients() error = %v, wantErr %v", err, tt.wantErr)
+				return
+			}
+			fmt.Println(reflect.TypeOf(got), reflect.TypeOf(tt.want))
+			if reflect.TypeOf(got) != reflect.TypeOf(tt.want) {
+				t.Errorf("CloneVolumeSuite.GetClients() = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}
 
 func TestCloneVolumeSuite_GetNamespace(t *testing.T) {
 	cs := &CloneVolumeSuite{}
@@ -1263,7 +1560,69 @@ func TestMultiAttachSuite_GetObservers(t *testing.T) {
 	// Add more assertions based on expected behavior
 }
 
-//TODO TestMultiAttachSuite_GetClients
+func TestMultiAttachSuite_GetClients(t *testing.T) {
+	client := fake.NewSimpleClientset()
+
+	kubeClient := k8sclient.KubeClient{
+		ClientSet:   client,
+		Config:      &rest.Config{},
+		VersionInfo: nil,
+		Minor:       19, // Simulate Kubernetes version 1.19 or higher
+	}
+
+	pvcClient, _ := kubeClient.CreatePVCClient("test-namespace")
+	podClient, _ := kubeClient.CreatePodClient("test-namespace")
+	vaClient, _ := kubeClient.CreateVaClient("test-namespace")
+	metricsClient, _ := kubeClient.CreateMetricsClient("test-namespace")
+	nodeClient, _ := kubeClient.CreateNodeClient()
+
+	type args struct {
+		namespace string
+		client    *k8sclient.KubeClient
+	}
+	tests := []struct {
+		name    string
+		mas     *MultiAttachSuite
+		args    args
+		want    *k8sclient.Clients
+		wantErr bool
+	}{
+		{
+			name: "Testing GetClients",
+			mas:  &MultiAttachSuite{},
+			args: args{
+				namespace: "test-namespace",
+				client:    &kubeClient,
+			},
+			want: &k8sclient.Clients{
+				PVCClient:         pvcClient,
+				PodClient:         podClient,
+				VaClient:          vaClient,
+				StatefulSetClient: nil,
+				MetricsClient:     metricsClient,
+				SnapClientGA:      nil,
+				SnapClientBeta:    nil,
+				NodeClient:        nodeClient,
+			},
+			wantErr: false,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got, err := tt.mas.GetClients(tt.args.namespace, tt.args.client)
+			fmt.Println(got, err)
+
+			if (err != nil) != tt.wantErr {
+				t.Errorf("MultiAttachSuite.GetClients() error = %v, wantErr %v", err, tt.wantErr)
+				return
+			}
+			fmt.Println(reflect.TypeOf(got), reflect.TypeOf(tt.want))
+			if reflect.TypeOf(got) != reflect.TypeOf(tt.want) {
+				t.Errorf("MultiAttachSuite.GetClients() = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}
 
 func TestMultiAttachSuite_GetNamespace(t *testing.T) {
 	mas := &MultiAttachSuite{}
@@ -1305,6 +1664,7 @@ func TestMultiAttachSuite_Parameters(t *testing.T) {
 }
 
 // TODO TestBlockSnapSuite_Run
+
 func TestBlockSnapSuite_GetObservers(t *testing.T) {
 	bss := &BlockSnapSuite{}
 	obsType := observer.Type("someType")
@@ -1313,7 +1673,7 @@ func TestBlockSnapSuite_GetObservers(t *testing.T) {
 	// Add more assertions based on expected behavior
 }
 
-//TODO TestBlockSnapSuite_GetClients
+// TODO TestBlockSnapSuite_GetClients
 
 func TestBlockSnapSuite_GetNamespace(t *testing.T) {
 	bss := &BlockSnapSuite{}
@@ -1353,8 +1713,8 @@ func TestBlockSnapSuite_Parameters(t *testing.T) {
 }
 
 // TODO TestGetSnapshotClient
-
 // TODO TestVolumeMigrateSuite_Run
+
 func TestVolumeMigrateSuite_GetObservers(t *testing.T) {
 	vms := &VolumeMigrateSuite{}
 	obsType := observer.Type("someType")
@@ -1363,7 +1723,76 @@ func TestVolumeMigrateSuite_GetObservers(t *testing.T) {
 	// Add more assertions based on expected behavior
 }
 
-//TODO TestVolumeMigrateSuite_GetClients
+func TestVolumeMigrateSuite_GetClients(t *testing.T) {
+	client := fake.NewSimpleClientset()
+
+	kubeClient := k8sclient.KubeClient{
+		ClientSet:   client,
+		Config:      &rest.Config{},
+		VersionInfo: nil,
+	}
+
+	// Simulate the existence of the storage class
+	client.StorageV1().StorageClasses().Create(context.TODO(), &storagev1.StorageClass{
+		ObjectMeta: metav1.ObjectMeta{
+			Name: "target-sc",
+		},
+	}, metav1.CreateOptions{})
+
+	pvClient, _ := kubeClient.CreatePVClient()
+	pvcClient, _ := kubeClient.CreatePVCClient("test-namespace")
+	scClient, _ := kubeClient.CreateSCClient()
+	podClient, _ := kubeClient.CreatePodClient("test-namespace")
+	stsClient, _ := kubeClient.CreateStatefulSetClient("test-namespace")
+	vaClient, _ := kubeClient.CreateVaClient("test-namespace")
+	metricsClient, _ := kubeClient.CreateMetricsClient("test-namespace")
+
+	type args struct {
+		namespace string
+		client    *k8sclient.KubeClient
+	}
+	tests := []struct {
+		name    string
+		vms     *VolumeMigrateSuite
+		args    args
+		want    *k8sclient.Clients
+		wantErr bool
+	}{
+		{
+			name: "Testing GetClients",
+			vms:  &VolumeMigrateSuite{TargetSC: "target-sc"},
+			args: args{
+				namespace: "test-namespace",
+				client:    &kubeClient,
+			},
+			want: &k8sclient.Clients{
+				PersistentVolumeClient: pvClient,
+				PVCClient:              pvcClient,
+				PodClient:              podClient,
+				SCClient:               scClient,
+				StatefulSetClient:      stsClient,
+				VaClient:               vaClient,
+				MetricsClient:          metricsClient,
+			},
+			wantErr: false,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got, err := tt.vms.GetClients(tt.args.namespace, tt.args.client)
+			fmt.Println(got, err)
+
+			if (err != nil) != tt.wantErr {
+				t.Errorf("VolumeMigrateSuite.GetClients() error = %v, wantErr %v", err, tt.wantErr)
+				return
+			}
+			fmt.Println(reflect.TypeOf(got), reflect.TypeOf(tt.want))
+			if reflect.TypeOf(got) != reflect.TypeOf(tt.want) {
+				t.Errorf("VolumeMigrateSuite.GetClients() = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}
 
 func TestVolumeMigrateSuite_GetNamespace(t *testing.T) {
 	vms := &VolumeMigrateSuite{}
