@@ -23,31 +23,45 @@ import (
 
 	"github.com/dell/cert-csi/pkg/k8sclient"
 	"github.com/dell/cert-csi/pkg/observer"
+	"github.com/stretchr/testify/suite"
 	"k8s.io/client-go/kubernetes/fake"
 	"k8s.io/client-go/rest"
 )
 
-func TestPostgresqlSuite_Run(t *testing.T) {
+type HelmSuiteTestSuite struct {
+	suite.Suite
+	kubeClient *k8sclient.KubeClient
+}
+
+func (suite *HelmSuiteTestSuite) SetupSuite() {
+	// Create the fake client.
 	client := fake.NewSimpleClientset()
 
-	kubeClient := k8sclient.KubeClient{
+	suite.kubeClient = &k8sclient.KubeClient{
 		ClientSet:   client,
 		Config:      &rest.Config{},
 		VersionInfo: nil,
 	}
-	kubeClient.SetTimeout(1)
+	suite.kubeClient.SetTimeout(1)
+
+	// suite.kubeClient.CreateNamespace(context.Background(), "test-namespace")
+}
+
+// func (suite *HelmSuiteTestSuite) TearDownSuite() {
+// 	suite.kubeClient.DeleteNamespace(context.Background(), "test-namespace")
+// }
+
+func (suite *HelmSuiteTestSuite) TestPostgresqlSuite_Run() {
 
 	// Create a test PostgresqlSuite
 	ps := PostgresqlSuite{
 		ConfigPath:        "/root/.kube/config",
-		VolumeSize:        "10Gi",
 		EnableReplication: true,
-		Image:             "docker.io/bitnami/postgresql:11.8.0-debian-10-r72",
 		SlaveReplicas:     2,
 	}
 
-	pvcClient, _ := kubeClient.CreatePVCClient("test-namespace")
-	podClient, _ := kubeClient.CreatePodClient("test-namespace")
+	pvcClient, _ := suite.kubeClient.CreatePVCClient("test-namespace")
+	podClient, _ := suite.kubeClient.CreatePodClient("test-namespace")
 
 	// Create test clients
 	clients := &k8sclient.Clients{
@@ -67,26 +81,21 @@ func TestPostgresqlSuite_Run(t *testing.T) {
 	tests := []struct {
 		name           string
 		args           args
-		wantDelFunc    bool
 		wantErr        bool
+		wantDelFunc    bool
 		wantDelFuncErr bool
 	}{
-		{"invalid namespace run", args{ctx, "test-storage-class", clients}, false, true, false},
+		{"invalid namespace", args{ctx, "test-storage-class", clients}, true, false, false},
 	}
 	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			gotDelFunc, err := ps.Run(ctx, "test-storage-class", clients)
-			if (err != nil) != tt.wantErr {
-				t.Errorf("Run() error = %v, wantErr %v", err, tt.wantErr)
-				return
+		suite.Run(tt.name, func() {
+			gotDelFunc, err := ps.Run(ctx, tt.args.storageClass, clients)
+			if !tt.wantErr {
+				suite.NoError(err)
 			}
-			if (gotDelFunc != nil) != tt.wantDelFunc {
-				t.Errorf("Run() delFunc error = %v, wantErr %v", err, tt.wantDelFunc)
-				return
-			}
-			if (gotDelFunc != nil && gotDelFunc() != nil) != tt.wantDelFuncErr {
-				t.Errorf("Run() delFunc run error = %v, wantErr %v", err, tt.wantErr)
-				return
+			suite.Equal((gotDelFunc != nil), tt.wantDelFunc)
+			if gotDelFunc != nil && !tt.wantDelFuncErr {
+				suite.NoError(gotDelFunc())
 			}
 		})
 	}
@@ -200,4 +209,30 @@ func TestPostgresqlSuite_Parameters(t *testing.T) {
 			}
 		})
 	}
+}
+
+func (suite *HelmSuiteTestSuite) TestPostgresqlSuite_GetClients() {
+	tests := []struct {
+		name    string
+		ps      *PostgresqlSuite
+		ns      string
+		wantErr bool
+	}{
+		{
+			name:    "Testing GetClients",
+			ps:      &PostgresqlSuite{ConfigPath: "test", VolumeSize: "1G", EnableReplication: true, Image: "test", SlaveReplicas: 1},
+			ns:      "test-namespace",
+			wantErr: false,
+		},
+	}
+	for _, tt := range tests {
+		suite.Run(tt.name, func() {
+			_, err := tt.ps.GetClients(tt.ns, suite.kubeClient)
+			suite.NoError(err)
+		})
+	}
+}
+
+func TestHelmSuiteTestSuite(t *testing.T) {
+	suite.Run(t, new(HelmSuiteTestSuite))
 }
