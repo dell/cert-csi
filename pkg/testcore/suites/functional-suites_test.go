@@ -1848,3 +1848,180 @@ func TestCapacityTrackingSuite_Run(t *testing.T) {
 		assert.NoError(t, err)
 	})
 }
+
+func TestPodDeletionSuite_Run(t *testing.T) {
+	client := fake.NewSimpleClientset()
+	kubeClient := k8sclient.KubeClient{
+		ClientSet:   client,
+		Config:      &rest.Config{},
+		VersionInfo: nil,
+	}
+	kubeClient.SetTimeout(2)
+	namespace := "test-namespace"
+	pvcClient, _ := kubeClient.CreatePVCClient(namespace)
+	vaClient, _ := kubeClient.CreateVaClient(namespace)
+	podClient, _ := kubeClient.CreatePodClient(namespace)
+
+	k8Clients := &k8sclient.Clients{
+		KubeClient: &kubeClient,
+		PodClient:  podClient,
+		PVCClient:  pvcClient,
+		VaClient:   vaClient,
+	}
+
+	t.Run("Successful Pod Deletion with PVC and VA", func(t *testing.T) {
+		pod := "test-pod"
+		_, _ = createPod(client, namespace, pod)
+
+		pvcNames := []string{"test-pvc-1", "test-pvc-2"}
+		for _, pvcName := range pvcNames {
+			pvc := &corev1.PersistentVolumeClaim{
+				ObjectMeta: metav1.ObjectMeta{
+					Name: pvcName,
+				},
+			}
+			client.CoreV1().PersistentVolumeClaims(namespace).Create(context.Background(), pvc, metav1.CreateOptions{})
+		}
+
+		for _, pvcName := range pvcNames {
+			va, _ := kubeClient.ClientSet.StorageV1().VolumeAttachments().Create(context.Background(), &storagev1.VolumeAttachment{
+				ObjectMeta: metav1.ObjectMeta{
+					Name: "va-" + pvcName,
+				},
+				Spec: storagev1.VolumeAttachmentSpec{
+					Attacher: "test-attacher",
+					Source: storagev1.VolumeAttachmentSource{
+						PersistentVolumeName: &pvcName,
+					},
+				},
+			}, metav1.CreateOptions{})
+
+			client.StorageV1().VolumeAttachments().Delete(context.Background(), va.Name, metav1.DeleteOptions{})
+		}
+		pds := &PodDeletionSuite{
+			DeletionStruct: &DeletionStruct{Name: pod},
+		}
+		_, err := pds.Run(context.Background(), pod, k8Clients)
+		assert.NoError(t, err)
+
+	})
+}
+
+// func TestNodeDrainSuite_Run(t *testing.T) {
+// 	client := fake.NewSimpleClientset()
+// 	namespace := "test-namespace"
+
+// 	kubeClient := k8sclient.KubeClient{
+// 		ClientSet:   client,
+// 		Config:      &rest.Config{},
+// 		VersionInfo: nil,
+// 	}
+// 	kubeClient.SetTimeout(2)
+// 	nodeClient, _ := kubeClient.CreateNodeClient()
+// 	mockPodClient := new(MockPodClient)
+// 	k8Clients := &k8sclient.Clients{
+// 		KubeClient: &kubeClient,
+// 		NodeClient: nodeClient,
+// 		PodClient:  podClient,
+// 	}
+
+// 	nodeName := "test-node"
+// 	node := &corev1.Node{
+// 		ObjectMeta: metav1.ObjectMeta{
+// 			Name: nodeName,
+// 		},
+// 	}
+
+// 	client.CoreV1().Nodes().Create(context.Background(), node, metav1.CreateOptions{})
+
+// 	nds := &NodeDrainSuite{
+// 		Name:               nodeName,
+// 		GracePeriodSeconds: 30,
+// 	}
+
+// 	podNames := []string{"test-pod-1", "test-pod-2"}
+// 	for _, podName := range podNames {
+// 		pod := &corev1.Pod{
+// 			ObjectMeta: metav1.ObjectMeta{
+// 				Name:      podName,
+// 				Namespace: namespace,
+// 			},
+// 			Spec: corev1.PodSpec{
+// 				NodeName: nodeName,
+// 			},
+// 		}
+// 		client.CoreV1().Pods(namespace).Create(context.Background(), pod, metav1.CreateOptions{})
+// 	}
+
+// 	t.Run("Successfully drains a node", func(t *testing.T) {
+// 		_, err := nds.Run(context.Background(), nodeName, k8Clients)
+// 		assert.NoError(t, err)
+// 	})
+// }
+
+// type CSISCClient struct {
+//     CSIStorageCapacities []*storagev1.CSIStorageCapacity
+// }
+
+// func (c *CSISCClient) GetCSIStorageCapacities(namespace string) ([]*storagev1.CSIStorageCapacity, error) {
+//     return c.CSIStorageCapacities, nil
+// }
+// func TestCapacityTrackingSuite_checkIfGetCapacityIsPolled(t *testing.T) {
+
+// 	client := fake.NewSimpleClientset()
+// 	kubeClient := k8sclient.KubeClient{
+// 		ClientSet:   client,
+// 		Config:      &rest.Config{},
+// 		VersionInfo: nil,
+// 	}
+// 	kubeClient.SetTimeout(2)
+// 	namespace := "test-namespace"
+// 	csiscClient, _ := kubeClient.CreateCSISCClient(namespace)
+// 	k8Clients := &k8sclient.Clients{
+// 		KubeClient:  &kubeClient,
+// 		CSISCClient: csiscClient,
+// 	}
+
+// 	csiStorageCapacity := []*csistoragecapacity.CSIStorageCapacity{
+// 		{
+// 			Client: csiscClient,
+// 			Object: &storagev1.CSIStorageCapacity{
+// 				ObjectMeta: metav1.ObjectMeta{
+// 					Name:      "csi-capacity-1",
+// 					Namespace: namespace,
+// 				},
+// 				Capacity:         resource.MustParse("1Gi"),
+// 				StorageClassName: "test-storage-class",
+// 			},
+// 		},
+// 	}
+// 	storageClass := "test-storage-class"
+// 	volumeBindingMode := storagev1.VolumeBindingWaitForFirstConsumer
+
+// 	sc := &storagev1.StorageClass{
+// 		ObjectMeta: metav1.ObjectMeta{
+// 			Name: storageClass,
+// 		},
+// 		VolumeBindingMode: &volumeBindingMode,
+// 		AllowedTopologies: []corev1.TopologySelectorTerm{{
+// 			MatchLabelExpressions: []corev1.TopologySelectorLabelRequirement{
+// 				{
+// 					Key:    "topology.kubernetes.io/zone",
+// 					Values: []string{"us-west1-a", "us-west1-b"},
+// 				},
+// 			},
+// 		}},
+// 	}
+// 	client.StorageV1().StorageClasses().Create(context.Background(), sc, metav1.CreateOptions{})
+
+// 	t.Run("Test Successful Polling", func(t *testing.T) {
+
+// 		cts := &CapacityTrackingSuite{
+// 			PollInterval: time.Second,
+// 		}
+// 		err := cts.checkIfGetCapacityIsPolled(context.Background(), k8Clients, storageClass, 0)
+
+// 		assert.NoError(t, err)
+
+// 	})
+// }
