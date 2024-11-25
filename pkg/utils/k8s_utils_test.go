@@ -327,13 +327,15 @@ func TestBuildE2eCommand(t *testing.T) {
 		{
 			name: "send good config file with extra params",
 			args: args{ctx: x3},
-			want: []string{"-kubeconfig", "/root/.kube/config", "-storage.testdriver", "testdata/config-nfs.yaml",
+			want: []string{
+				"-kubeconfig", "/root/.kube/config", "-storage.testdriver", "testdata/config-nfs.yaml",
 				"--ginkgo.focus", "focus",
 				"--ginkgo.skip", "skip",
 				"--ginkgo.focus-file", "focus-file",
 				"--ginkgo.skip-file", "skip-file",
 				"--ginkgo.timeout", "1",
-				"--ginkgo.junit-report", defaultDir + "execution_powerstore-nfs.xml"},
+				"--ginkgo.junit-report", defaultDir + "execution_powerstore-nfs.xml",
+			},
 			wantErr: false,
 		},
 		{

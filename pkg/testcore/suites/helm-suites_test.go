@@ -52,7 +52,6 @@ func (suite *HelmSuiteTestSuite) SetupSuite() {
 // }
 
 func (suite *HelmSuiteTestSuite) TestPostgresqlSuite_Run() {
-
 	// Create a test PostgresqlSuite
 	ps := PostgresqlSuite{
 		ConfigPath:        "/root/.kube/config",
@@ -138,7 +137,8 @@ func TestPostgresqlSuite_GetObservers(t *testing.T) {
 				&observer.EntityNumberObserver{},
 				&observer.ContainerMetricsObserver{},
 			},
-		}}
+		},
+	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			if got := tt.p.GetObservers(tt.args.obsType); !reflect.DeepEqual(got, tt.want) {

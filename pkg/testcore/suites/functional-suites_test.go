@@ -138,6 +138,7 @@ func TestVolumeDeletionSuite_GetObservers(t *testing.T) {
 		})
 	}
 }
+
 func TestVolumeDeletionSuite_GetNamespace(t *testing.T) {
 	tests := []struct {
 		name string
@@ -295,7 +296,8 @@ func TestPodDeletionSuite_GetNamespace(t *testing.T) {
 				},
 			},
 			want: "",
-		}}
+		},
+	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			if got := tt.pds.GetNamespace(); got != tt.want {
@@ -529,7 +531,8 @@ func TestSnapshotDeletionSuite_GetObservers(t *testing.T) {
 				obsType: observer.LIST,
 			},
 			want: []observer.Interface{},
-		}}
+		},
+	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			if got := tt.s.GetObservers(tt.args.obsType); !reflect.DeepEqual(got, tt.want) {
@@ -562,7 +565,8 @@ func TestSnapshotDeletionSuite_GetNamespace(t *testing.T) {
 				},
 			},
 			want: "",
-		}}
+		},
+	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			if got := tt.sds.GetNamespace(); got != tt.want {
@@ -582,7 +586,8 @@ func TestSnapshotDeletionSuite_Parameters(t *testing.T) {
 			name: "Testing Parameters",
 			sds:  &SnapshotDeletionSuite{},
 			want: "{}",
-		}}
+		},
+	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			if got := tt.sds.Parameters(); got != tt.want {
@@ -736,7 +741,8 @@ func TestNodeDrainSuite_GetName(t *testing.T) {
 				Description: "",
 			},
 			want: "NodeDrainSuite",
-		}}
+		},
+	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			if got := tt.nds.GetName(); got != tt.want {
@@ -777,7 +783,8 @@ func TestNodeDrainSuite_GetObservers(t *testing.T) {
 				obsType: observer.LIST,
 			},
 			want: []observer.Interface{},
-		}}
+		},
+	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			if got := tt.n.GetObservers(tt.args.obsType); !reflect.DeepEqual(got, tt.want) {
@@ -799,7 +806,8 @@ func TestNodeDrainSuite_GetNamespace(t *testing.T) {
 				Namespace: "test-namespace",
 			},
 			want: "test-namespace",
-		}}
+		},
+	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			if got := tt.nds.GetNamespace(); got != tt.want {
@@ -891,7 +899,8 @@ func TestNodeUncordonSuite_GetObservers(t *testing.T) {
 				obsType: observer.LIST,
 			},
 			want: []observer.Interface{},
-		}}
+		},
+	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			if got := tt.n.GetObservers(tt.args.obsType); !reflect.DeepEqual(got, tt.want) {
@@ -913,7 +922,8 @@ func TestNodeUncordonSuite_GetNamespace(t *testing.T) {
 				Namespace: "test-namespace",
 			},
 			want: "test-namespace",
-		}}
+		},
+	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			if got := tt.nds.GetNamespace(); got != tt.want {
@@ -933,7 +943,8 @@ func TestNodeUncordonSuite_Parameters(t *testing.T) {
 			name: "Testing Parameters",
 			nds:  &NodeUncordonSuite{},
 			want: "{}",
-		}}
+		},
+	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			if got := tt.nds.Parameters(); got != tt.want {
@@ -942,6 +953,7 @@ func TestNodeUncordonSuite_Parameters(t *testing.T) {
 		})
 	}
 }
+
 func Test_removeDuplicates(t *testing.T) {
 	type args struct {
 		strSlice []string
@@ -1162,8 +1174,8 @@ func TestCapacityTrackingSuite_GetNamespace(t *testing.T) {
 		})
 	}
 }
-func TestVolumeDeletionSuite_GetClients(t *testing.T) {
 
+func TestVolumeDeletionSuite_GetClients(t *testing.T) {
 	client := fake.NewSimpleClientset()
 
 	kubeClient := k8sclient.KubeClient{
@@ -1435,7 +1447,6 @@ func TestSnapshotDeletionSuite_GetClients(t *testing.T) {
 }
 
 func TestEphemeralVolumeSuite_GetClients(t *testing.T) {
-
 	client := fake.NewSimpleClientset()
 
 	kubeClient := k8sclient.KubeClient{
@@ -1701,7 +1712,6 @@ func TestVolumeDeletionSuite_Run(t *testing.T) {
 		_, err := vds.Run(context.Background(), "test-pvc", k8Clients)
 		assert.NoError(t, err)
 	})
-
 }
 
 func createPod(client *fake.Clientset, namespace, podName string) (*corev1.Pod, error) {
@@ -1785,7 +1795,7 @@ func TestClonedVolDeletionSuite_Run(t *testing.T) {
 }
 
 func TestCapacityTrackingSuite_Run(t *testing.T) {
-	t.Skip("Skipping this test for now") //Skipping this test for now as there is an error
+	t.Skip("Skipping this test for now") // Skipping this test for now as there is an error
 	client := fake.NewSimpleClientset()
 	kubeClient := k8sclient.KubeClient{
 		ClientSet:   client,
@@ -1903,7 +1913,6 @@ func TestPodDeletionSuite_Run(t *testing.T) {
 		}
 		_, err := pds.Run(context.Background(), pod, k8Clients)
 		assert.NoError(t, err)
-
 	})
 }
 
