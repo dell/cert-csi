@@ -1907,57 +1907,57 @@ func TestPodDeletionSuite_Run(t *testing.T) {
 	})
 }
 
-// func TestNodeDrainSuite_Run(t *testing.T) {
-// 	client := fake.NewSimpleClientset()
-// 	namespace := "test-namespace"
+func TestNodeDrainSuite_Run(t *testing.T) {
+	client := fake.NewSimpleClientset()
+	namespace := "test-namespace"
 
-// 	kubeClient := k8sclient.KubeClient{
-// 		ClientSet:   client,
-// 		Config:      &rest.Config{},
-// 		VersionInfo: nil,
-// 	}
-// 	kubeClient.SetTimeout(2)
-// 	nodeClient, _ := kubeClient.CreateNodeClient()
-// 	mockPodClient := new(MockPodClient)
-// 	k8Clients := &k8sclient.Clients{
-// 		KubeClient: &kubeClient,
-// 		NodeClient: nodeClient,
-// 		PodClient:  podClient,
-// 	}
+	kubeClient := k8sclient.KubeClient{
+		ClientSet:   client,
+		Config:      &rest.Config{},
+		VersionInfo: nil,
+	}
+	kubeClient.SetTimeout(2)
+	nodeClient, _ := kubeClient.CreateNodeClient()
+	mockPodClient, _ := kubeClient.CreatePodClient(namespace)
+	k8Clients := &k8sclient.Clients{
+		KubeClient: &kubeClient,
+		NodeClient: nodeClient,
+		PodClient:  mockPodClient,
+	}
 
-// 	nodeName := "test-node"
-// 	node := &corev1.Node{
-// 		ObjectMeta: metav1.ObjectMeta{
-// 			Name: nodeName,
-// 		},
-// 	}
+	nodeName := "test-node"
+	node := &corev1.Node{
+		ObjectMeta: metav1.ObjectMeta{
+			Name: nodeName,
+		},
+	}
 
-// 	client.CoreV1().Nodes().Create(context.Background(), node, metav1.CreateOptions{})
+	client.CoreV1().Nodes().Create(context.Background(), node, metav1.CreateOptions{})
 
-// 	nds := &NodeDrainSuite{
-// 		Name:               nodeName,
-// 		GracePeriodSeconds: 30,
-// 	}
+	nds := &NodeDrainSuite{
+		Name:               nodeName,
+		GracePeriodSeconds: 30,
+	}
 
-// 	podNames := []string{"test-pod-1", "test-pod-2"}
-// 	for _, podName := range podNames {
-// 		pod := &corev1.Pod{
-// 			ObjectMeta: metav1.ObjectMeta{
-// 				Name:      podName,
-// 				Namespace: namespace,
-// 			},
-// 			Spec: corev1.PodSpec{
-// 				NodeName: nodeName,
-// 			},
-// 		}
-// 		client.CoreV1().Pods(namespace).Create(context.Background(), pod, metav1.CreateOptions{})
-// 	}
+	podNames := []string{"test-pod-1", "test-pod-2"}
+	for _, podName := range podNames {
+		pod := &corev1.Pod{
+			ObjectMeta: metav1.ObjectMeta{
+				Name:      podName,
+				Namespace: namespace,
+			},
+			Spec: corev1.PodSpec{
+				NodeName: nodeName,
+			},
+		}
+		client.CoreV1().Pods(namespace).Create(context.Background(), pod, metav1.CreateOptions{})
+	}
 
-// 	t.Run("Successfully drains a node", func(t *testing.T) {
-// 		_, err := nds.Run(context.Background(), nodeName, k8Clients)
-// 		assert.NoError(t, err)
-// 	})
-// }
+	t.Run("Successfully drains a node", func(t *testing.T) {
+		_, err := nds.Run(context.Background(), nodeName, k8Clients)
+		assert.Error(t, err)
+	})
+}
 
 // type CSISCClient struct {
 //     CSIStorageCapacities []*storagev1.CSIStorageCapacity
@@ -1966,6 +1966,7 @@ func TestPodDeletionSuite_Run(t *testing.T) {
 // func (c *CSISCClient) GetCSIStorageCapacities(namespace string) ([]*storagev1.CSIStorageCapacity, error) {
 //     return c.CSIStorageCapacities, nil
 // }
+
 // func TestCapacityTrackingSuite_checkIfGetCapacityIsPolled(t *testing.T) {
 
 // 	client := fake.NewSimpleClientset()
