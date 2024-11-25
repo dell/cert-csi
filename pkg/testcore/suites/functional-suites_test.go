@@ -1953,76 +1953,8 @@ func TestNodeDrainSuite_Run(t *testing.T) {
 		client.CoreV1().Pods(namespace).Create(context.Background(), pod, metav1.CreateOptions{})
 	}
 
-	t.Run("Successfully drains a node", func(t *testing.T) {
+	t.Run("Failing in draining nodes", func(t *testing.T) {
 		_, err := nds.Run(context.Background(), nodeName, k8Clients)
 		assert.Error(t, err)
 	})
 }
-
-// type CSISCClient struct {
-//     CSIStorageCapacities []*storagev1.CSIStorageCapacity
-// }
-
-// func (c *CSISCClient) GetCSIStorageCapacities(namespace string) ([]*storagev1.CSIStorageCapacity, error) {
-//     return c.CSIStorageCapacities, nil
-// }
-
-// func TestCapacityTrackingSuite_checkIfGetCapacityIsPolled(t *testing.T) {
-
-// 	client := fake.NewSimpleClientset()
-// 	kubeClient := k8sclient.KubeClient{
-// 		ClientSet:   client,
-// 		Config:      &rest.Config{},
-// 		VersionInfo: nil,
-// 	}
-// 	kubeClient.SetTimeout(2)
-// 	namespace := "test-namespace"
-// 	csiscClient, _ := kubeClient.CreateCSISCClient(namespace)
-// 	k8Clients := &k8sclient.Clients{
-// 		KubeClient:  &kubeClient,
-// 		CSISCClient: csiscClient,
-// 	}
-
-// 	csiStorageCapacity := []*csistoragecapacity.CSIStorageCapacity{
-// 		{
-// 			Client: csiscClient,
-// 			Object: &storagev1.CSIStorageCapacity{
-// 				ObjectMeta: metav1.ObjectMeta{
-// 					Name:      "csi-capacity-1",
-// 					Namespace: namespace,
-// 				},
-// 				Capacity:         resource.MustParse("1Gi"),
-// 				StorageClassName: "test-storage-class",
-// 			},
-// 		},
-// 	}
-// 	storageClass := "test-storage-class"
-// 	volumeBindingMode := storagev1.VolumeBindingWaitForFirstConsumer
-
-// 	sc := &storagev1.StorageClass{
-// 		ObjectMeta: metav1.ObjectMeta{
-// 			Name: storageClass,
-// 		},
-// 		VolumeBindingMode: &volumeBindingMode,
-// 		AllowedTopologies: []corev1.TopologySelectorTerm{{
-// 			MatchLabelExpressions: []corev1.TopologySelectorLabelRequirement{
-// 				{
-// 					Key:    "topology.kubernetes.io/zone",
-// 					Values: []string{"us-west1-a", "us-west1-b"},
-// 				},
-// 			},
-// 		}},
-// 	}
-// 	client.StorageV1().StorageClasses().Create(context.Background(), sc, metav1.CreateOptions{})
-
-// 	t.Run("Test Successful Polling", func(t *testing.T) {
-
-// 		cts := &CapacityTrackingSuite{
-// 			PollInterval: time.Second,
-// 		}
-// 		err := cts.checkIfGetCapacityIsPolled(context.Background(), k8Clients, storageClass, 0)
-
-// 		assert.NoError(t, err)
-
-// 	})
-// }
