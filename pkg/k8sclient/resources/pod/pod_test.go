@@ -345,7 +345,6 @@ func TestPodTestSuite(t *testing.T) {
 	suite.Run(t, new(PodTestSuite))
 }
 
-<<<<<<< HEAD
 func TestIsPodReady(t *testing.T) {
 	podReady := &v1.Pod{
 		Status: v1.PodStatus{
@@ -403,7 +402,7 @@ func TestIsPodReadyConditionTrue(t *testing.T) {
 	t.Run("Pod is not ready", func(t *testing.T) {
 		assert.False(t, pod.IsPodReadyConditionTrue(podNotReady), "Expected pod to not be ready")
 	})
-=======
+
 func TestGetPodConditionFromList(t *testing.T) {
 	tests := []struct {
 		name           string
@@ -545,5 +544,4 @@ func TestCheckEvictionSupport(t *testing.T) {
 			assert.Equal(t, tt.expectedError, err)
 		})
 	}
->>>>>>> 8430605e520d0d3888a267be868f10ce2e771a1e
 }
