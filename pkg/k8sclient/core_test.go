@@ -327,6 +327,12 @@ func (suite *CoreTestSuite) TestForceDeleteNamespace() {
 	suite.Error(err)
 }
 
+func (suite *CoreTestSuite) TestSnapshotClassExists() {
+	exists, err := suite.kubeClient.SnapshotClassExists("test-snapshot-class")
+	suite.Error(err)
+	suite.Equal(false, exists)
+}
+
 func (suite *CoreTestSuite) TestStorageExists() {
 	storageClass, err := suite.kubeClient.ClientSet.StorageV1().StorageClasses().Create(context.Background(), &storagev1.StorageClass{
 		ObjectMeta: metav1.ObjectMeta{
