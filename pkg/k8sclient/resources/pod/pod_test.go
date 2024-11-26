@@ -360,7 +360,6 @@ func (suite *PodTestSuite) TestIsInPendingState() {
 		err = podObj.IsInPendingState(context.Background())
 		suite.NoError(err)
 	})
-
 }
 
 func TestPodTestSuite(t *testing.T) {
