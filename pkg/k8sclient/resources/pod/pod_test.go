@@ -22,6 +22,7 @@ import (
 
 	"github.com/dell/cert-csi/pkg/k8sclient"
 	"github.com/dell/cert-csi/pkg/k8sclient/resources/pod"
+	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/suite"
 	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -335,4 +336,63 @@ func (suite *PodTestSuite) TestIsInPendingState() {
 
 func TestPodTestSuite(t *testing.T) {
 	suite.Run(t, new(PodTestSuite))
+}
+
+func TestIsPodReady(t *testing.T) {
+	podReady := &v1.Pod{
+		Status: v1.PodStatus{
+			Conditions: []v1.PodCondition{
+				{
+					Type:   v1.PodReady,
+					Status: v1.ConditionTrue,
+				},
+			},
+		},
+	}
+	podNotReady := &v1.Pod{
+		Status: v1.PodStatus{
+			Conditions: []v1.PodCondition{
+				{
+					Type:   v1.PodReady,
+					Status: v1.ConditionFalse,
+				},
+			},
+		},
+	}
+
+	t.Run("Pod is ready", func(t *testing.T) {
+		assert.True(t, pod.IsPodReady(podReady), "Expected pod to be ready")
+	})
+
+	t.Run("Pod is not ready", func(t *testing.T) {
+		assert.False(t, pod.IsPodReady(podNotReady), "Expected pod to not be ready")
+	})
+}
+
+func TestIsPodReadyConditionTrue(t *testing.T) {
+	podReady := v1.PodStatus{
+		Conditions: []v1.PodCondition{
+			{
+				Type:   v1.PodReady,
+				Status: v1.ConditionTrue,
+			},
+		},
+	}
+
+	podNotReady := v1.PodStatus{
+		Conditions: []v1.PodCondition{
+			{
+				Type:   v1.PodReady,
+				Status: v1.ConditionFalse,
+			},
+		},
+	}
+
+	t.Run("Pod is ready", func(t *testing.T) {
+		assert.True(t, pod.IsPodReadyConditionTrue(podReady), "Expected pod to be ready")
+	})
+
+	t.Run("Pod is not ready", func(t *testing.T) {
+		assert.False(t, pod.IsPodReadyConditionTrue(podNotReady), "Expected pod to not be ready")
+	})
 }
