@@ -402,6 +402,7 @@ func TestIsPodReadyConditionTrue(t *testing.T) {
 	t.Run("Pod is not ready", func(t *testing.T) {
 		assert.False(t, pod.IsPodReadyConditionTrue(podNotReady), "Expected pod to not be ready")
 	})
+}
 
 func TestGetPodConditionFromList(t *testing.T) {
 	tests := []struct {
