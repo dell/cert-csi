@@ -123,7 +123,6 @@ func (suite *CoreTestSuite) TestCreateClients() {
 		suite.NoError(err)
 		suite.NotNil(mClient)
 		suite.Equal(namespace, mClient.Namespace)
-
 	})
 
 	suite.Run("node client", func() {
@@ -302,6 +301,38 @@ func (suite *CoreTestSuite) TestDeleteNamespace() {
 	suite.NoError(err)
 }
 
+func (suite *CoreTestSuite) TestForceDeleteNamespace() {
+	client := fake.NewSimpleClientset()
+
+	kubeClient := KubeClient{
+		ClientSet:   client,
+		Config:      &rest.Config{},
+		VersionInfo: nil,
+		timeout:     1,
+	}
+
+	name := "test-namespace"
+	err := kubeClient.ForceDeleteNamespace(context.Background(), name)
+	suite.Error(err)
+
+	ns, err := kubeClient.CreateNamespace(context.Background(), name)
+	suite.NoError(err)
+
+	err = kubeClient.ForceDeleteNamespace(context.Background(), ns.Name)
+	suite.Error(err)
+
+	kubeClient.Minor = 17
+
+	err = kubeClient.ForceDeleteNamespace(context.Background(), ns.Name)
+	suite.Error(err)
+}
+
+func (suite *CoreTestSuite) TestSnapshotClassExists() {
+	exists, err := suite.kubeClient.SnapshotClassExists("test-snapshot-class")
+	suite.Error(err)
+	suite.Equal(false, exists)
+}
+
 func (suite *CoreTestSuite) TestStorageExists() {
 	storageClass, err := suite.kubeClient.ClientSet.StorageV1().StorageClasses().Create(context.Background(), &storagev1.StorageClass{
 		ObjectMeta: metav1.ObjectMeta{
@@ -335,6 +366,21 @@ func (suite *CoreTestSuite) TestNamespaceExists() {
 	exists, err = kubeClient.NamespaceExists(context.Background(), name)
 	suite.NoError(err)
 	suite.Equal(true, exists)
+}
+
+func (suite *CoreTestSuite) TestSetTimeout() {
+	kubeClient := &KubeClient{
+		timeout: 0,
+	}
+
+	kubeClient.SetTimeout(10)
+	suite.Equal(kubeClient.timeout, 10)
+
+	kubeClient.SetTimeout(-1)
+	suite.Equal(kubeClient.timeout, -1)
+
+	kubeClient.SetTimeout(0)
+	suite.Equal(kubeClient.timeout, 0)
 }
 
 func (suite *CoreTestSuite) TestGetConfig() {
