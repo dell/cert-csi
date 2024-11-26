@@ -1697,7 +1697,51 @@ func TestMultiAttachSuite_Parameters(t *testing.T) {
 	}
 }
 
-// TODO TestBlockSnapSuite_Run
+func TestBlockSnapSuite_Run(t *testing.T) {
+	// Create a context
+	ctx := context.Background()
+
+	// Create a MultiAttachSuite instance
+	bss := &BlockSnapSuite{
+		SnapClass:   "testSnap",
+		Description: "testDesc",
+		AccessMode:  "test",
+	}
+
+	// Mock storageClass
+	storageClass := "test-storage-class"
+
+	// Create a fake KubeClient
+	kubeClient := &k8sclient.KubeClient{
+		ClientSet: fake.NewSimpleClientset(),
+		Config:    &rest.Config{},
+	}
+
+	namespace := bss.GetNamespace()
+
+	// Create the necessary clients
+	pvcClient, _ := kubeClient.CreatePVCClient(namespace)
+	podClient, _ := kubeClient.CreatePodClient(namespace)
+	vaClient, _ := kubeClient.CreateVaClient(namespace)
+	metricsClient, _ := kubeClient.CreateMetricsClient(namespace)
+	// snapGA, snapBeta, snErr := GetSnapshotClient(namespace, client)
+
+	clients := &k8sclient.Clients{
+		PVCClient:         pvcClient,
+		PodClient:         podClient,
+		VaClient:          vaClient,
+		StatefulSetClient: nil,
+		MetricsClient:     metricsClient,
+		// SnapClientGA:      snapGA,
+		// SnapClientBeta:    snapBeta,
+	}
+
+	// Run the suite with invalid storage class error
+	delFunc, err := bss.Run(ctx, storageClass, clients)
+	assert.Error(t, err)
+	assert.Nil(t, delFunc)
+
+}
 
 func TestBlockSnapSuite_GetObservers(t *testing.T) {
 	bss := &BlockSnapSuite{}
