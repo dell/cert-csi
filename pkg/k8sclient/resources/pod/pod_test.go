@@ -22,9 +22,17 @@ import (
 
 	"github.com/dell/cert-csi/pkg/k8sclient"
 	"github.com/dell/cert-csi/pkg/k8sclient/resources/pod"
+	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/suite"
+	corev1 "k8s.io/api/core/v1"
 	v1 "k8s.io/api/core/v1"
+	apierrs "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/runtime"
+	clientgotesting "k8s.io/client-go/testing"
+
+	"k8s.io/apimachinery/pkg/runtime/schema"
+	discoveryFake "k8s.io/client-go/discovery/fake"
 	"k8s.io/client-go/kubernetes/fake"
 )
 
@@ -335,4 +343,147 @@ func (suite *PodTestSuite) TestIsInPendingState() {
 
 func TestPodTestSuite(t *testing.T) {
 	suite.Run(t, new(PodTestSuite))
+}
+
+func TestGetPodConditionFromList(t *testing.T) {
+	tests := []struct {
+		name           string
+		conditions     []corev1.PodCondition
+		conditionType  corev1.PodConditionType
+		expectedIndex  int
+		expectedResult *corev1.PodCondition
+	}{
+		{
+			name: "Condition exists",
+			conditions: []corev1.PodCondition{
+				{Type: corev1.PodReady, Status: corev1.ConditionTrue},
+				{Type: corev1.PodScheduled, Status: corev1.ConditionTrue},
+			},
+			conditionType: corev1.PodReady,
+			expectedIndex: 0,
+			expectedResult: &corev1.PodCondition{
+				Type: corev1.PodReady, Status: corev1.ConditionTrue,
+			},
+		},
+		{
+			name: "Condition does not exist",
+			conditions: []corev1.PodCondition{
+				{Type: corev1.PodScheduled, Status: corev1.ConditionTrue},
+			},
+			conditionType:  corev1.PodReady,
+			expectedIndex:  -1,
+			expectedResult: nil,
+		},
+		{
+			name:           "Empty conditions",
+			conditions:     nil,
+			conditionType:  corev1.PodReady,
+			expectedIndex:  -1,
+			expectedResult: nil,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			index, result := pod.GetPodConditionFromList(tt.conditions, tt.conditionType)
+			if index != tt.expectedIndex {
+				t.Errorf("expected index %d, got %d", tt.expectedIndex, index)
+			}
+			if result == nil && tt.expectedResult != nil || result != nil && tt.expectedResult == nil {
+				t.Errorf("expected result %v, got %v", tt.expectedResult, result)
+			} else if result != nil && tt.expectedResult != nil && *result != *tt.expectedResult {
+				t.Errorf("expected result %v, got %v", tt.expectedResult, result)
+			}
+		})
+	}
+}
+
+func (suite *PodTestSuite) TestEvictPods() {
+	podClient, err := suite.kubeClient.CreatePodClient("test-namespace")
+	suite.NoError(err)
+
+	podList := &corev1.PodList{
+		Items: []corev1.Pod{
+			*podClient.MakeEphemeralPod(&pod.Config{
+				Name: "test-pod-1",
+			}),
+			*podClient.MakeEphemeralPod(&pod.Config{
+				Name: "test-pod-2",
+			}),
+		},
+	}
+
+	err = podClient.EvictPods(context.Background(), podList, "", 10)
+	suite.Error(err)
+}
+
+func TestCheckEvictionSupport(t *testing.T) {
+	clientSet := fake.NewSimpleClientset()
+	discoveryClient := clientSet.Discovery().(*discoveryFake.FakeDiscovery)
+
+	tests := []struct {
+		name                 string
+		serverGroups         []metav1.APIGroup
+		serverResources      []*metav1.APIResourceList
+		expectedGroupVersion string
+		expectedError        error
+	}{
+		// {
+		// 	name: "Eviction supported",
+		// 	serverGroups: []metav1.APIGroup{
+		// 		{
+		// 			Name: "policy",
+		// 			PreferredVersion: metav1.GroupVersionForDiscovery{
+		// 				GroupVersion: "policy/v1beta1",
+		// 			},
+		// 		},
+		// 	},
+		// 	serverResources: []*metav1.APIResourceList{
+		// 		{
+		// 			GroupVersion: "policy/v1beta1",
+		// 			APIResources: []metav1.APIResource{
+		// 				{
+		// 					Name: "pods/eviction",
+		// 					Kind: "Eviction",
+		// 				},
+		// 			},
+		// 		},
+		// 	},
+		// 	expectedGroupVersion: "policy/v1beta1",
+		// 	expectedError:        nil,
+		// },
+		{
+			name:                 "Eviction not supported",
+			serverGroups:         []metav1.APIGroup{},
+			serverResources:      []*metav1.APIResourceList{},
+			expectedGroupVersion: "",
+			expectedError:        nil,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			discoveryClient.Resources = tt.serverResources
+			// Simulate the server groups response
+			discoveryClient.Fake.Resources = tt.serverResources
+			discoveryClient.Fake.PrependReactor("get", "servergroups", func(action clientgotesting.Action) (handled bool, ret runtime.Object, err error) {
+				return true, &metav1.APIGroupList{Groups: tt.serverGroups}, nil
+			})
+
+			discoveryClient.Fake.PrependReactor("get", "serverresources", func(action clientgotesting.Action) (handled bool, ret runtime.Object, err error) {
+				getAction := action.(clientgotesting.GetAction)
+				groupVersion := getAction.GetResource().GroupVersion().String()
+				for _, resourceList := range tt.serverResources {
+					if resourceList.GroupVersion == groupVersion {
+						return true, resourceList, nil
+					}
+				}
+				return true, nil, apierrs.NewNotFound(schema.GroupResource{Group: "policy", Resource: "resource"}, "")
+			})
+
+			groupVersion, err := pod.CheckEvictionSupport(clientSet)
+			assert.Equal(t, tt.expectedGroupVersion, groupVersion)
+			assert.Equal(t, tt.expectedError, err)
+		})
+	}
 }
