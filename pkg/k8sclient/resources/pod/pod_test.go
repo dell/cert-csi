@@ -25,10 +25,10 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/suite"
 	corev1 "k8s.io/api/core/v1"
-	v1 "k8s.io/api/core/v1"
 	apierrs "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/client-go/rest"
 	clientgotesting "k8s.io/client-go/testing"
 
 	"k8s.io/apimachinery/pkg/runtime/schema"
@@ -110,7 +110,7 @@ func (suite *PodTestSuite) TestCreatePod() {
 		Namespace  string
 	}
 	type args struct {
-		pod *v1.Pod
+		pod *corev1.Pod
 	}
 	tests := []struct {
 		name       string
@@ -140,7 +140,7 @@ func (suite *PodTestSuite) TestCreatePod() {
 				Namespace:  "test-namespace",
 			},
 			args: args{
-				pod: &v1.Pod{},
+				pod: &corev1.Pod{},
 			},
 			wantErr: false,
 			assertFunc: func(pod *pod.Pod) {
@@ -156,7 +156,7 @@ func (suite *PodTestSuite) TestCreatePod() {
 				Namespace:  "test-namespace",
 			},
 			args: args{
-				pod: &v1.Pod{
+				pod: &corev1.Pod{
 					ObjectMeta: metav1.ObjectMeta{
 						Name: "simple-pod",
 					},
@@ -217,7 +217,7 @@ func (suite *PodTestSuite) TestDelete() {
 func (suite *PodTestSuite) TestUpdate() {
 	podClient, err := suite.kubeClient.CreatePodClient("test-namespace")
 	suite.NoError(err)
-	pod := &v1.Pod{}
+	pod := &corev1.Pod{}
 	podClient.Update(pod)
 }
 
@@ -284,7 +284,7 @@ func (suite *PodTestSuite) TestWaitForRunning() {
 
 	podObj := &pod.Pod{
 		Client:  podClient,
-		Object:  &v1.Pod{},
+		Object:  &corev1.Pod{},
 		Deleted: false,
 	}
 
@@ -328,21 +328,101 @@ func (suite *PodTestSuite) TestEvictPod() {
 }
 
 func (suite *PodTestSuite) TestIsInPendingState() {
-	podClient, err := suite.kubeClient.CreatePodClient("test-namespace")
+	namespace := "test-namespace"
+	client := fake.NewSimpleClientset()
+	kubeClient := k8sclient.KubeClient{
+		ClientSet:   client,
+		Config:      &rest.Config{},
+		VersionInfo: nil,
+	}
+	kubeClient.SetTimeout(2)
+	podClient, err := kubeClient.CreatePodClient(namespace)
 	suite.NoError(err)
+
+	podName := "test-pod"
+	testPod := &corev1.Pod{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      podName,
+			Namespace: namespace,
+		},
+		Status: corev1.PodStatus{Phase: corev1.PodPending},
+	}
+
+	client.CoreV1().Pods(namespace).Create(context.Background(), testPod, metav1.CreateOptions{})
 
 	podObj := &pod.Pod{
 		Client:  podClient,
-		Object:  &v1.Pod{},
+		Object:  testPod,
 		Deleted: false,
 	}
 
-	err = podObj.IsInPendingState(context.Background())
-	suite.Error(err)
+	suite.Run("Pod is in pending state", func() {
+		err = podObj.IsInPendingState(context.Background())
+		suite.NoError(err)
+	})
 }
 
 func TestPodTestSuite(t *testing.T) {
 	suite.Run(t, new(PodTestSuite))
+}
+
+func TestIsPodReady(t *testing.T) {
+	podReady := &corev1.Pod{
+		Status: corev1.PodStatus{
+			Conditions: []corev1.PodCondition{
+				{
+					Type:   corev1.PodReady,
+					Status: corev1.ConditionTrue,
+				},
+			},
+		},
+	}
+	podNotReady := &corev1.Pod{
+		Status: corev1.PodStatus{
+			Conditions: []corev1.PodCondition{
+				{
+					Type:   corev1.PodReady,
+					Status: corev1.ConditionFalse,
+				},
+			},
+		},
+	}
+
+	t.Run("Pod is ready", func(t *testing.T) {
+		assert.True(t, pod.IsPodReady(podReady), "Expected pod to be ready")
+	})
+
+	t.Run("Pod is not ready", func(t *testing.T) {
+		assert.False(t, pod.IsPodReady(podNotReady), "Expected pod to not be ready")
+	})
+}
+
+func TestIsPodReadyConditionTrue(t *testing.T) {
+	podReady := corev1.PodStatus{
+		Conditions: []corev1.PodCondition{
+			{
+				Type:   corev1.PodReady,
+				Status: corev1.ConditionTrue,
+			},
+		},
+	}
+
+	podNotReady := corev1.PodStatus{
+		Conditions: []corev1.PodCondition{
+			{
+				Type:   corev1.PodReady,
+				Status: corev1.ConditionFalse,
+			},
+		},
+	}
+
+	t.Run("Pod is ready", func(t *testing.T) {
+		assert.True(t, pod.IsPodReadyConditionTrue(podReady), "Expected pod to be ready")
+	})
+
+	t.Run("Pod is not ready", func(t *testing.T) {
+		assert.False(t, pod.IsPodReadyConditionTrue(podNotReady), "Expected pod to not be ready")
+	})
 }
 
 func TestGetPodConditionFromList(t *testing.T) {
