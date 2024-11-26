@@ -123,7 +123,6 @@ func (suite *CoreTestSuite) TestCreateClients() {
 		suite.NoError(err)
 		suite.NotNil(mClient)
 		suite.Equal(namespace, mClient.Namespace)
-
 	})
 
 	suite.Run("node client", func() {
