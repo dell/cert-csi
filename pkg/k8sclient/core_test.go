@@ -391,6 +391,10 @@ func (suite *CoreTestSuite) TestGetConfig() {
 	errConf, err := GetConfig("/non/existing/path")
 	suite.Error(err)
 	suite.Nil(errConf)
+
+	errConf, err = GetConfig("")
+	suite.Error(err)
+	suite.Nil(errConf)
 }
 
 func TestCoreTestSuite(t *testing.T) {
