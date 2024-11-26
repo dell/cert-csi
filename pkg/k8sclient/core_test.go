@@ -368,6 +368,21 @@ func (suite *CoreTestSuite) TestNamespaceExists() {
 	suite.Equal(true, exists)
 }
 
+func (suite *CoreTestSuite) TestSetTimeout() {
+	kubeClient := &KubeClient{
+		timeout: 0,
+	}
+
+	kubeClient.SetTimeout(10)
+	suite.Equal(kubeClient.timeout, 10)
+
+	kubeClient.SetTimeout(-1)
+	suite.Equal(kubeClient.timeout, -1)
+
+	kubeClient.SetTimeout(0)
+	suite.Equal(kubeClient.timeout, 0)
+}
+
 func (suite *CoreTestSuite) TestGetConfig() {
 	conf, err := GetConfig("testdata/config")
 	suite.NoError(err)
