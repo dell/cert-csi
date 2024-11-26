@@ -302,6 +302,32 @@ func (suite *CoreTestSuite) TestDeleteNamespace() {
 	suite.NoError(err)
 }
 
+func (suite *CoreTestSuite) TestForceDeleteNamespace() {
+	client := fake.NewSimpleClientset()
+
+	kubeClient := KubeClient{
+		ClientSet:   client,
+		Config:      &rest.Config{},
+		VersionInfo: nil,
+		timeout:     1,
+	}
+
+	name := "test-namespace"
+	err := kubeClient.ForceDeleteNamespace(context.Background(), name)
+	suite.Error(err)
+
+	ns, err := kubeClient.CreateNamespace(context.Background(), name)
+	suite.NoError(err)
+
+	err = kubeClient.ForceDeleteNamespace(context.Background(), ns.Name)
+	suite.Error(err)
+
+	kubeClient.Minor = 17
+
+	err = kubeClient.ForceDeleteNamespace(context.Background(), ns.Name)
+	suite.Error(err)
+}
+
 func (suite *CoreTestSuite) TestStorageExists() {
 	storageClass, err := suite.kubeClient.ClientSet.StorageV1().StorageClasses().Create(context.Background(), &storagev1.StorageClass{
 		ObjectMeta: metav1.ObjectMeta{
