@@ -1701,7 +1701,7 @@ func TestBlockSnapSuite_Run(t *testing.T) {
 	// Create a context
 	ctx := context.Background()
 
-	// Create a MultiAttachSuite instance
+	// Create a BlockSnapSuite instance
 	bss := &BlockSnapSuite{
 		SnapClass:   "testSnap",
 		Description: "testDesc",
