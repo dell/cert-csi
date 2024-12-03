@@ -1740,7 +1740,6 @@ func TestBlockSnapSuite_Run(t *testing.T) {
 	delFunc, err := bss.Run(ctx, storageClass, clients)
 	assert.Error(t, err)
 	assert.Nil(t, delFunc)
-
 }
 
 func TestBlockSnapSuite_GetObservers(t *testing.T) {
@@ -1933,7 +1932,7 @@ func TestVolumeGroupSnapSuite_GetClients(t *testing.T) {
 	// 	DeletionPolicy: snapshotv1.Delete,
 	// }
 
-	//snapshotClient := client.SnapshotV1()
+	// snapshotClient := client.SnapshotV1()
 	// client.SnapshotClasses().Create(context.TODO(), snapshotClass, metav1.CreateOptions{})
 
 	type args struct {
