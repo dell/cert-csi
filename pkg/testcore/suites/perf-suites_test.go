@@ -1909,3 +1909,74 @@ func TestVolumeMigrateSuite_Parameters(t *testing.T) {
 		t.Errorf("VolumeMigrateSuite.Parameters() = %v, want %v", params, expectedParams)
 	}
 }
+
+func TestVolumeGroupSnapSuite_GetClients(t *testing.T) {
+	client := fake.NewSimpleClientset()
+
+	kubeClient := k8sclient.KubeClient{
+		ClientSet:   client,
+		Config:      &rest.Config{},
+		VersionInfo: nil,
+	}
+
+	vgsClient, _ := kubeClient.CreateVGSClient()
+	pvcClient, _ := kubeClient.CreatePVCClient("test-namespace")
+	podClient, _ := kubeClient.CreatePodClient("test-namespace")
+	vaClient, _ := kubeClient.CreateVaClient("test-namespace")
+	metricsClient, _ := kubeClient.CreateMetricsClient("test-namespace")
+
+	// &snapshotv1.SnapshotClass{
+	// 	ObjectMeta: metav1.ObjectMeta{
+	// 		Name: "test-snapclass",
+	// 	},
+	// 	Driver:         "example.csi.driver",
+	// 	DeletionPolicy: snapshotv1.Delete,
+	// }
+
+	//snapshotClient := client.SnapshotV1()
+	// client.SnapshotClasses().Create(context.TODO(), snapshotClass, metav1.CreateOptions{})
+
+	type args struct {
+		namespace string
+		client    *k8sclient.KubeClient
+	}
+	tests := []struct {
+		name    string
+		vgs     *VolumeGroupSnapSuite
+		args    args
+		want    *k8sclient.Clients
+		wantErr bool
+	}{
+		{
+			name: "Testing GetClients",
+			vgs:  &VolumeGroupSnapSuite{},
+			args: args{
+				namespace: "test-namespace",
+				client:    &kubeClient,
+			},
+			want: &k8sclient.Clients{
+				PVCClient:     pvcClient,
+				PodClient:     podClient,
+				VaClient:      vaClient,
+				VgsClient:     vgsClient,
+				MetricsClient: metricsClient,
+			},
+			wantErr: false,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got, err := tt.vgs.GetClients(tt.args.namespace, tt.args.client)
+			fmt.Println(got, err)
+
+			if (err != nil) != tt.wantErr {
+				t.Errorf("VolumeGroupSnapSuite.GetClients() error = %v, wantErr %v", err, tt.wantErr)
+				return
+			}
+			fmt.Println(reflect.TypeOf(got), reflect.TypeOf(tt.want))
+			if reflect.TypeOf(got) != reflect.TypeOf(tt.want) {
+				t.Errorf("VolumeGroupSnapSuite.GetClients() = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}

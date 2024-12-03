@@ -28,10 +28,10 @@ import (
 	apierrs "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/client-go/rest"
 	clientgotesting "k8s.io/client-go/testing"
 
-	"k8s.io/apimachinery/pkg/runtime/schema"
 	discoveryFake "k8s.io/client-go/discovery/fake"
 	"k8s.io/client-go/kubernetes/fake"
 )
@@ -508,30 +508,37 @@ func TestCheckEvictionSupport(t *testing.T) {
 		expectedGroupVersion string
 		expectedError        error
 	}{
-		// {
-		// 	name: "Eviction supported",
-		// 	serverGroups: []metav1.APIGroup{
-		// 		{
-		// 			Name: "policy",
-		// 			PreferredVersion: metav1.GroupVersionForDiscovery{
-		// 				GroupVersion: "policy/v1beta1",
-		// 			},
-		// 		},
-		// 	},
-		// 	serverResources: []*metav1.APIResourceList{
-		// 		{
-		// 			GroupVersion: "policy/v1beta1",
-		// 			APIResources: []metav1.APIResource{
-		// 				{
-		// 					Name: "pods/eviction",
-		// 					Kind: "Eviction",
-		// 				},
-		// 			},
-		// 		},
-		// 	},
-		// 	expectedGroupVersion: "policy/v1beta1",
-		// 	expectedError:        nil,
-		// },
+		{
+			name: "Eviction supported",
+			serverGroups: []metav1.APIGroup{
+				{
+					Name: "policy",
+					PreferredVersion: metav1.GroupVersionForDiscovery{
+						GroupVersion: "v1",
+					},
+				},
+			},
+			serverResources: []*metav1.APIResourceList{
+				{
+					GroupVersion: "v1",
+					APIResources: []metav1.APIResource{
+						{
+							Name: "pods/eviction",
+							Kind: "Eviction",
+						},
+					},
+				},
+			},
+			expectedGroupVersion: "",
+			expectedError:        nil,
+		},
+		{
+			name:                 "Policy group not found",
+			serverGroups:         []metav1.APIGroup{},
+			serverResources:      nil,
+			expectedGroupVersion: "",
+			expectedError:        nil,
+		},
 		{
 			name:                 "Eviction not supported",
 			serverGroups:         []metav1.APIGroup{},
