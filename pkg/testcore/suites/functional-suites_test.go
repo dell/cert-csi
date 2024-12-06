@@ -1967,3 +1967,41 @@ func TestNodeDrainSuite_Run(t *testing.T) {
 		assert.Error(t, err)
 	})
 }
+
+func TestEphemeralVolumeSuite_Run(t *testing.T) {
+	// Create a new context
+	ctx := context.Background()
+
+	// Create a new EphemeralVolumeSuite instance
+	ep := &EphemeralVolumeSuite{
+		PodCustomName:    "test-pod",
+		Description:      "test-description",
+		PodNumber:        5,
+		Driver:           "powerstore",
+		FSType:           "ext4",
+		Image:            "quay.io/centos/centos:latest",
+		VolumeAttributes: map[string]string{"key": "value"},
+	}
+
+	client := fake.NewSimpleClientset()
+	namespace := "test-namespace"
+
+	kubeClient := k8sclient.KubeClient{
+		ClientSet:   client,
+		Config:      &rest.Config{},
+		VersionInfo: nil,
+	}
+	kubeClient.SetTimeout(2)
+	mockPodClient, _ := kubeClient.CreatePodClient(namespace)
+	k8Clients := &k8sclient.Clients{
+		KubeClient: &kubeClient,
+		PodClient:  mockPodClient,
+	}
+
+	t.Run("Fails in Creating Ephemeral Volumes due to timeout", func(t *testing.T) {
+		_, err := ep.Run(ctx, "some-value", k8Clients)
+		assert.Error(t, err)
+		assert.Contains(t, err.Error(), "timed out")
+	})
+
+}
