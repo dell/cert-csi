@@ -17,6 +17,7 @@
 package pod_test
 
 import (
+	"bytes"
 	"context"
 	"testing"
 
@@ -573,4 +574,47 @@ func TestCheckEvictionSupport(t *testing.T) {
 			assert.Equal(t, tt.expectedError, err)
 		})
 	}
+}
+
+func (suite *PodTestSuite) TestExec() {
+	podClient, err := suite.kubeClient.CreatePodClient("test-namespace")
+	suite.NoError(err)
+
+	podClient.Config = &rest.Config{
+		Host:        "https://localhost:6443",
+		BearerToken: "test-token",
+	}
+
+	if podClient == nil {
+		suite.T().Fatal("podClient is nil")
+	}
+	if podClient.Config == nil {
+		suite.T().Fatal("Config is nil")
+	}
+
+	pod := &corev1.Pod{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      "test-pod",
+			Namespace: "default",
+		},
+		Spec: corev1.PodSpec{
+			Containers: []corev1.Container{
+				{Name: "test-container"},
+			},
+		},
+	}
+
+	command := []string{"echo", "hello"}
+	stdout := &bytes.Buffer{}
+	stderr := &bytes.Buffer{}
+
+	suite.Run("podclient exec QuietMode=false", func() {
+		err = podClient.Exec(context.Background(), pod, command, stdout, stderr, false)
+		suite.NoError(err)
+	})
+
+	suite.Run("podclient exec QuietMode=true", func() {
+		err = podClient.Exec(context.Background(), pod, command, stdout, stderr, true)
+		suite.NoError(err)
+	})
 }
