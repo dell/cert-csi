@@ -2240,7 +2240,7 @@ type VolumeHealthMetricsSuite struct {
 }
 
 // FindDriverLogs executes command and returns the output
-func FindDriverLogs(command []string) (string, error) {
+var FindDriverLogs = func(command []string) (string, error) {
 	cmd := exec.Command(command[0], command[1:]...) // #nosec G204
 	output, err := cmd.Output()
 	if err != nil {
