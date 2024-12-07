@@ -1315,7 +1315,7 @@ func TestVolumeExpansionSuite_Parameters(t *testing.T) {
 	}
 }
 
-//TestVolumeHealthMetricsSuite_Run
+// TestVolumeHealthMetricsSuite_Run
 func TestVolumeHealthMetricsSuite_Run(t *testing.T) {
 	// Create a new context
 	ctx := context.Background()
@@ -1323,7 +1323,7 @@ func TestVolumeHealthMetricsSuite_Run(t *testing.T) {
 	// Create a new VolumeHealthMetricsSuite instance
 	vh := &VolumeHealthMetricsSuite{
 		VolumeNumber: 1,
-		Namespace: "test-namespace",
+		Namespace:    "test-namespace",
 	}
 
 	// Create a fake storage class with VolumeBindingMode set to WaitForFirstConsumer
@@ -1391,18 +1391,19 @@ func TestVolumeHealthMetricsSuite_Run(t *testing.T) {
 
 	// Update the k8sclient.Clients instance with the fake clients
 	clients := &k8sclient.Clients{
-		PVCClient: pvcClient,
-		PodClient: podClient,
+		PVCClient:              pvcClient,
+		PodClient:              podClient,
 		PersistentVolumeClient: pvClient,
-		KubeClient: kubeClient,
+		KubeClient:             kubeClient,
 	}
 
 	FindDriverLogs = func(_ []string) (string, error) {
 		return "", nil
 	}
 
+	// Call the Run method
 	_, err := vh.Run(ctx, "test-storage-class", clients)
-
+	// Check if there was an error
 	if err != nil {
 		t.Errorf("Error running VolumeHealthMetricsSuite.Run(): %v", err)
 	}
@@ -1524,7 +1525,7 @@ func TestCloneVolumeSuite_Run(t *testing.T) {
 
 	// Create a new VolumeHealthMetricsSuite instance
 	cs := &CloneVolumeSuite{
-		VolumeNumber: 1,
+		VolumeNumber:  1,
 		CustomPvcName: "pvc-test",
 		CustomPodName: "pod-test",
 	}
@@ -1594,18 +1595,19 @@ func TestCloneVolumeSuite_Run(t *testing.T) {
 
 	// Update the k8sclient.Clients instance with the fake clients
 	clients := &k8sclient.Clients{
-		PVCClient: pvcClient,
-		PodClient: podClient,
+		PVCClient:              pvcClient,
+		PodClient:              podClient,
 		PersistentVolumeClient: pvClient,
-		KubeClient: kubeClient,
+		KubeClient:             kubeClient,
 	}
 
 	FindDriverLogs = func(_ []string) (string, error) {
 		return "", nil
 	}
 
+	// Call the Run method
 	_, err := cs.Run(ctx, "test-storage-class", clients)
-
+	// Check if there was an error
 	if err != nil {
 		t.Errorf("Error running CloneVolumeSuite.Run(): %v", err)
 	}
