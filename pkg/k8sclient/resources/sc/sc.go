@@ -61,9 +61,10 @@ func (c *Client) Get(ctx context.Context, name string) *StorageClass {
 	newSC, err := c.Interface.Get(ctx, name, metav1.GetOptions{})
 	if err != nil {
 		funcErr = err
+	} else {
+		log.Debugf("Got Storage Class %s", newSC.GetName())
 	}
 
-	log.Debugf("Got Storage Class %s", newSC.GetName())
 	return &StorageClass{
 		Client:  c,
 		Object:  newSC,
