@@ -294,25 +294,69 @@ func (suite *PodTestSuite) TestReadyPodsCount() {
 }
 
 func (suite *PodTestSuite) TestWaitForAllToBeReady() {
-	podconf := &pod.Config{
-		NamePrefix:     "pod-prov-test-",
-		PvcNames:       []string{"pvc1", "pvc2", "pvc3"},
-		VolumeName:     "vol",
-		MountPath:      "/data",
-		ContainerName:  "prov-test",
-		ContainerImage: "quay.io/centos/centos:latest",
-		Command:        []string{"/app/run.sh"},
-	}
 
-	client, err := suite.kubeClient.CreatePodClient("test-namespace")
+	client := fake.NewSimpleClientset()
+	kubeClient := k8sclient.KubeClient{
+		ClientSet:   client,
+		Config:      &rest.Config{},
+		VersionInfo: nil,
+	}
+	kubeClient.SetTimeout(2)
+
+	namespace := "test-namespace"
+	podClient, err := kubeClient.CreatePodClient(namespace)
 	suite.NoError(err)
 
-	podTmpl := client.MakePod(podconf)
-	suite.Equal("test-namespace", podTmpl.Namespace)
+	pod := &corev1.Pod{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      "test-pod",
+			Namespace: "test-namespace",
+		},
+		Spec: corev1.PodSpec{
+			Containers: []corev1.Container{
+				{
+					Name:  "nginx-container",
+					Image: "nginx:latest",
+					Ports: []corev1.ContainerPort{
+						{
+							ContainerPort: 80,
+						},
+					},
+				},
+			},
+		},
+	}
+	client.CoreV1().Pods(namespace).Create(context.Background(), pod, metav1.CreateOptions{})
+
+	err = wait.PollUntilContextTimeout(context.Background(), time.Second, time.Minute, true, func(ctx context.Context) (bool, error) {
+		_, err := client.CoreV1().Pods(namespace).Get(ctx, "test-pod", metav1.GetOptions{})
+		return err == nil, err
+	})
+	suite.NoError(err)
 
 	suite.Run("waits for all Pods to be in Ready state test", func() {
-		err := client.WaitForAllToBeReady(context.Background())
+		pod.Status = corev1.PodStatus{
+			Phase: corev1.PodRunning,
+			Conditions: []corev1.PodCondition{
+				{
+					Type:   corev1.PodReady,
+					Status: corev1.ConditionTrue,
+				},
+			},
+		}
+		client.CoreV1().Pods(namespace).UpdateStatus(context.Background(), pod, metav1.UpdateOptions{})
+		err := podClient.WaitForAllToBeReady(context.Background())
 		suite.NoError(err)
+	})
+
+	suite.Run("Test pod to be in not ready state", func() {
+		pod.Status = corev1.PodStatus{
+			Phase:      corev1.PodFailed,
+			Conditions: []corev1.PodCondition{},
+		}
+		client.CoreV1().Pods(namespace).UpdateStatus(context.Background(), pod, metav1.UpdateOptions{})
+		err := podClient.WaitForAllToBeReady(context.Background())
+		suite.Error(err)
 	})
 }
 
