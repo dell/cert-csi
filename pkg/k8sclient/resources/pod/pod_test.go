@@ -224,7 +224,6 @@ func (suite *PodTestSuite) TestUpdate() {
 }
 
 func (suite *PodTestSuite) TestDeleteAll() {
-
 	client := fake.NewSimpleClientset()
 	kubeClient := k8sclient.KubeClient{
 		ClientSet:   client,
@@ -265,7 +264,6 @@ func (suite *PodTestSuite) TestDeleteAll() {
 }
 
 func (suite *PodTestSuite) TestReadyPodsCount() {
-
 	client := fake.NewSimpleClientset()
 	kubeClient := k8sclient.KubeClient{
 		ClientSet:   client,
@@ -324,7 +322,6 @@ func (suite *PodTestSuite) TestReadyPodsCount() {
 }
 
 func (suite *PodTestSuite) TestWaitForAllToBeReady() {
-
 	client := fake.NewSimpleClientset()
 	kubeClient := k8sclient.KubeClient{
 		ClientSet:   client,
@@ -420,7 +417,6 @@ func (suite *PodTestSuite) TestMakeEphemeralPod() {
 }
 
 func (suite *PodTestSuite) TestDeleteOrEvictPods() {
-
 	client := fake.NewSimpleClientset()
 	kubeClient := k8sclient.KubeClient{
 		ClientSet:   client,
@@ -473,7 +469,6 @@ func (suite *PodTestSuite) TestDeleteOrEvictPods() {
 		err = podClient.DeleteOrEvictPods(context.Background(), "node", 10)
 		suite.NoError(err)
 	})
-
 }
 
 func (suite *PodTestSuite) TestEvictPod() {
