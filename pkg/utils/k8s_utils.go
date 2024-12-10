@@ -80,7 +80,7 @@ func DownloadBinary(version string) error {
 		return errors.New("Unable to download tar file with return code :" + strconv.Itoa(resp.StatusCode))
 	}
 	if err != nil {
-		log.Errorf("Unable to Dowonload tar file :%s with error: %s", url, err.Error())
+		log.Errorf("Unable to Download tar file :%s with error: %s", url, err.Error())
 		return err
 	}
 
