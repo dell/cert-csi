@@ -18,8 +18,12 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/client-go/kubernetes/fake"
+	kfake "k8s.io/client-go/kubernetes/fake"
 	"k8s.io/client-go/rest"
+	restfake "k8s.io/client-go/rest/fake"
 	k8stesting "k8s.io/client-go/testing"
+
+	typedcorev1 "k8s.io/client-go/kubernetes/typed/core/v1"
 )
 
 var (
@@ -28,6 +32,26 @@ var (
 	remoteRGClient   *replicationgroup.Client
 	remoteKubeClient *k8sclient.KubeClient
 )
+
+type FakeExtendedCoreV1 struct {
+	typedcorev1.CoreV1Interface
+}
+
+func (c *FakeExtendedCoreV1) RESTClient() rest.Interface {
+	return &restfake.RESTClient{}
+}
+
+type FakeExtendedClientset struct {
+	*kfake.Clientset
+}
+
+func (f *FakeExtendedClientset) CoreV1() typedcorev1.CoreV1Interface {
+	return &FakeExtendedCoreV1{f.Clientset.CoreV1()}
+}
+
+func NewFakeClientsetWithRestClient(objs ...runtime.Object) *FakeExtendedClientset {
+	return &FakeExtendedClientset{kfake.NewSimpleClientset(objs...)}
+}
 
 // TestVolumeCreationSuite_Run
 func TestVolumeCreationSuite_Run(t *testing.T) {
@@ -1978,95 +2002,96 @@ func TestMultiAttachSuite_Parameters(t *testing.T) {
 	}
 }
 
-// func TestBlockSnapSuite_Run(t *testing.T) {
-// 	// Create a context
-// 	ctx := context.Background()
+func TestBlockSnapSuite_Run(t *testing.T) {
+	// Create a context
+	ctx := context.Background()
 
-// 	// Create a BlockSnapSuite instance
-// 	bss := &BlockSnapSuite{
-// 		SnapClass:   "testSnap",
-// 		Description: "testDesc",
-// 		AccessMode:  "test",
-// 	}
+	// Create a BlockSnapSuite instance
+	bss := &BlockSnapSuite{
+		SnapClass:   "testSnap",
+		Description: "testDesc",
+		AccessMode:  "test",
+	}
 
-// 	// Mock storageClass
-// 	// Create a fake storage class with VolumeBindingMode set to WaitForFirstConsumer
-// 	storageClass := &storagev1.StorageClass{
-// 		ObjectMeta: metav1.ObjectMeta{Name: "test-storage-class"},
-// 		VolumeBindingMode: func() *storagev1.VolumeBindingMode {
-// 			mode := storagev1.VolumeBindingWaitForFirstConsumer
-// 			return &mode
-// 		}(),
-// 	}
+	namespace := bss.GetNamespace()
 
-// 	clientSet := fake.NewSimpleClientset(storageClass)
-// 	namespace := bss.GetNamespace()
+	// Mock storageClass
+	// Create a fake storage class with VolumeBindingMode set to WaitForFirstConsumer
+	storageClass := &storagev1.StorageClass{
+		ObjectMeta: metav1.ObjectMeta{Name: "test-storage-class"},
+		VolumeBindingMode: func() *storagev1.VolumeBindingMode {
+			mode := storagev1.VolumeBindingWaitForFirstConsumer
+			return &mode
+		}(),
+	}
 
-// 	// Set up a reactor to simulate Pods becoming Ready
-// 	clientSet.Fake.PrependReactor("create", "pods", func(action k8stesting.Action) (bool, runtime.Object, error) {
-// 		createAction := action.(k8stesting.CreateAction)
-// 		pod := createAction.GetObject().(*v1.Pod)
-// 		// Set pod phase to Running
-// 		pod.Status.Phase = v1.PodRunning
-// 		// Simulate the Ready condition
-// 		pod.Status.Conditions = append(pod.Status.Conditions, v1.PodCondition{
-// 			Type:   v1.PodReady,
-// 			Status: v1.ConditionTrue,
-// 		})
-// 		return false, nil, nil // Allow normal processing to continue
-// 	})
+	clientSet := NewFakeClientsetWithRestClient(storageClass)
 
-// 	// Also, when getting pods, return the pod with Running status and Ready condition
-// 	clientSet.Fake.PrependReactor("get", "pods", func(action k8stesting.Action) (bool, runtime.Object, error) {
-// 		getAction := action.(k8stesting.GetAction)
-// 		podName := getAction.GetName()
-// 		// Create a pod object with the expected name and Ready status
-// 		pod := &v1.Pod{
-// 			ObjectMeta: metav1.ObjectMeta{
-// 				Name:      podName,
-// 				Namespace: namespace,
-// 			},
-// 			Status: v1.PodStatus{
-// 				Phase: v1.PodRunning,
-// 				Conditions: []v1.PodCondition{
-// 					{
-// 						Type:   v1.PodReady,
-// 						Status: v1.ConditionTrue,
-// 					},
-// 				},
-// 			},
-// 		}
-// 		return true, pod, nil
-// 	})
+	// Set up a reactor to simulate Pods becoming Ready
+	clientSet.Fake.PrependReactor("create", "pods", func(action k8stesting.Action) (bool, runtime.Object, error) {
+		createAction := action.(k8stesting.CreateAction)
+		pod := createAction.GetObject().(*v1.Pod)
+		// Set pod phase to Running
+		pod.Status.Phase = v1.PodRunning
+		// Simulate the Ready condition
+		pod.Status.Conditions = append(pod.Status.Conditions, v1.PodCondition{
+			Type:   v1.PodReady,
+			Status: v1.ConditionTrue,
+		})
+		return false, nil, nil // Allow normal processing to continue
+	})
 
-// 	// Create a fake KubeClient
-// 	kubeClient := &k8sclient.KubeClient{
-// 		ClientSet: clientSet,
-// 		Config:    &rest.Config{},
-// 	}
+	// Also, when getting pods, return the pod with Running status and Ready condition
+	clientSet.Fake.PrependReactor("get", "pods", func(action k8stesting.Action) (bool, runtime.Object, error) {
+		getAction := action.(k8stesting.GetAction)
+		podName := getAction.GetName()
+		// Create a pod object with the expected name and Ready status
+		pod := &v1.Pod{
+			ObjectMeta: metav1.ObjectMeta{
+				Name:      podName,
+				Namespace: namespace,
+			},
+			Status: v1.PodStatus{
+				Phase: v1.PodRunning,
+				Conditions: []v1.PodCondition{
+					{
+						Type:   v1.PodReady,
+						Status: v1.ConditionTrue,
+					},
+				},
+			},
+		}
+		return true, pod, nil
+	})
 
-// 	// Create the necessary clients
-// 	pvcClient, _ := kubeClient.CreatePVCClient(namespace)
-// 	podClient, _ := kubeClient.CreatePodClient(namespace)
-// 	vaClient, _ := kubeClient.CreateVaClient(namespace)
-// 	metricsClient, _ := kubeClient.CreateMetricsClient(namespace)
-// 	// snapGA, snapBeta, snErr := GetSnapshotClient(namespace, client)
+	// Create a fake KubeClient
+	kubeClient := &k8sclient.KubeClient{
+		ClientSet: clientSet,
+		Config:    &rest.Config{},
+	}
 
-// 	clients := &k8sclient.Clients{
-// 		PVCClient:         pvcClient,
-// 		PodClient:         podClient,
-// 		VaClient:          vaClient,
-// 		StatefulSetClient: nil,
-// 		MetricsClient:     metricsClient,
-// 		// SnapClientGA:      snapGA,
-// 		// SnapClientBeta:    snapBeta,
-// 	}
+	// Create the necessary clients
+	pvcClient, _ := kubeClient.CreatePVCClient(namespace)
+	podClient, _ := kubeClient.CreatePodClient(namespace)
+	vaClient, _ := kubeClient.CreateVaClient(namespace)
+	metricsClient, _ := kubeClient.CreateMetricsClient(namespace)
+	// snapGA, snapBeta, snErr := GetSnapshotClient(namespace, client)
 
-// 	// Run the suite with invalid storage class error
-// 	delFunc, err := bss.Run(ctx, "test-storage-class", clients)
-// 	assert.Error(t, err)
-// 	assert.Nil(t, delFunc)
-// }
+	clients := &k8sclient.Clients{
+		PVCClient:         pvcClient,
+		PodClient:         podClient,
+		VaClient:          vaClient,
+		StatefulSetClient: nil,
+		MetricsClient:     metricsClient,
+		// SnapClientGA:      snapGA,
+		// SnapClientBeta:    snapBeta,
+	}
+
+	// Run the suite with connection refused error
+	delFunc, err := bss.Run(ctx, "test-storage-class", clients)
+	assert.Error(t, err)
+	assert.Nil(t, delFunc)
+}
 
 func TestBlockSnapSuite_GetObservers(t *testing.T) {
 	bss := &BlockSnapSuite{}
