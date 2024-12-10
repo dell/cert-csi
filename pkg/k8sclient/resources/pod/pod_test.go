@@ -224,11 +224,42 @@ func (suite *PodTestSuite) TestUpdate() {
 }
 
 func (suite *PodTestSuite) TestDeleteAll() {
-	client, err := suite.kubeClient.CreatePodClient("test-namespace")
+
+	client := fake.NewSimpleClientset()
+	kubeClient := k8sclient.KubeClient{
+		ClientSet:   client,
+		Config:      &rest.Config{},
+		VersionInfo: nil,
+	}
+	kubeClient.SetTimeout(2)
+
+	namespace := "test-namespace"
+	podClient, err := kubeClient.CreatePodClient(namespace)
 	suite.NoError(err)
 
+	pod := &corev1.Pod{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      "test-pod",
+			Namespace: "test-namespace",
+		},
+		Spec: corev1.PodSpec{
+			Containers: []corev1.Container{
+				{
+					Name:  "nginx-container",
+					Image: "nginx:latest",
+					Ports: []corev1.ContainerPort{
+						{
+							ContainerPort: 80,
+						},
+					},
+				},
+			},
+		},
+	}
+	client.CoreV1().Pods(namespace).Create(context.Background(), pod, metav1.CreateOptions{})
+
 	suite.Run("Delete all pod test", func() {
-		err := client.DeleteAll(context.Background())
+		err := podClient.DeleteAll(context.Background())
 		suite.NoError(err)
 	})
 }
@@ -389,11 +420,60 @@ func (suite *PodTestSuite) TestMakeEphemeralPod() {
 }
 
 func (suite *PodTestSuite) TestDeleteOrEvictPods() {
-	podClient, err := suite.kubeClient.CreatePodClient("test-namespace")
+
+	client := fake.NewSimpleClientset()
+	kubeClient := k8sclient.KubeClient{
+		ClientSet:   client,
+		Config:      &rest.Config{},
+		VersionInfo: nil,
+	}
+	kubeClient.SetTimeout(2)
+
+	namespace := "test-namespace"
+	podClient, err := kubeClient.CreatePodClient(namespace)
 	suite.NoError(err)
 
-	err = podClient.DeleteOrEvictPods(context.Background(), "", 10)
-	suite.NoError(err)
+	suite.Run("Error checking eviction support", func() {
+		ctx, cancel := context.WithTimeout(context.Background(), time.Second*0)
+		defer cancel()
+		err = podClient.DeleteOrEvictPods(ctx, "", 10)
+		suite.NoError(err)
+	})
+	suite.Run("No pods to delete or evict", func() {
+		err = podClient.DeleteOrEvictPods(context.Background(), "node", 10)
+		suite.NoError(err)
+	})
+	suite.Run("Pods listed and not evicted", func() {
+		pod := &corev1.Pod{
+			ObjectMeta: metav1.ObjectMeta{
+				Name:      "test-pod",
+				Namespace: "test-namespace",
+			},
+			Spec: corev1.PodSpec{
+				Containers: []corev1.Container{
+					{
+						Name:  "nginx-container",
+						Image: "nginx:latest",
+						Ports: []corev1.ContainerPort{
+							{
+								ContainerPort: 80,
+							},
+						},
+					},
+				},
+			},
+		}
+		client.CoreV1().Pods(namespace).Create(context.Background(), pod, metav1.CreateOptions{})
+
+		err = wait.PollUntilContextTimeout(context.Background(), time.Second, time.Minute, true, func(ctx context.Context) (bool, error) {
+			_, err := client.CoreV1().Pods(namespace).Get(ctx, "test-pod", metav1.GetOptions{})
+			return err == nil, err
+		})
+		suite.NoError(err)
+		err = podClient.DeleteOrEvictPods(context.Background(), "node", 10)
+		suite.NoError(err)
+	})
+
 }
 
 func (suite *PodTestSuite) TestEvictPod() {
