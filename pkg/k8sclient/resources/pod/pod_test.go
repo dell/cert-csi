@@ -778,3 +778,59 @@ func TestCheckEvictionSupport(t *testing.T) {
 // 		suite.NoError(err)
 // 	})
 // }
+
+func (suite *PodTestSuite) TestWaitUntilGone() {
+	client := fake.NewSimpleClientset()
+	kubeClient := k8sclient.KubeClient{
+		ClientSet:   client,
+		Config:      &rest.Config{},
+		VersionInfo: nil,
+	}
+	kubeClient.SetTimeout(2)
+
+	namespace := "test-namespace"
+	podClient, err := kubeClient.CreatePodClient(namespace)
+	suite.NoError(err)
+
+	testPod := &corev1.Pod{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      "test-pod",
+			Namespace: "test-namespace",
+		},
+		Spec: corev1.PodSpec{
+			Containers: []corev1.Container{
+				{
+					Name:  "nginx-container",
+					Image: "nginx:latest",
+					Ports: []corev1.ContainerPort{
+						{
+							ContainerPort: 80,
+						},
+					},
+				},
+			},
+		},
+	}
+	client.CoreV1().Pods(namespace).Create(context.Background(), testPod, metav1.CreateOptions{})
+
+	err = wait.PollUntilContextTimeout(context.Background(), time.Second, time.Minute, true, func(ctx context.Context) (bool, error) {
+		_, err := client.CoreV1().Pods(namespace).Get(ctx, "test-pod", metav1.GetOptions{})
+		return err == nil, err
+	})
+	suite.NoError(err)
+
+	ctx, cancel := context.WithTimeout(context.Background(), time.Second*0)
+	defer cancel()
+
+	pod := &pod.Pod{
+		Client:  podClient,
+		Object:  testPod,
+		Deleted: false,
+	}
+
+	err = pod.WaitUntilGone(ctx)
+	suite.Error(err)
+
+	err = pod.WaitUntilGone(ctx)
+	suite.Error(err)
+}
