@@ -13,17 +13,18 @@ import (
 	"github.com/dell/cert-csi/pkg/observer"
 	"github.com/stretchr/testify/assert"
 
+	snapv1 "github.com/kubernetes-csi/external-snapshotter/client/v4/apis/volumesnapshot/v1"
+	snapbeta "github.com/kubernetes-csi/external-snapshotter/client/v4/apis/volumesnapshot/v1beta1"
 	v1 "k8s.io/api/core/v1"
 	storagev1 "k8s.io/api/storage/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/client-go/kubernetes/fake"
 	kfake "k8s.io/client-go/kubernetes/fake"
+	typedcorev1 "k8s.io/client-go/kubernetes/typed/core/v1"
 	"k8s.io/client-go/rest"
 	restfake "k8s.io/client-go/rest/fake"
 	k8stesting "k8s.io/client-go/testing"
-
-	typedcorev1 "k8s.io/client-go/kubernetes/typed/core/v1"
 )
 
 var (
@@ -2305,73 +2306,78 @@ func TestVolumeMigrateSuite_Parameters(t *testing.T) {
 	}
 }
 
-// func TestVolumeGroupSnapSuite_GetClients(t *testing.T) {
-// 	client := fake.NewSimpleClientset()
+type Clients struct {
+	PVCClient      *pvc.Client
+	PodClient      *pod.Client
+	VaClient       *va.Client
+	MetricsClient  *metrics.Client
+	SnapClientGA   *snapv1.VolumeSnapshotClass
+	SnapClientBeta *snapbeta.VolumeSnapshotContent
+}
 
-// 	kubeClient := k8sclient.KubeClient{
-// 		ClientSet:   client,
-// 		Config:      &rest.Config{},
-// 		VersionInfo: nil,
-// 	}
+func TestBlockSnapSuite_GetClients(t *testing.T) {
+	client := fake.NewSimpleClientset()
 
-// 	vgsClient, _ := kubeClient.CreateVGSClient()
-// 	pvcClient, _ := kubeClient.CreatePVCClient("test-namespace")
-// 	podClient, _ := kubeClient.CreatePodClient("test-namespace")
-// 	vaClient, _ := kubeClient.CreateVaClient("test-namespace")
-// 	metricsClient, _ := kubeClient.CreateMetricsClient("test-namespace")
+	kubeClient := k8sclient.KubeClient{
+		ClientSet:   client,
+		Config:      &rest.Config{},
+		VersionInfo: nil,
+	}
 
-// 	// &snapshotv1.SnapshotClass{
-// 	// 	ObjectMeta: metav1.ObjectMeta{
-// 	// 		Name: "test-snapclass",
-// 	// 	},
-// 	// 	Driver:         "example.csi.driver",
-// 	// 	DeletionPolicy: snapshotv1.Delete,
-// 	// }
+	// Simulate the existence of the storage class
+	client.StorageV1().StorageClasses().Create(context.TODO(), &storagev1.StorageClass{
+		ObjectMeta: metav1.ObjectMeta{
+			Name: "test-storage-class",
+		},
+	}, metav1.CreateOptions{})
 
-// 	// snapshotClient := client.SnapshotV1()
-// 	// client.SnapshotClasses().Create(context.TODO(), snapshotClass, metav1.CreateOptions{})
+	pvcClient, _ := kubeClient.CreatePVCClient("test-namespace")
+	podClient, _ := kubeClient.CreatePodClient("test-namespace")
+	vaClient, _ := kubeClient.CreateVaClient("test-namespace")
+	metricsClient, _ := kubeClient.CreateMetricsClient("test-namespace")
+	// snapClientGA, snapClientBeta, _ := GetSnapshotClient("test-namespace", &kubeClient)
 
-// 	type args struct {
-// 		namespace string
-// 		client    *k8sclient.KubeClient
-// 	}
-// 	tests := []struct {
-// 		name    string
-// 		vgs     *VolumeGroupSnapSuite
-// 		args    args
-// 		want    *k8sclient.Clients
-// 		wantErr bool
-// 	}{
-// 		{
-// 			name: "Testing GetClients",
-// 			vgs:  &VolumeGroupSnapSuite{},
-// 			args: args{
-// 				namespace: "test-namespace",
-// 				client:    &kubeClient,
-// 			},
-// 			want: &k8sclient.Clients{
-// 				PVCClient:     pvcClient,
-// 				PodClient:     podClient,
-// 				VaClient:      vaClient,
-// 				VgsClient:     vgsClient,
-// 				MetricsClient: metricsClient,
-// 			},
-// 			wantErr: false,
-// 		},
-// 	}
-// 	for _, tt := range tests {
-// 		t.Run(tt.name, func(t *testing.T) {
-// 			got, err := tt.vgs.GetClients(tt.args.namespace, tt.args.client)
-// 			fmt.Println(got, err)
+	type args struct {
+		namespace string
+		client    *k8sclient.KubeClient
+	}
+	tests := []struct {
+		name    string
+		bss     *BlockSnapSuite
+		args    args
+		want    *Clients
+		wantErr bool
+	}{
+		{
+			name: "Testing GetClients",
+			bss:  &BlockSnapSuite{SnapClass: "test-snap-class"},
+			args: args{
+				namespace: "test-namespace",
+				client:    &kubeClient,
+			},
+			want: &Clients{
+				PVCClient:     pvcClient,
+				PodClient:     podClient,
+				VaClient:      vaClient,
+				MetricsClient: metricsClient,
+				// SnapClientGA:   snapClientGA,
+				// SnapClientBeta: snapClientBeta,
+			},
+			wantErr: false,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got, err := tt.bss.GetClients(tt.args.namespace, tt.args.client)
+			fmt.Println(got, err)
 
-// 			if (err != nil) != tt.wantErr {
-// 				t.Errorf("VolumeGroupSnapSuite.GetClients() error = %v, wantErr %v", err, tt.wantErr)
-// 				return
-// 			}
-// 			fmt.Println(reflect.TypeOf(got), reflect.TypeOf(tt.want))
-// 			if reflect.TypeOf(got) != reflect.TypeOf(tt.want) {
-// 				t.Errorf("VolumeGroupSnapSuite.GetClients() = %v, want %v", got, tt.want)
-// 			}
-// 		})
-// 	}
-// }
+			if (err != nil) != tt.wantErr {
+				t.Errorf("BlockSnapSuite.GetClients() error = %v, wantErr %v", err, tt.wantErr)
+				return
+			}
+			if !reflect.DeepEqual(got, tt.want) {
+				t.Errorf("BlockSnapSuite.GetClients() = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}
