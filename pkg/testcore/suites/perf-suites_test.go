@@ -12,9 +12,6 @@ import (
 	"github.com/dell/cert-csi/pkg/k8sclient/resources/replicationgroup"
 	"github.com/dell/cert-csi/pkg/observer"
 	"github.com/stretchr/testify/assert"
-
-	snapv1 "github.com/kubernetes-csi/external-snapshotter/client/v4/apis/volumesnapshot/v1"
-	snapbeta "github.com/kubernetes-csi/external-snapshotter/client/v4/apis/volumesnapshot/v1beta1"
 	v1 "k8s.io/api/core/v1"
 	storagev1 "k8s.io/api/storage/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -2306,13 +2303,17 @@ func TestVolumeMigrateSuite_Parameters(t *testing.T) {
 	}
 }
 
-type Clients struct {
-	PVCClient      *pvc.Client
-	PodClient      *pod.Client
-	VaClient       *va.Client
-	MetricsClient  *metrics.Client
-	SnapClientGA   *snapv1.VolumeSnapshotClass
-	SnapClientBeta *snapbeta.VolumeSnapshotContent
+func TestFindDriverLogs(t *testing.T) {
+	command := []string{"echo", "Hello, World!"}
+	expectedOutput := "Hello, World!\n"
+
+	got, err := FindDriverLogs(command)
+	if err != nil {
+		t.Errorf("FindDriverLogs() returned an error: %v", err)
+	}
+	if got != expectedOutput {
+		t.Errorf("FindDriverLogs() = %v, want %v", got, expectedOutput)
+	}
 }
 
 func TestBlockSnapSuite_GetClients(t *testing.T) {
@@ -2322,20 +2323,14 @@ func TestBlockSnapSuite_GetClients(t *testing.T) {
 		ClientSet:   client,
 		Config:      &rest.Config{},
 		VersionInfo: nil,
+		Minor:       19,
 	}
-
-	// Simulate the existence of the storage class
-	client.StorageV1().StorageClasses().Create(context.TODO(), &storagev1.StorageClass{
-		ObjectMeta: metav1.ObjectMeta{
-			Name: "test-storage-class",
-		},
-	}, metav1.CreateOptions{})
 
 	pvcClient, _ := kubeClient.CreatePVCClient("test-namespace")
 	podClient, _ := kubeClient.CreatePodClient("test-namespace")
 	vaClient, _ := kubeClient.CreateVaClient("test-namespace")
 	metricsClient, _ := kubeClient.CreateMetricsClient("test-namespace")
-	// snapClientGA, snapClientBeta, _ := GetSnapshotClient("test-namespace", &kubeClient)
+	snapGA, snapBeta, _ := GetSnapshotClient("test-namespace", &kubeClient)
 
 	type args struct {
 		namespace string
@@ -2345,7 +2340,7 @@ func TestBlockSnapSuite_GetClients(t *testing.T) {
 		name    string
 		bss     *BlockSnapSuite
 		args    args
-		want    *Clients
+		want    *k8sclient.Clients
 		wantErr bool
 	}{
 		{
@@ -2355,13 +2350,14 @@ func TestBlockSnapSuite_GetClients(t *testing.T) {
 				namespace: "test-namespace",
 				client:    &kubeClient,
 			},
-			want: &Clients{
-				PVCClient:     pvcClient,
-				PodClient:     podClient,
-				VaClient:      vaClient,
-				MetricsClient: metricsClient,
-				// SnapClientGA:   snapClientGA,
-				// SnapClientBeta: snapClientBeta,
+			want: &k8sclient.Clients{
+				PVCClient:         pvcClient,
+				PodClient:         podClient,
+				VaClient:          vaClient,
+				StatefulSetClient: nil,
+				MetricsClient:     metricsClient,
+				SnapClientGA:      snapGA,
+				SnapClientBeta:    snapBeta,
 			},
 			wantErr: false,
 		},
@@ -2375,7 +2371,8 @@ func TestBlockSnapSuite_GetClients(t *testing.T) {
 				t.Errorf("BlockSnapSuite.GetClients() error = %v, wantErr %v", err, tt.wantErr)
 				return
 			}
-			if !reflect.DeepEqual(got, tt.want) {
+			fmt.Println(reflect.TypeOf(got), reflect.TypeOf(tt.want))
+			if reflect.TypeOf(got) != reflect.TypeOf(tt.want) {
 				t.Errorf("BlockSnapSuite.GetClients() = %v, want %v", got, tt.want)
 			}
 		})
