@@ -57,7 +57,7 @@ const (
 	EvictionKind = "Eviction"
 	// EvictionSubresource represents the kind of evictions object as pod's subresource
 	EvictionSubresource = "pods/eviction"
-	policy              = "policy"
+	Policy              = "policy"
 )
 
 // Config contains volume configuration parameters
@@ -601,12 +601,12 @@ func (c *Client) DeleteOrEvictPods(ctx context.Context, nodeName string, gracePe
 		return nil
 	}
 
-	policyGroupVersion, err := checkEvictionSupport(c.ClientSet)
+	policyGroupVersion, err := CheckEvictionSupport(c.ClientSet)
 	if err != nil {
 		return err
 	}
 	if len(policyGroupVersion) > 0 {
-		return c.evictPods(ctx, podList, policyGroupVersion, gracePeriodSeconds)
+		return c.EvictPods(ctx, podList, policyGroupVersion, gracePeriodSeconds)
 	}
 	return nil
 }
@@ -623,7 +623,7 @@ func (c *Client) deleteAllFromList(ctx context.Context, podList *v1.PodList) err
 	return nil
 }
 
-func checkEvictionSupport(clientSet kubernetes.Interface) (string, error) {
+func CheckEvictionSupport(clientSet kubernetes.Interface) (string, error) {
 	discoveryClient := clientSet.Discovery()
 	groupList, err := discoveryClient.ServerGroups()
 	if err != nil {
@@ -632,7 +632,7 @@ func checkEvictionSupport(clientSet kubernetes.Interface) (string, error) {
 	foundPolicyGroup := false
 	var policyGroupVersion string
 	for _, group := range groupList.Groups {
-		if group.Name == policy {
+		if group.Name == Policy {
 			foundPolicyGroup = true
 			policyGroupVersion = group.PreferredVersion.GroupVersion
 			break
@@ -653,7 +653,7 @@ func checkEvictionSupport(clientSet kubernetes.Interface) (string, error) {
 	return "", nil
 }
 
-func (c *Client) evictPods(ctx context.Context, podList *v1.PodList, policyGroupVersion string, gracePeriodSeconds int) error {
+func (c *Client) EvictPods(ctx context.Context, podList *v1.PodList, policyGroupVersion string, gracePeriodSeconds int) error {
 	log := utils.GetLoggerFromContext(ctx)
 	g, errctx := errgroup.WithContext(ctx)
 
