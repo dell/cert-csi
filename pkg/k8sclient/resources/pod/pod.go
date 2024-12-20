@@ -151,7 +151,9 @@ func (c *Client) MakePod(config *Config) *v1.Pod {
 		}
 		volumes = append(volumes, volume)
 	}
-
+	allowPrivilegeEscalation := false
+	runAsNonRoot := true
+	seccompProfileType := v1.SeccompProfileTypeRuntimeDefault
 	container := v1.Container{
 		Name:            config.ContainerName,
 		Image:           config.ContainerImage,
@@ -160,7 +162,15 @@ func (c *Client) MakePod(config *Config) *v1.Pod {
 		Env:             config.EnvVars,
 		ImagePullPolicy: "IfNotPresent",
 		SecurityContext: &v1.SecurityContext{
-			Capabilities: &v1.Capabilities{Add: config.Capabilities},
+			AllowPrivilegeEscalation: &allowPrivilegeEscalation,
+			Capabilities: &v1.Capabilities{
+				Drop: []v1.Capability{"ALL"},
+				Add:  config.Capabilities,
+			},
+			RunAsNonRoot: &runAsNonRoot,
+			SeccompProfile: &v1.SeccompProfile{
+				Type: seccompProfileType,
+			},
 		},
 	}
 
@@ -204,6 +214,7 @@ func (c *Client) Create(ctx context.Context, pod *v1.Pod) *Pod {
 
 	if err != nil {
 		funcErr = err
+		fmt.Println(funcErr)
 	} else {
 		log.Debugf("Created Pod %s", newPod.GetName())
 	}
@@ -551,7 +562,9 @@ func (c *Client) MakeEphemeralPod(config *Config) *v1.Pod {
 		},
 	}
 	volumes = append(volumes, volume)
-
+	allowPrivilegeEscalation := false
+	runAsNonRoot := true
+	seccompProfileType := v1.SeccompProfileTypeRuntimeDefault
 	container := v1.Container{
 		Name:            config.ContainerName,
 		Image:           config.ContainerImage,
@@ -561,7 +574,15 @@ func (c *Client) MakeEphemeralPod(config *Config) *v1.Pod {
 		VolumeMounts:    volumeMounts,
 		ImagePullPolicy: "IfNotPresent",
 		SecurityContext: &v1.SecurityContext{
-			Capabilities: &v1.Capabilities{Add: config.Capabilities},
+			AllowPrivilegeEscalation: &allowPrivilegeEscalation,
+			Capabilities: &v1.Capabilities{
+				Drop: []v1.Capability{"ALL"},
+				Add:  config.Capabilities,
+			},
+			RunAsNonRoot: &runAsNonRoot,
+			SeccompProfile: &v1.SeccompProfile{
+				Type: seccompProfileType,
+			},
 		},
 	}
 
