@@ -22,7 +22,9 @@ import (
 	"fmt"
 	"io"
 	"net/url"
+	"os/exec"
 	"strconv"
+	"strings"
 	"time"
 
 	"github.com/dell/cert-csi/pkg/utils"
@@ -151,9 +153,27 @@ func (c *Client) MakePod(config *Config) *v1.Pod {
 		}
 		volumes = append(volumes, volume)
 	}
-	allowPrivilegeEscalation := false
-	runAsNonRoot := true
-	seccompProfileType := v1.SeccompProfileTypeRuntimeDefault
+	isOCP, _ := IsOCP()
+	securityContext := &v1.SecurityContext{
+		Capabilities: &v1.Capabilities{
+			Add: config.Capabilities,
+		},
+	}
+	if isOCP {
+		securityContext = &v1.SecurityContext{
+			AllowPrivilegeEscalation: func(b bool) *bool { return &b }(false),
+			Capabilities: &v1.Capabilities{
+				Drop: []v1.Capability{
+					"ALL",
+				},
+				Add: config.Capabilities,
+			},
+			RunAsNonRoot: func(b bool) *bool { return &b }(true),
+			SeccompProfile: &v1.SeccompProfile{
+				Type: v1.SeccompProfileTypeRuntimeDefault,
+			},
+		}
+	}
 	container := v1.Container{
 		Name:            config.ContainerName,
 		Image:           config.ContainerImage,
@@ -161,17 +181,7 @@ func (c *Client) MakePod(config *Config) *v1.Pod {
 		Args:            config.Args,
 		Env:             config.EnvVars,
 		ImagePullPolicy: "IfNotPresent",
-		SecurityContext: &v1.SecurityContext{
-			AllowPrivilegeEscalation: &allowPrivilegeEscalation,
-			Capabilities: &v1.Capabilities{
-				Drop: []v1.Capability{"ALL"},
-				Add:  config.Capabilities,
-			},
-			RunAsNonRoot: &runAsNonRoot,
-			SeccompProfile: &v1.SeccompProfile{
-				Type: seccompProfileType,
-			},
-		},
+		SecurityContext: securityContext,
 	}
 
 	container.VolumeMounts = volumeMounts
@@ -562,9 +572,28 @@ func (c *Client) MakeEphemeralPod(config *Config) *v1.Pod {
 		},
 	}
 	volumes = append(volumes, volume)
-	allowPrivilegeEscalation := false
-	runAsNonRoot := true
-	seccompProfileType := v1.SeccompProfileTypeRuntimeDefault
+	isOCP, _ := IsOCP()
+
+	securityContext := &v1.SecurityContext{
+		Capabilities: &v1.Capabilities{
+			Add: config.Capabilities,
+		},
+	}
+	if isOCP {
+		securityContext = &v1.SecurityContext{
+			AllowPrivilegeEscalation: func(b bool) *bool { return &b }(false),
+			Capabilities: &v1.Capabilities{
+				Drop: []v1.Capability{
+					"ALL",
+				},
+				Add: config.Capabilities,
+			},
+			RunAsNonRoot: func(b bool) *bool { return &b }(true),
+			SeccompProfile: &v1.SeccompProfile{
+				Type: v1.SeccompProfileTypeRuntimeDefault,
+			},
+		}
+	}
 	container := v1.Container{
 		Name:            config.ContainerName,
 		Image:           config.ContainerImage,
@@ -573,17 +602,7 @@ func (c *Client) MakeEphemeralPod(config *Config) *v1.Pod {
 		Env:             config.EnvVars,
 		VolumeMounts:    volumeMounts,
 		ImagePullPolicy: "IfNotPresent",
-		SecurityContext: &v1.SecurityContext{
-			AllowPrivilegeEscalation: &allowPrivilegeEscalation,
-			Capabilities: &v1.Capabilities{
-				Drop: []v1.Capability{"ALL"},
-				Add:  config.Capabilities,
-			},
-			RunAsNonRoot: &runAsNonRoot,
-			SeccompProfile: &v1.SeccompProfile{
-				Type: seccompProfileType,
-			},
-		},
+		SecurityContext: securityContext,
 	}
 
 	ObjMeta := metav1.ObjectMeta{
@@ -727,4 +746,25 @@ func (pod *Pod) IsInPendingState(ctx context.Context) error {
 		return fmt.Errorf("%s pod is in %s state", updatedPod.Name, updatedPod.Status.Phase)
 	}
 	return nil
+}
+
+func IsOCP() (bool, error) {
+	isOCP := false
+	cmd := exec.Command("oc", "get", "clusterversion")
+
+	// Run the command and capture the output
+	output, err := cmd.CombinedOutput()
+	if err != nil {
+		// Return false and the error encountered while executing the command
+		return false, err
+	}
+	outputStr := string(output)
+	lines := strings.Split(outputStr, "\n")
+	for _, line := range lines {
+		if strings.Contains(line, "Cluster version") {
+			isOCP = true
+			break
+		}
+	}
+	return isOCP, nil
 }
