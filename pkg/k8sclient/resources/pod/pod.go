@@ -747,8 +747,9 @@ func (pod *Pod) IsInPendingState(ctx context.Context) error {
 	}
 	return nil
 }
+
 func IsOCP() (bool, error) {
-	var isOCP = false
+	isOCP := false
 	cmd := exec.Command("oc", "get", "clusterversion")
 
 	// Run the command and capture the output
