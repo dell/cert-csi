@@ -324,6 +324,14 @@ func GetCertifyCommand() cli.Command {
 				}
 
 				if sc.Ephemeral != nil {
+					if value, exists := sc.Ephemeral.VolumeAttributes["volumename"]; exists && sc.Ephemeral.Driver == "csi-vxflexos.dellemc.com" {
+						delete(sc.Ephemeral.VolumeAttributes, "volumename")
+						sc.Ephemeral.VolumeAttributes["volumeName"] = value
+					}
+					if value, exists := sc.Ephemeral.VolumeAttributes["systemid"]; exists && sc.Ephemeral.Driver == "csi-vxflexos.dellemc.com" {
+						delete(sc.Ephemeral.VolumeAttributes, "systemid")
+						sc.Ephemeral.VolumeAttributes["systemID"] = value
+					}
 					s = append(s, &suites.EphemeralVolumeSuite{
 						Driver:           sc.Ephemeral.Driver,
 						FSType:           sc.Ephemeral.FSType,
