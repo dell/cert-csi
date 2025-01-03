@@ -507,7 +507,12 @@ func (ep *EphemeralVolumeSuite) Run(ctx context.Context, _ string, clients *k8sc
 		FSType:           &ep.FSType,
 		VolumeAttributes: ep.VolumeAttributes,
 	}
-
+	var EphemeralVolumeName = ""
+	if ep.Driver == "csi-vxflexos.dellemc.com" {
+		if value, exists := ep.VolumeAttributes["volumeName"]; exists {
+			EphemeralVolumeName = value
+		}
+	}
 	var podConf *pod.Config
 	var ephPods []*pod.Pod
 	for i := 0; i < ep.PodNumber; i++ {
@@ -516,6 +521,9 @@ func (ep *EphemeralVolumeSuite) Run(ctx context.Context, _ string, clients *k8sc
 			name = ep.PodCustomName + "-" + strconv.Itoa(i)
 		}
 		// Create pod with ephemeral inline volume
+		if _, exists := ep.VolumeAttributes["volumeName"]; exists && ep.Driver == "csi-vxflexos.dellemc.com" {
+			csiVolSrc.VolumeAttributes["volumeName"] = EphemeralVolumeName + "-" + k8sclient.RandomSuffix()
+		}
 		podConf = testcore.EphemeralPodConfig(name, csiVolSrc, ep.Image)
 		podTmpl := podClient.MakeEphemeralPod(podConf)
 
