@@ -43,7 +43,7 @@ replace (
 	k8s.io/externaljwt => k8s.io/externaljwt v1.31.2
 	k8s.io/kube-aggregator => k8s.io/kube-aggregator v1.31.2
 	k8s.io/kube-controller-manager => k8s.io/kube-controller-manager v1.31.2
-	k8s.io/kube-proxy => k8s.io/kube-controller-manager v1.31.2
+	k8s.io/kube-proxy => k8s.io/kube-proxy v1.31.2
 	k8s.io/kube-scheduler => k8s.io/kube-scheduler v1.31.2
 	k8s.io/kubelet => k8s.io/kubelet v1.31.2
 	k8s.io/mount-utils => k8s.io/mount-utils v1.31.2
