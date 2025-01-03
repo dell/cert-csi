@@ -507,7 +507,7 @@ func (ep *EphemeralVolumeSuite) Run(ctx context.Context, _ string, clients *k8sc
 		FSType:           &ep.FSType,
 		VolumeAttributes: ep.VolumeAttributes,
 	}
-	var EphemeralVolumeName = ""
+	EphemeralVolumeName := ""
 	if ep.Driver == "csi-vxflexos.dellemc.com" {
 		if value, exists := ep.VolumeAttributes["volumeName"]; exists {
 			EphemeralVolumeName = value
