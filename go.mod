@@ -32,6 +32,25 @@ require (
 	sigs.k8s.io/yaml v1.4.0
 )
 
+replace (
+	k8s.io/cloud-provider => k8s.io/cloud-provider v1.31.2
+	k8s.io/cluster-bootstrap => k8s.io/cluster-bootstrap v1.31.2
+	k8s.io/controller-manager => k8s.io/controller-manager v1.31.2
+	k8s.io/cri-client => k8s.io/cri-client v1.31.2
+	k8s.io/csi-translation-lib => k8s.io/csi-translation-lib v1.31.2
+	k8s.io/dynamic-resource-allocation => k8s.io/dynamic-resource-allocation v1.31.2
+	k8s.io/endpointslice => k8s.io/endpointslice v1.31.2
+	k8s.io/externaljwt => k8s.io/externaljwt v1.31.2
+	k8s.io/kube-aggregator => k8s.io/kube-aggregator v1.31.2
+	k8s.io/kube-controller-manager => k8s.io/kube-controller-manager v1.31.2
+	k8s.io/kube-proxy => k8s.io/kube-proxy v1.31.2
+	k8s.io/kube-scheduler => k8s.io/kube-scheduler v1.31.2
+	k8s.io/kubelet => k8s.io/kubelet v1.31.2
+	k8s.io/mount-utils => k8s.io/mount-utils v1.31.2
+	k8s.io/pod-security-admission => k8s.io/pod-security-admission v1.31.2
+	k8s.io/sample-apiserver => k8s.io/sample-apiserver v1.31.2
+)
+
 require (
 	git.sr.ht/~sbinet/gg v0.5.0 // indirect
 	github.com/AdaLogics/go-fuzz-headers v0.0.0-20230811130428-ced1acdcaa24 // indirect
