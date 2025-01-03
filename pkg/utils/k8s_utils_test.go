@@ -20,6 +20,7 @@ package utils
 
 import (
 	"flag"
+	"fmt"
 	"os"
 	"path/filepath"
 	"reflect"
@@ -296,7 +297,7 @@ func TestBuildE2eCommand(t *testing.T) {
 		{
 			name:    "send good config file",
 			args:    args{ctx: x2},
-			want:    []string{"-kubeconfig", "/root/.kube/config", "-storage.testdriver", "testdata/config-nfs.yaml", "--ginkgo.junit-report", "/root/reports/execution_powerstore-nfs.xml"},
+			want:    []string{"-kubeconfig", "/root/.kube/config", "-storage.testdriver", "testdata/config-nfs.yaml", "--ginkgo.junit-report", fmt.Sprintf("%s/reports/execution_powerstore-nfs.xml", Home)},
 			wantErr: false,
 		},
 	}
