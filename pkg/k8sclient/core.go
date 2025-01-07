@@ -403,6 +403,9 @@ func (c *KubeClient) CreateNamespace(ctx context.Context, namespace string) (*v1
 			ObjectMeta: metav1.ObjectMeta{
 				Name:      namespace,
 				Namespace: "",
+				Labels: map[string]string{
+					"pod-security.kubernetes.io/enforce": "privileged", // Add the privileged pod security label
+				},
 			},
 		},
 		metav1.CreateOptions{},
