@@ -21,6 +21,7 @@ import (
 	"errors"
 	"fmt"
 	"os"
+	"path/filepath"
 	"time"
 
 	"github.com/dell/cert-csi/pkg/store"
@@ -171,6 +172,7 @@ func GetCertifyCommand() cli.Command {
 		Before: updatePath,
 		Action: func(c *cli.Context) error {
 			configFilePath := c.String("cert-config")
+			configFilePath = filepath.Clean(configFilePath)
 			// Read the YAML file
 			data, err := os.ReadFile(configFilePath)
 			if err != nil {
