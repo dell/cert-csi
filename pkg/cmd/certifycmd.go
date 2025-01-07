@@ -29,45 +29,45 @@ import (
 
 	"github.com/fatih/color"
 	log "github.com/sirupsen/logrus"
-	"github.com/spf13/viper"
 	"github.com/urfave/cli"
+	"gopkg.in/yaml.v3"
 	"k8s.io/apimachinery/pkg/api/resource"
 )
 
 // CertConfig contains StorageClasses
 type CertConfig struct {
-	StorageClasses []Entry
+	StorageClasses []Entry `yaml:"storageClasses"`
 }
 
 // Entry contains tests to be executed
 type Entry struct {
-	Name             string
-	MinSize          string
-	RawBlock         bool
-	Expansion        bool
-	Clone            bool
-	Snapshot         bool
-	RWX              bool
-	RWOP             bool
-	VolumeHealth     bool
-	VGS              bool
-	Ephemeral        *EphemeralParams
-	CapacityTracking *CapacityTracking
+	Name             string            `yaml:"name"`
+	MinSize          string            `yaml:"minSize"`
+	RawBlock         bool              `yaml:"rawBlock"`
+	Expansion        bool              `yaml:"expansion"`
+	Clone            bool              `yaml:"clone"`
+	Snapshot         bool              `yaml:"snapshot"`
+	RWX              bool              `yaml:"RWX"`
+	RWOP             bool              `yaml:"RWOP"`
+	VolumeHealth     bool              `yaml:"volumeHealth"`
+	VGS              bool              `yaml:"VGS"`
+	Ephemeral        *EphemeralParams  `yaml:"ephemeral"`
+	CapacityTracking *CapacityTracking `yaml:"capacityTracking"`
 }
 
 // CapacityTracking contains parameters specific to Storage Capacity Tracking tests
 type CapacityTracking struct {
-	DriverNamespace string
+	DriverNamespace string `yaml:"driverNamespace"`
 	StorageClass    string
 	VolumeSize      string
-	PollInterval    time.Duration
+	PollInterval    time.Duration `yaml:"pollInterval"`
 }
 
 // EphemeralParams contains parameters specific to Ephemeral Volume tests
 type EphemeralParams struct {
-	Driver           string
-	FSType           string
-	VolumeAttributes map[string]string
+	Driver           string            `yaml:"driver"`
+	FSType           string            `yaml:"fstype"`
+	VolumeAttributes map[string]string `yaml:"volumeAttributes"`
 }
 
 // GetCertifyCommand returns certify CLI command
@@ -170,17 +170,18 @@ func GetCertifyCommand() cli.Command {
 		},
 		Before: updatePath,
 		Action: func(c *cli.Context) error {
-			viper.SetConfigType("yaml")
-			viper.SetConfigFile(c.String("cert-config"))
-			err := viper.ReadInConfig() // Find and read the config file
-			if err != nil {             // Handle errors reading the config file
+			configFilePath := c.String("cert-config")
+			// Read the YAML file
+			data, err := os.ReadFile(configFilePath)
+			if err != nil {
 				return fmt.Errorf("can't find config file: %w", err)
 			}
-
+			// Declare a variable to hold the unmarshaled data
 			var certConfig CertConfig
-			err = viper.Unmarshal(&certConfig)
+			// Unmarshal the YAML data into the struct
+			err = yaml.Unmarshal(data, &certConfig)
 			if err != nil {
-				return fmt.Errorf("unable to decode Config: %s", err)
+				return fmt.Errorf("unable to decode Config: %w", err)
 			}
 
 			testImage, err := getTestImage(c.String("image-config"))
@@ -324,14 +325,6 @@ func GetCertifyCommand() cli.Command {
 				}
 
 				if sc.Ephemeral != nil {
-					if value, exists := sc.Ephemeral.VolumeAttributes["volumename"]; exists && sc.Ephemeral.Driver == "csi-vxflexos.dellemc.com" {
-						delete(sc.Ephemeral.VolumeAttributes, "volumename")
-						sc.Ephemeral.VolumeAttributes["volumeName"] = value
-					}
-					if value, exists := sc.Ephemeral.VolumeAttributes["systemid"]; exists && sc.Ephemeral.Driver == "csi-vxflexos.dellemc.com" {
-						delete(sc.Ephemeral.VolumeAttributes, "systemid")
-						sc.Ephemeral.VolumeAttributes["systemID"] = value
-					}
 					s = append(s, &suites.EphemeralVolumeSuite{
 						Driver:           sc.Ephemeral.Driver,
 						FSType:           sc.Ephemeral.FSType,
