@@ -168,7 +168,7 @@ func (c *Client) MakePod(config *Config) *v1.Pod {
 				},
 				Add: config.Capabilities,
 			},
-			RunAsNonRoot: func(b bool) *bool { return &b }(true),
+			RunAsNonRoot: func(b bool) *bool { return &b }(false),
 			SeccompProfile: &v1.SeccompProfile{
 				Type: v1.SeccompProfileTypeRuntimeDefault,
 			},
