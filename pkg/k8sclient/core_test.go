@@ -280,3 +280,66 @@ func (suite *CoreTestSuite) TestGetConfig() {
 func TestCoreTestSuite(t *testing.T) {
 	suite.Run(t, new(CoreTestSuite))
 }
+
+func TestNewRemoteKubeClient(t *testing.T) {
+	t.Run("Testing with nil config", func(t *testing.T) {
+		_, err := NewRemoteKubeClient(nil, 0)
+		if err == nil {
+			t.Error("Expected error, but got nil")
+		}
+	})
+
+	t.Run("Testing with valid config", func(t *testing.T) {
+		config := &rest.Config{
+			Host: "https://example.com",
+		}
+		client, err := NewRemoteKubeClient(config, 0)
+		if err != nil {
+			t.Errorf("Unexpected error: %v", err)
+		}
+		if client == nil {
+			t.Error("Expected client, but got nil")
+		}
+	})
+}
+
+func TestCreateNodeClient(t *testing.T) {
+	// Test case: Create node client successfully
+	c := &KubeClient{
+		ClientSet: &kubernetes.Clientset{},
+		timeout:   10,
+	}
+	node, err := c.CreateNodeClient()
+	if err != nil {
+		t.Errorf("CreateNodeClient() failed: %v", err)
+	}
+	if node == nil {
+		t.Error("CreateNodeClient() returned nil node")
+	}
+	if node.Interface == nil {
+		t.Error("CreateNodeClient() returned nil node interface")
+	}
+	if node.Timeout != c.timeout {
+		t.Errorf("CreateNodeClient() returned incorrect timeout: got %d, want %d", node.Timeout, c.timeout)
+	}
+}
+
+func TestCreateRGClient(t *testing.T) {
+	// Test case: Failed creation of replication group client
+	t.Run("Create RG client successfully", func(t *testing.T) {
+		kubeClient := &KubeClient{
+			Config:    &rest.Config{},
+			ClientSet: &kubernetes.Clientset{},
+			timeout:   1,
+		}
+
+		rgClient, err := kubeClient.CreateRGClient()
+		if err == nil {
+			t.Errorf("Error not returned")
+		}
+
+		if rgClient != nil {
+			t.Error("Expected nil RG client, got nil")
+		}
+	})
+}

@@ -236,6 +236,7 @@ func TestReadTestDriverConfig(t *testing.T) {
 		want string
 	}{
 		{"get storage class name", args{"testdata/config-nfs.yaml"}, "powerstore-nfs"},
+		{"get storage class name negative", args{""}, ""},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {

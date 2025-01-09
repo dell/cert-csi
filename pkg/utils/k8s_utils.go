@@ -215,11 +215,15 @@ type DriverConfig struct {
 
 // ReadTestDriverConfig will read the driver config
 func ReadTestDriverConfig(driverconfig string) string {
-	file, _ := os.ReadFile(filepath.Clean(driverconfig))
-	var DriverConfig DriverConfig
-	err := yaml.Unmarshal(file, &DriverConfig)
+	file, err := os.ReadFile(filepath.Clean(driverconfig))
 	if err != nil {
 		log.Errorf("Unable to read the driver config:%s", err.Error())
+		return ""
+	}
+	var DriverConfig DriverConfig
+	err = yaml.Unmarshal(file, &DriverConfig)
+	if err != nil {
+		log.Errorf("Unable to unmarshal the driver config:%s", err.Error())
 		return ""
 	}
 	return DriverConfig.StorageClass.Class

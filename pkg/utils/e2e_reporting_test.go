@@ -41,6 +41,7 @@ func TestE2eReportParser(t *testing.T) {
 		wantErr bool
 	}{
 		{"Check generated config", args{"testdata/execution_powerstore-nfs.xml"}, preResult, false},
+		{"Check generated config negative", args{"testdata/execution_powerstore-nfs-dummy.xml"}, preResult, true},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -49,7 +50,7 @@ func TestE2eReportParser(t *testing.T) {
 				t.Errorf("E2eReportParser() error = %v, wantErr %v", err, tt.wantErr)
 				return
 			}
-			if !reflect.DeepEqual(got, tt.want) {
+			if !reflect.DeepEqual(got, tt.want) && !tt.wantErr {
 				t.Errorf("E2eReportParser() = %v, want %v", got, tt.want)
 			}
 		})
