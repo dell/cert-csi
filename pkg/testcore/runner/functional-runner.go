@@ -154,6 +154,7 @@ func runFunctionalSuite(suite suites.Interface, sr *FunctionalSuiteRunner, testC
 		syscall.SIGTERM, // "the normal way to politely ask a program to terminate"
 		syscall.SIGINT,  // Ctrl+C
 	)
+	// Go routine to listen for termination signal
 	go func(sr *FunctionalSuiteRunner) {
 		_, ok := <-c
 		if !ok {
@@ -176,18 +177,28 @@ func runFunctionalSuite(suite suites.Interface, sr *FunctionalSuiteRunner, testC
 		cancelIter()
 	}(sr)
 
-	// Creating new namespace if not exist with fixed name
-	const namespaceName = "functional-test"
-	nsEx, nsErr := sr.KubeClient.NamespaceExists(iterCtx, namespaceName)
-	if !nsEx {
-		_, nsErr = sr.KubeClient.CreateNamespace(iterCtx, namespaceName)
-		if nsErr != nil {
-			log.Errorf("Unable to create namespace %s", nsErr)
-		}
+	// Creating new namespace with unique name
+	namespace, err := sr.KubeClient.CreateNamespaceWithSuffix(iterCtx, suite.GetNamespace())
+	if err != nil {
+		log.Errorf("can't create namespace %s: %v", namespace, err)
+		return FAILURE
 	}
 
+	// Cleanup namespace after test
+	defer func() {
+		if sr.ShouldClean(res) {
+			log.Infof("Deleting all resources in namespace %s", namespace.Name)
+			delTime := time.Now()
+			if err := sr.KubeClient.DeleteNamespace(context.Background(), namespace.Name); err != nil {
+				log.Errorf("Can't delete namespace: %v", err)
+				res = FAILURE
+			}
+			sr.delTime += time.Since(delTime)
+		}
+	}()
+
 	// Get needed clients for the current suite
-	clients, clientErr := suite.GetClients(namespaceName, sr.KubeClient)
+	clients, clientErr := suite.GetClients(namespace.Name, sr.KubeClient)
 	if clientErr != nil {
 		log.Errorf("Can't get suite's clients; error=%v", clientErr)
 		return FAILURE

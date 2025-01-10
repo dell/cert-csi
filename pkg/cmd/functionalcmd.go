@@ -50,14 +50,6 @@ func GetFunctionalTestCommand() cli.Command {
 			Usage: "set the timeout value for all of the resources (accepts format like 2h30m15s) default is 0s",
 			Value: "0s",
 		},
-		cli.BoolFlag{
-			Name:  "no-cleanup, nc",
-			Usage: "include this flag do disable cleanup between iterations",
-		},
-		cli.BoolFlag{
-			Name:  "no-cleanup-on-fail, ncof",
-			Usage: "include this flag do disable cleanup on fail",
-		},
 		cli.StringFlag{
 			Name:  "description, de",
 			Usage: "To provide test case description",
@@ -109,7 +101,7 @@ func GetFunctionalTestCommand() cli.Command {
 	return funtestCmd
 }
 
-func createFunctionalSuiteRunner(c *cli.Context) *runner.FunctionalSuiteRunner {
+func createFunctionalSuiteRunner(c *cli.Context, noCleanup, noCleanupOnFail bool) *runner.FunctionalSuiteRunner {
 	// Parse timeout
 	timeout, err := time.ParseDuration(c.String("timeout"))
 	if err != nil {
@@ -147,8 +139,8 @@ func createFunctionalSuiteRunner(c *cli.Context) *runner.FunctionalSuiteRunner {
 		c.String("config"),
 		c.String("namespace"),
 		timeOutInSeconds,
-		c.Bool("no-cleanup"),
-		c.Bool("no-cleanup-on-fail"),
+		noCleanup,
+		noCleanupOnFail,
 		c.Bool("no-reports"),
 		scDB,
 	)
@@ -175,7 +167,7 @@ func getVolumeDeletionCommand(globalFlags []cli.Flag) cli.Command {
 			globalFlags...,
 		),
 		Action: func(c *cli.Context) error {
-			sr := createFunctionalSuiteRunner(c)
+			sr := createFunctionalSuiteRunner(c, true, true)
 			pvcName := c.String("pvc-name")
 			pvcNamespace := c.String("pvc-namespace")
 			desc := c.String("description")
@@ -215,7 +207,7 @@ func getPodDeletionCommand(globalFlags []cli.Flag) cli.Command {
 			globalFlags...,
 		),
 		Action: func(c *cli.Context) error {
-			sr := createFunctionalSuiteRunner(c)
+			sr := createFunctionalSuiteRunner(c, true, true)
 			podName := c.String("pod-name")
 			podNamespace := c.String("pod-namespace")
 			desc := c.String("description")
@@ -260,7 +252,7 @@ func getCloneVolumeDeletionCommand(globalFlags []cli.Flag) cli.Command {
 			globalFlags...,
 		),
 		Action: func(c *cli.Context) error {
-			sr := createFunctionalSuiteRunner(c)
+			sr := createFunctionalSuiteRunner(c, true, true)
 			volName := c.String("clone-volume-name")
 			podName := c.String("clone-pod-name")
 			namespace := c.String("resource-namespace")
@@ -303,7 +295,7 @@ func getFunctionalSnapDeletionCommand(globalFlags []cli.Flag) cli.Command {
 			globalFlags...,
 		),
 		Action: func(c *cli.Context) error {
-			sr := createFunctionalSuiteRunner(c)
+			sr := createFunctionalSuiteRunner(c, true, true)
 			snapName := c.String("volume-snapshot-name")
 			namespace := c.String("resource-namespace")
 			desc := c.String("description")
@@ -376,7 +368,7 @@ func getFunctionalVolumeCreateCommand(globalFlags []cli.Flag) cli.Command {
 					RawBlock:     blockVol,
 				},
 			}
-			sr := createFunctionalSuiteRunner(c)
+			sr := createFunctionalSuiteRunner(c, true, true)
 			sr.RunFunctionalSuites(s)
 
 			return nil
@@ -442,7 +434,7 @@ func getFunctionalCloneVolumeCommand(globalFlags []cli.Flag) cli.Command {
 				},
 			}
 
-			sr := createFunctionalSuiteRunner(c)
+			sr := createFunctionalSuiteRunner(c, true, true)
 			sr.RunFunctionalSuites(s)
 
 			return nil
@@ -514,7 +506,7 @@ func getFunctionalProvisioningCommand(globalFlags []cli.Flag) cli.Command {
 				},
 			}
 
-			sr := createFunctionalSuiteRunner(c)
+			sr := createFunctionalSuiteRunner(c, true, true)
 			sr.RunFunctionalSuites(s)
 
 			return nil
@@ -588,7 +580,7 @@ func getFunctionalSnapCreationCommand(globalFlags []cli.Flag) cli.Command {
 				},
 			}
 
-			sr := createFunctionalSuiteRunner(c)
+			sr := createFunctionalSuiteRunner(c, true, true)
 			sr.RunFunctionalSuites(s)
 
 			return nil
@@ -644,7 +636,7 @@ func getFunctionalMultiAttachVolCommand(globalFlags []cli.Flag) cli.Command {
 				},
 			}
 
-			sr := createFunctionalSuiteRunner(c)
+			sr := createFunctionalSuiteRunner(c, true, true)
 			sr.RunFunctionalSuites(s)
 
 			return nil
@@ -682,6 +674,14 @@ func getFunctionalEphemeralCreationCommand(globalFlags []cli.Flag) cli.Command {
 					Name:  "pod-name, pname",
 					Usage: "custom name for pod and cloned volume pod to create",
 				},
+				cli.BoolFlag{
+					Name:  "no-cleanup, nc",
+					Usage: "include this flag do disable cleanup after test",
+				},
+				cli.BoolFlag{
+					Name:  "no-cleanup-on-fail, ncof",
+					Usage: "include this flag do disable cleanup on fail",
+				},
 			},
 			globalFlags...,
 		),
@@ -715,7 +715,7 @@ func getFunctionalEphemeralCreationCommand(globalFlags []cli.Flag) cli.Command {
 				},
 			}
 
-			sr := createFunctionalSuiteRunner(c)
+			sr := createFunctionalSuiteRunner(c, c.Bool("no-cleanup"), c.Bool("no-cleanup-on-fail"))
 			sr.RunFunctionalSuites(s)
 
 			return nil
@@ -790,7 +790,7 @@ func getNodeDrainCommand(globalFlags []cli.Flag) cli.Command {
 			globalFlags...,
 		),
 		Action: func(c *cli.Context) error {
-			sr := createFunctionalSuiteRunner(c)
+			sr := createFunctionalSuiteRunner(c, true, true)
 			nodeName := c.String("node-name")
 			nodeNamespace := c.String("node-namespace")
 			gracePeriodSeconds := c.Int("grace-period-seconds")
@@ -826,7 +826,7 @@ func getNodeUnCordonCommand(globalFlags []cli.Flag) cli.Command {
 			globalFlags...,
 		),
 		Action: func(c *cli.Context) error {
-			sr := createFunctionalSuiteRunner(c)
+			sr := createFunctionalSuiteRunner(c, true, true)
 			nodeName := c.String("node-name")
 			desc := c.String("description")
 
@@ -891,7 +891,7 @@ func getCapacityTrackingCommand(globalFlags []cli.Flag) cli.Command {
 				},
 			}
 
-			sr := createFunctionalSuiteRunner(c)
+			sr := createFunctionalSuiteRunner(c, true, true)
 			sr.RunFunctionalSuites(s)
 
 			return nil

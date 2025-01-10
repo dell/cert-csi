@@ -433,7 +433,7 @@ func runSuite(ctx context.Context, suite suites.Interface, sr *SuiteRunner, test
 	}
 
 	defer func() {
-		// So we don't loose log fields when first ctx cancelled
+		// So we don't lose log fields when first ctx cancelled
 		ctx := context.WithValue(context.Background(), utils.LoggerContextKey, log)
 		ctx, cancel := context.WithCancel(ctx)
 
