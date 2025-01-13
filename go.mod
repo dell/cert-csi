@@ -1,6 +1,9 @@
 module github.com/dell/cert-csi
 
-go 1.23
+go 1.23.0
+
+toolchain go1.23.3
+
 require (
 	github.com/cheggaaa/pb/v3 v3.1.5
 	github.com/dell/csi-volumegroup-snapshotter v1.7.0
