@@ -131,7 +131,7 @@ func createFunctionalSuiteRunner(c *cli.Context, noCleanup, noCleanupOnFail bool
 	// enable logging for each suite in a separate file.
 	logFile, err := os.OpenFile(filepath.Clean(path), os.O_RDWR|os.O_CREATE|os.O_APPEND, 0o600)
 	if err != nil {
-		log.Errorf("Error creating log file:%s", err)
+		log.Errorf("Error creating log file: %v", err)
 	}
 	log.SetOutput(io.MultiWriter(os.Stdout, logFile))
 
