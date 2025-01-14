@@ -840,17 +840,27 @@ type CapacityTrackingSuite struct {
 
 // Run runs storage capacity tracking test suite
 func (cts *CapacityTrackingSuite) Run(ctx context.Context, storageClass string, clients *k8sclient.Clients) (delFunc func() error, e error) {
-	// Get unique topology count from csinode
-	topologiesCount, err := getTopologyCount()
-	if err != nil {
-		return delFunc, err
-	}
-	log.Infof("Found %s topology segment(s) in csinode", color.HiYellowString(strconv.Itoa(topologiesCount)))
 	storageClass = cts.StorageClass
 	sc := clients.SCClient.Get(ctx, storageClass)
 	if sc.HasError() {
 		return delFunc, sc.GetError()
 	}
+
+	// Get unique topology count from csinode
+	// Get topology keys to filter for when retrieving topology count
+	topologyKeys := []string{}
+
+	if len(sc.Object.AllowedTopologies) > 0 {
+		matchLabelExpressions := sc.Object.AllowedTopologies[0].MatchLabelExpressions
+		for _, exp := range matchLabelExpressions {
+			topologyKeys = append(topologyKeys, exp.Key)
+		}
+	}
+	topologiesCount, err := getTopologyCount(topologyKeys)
+	if err != nil {
+		return delFunc, err
+	}
+	log.Infof("Found %s topology segment(s) in csinode", color.HiYellowString(strconv.Itoa(topologiesCount)))
 
 	if cts.Image == "" {
 		cts.Image = "quay.io/centos/centos:latest"
@@ -939,14 +949,17 @@ func (cts *CapacityTrackingSuite) Run(ctx context.Context, storageClass string, 
 	return delFunc, nil
 }
 
-func getTopologyCount() (int, error) {
+func getTopologyCount(topologyKeys []string) (int, error) {
 	exe := []string{"bash", "-c", "kubectl describe csinode | grep 'Topology Keys'"}
 	str, err := FindDriverLogs(exe)
-	if err != nil {
+	if len(str) == 0 || err != nil {
 		return 0, err
 	}
 	topologies := strings.Split(strings.TrimSpace(strings.ReplaceAll(str, "Topology Keys:", "")), "\n")
 	topologies = removeDuplicates(topologies)
+	if len(topologyKeys) > 0 {
+		topologies = filterArrayForMatches(topologies, topologyKeys)
+	}
 	topologiesCount := len(topologies)
 	return topologiesCount, nil
 }
@@ -979,6 +992,20 @@ func removeDuplicates(strSlice []string) []string {
 		}
 	}
 	return list
+}
+
+func filterArrayForMatches(listToFilter []string, filterValues []string) []string {
+	filteredList := []string{}
+	for _, value := range listToFilter {
+		for _, key := range filterValues {
+			if strings.Contains(value, key) {
+				filteredList = append(filteredList, value)
+				break
+			}
+		}
+	}
+
+	return filteredList
 }
 
 // GetName returns storage capacity tracking suite name
