@@ -4,6 +4,8 @@ import (
 	"context"
 	"flag"
 	"fmt"
+	"github.com/stretchr/testify/assert"
+	"os"
 	"strings"
 	"testing"
 
@@ -57,6 +59,12 @@ type clientTestContext struct {
 }
 
 func TestCleanupAfterTest(t *testing.T) {
+
+	// Create a temporary file that contains a simple kubernetes config
+	// and set the environment variable to point to it
+	confPath, err := createDummyKubeConfig(t.TempDir(), t)
+	assert.NoError(t, err)
+
 	s := []suites.Interface{
 		&MockCleanupTestSuite{
 			t: t,
@@ -80,6 +88,12 @@ func TestCleanupAfterTest(t *testing.T) {
 		Value: "1m",
 	}
 	timeoutFlag.Apply(fset)
+	configFlag := &cli.StringFlag{
+		Name:  "config",
+		Value: confPath,
+	}
+	configFlag.Apply(fset)
+
 	c := cli.NewContext(nil, fset, nil)
 
 	tests := []struct {
@@ -146,4 +160,40 @@ func createFakeKubeClient(ctx *clientTestContext) (kubernetes.Interface, error) 
 		return true, nil, fmt.Errorf("unexpected namespace deletion %s", deleteAction.GetName())
 	})
 	return client, nil
+}
+
+func createDummyKubeConfig(tmpDir string, t *testing.T) (string, error) {
+	// Define a simple kube client config
+	kubeConfig := `
+apiVersion: v1
+kind: Config
+clusters:
+- cluster:
+    server: https://unit.test
+  name: test-cluster
+contexts:
+- context:
+    cluster: test-cluster
+    user: test-user
+  name: test-context
+current-context: test-context
+users:
+- name: test-user
+  user:
+    token: test-token
+`
+
+	confPath := tmpDir + "/kube.config"
+
+	err := os.WriteFile(confPath, []byte(kubeConfig), 0644)
+	if err != nil {
+		return "", fmt.Errorf("failed to write dummy kube config file: %v", err)
+	}
+
+	// Set the environment variable to point to the temporary file
+	t.Setenv("KUBECONFIG", confPath)
+
+	// Print the path to the temporary file
+	t.Logf("Created dummy kube config file at: %s", confPath)
+	return confPath, nil
 }
