@@ -4,10 +4,11 @@ import (
 	"context"
 	"flag"
 	"fmt"
-	"github.com/stretchr/testify/assert"
 	"os"
 	"strings"
 	"testing"
+
+	"github.com/stretchr/testify/assert"
 
 	"github.com/dell/cert-csi/pkg/k8sclient"
 	"github.com/dell/cert-csi/pkg/observer"
@@ -59,7 +60,6 @@ type clientTestContext struct {
 }
 
 func TestCleanupAfterTest(t *testing.T) {
-
 	// Create a temporary file that contains a simple kubernetes config
 	// and set the environment variable to point to it
 	confPath, err := createDummyKubeConfig(t.TempDir(), t)
@@ -185,7 +185,7 @@ users:
 
 	confPath := tmpDir + "/kube.config"
 
-	err := os.WriteFile(confPath, []byte(kubeConfig), 0644)
+	err := os.WriteFile(confPath, []byte(kubeConfig), 0o600)
 	if err != nil {
 		return "", fmt.Errorf("failed to write dummy kube config file: %v", err)
 	}
