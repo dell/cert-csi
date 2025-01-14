@@ -71,7 +71,7 @@ func DownloadBinary(version string) error {
 	if err != nil {
 		return err
 	}
-	log.Infof("Downloading tar file....")
+	log.Infof("Downloading tar file %s...", url)
 	client := http.Client{
 		Timeout: 20 * time.Second,
 	}
