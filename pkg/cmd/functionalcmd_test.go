@@ -4,6 +4,9 @@ import (
 	"context"
 	"flag"
 	"fmt"
+	"strings"
+	"testing"
+
 	"github.com/dell/cert-csi/pkg/k8sclient"
 	"github.com/dell/cert-csi/pkg/observer"
 	"github.com/dell/cert-csi/pkg/testcore/suites"
@@ -16,8 +19,6 @@ import (
 	fakeClient "k8s.io/client-go/kubernetes/fake"
 	"k8s.io/client-go/rest"
 	clienttesting "k8s.io/client-go/testing"
-	"strings"
-	"testing"
 )
 
 type MockCleanupTestSuite struct {
@@ -28,16 +29,16 @@ func (m *MockCleanupTestSuite) GetName() string {
 	return "mock"
 }
 
-func (m *MockCleanupTestSuite) Run(ctx context.Context, storageClass string, clients *k8sclient.Clients) (delFunc func() error, e error) {
+func (m *MockCleanupTestSuite) Run(_ context.Context, _ string, _ *k8sclient.Clients) (delFunc func() error, e error) {
 	m.t.Logf("mock test suite run")
 	return nil, nil
 }
 
-func (m *MockCleanupTestSuite) GetObservers(obsType observer.Type) []observer.Interface {
+func (m *MockCleanupTestSuite) GetObservers(_ observer.Type) []observer.Interface {
 	return nil
 }
 
-func (m *MockCleanupTestSuite) GetClients(namespace string, client *k8sclient.KubeClient) (*k8sclient.Clients, error) {
+func (m *MockCleanupTestSuite) GetClients(_ string, _ *k8sclient.KubeClient) (*k8sclient.Clients, error) {
 	return nil, nil
 }
 
@@ -69,7 +70,7 @@ func TestCleanupAfterTest(t *testing.T) {
 
 	clientCtx := &clientTestContext{t: t}
 
-	k8sclient.FuncNewClientSet = func(config *rest.Config) (kubernetes.Interface, error) {
+	k8sclient.FuncNewClientSet = func(_ *rest.Config) (kubernetes.Interface, error) {
 		return createFakeKubeClient(clientCtx)
 	}
 
@@ -115,7 +116,6 @@ func TestCleanupAfterTest(t *testing.T) {
 }
 
 func createFakeKubeClient(ctx *clientTestContext) (kubernetes.Interface, error) {
-
 	client := fakeClient.NewSimpleClientset()
 	client.Discovery().(*fake.FakeDiscovery).FakedServerVersion = &version.Info{
 		Major:      "1",
