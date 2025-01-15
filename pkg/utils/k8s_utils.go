@@ -1,6 +1,6 @@
 /*
  *
- * Copyright © 2023 Dell Inc. or its subsidiaries. All Rights Reserved.
+ * Copyright © 2023-2025 Dell Inc. or its subsidiaries. All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -49,20 +49,20 @@ var (
 const (
 	// KubeConfigEnv Environmental Variable
 	KubeConfigEnv  = "KUBECONFIG"
-	k8sBinary      = "kubernetes/test/bin/e2e.test"                               // k8sBinary is the actual e2e binary that we need to execute
-	kubeconfigKey  = "-kubeconfig"                                                // kubeconfigKey  is to provide kubeconfig
-	focusStringKey = "--ginkgo.focus"                                             // focusStringKey  is to provide focus tests
-	skipStringKey  = "--ginkgo.skip"                                              // skipStringKey  is to provide skip tests
-	focusFileKey   = "--ginkgo.focus-file"                                        // focusFileKey  is to provide focus test suite
-	skipFileKey    = "--ginkgo.skip-file"                                         // focusStringKey  is to provide focus tests
-	testdriverKey  = "-storage.testdriver"                                        // testdriverKey is to provide the test driver config file
-	junitReportKey = "--ginkgo.junit-report"                                      // junitReportKey to generate the e2e report
-	timeoutKey     = "--ginkgo.timeout"                                           // timeoutKey is to provide the final
-	XML            = ".xml"                                                       // XML is an extension for .xml
-	IgnoreFile     = "pkg/utils/ignore.yaml"                                      // IgnoreFile contains the tests to be skipped
-	BinaryPrefix   = "https://storage.googleapis.com/kubernetes-release/release/" // BinaryPrefix Binary url prefix
-	BinarySuffix   = "/kubernetes-test-linux-amd64.tar.gz"                        // BinarySuffix  binary url suffix
-	BinaryFile     = "kubernetes-test-linux-amd64.tar.gz"                         // BinaryFile downloaded binary file
+	k8sBinary      = "kubernetes/test/bin/e2e.test"        // k8sBinary is the actual e2e binary that we need to execute
+	kubeconfigKey  = "-kubeconfig"                         // kubeconfigKey  is to provide kubeconfig
+	focusStringKey = "--ginkgo.focus"                      // focusStringKey  is to provide focus tests
+	skipStringKey  = "--ginkgo.skip"                       // skipStringKey  is to provide skip tests
+	focusFileKey   = "--ginkgo.focus-file"                 // focusFileKey  is to provide focus test suite
+	skipFileKey    = "--ginkgo.skip-file"                  // focusStringKey  is to provide focus tests
+	testdriverKey  = "-storage.testdriver"                 // testdriverKey is to provide the test driver config file
+	junitReportKey = "--ginkgo.junit-report"               // junitReportKey to generate the e2e report
+	timeoutKey     = "--ginkgo.timeout"                    // timeoutKey is to provide the final
+	XML            = ".xml"                                // XML is an extension for .xml
+	IgnoreFile     = "pkg/utils/ignore.yaml"               // IgnoreFile contains the tests to be skipped
+	BinaryPrefix   = "https://dl.k8s.io/"                  // BinaryPrefix Binary url prefix
+	BinarySuffix   = "/kubernetes-test-linux-amd64.tar.gz" // BinarySuffix  binary url suffix
+	BinaryFile     = "kubernetes-test-linux-amd64.tar.gz"  // BinaryFile downloaded binary file
 )
 
 // DownloadBinary will download the binary from the kubernetes artifactory based the version
@@ -71,7 +71,7 @@ func DownloadBinary(version string) error {
 	if err != nil {
 		return err
 	}
-	log.Infof("Downloading tar file....")
+	log.Infof("Downloading tar file %s...", url)
 	client := http.Client{
 		Timeout: 20 * time.Second,
 	}
@@ -153,18 +153,10 @@ func Prechecks(c *cli.Context) bool {
 
 // GetURL will return the URL by including the given version
 func GetURL(version string) (string, error) {
-	switch version {
-	case "v1.25.0":
-		return BinaryPrefix + version + BinarySuffix, nil
-	case "v1.26.0":
-		return BinaryPrefix + version + BinarySuffix, nil
-	case "v1.27.0":
-		return BinaryPrefix + version + BinarySuffix, nil
-	case "v1.28.0":
-		return BinaryPrefix + version + BinarySuffix, nil
-	default:
-		return "", errors.New("Unable to build URL with the given version:" + version)
+	if len(version) == 0 {
+		return "", errors.New("unable to build URL with the given empty version")
 	}
+	return BinaryPrefix + version + BinarySuffix, nil
 }
 
 // CheckIfBinaryExists will check the existing binary version and return true if version match else return false
