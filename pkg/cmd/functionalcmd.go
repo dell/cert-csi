@@ -676,11 +676,11 @@ func getFunctionalEphemeralCreationCommand(globalFlags []cli.Flag) cli.Command {
 				},
 				cli.BoolFlag{
 					Name:  "no-cleanup, nc",
-					Usage: "include this flag do disable cleanup after test",
+					Usage: "include this flag to disable cleanup after test",
 				},
 				cli.BoolFlag{
 					Name:  "no-cleanup-on-fail, ncof",
-					Usage: "include this flag do disable cleanup on fail",
+					Usage: "include this flag to disable cleanup on fail",
 				},
 			},
 			globalFlags...,
