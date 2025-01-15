@@ -1,6 +1,6 @@
 /*
  *
- * Copyright © 2023 Dell Inc. or its subsidiaries. All Rights Reserved.
+ * Copyright © 2023-2025 Dell Inc. or its subsidiaries. All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -38,8 +38,8 @@ func TestDownloadBinary(t *testing.T) {
 		args    args
 		wantErr bool
 	}{
-		{"Pass good version", args{"v1.25.0"}, false},
-		{"Pass bad version", args{"v.2.0"}, true},
+		{"Pass good version", args{"v1.32.0"}, false},
+		{"Pass bad version", args{""}, true},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -64,7 +64,7 @@ func TestUnTarBinary(t *testing.T) {
 				os.Remove(filepath.Clean(BinaryFile))
 			}
 			if tt.name == "Untar if file present" {
-				_ = DownloadBinary("v1.25.0")
+				_ = DownloadBinary("v1.32.0")
 			}
 			if err := UnTarBinary(); (err != nil) != tt.wantErr {
 				t.Errorf("UnTarBinary() error = %v, wantErr %v", err, tt.wantErr)
@@ -161,10 +161,9 @@ func TestGetURL(t *testing.T) {
 		want    string
 		wantErr bool
 	}{
-		{"valid version27", args{"v1.27.0"}, BinaryPrefix + "v1.27.0" + BinarySuffix, false},
-		{"valid version26", args{"v1.26.0"}, BinaryPrefix + "v1.26.0" + BinarySuffix, false},
-		{"valid version25", args{"v1.25.0"}, BinaryPrefix + "v1.25.0" + BinarySuffix, false},
-		{"invalid version", args{"v1.2.0"}, "", true},
+		{"valid version30", args{"v1.30.0"}, BinaryPrefix + "v1.30.0" + BinarySuffix, false},
+		{"valid version32", args{"v1.32.0"}, BinaryPrefix + "v1.32.0" + BinarySuffix, false},
+		{"empty version", args{""}, "", true},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
