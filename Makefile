@@ -72,5 +72,5 @@ delete-ms:
 	kubectl delete -f ./pkg/k8sclient/manifests/metrics-server
 
 download-csm-common:
-	curl -O -L https://raw.githubusercontent.com/dell/csm/base-image-improvements/config/csm-common.mk
+	curl -O -L https://raw.githubusercontent.com/dell/csm/main/config/csm-common.mk
 	$(eval include csm-common.mk)
