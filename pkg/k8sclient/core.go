@@ -283,7 +283,8 @@ func (c *KubeClient) CreateRGClient() (*rg.Client, error) {
 	utilruntime.Must(replv1.AddToScheme(scheme))
 
 	k8sClient, err := client.New(c.Config, client.Options{Scheme: scheme})
-	if err != nil {
+	if err != nil { //todo: rg group isnt getting created because of get localhost api is failing
+		logrus.Debugf("Error creating RG client: %s", err)
 		return nil, err
 	}
 
