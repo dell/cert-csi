@@ -50,6 +50,7 @@ build:
 	go build -ldflags "-s -w" ./cmd/cert-csi
 
 docker: download-csm-common
+	$(eval include csm-common.mk)
 	$(BUILDER) build -t cert-csi:latest --build-arg BASEIMAGE=$(CSM_BASEIMAGE) --build-arg GOIMAGE=$(DEFAULT_GOIMAGE) .
 
 # build-statically-linked : used for building a standalone binary with statically linked glibc
@@ -73,4 +74,3 @@ delete-ms:
 
 download-csm-common:
 	curl -O -L https://raw.githubusercontent.com/dell/csm/main/config/csm-common.mk
-	$(eval include csm-common.mk)
