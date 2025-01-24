@@ -17,7 +17,7 @@ require (
 	github.com/stretchr/testify v1.9.0
 	github.com/urfave/cli v1.22.15
 	github.com/x-cray/logrus-prefixed-formatter v0.5.2
-	golang.org/x/sync v0.7.0
+	golang.org/x/sync v0.10.0
 	gonum.org/v1/plot v0.14.0
 	gopkg.in/yaml.v3 v3.0.1
 	helm.sh/helm/v3 v3.15.3
@@ -30,6 +30,25 @@ require (
 	k8s.io/metrics v0.30.0
 	sigs.k8s.io/controller-runtime v0.14.6
 	sigs.k8s.io/yaml v1.4.0
+)
+
+replace (
+	k8s.io/cloud-provider => k8s.io/cloud-provider v1.31.2
+	k8s.io/cluster-bootstrap => k8s.io/cluster-bootstrap v1.31.2
+	k8s.io/controller-manager => k8s.io/controller-manager v1.31.2
+	k8s.io/cri-client => k8s.io/cri-client v1.31.2
+	k8s.io/csi-translation-lib => k8s.io/csi-translation-lib v1.31.2
+	k8s.io/dynamic-resource-allocation => k8s.io/dynamic-resource-allocation v1.31.2
+	k8s.io/endpointslice => k8s.io/endpointslice v1.31.2
+	k8s.io/externaljwt => k8s.io/externaljwt v1.31.2
+	k8s.io/kube-aggregator => k8s.io/kube-aggregator v1.31.2
+	k8s.io/kube-controller-manager => k8s.io/kube-controller-manager v1.31.2
+	k8s.io/kube-proxy => k8s.io/kube-proxy v1.31.2
+	k8s.io/kube-scheduler => k8s.io/kube-scheduler v1.31.2
+	k8s.io/kubelet => k8s.io/kubelet v1.31.2
+	k8s.io/mount-utils => k8s.io/mount-utils v1.31.2
+	k8s.io/pod-security-admission => k8s.io/pod-security-admission v1.31.2
+	k8s.io/sample-apiserver => k8s.io/sample-apiserver v1.31.2
 )
 
 require (
@@ -157,14 +176,14 @@ require (
 	go.opentelemetry.io/otel/trace v1.28.0 // indirect
 	go.starlark.net v0.0.0-20230525235612-a134d8f9ddca // indirect
 	go.uber.org/multierr v1.11.0 // indirect
-	golang.org/x/crypto v0.24.0 // indirect
+	golang.org/x/crypto v0.31.0 // indirect
 	golang.org/x/exp v0.0.0-20230905200255-921286631fa9 // indirect
 	golang.org/x/image v0.18.0 // indirect
-	golang.org/x/net v0.26.0 // indirect
+	golang.org/x/net v0.33.0 // indirect
 	golang.org/x/oauth2 v0.21.0 // indirect
-	golang.org/x/sys v0.21.0 // indirect
-	golang.org/x/term v0.21.0 // indirect
-	golang.org/x/text v0.16.0 // indirect
+	golang.org/x/sys v0.28.0 // indirect
+	golang.org/x/term v0.27.0 // indirect
+	golang.org/x/text v0.21.0 // indirect
 	golang.org/x/time v0.5.0 // indirect
 	google.golang.org/genproto/googleapis/rpc v0.0.0-20240701130421-f6361c86f094 // indirect
 	google.golang.org/grpc v1.65.0 // indirect

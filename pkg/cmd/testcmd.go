@@ -1085,7 +1085,7 @@ func getEphemeralCreationCommand(globalFlags []cli.Flag) cli.Command {
 				},
 			}
 
-			sr := createFunctionalSuiteRunner(c)
+			sr := createFunctionalSuiteRunner(c, c.Bool("no-cleanup"), c.Bool("no-cleanup-on-fail"))
 			sr.RunFunctionalSuites(s)
 
 			return nil

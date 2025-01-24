@@ -1,6 +1,6 @@
 /*
  *
- * Copyright © 2024 Dell Inc. or its subsidiaries. All Rights Reserved.
+ * Copyright © 2025 Dell Inc. or its subsidiaries. All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -46,10 +46,10 @@ func TestGetTopologyCount(t *testing.T) {
 	// Test case: Non-empty topology keys
 
 	FindDriverLogs = func(_ []string) (string, error) {
-		keys := "Topology Keys: [csi-powerstore.dellemc.com/10.230.24.67-iscsi csi-powerstore.dellemc.com/10.230.24.67-nfs]"
+		keys := "Topology Keys: [csi-powerstore.dellemc.com/1.2.3.4-iscsi csi-powerstore.dellemc.com/1.2.3.4-nfs]"
 		return keys, nil
 	}
-	topologyCount, err = getTopologyCount([]string{"csi-powerstore.dellemc.com/10.230.24.67-iscsi"})
+	topologyCount, err = getTopologyCount([]string{"csi-powerstore.dellemc.com/1.2.3.4-iscsi"})
 	assert.NoError(t, err)
 	assert.Equal(t, 1, topologyCount)
 

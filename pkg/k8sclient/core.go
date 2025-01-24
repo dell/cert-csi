@@ -119,6 +119,14 @@ type Clients struct {
 	CSISCClient            *csistoragecapacity.Client
 }
 
+// Override with a fake client for unit testing
+
+var FuncNewClientSet = newRealClientSet
+
+func newRealClientSet(config *rest.Config) (kubernetes.Interface, error) {
+	return kubernetes.NewForConfig(config)
+}
+
 // NewKubeClient is a KubeClient constructor, that creates new instance of KubeClient from provided config
 func NewKubeClient(config *rest.Config, timeout int) (*KubeClient, error) {
 	logrus.Debugf("Creating new KubeClient")
@@ -126,7 +134,7 @@ func NewKubeClient(config *rest.Config, timeout int) (*KubeClient, error) {
 		return nil, fmt.Errorf("config can't be nil")
 	}
 
-	clientset, configErr := kubernetes.NewForConfig(config)
+	clientset, configErr := FuncNewClientSet(config)
 	if configErr != nil {
 		return nil, configErr
 	}
@@ -165,7 +173,7 @@ func NewRemoteKubeClient(config *rest.Config, timeout int) (*KubeClient, error) 
 		return nil, fmt.Errorf("remote config can't be nil")
 	}
 
-	clientset, configErr := kubernetes.NewForConfig(config)
+	clientset, configErr := FuncNewClientSet(config)
 	if configErr != nil {
 		return nil, configErr
 	}
@@ -403,6 +411,9 @@ func (c *KubeClient) CreateNamespace(ctx context.Context, namespace string) (*v1
 			ObjectMeta: metav1.ObjectMeta{
 				Name:      namespace,
 				Namespace: "",
+				Labels: map[string]string{
+					"pod-security.kubernetes.io/enforce": "privileged", // Add the privileged pod security label
+				},
 			},
 		},
 		metav1.CreateOptions{},
