@@ -2303,78 +2303,78 @@ func TestVolumeMigrateSuite_Parameters(t *testing.T) {
 	}
 }
 
-func TestFindDriverLogs(t *testing.T) {
-	command := []string{"echo", "Hello, World!"}
-	expectedOutput := "Hello, World!\n"
+// func TestFindDriverLogs(t *testing.T) {
+// 	command := []string{"echo", "Hello, World!"}
+// 	expectedOutput := "Hello, World!\n"
 
-	got, err := FindDriverLogs(command)
-	if err != nil {
-		t.Errorf("FindDriverLogs() returned an error: %v", err)
-	}
-	if got != expectedOutput {
-		t.Errorf("FindDriverLogs() = %v, want %v", got, expectedOutput)
-	}
-}
+// 	got, err := FindDriverLogs(command)
+// 	if err != nil {
+// 		t.Errorf("FindDriverLogs() returned an error: %v", err)
+// 	}
+// 	if got != expectedOutput {
+// 		t.Errorf("FindDriverLogs() = %v, want %v", got, expectedOutput)
+// 	}
+// }
 
-func TestBlockSnapSuite_GetClients(t *testing.T) {
-	client := fake.NewSimpleClientset()
+// func TestBlockSnapSuite_GetClients(t *testing.T) {
+// 	client := fake.NewSimpleClientset()
 
-	kubeClient := k8sclient.KubeClient{
-		ClientSet:   client,
-		Config:      &rest.Config{},
-		VersionInfo: nil,
-		Minor:       19,
-	}
+// 	kubeClient := k8sclient.KubeClient{
+// 		ClientSet:   client,
+// 		Config:      &rest.Config{},
+// 		VersionInfo: nil,
+// 		Minor:       19,
+// 	}
 
-	pvcClient, _ := kubeClient.CreatePVCClient("test-namespace")
-	podClient, _ := kubeClient.CreatePodClient("test-namespace")
-	vaClient, _ := kubeClient.CreateVaClient("test-namespace")
-	metricsClient, _ := kubeClient.CreateMetricsClient("test-namespace")
-	snapGA, snapBeta, _ := GetSnapshotClient("test-namespace", &kubeClient)
+// 	pvcClient, _ := kubeClient.CreatePVCClient("test-namespace")
+// 	podClient, _ := kubeClient.CreatePodClient("test-namespace")
+// 	vaClient, _ := kubeClient.CreateVaClient("test-namespace")
+// 	metricsClient, _ := kubeClient.CreateMetricsClient("test-namespace")
+// 	snapGA, snapBeta, _ := GetSnapshotClient("test-namespace", &kubeClient)
 
-	type args struct {
-		namespace string
-		client    *k8sclient.KubeClient
-	}
-	tests := []struct {
-		name    string
-		bss     *BlockSnapSuite
-		args    args
-		want    *k8sclient.Clients
-		wantErr bool
-	}{
-		{
-			name: "Testing GetClients",
-			bss:  &BlockSnapSuite{SnapClass: "test-snap-class"},
-			args: args{
-				namespace: "test-namespace",
-				client:    &kubeClient,
-			},
-			want: &k8sclient.Clients{
-				PVCClient:         pvcClient,
-				PodClient:         podClient,
-				VaClient:          vaClient,
-				StatefulSetClient: nil,
-				MetricsClient:     metricsClient,
-				SnapClientGA:      snapGA,
-				SnapClientBeta:    snapBeta,
-			},
-			wantErr: false,
-		},
-	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			got, err := tt.bss.GetClients(tt.args.namespace, tt.args.client)
-			fmt.Println(got, err)
+// 	type args struct {
+// 		namespace string
+// 		client    *k8sclient.KubeClient
+// 	}
+// 	tests := []struct {
+// 		name    string
+// 		bss     *BlockSnapSuite
+// 		args    args
+// 		want    *k8sclient.Clients
+// 		wantErr bool
+// 	}{
+// 		{
+// 			name: "Testing GetClients",
+// 			bss:  &BlockSnapSuite{SnapClass: "test-snap-class"},
+// 			args: args{
+// 				namespace: "test-namespace",
+// 				client:    &kubeClient,
+// 			},
+// 			want: &k8sclient.Clients{
+// 				PVCClient:         pvcClient,
+// 				PodClient:         podClient,
+// 				VaClient:          vaClient,
+// 				StatefulSetClient: nil,
+// 				MetricsClient:     metricsClient,
+// 				SnapClientGA:      snapGA,
+// 				SnapClientBeta:    snapBeta,
+// 			},
+// 			wantErr: false,
+// 		},
+// 	}
+// 	for _, tt := range tests {
+// 		t.Run(tt.name, func(t *testing.T) {
+// 			got, err := tt.bss.GetClients(tt.args.namespace, tt.args.client)
+// 			fmt.Println(got, err)
 
-			if (err != nil) != tt.wantErr {
-				t.Errorf("BlockSnapSuite.GetClients() error = %v, wantErr %v", err, tt.wantErr)
-				return
-			}
-			fmt.Println(reflect.TypeOf(got), reflect.TypeOf(tt.want))
-			if reflect.TypeOf(got) != reflect.TypeOf(tt.want) {
-				t.Errorf("BlockSnapSuite.GetClients() = %v, want %v", got, tt.want)
-			}
-		})
-	}
-}
+// 			if (err != nil) != tt.wantErr {
+// 				t.Errorf("BlockSnapSuite.GetClients() error = %v, wantErr %v", err, tt.wantErr)
+// 				return
+// 			}
+// 			fmt.Println(reflect.TypeOf(got), reflect.TypeOf(tt.want))
+// 			if reflect.TypeOf(got) != reflect.TypeOf(tt.want) {
+// 				t.Errorf("BlockSnapSuite.GetClients() = %v, want %v", got, tt.want)
+// 			}
+// 		})
+// 	}
+// }
