@@ -702,7 +702,7 @@ func TestRemoteReplicationProvisioningSuite_Run(t *testing.T) {
 		return true, pod, nil
 	})
 
-	configPath := "~/.kube/config"
+	configPath := "/root/.kube/config"
 	config, configErr := k8sclient.GetConfig(configPath)
 	if configErr != nil {
 		t.Errorf("Error creating k8sClient.Config: %v", configErr)
@@ -715,7 +715,37 @@ func TestRemoteReplicationProvisioningSuite_Run(t *testing.T) {
 		VersionInfo: nil,
 	}
 
-	pvcClient, _ := kubeClient.CreatePVCClient("test-namespace")
+	pvcClient, err := kubeClient.CreatePVCClient("test-namespace")
+	if err != nil {
+		t.Fatalf("Failed to get PVC Client: %v", err)
+	}
+	pvcObject := pvcClient.Get(ctx, "test-namespace")
+	pvcObject.Object.Status.Phase = v1.ClaimBound
+	// Update the PVC in the fake clientset
+	/* _, err = clientset.CoreV1().PersistentVolumeClaims("test-namespace").Update(ctx, pvcObject.Object, metav1.UpdateOptions{})
+	if err != nil {
+		t.Fatalf("Failed to update PVC: %v", err)
+	}  */
+
+	// Create a new PersistentVolumeClaimApplyConfiguration object
+	/* 	 	pvcApplyConfig := &clientcorev1.PersistentVolumeClaimApplyConfiguration{
+		ObjectMeta: metav1.ObjectMeta{
+			Name: "test-pvc",
+		},
+		Spec: v1.PersistentVolumeClaimSpec{
+			AccessModes: []v1.PersistentVolumeAccessMode{
+				v1.ReadWriteOnce,
+			},
+			Resources: v1.ResourceRequirements{
+				Requests: v1.ResourceList{
+					v1.ResourceStorage: resource.MustParse("1Gi"),
+				},
+			},
+		},
+	}  */
+
+	// Call ApplyStatus with the new configuration
+	//pvcClient.Interface.ApplyStatus(ctx, pvcApplyConfig, metav1.ApplyOptions{})
 	podClient, _ := kubeClient.CreatePodClient("test-namespace")
 	scClient, _ := kubeClient.CreateSCClient()
 	pvClient, _ := kubeClient.CreatePVClient()
@@ -737,10 +767,10 @@ func TestRemoteReplicationProvisioningSuite_Run(t *testing.T) {
 	}
 
 	// Run the RemoteReplicationProvisioningSuite
-	gotDelFunc, err := rrps.Run(ctx, "test-storage-class", k8sClients)
+	gotRunFunc, err := rrps.Run(ctx, "test-storage-class", k8sClients)
 
 	// Check if there was an error
-	if gotDelFunc != nil {
+	if gotRunFunc != nil {
 		if err != nil {
 			t.Errorf("Error running RemoteReplicationProvisioningSuite.Run(): %v", err)
 		}
