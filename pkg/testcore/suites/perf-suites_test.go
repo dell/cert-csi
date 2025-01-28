@@ -2,6 +2,7 @@ package suites
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"reflect"
 	"testing"
@@ -10,18 +11,24 @@ import (
 	"github.com/dell/cert-csi/pkg/k8sclient/resources/pv"
 	"github.com/dell/cert-csi/pkg/k8sclient/resources/pvc"
 	"github.com/dell/cert-csi/pkg/k8sclient/resources/replicationgroup"
+	"github.com/dell/cert-csi/pkg/k8sclient/resources/volumegroupsnapshot"
 	"github.com/dell/cert-csi/pkg/observer"
+	vgsAlpha "github.com/dell/csi-volumegroup-snapshotter/api/v1"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/mock"
 	v1 "k8s.io/api/core/v1"
 	storagev1 "k8s.io/api/storage/v1"
+	"k8s.io/apimachinery/pkg/api/meta"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/client-go/kubernetes/fake"
 	kfake "k8s.io/client-go/kubernetes/fake"
 	typedcorev1 "k8s.io/client-go/kubernetes/typed/core/v1"
 	"k8s.io/client-go/rest"
 	restfake "k8s.io/client-go/rest/fake"
 	k8stesting "k8s.io/client-go/testing"
+	"sigs.k8s.io/controller-runtime/pkg/client"
 )
 
 var (
@@ -49,6 +56,62 @@ func (f *FakeExtendedClientset) CoreV1() typedcorev1.CoreV1Interface {
 
 func NewFakeClientsetWithRestClient(objs ...runtime.Object) *FakeExtendedClientset {
 	return &FakeExtendedClientset{kfake.NewSimpleClientset(objs...)}
+}
+
+type RESTMapping struct {
+	mock.Mock
+}
+
+func (m *RESTMapping) KindFor(resource schema.GroupVersionResource) (schema.GroupVersionKind, error) {
+	args := m.Called(resource)
+	return args.Get(0).(schema.GroupVersionKind), args.Error(1)
+}
+
+func (m *RESTMapping) KindsFor(resource schema.GroupVersionResource) ([]schema.GroupVersionKind, error) {
+	args := m.Called(resource)
+	return args.Get(0).([]schema.GroupVersionKind), args.Error(1)
+}
+
+func (m *RESTMapping) ResourceFor(input schema.GroupVersionResource) (schema.GroupVersionResource, error) {
+	args := m.Called(input)
+	return args.Get(0).(schema.GroupVersionResource), args.Error(1)
+}
+
+func (m *RESTMapping) ResourcesFor(input schema.GroupVersionResource) ([]schema.GroupVersionResource, error) {
+	args := m.Called(input)
+	return args.Get(0).([]schema.GroupVersionResource), args.Error(1)
+}
+
+func createRESTMapping() *meta.RESTMapping {
+	// Create a GroupVersionResource
+	gvr := schema.GroupVersionResource{
+		Group:    "group",
+		Version:  "version",
+		Resource: "resource",
+	}
+
+	// Create a RESTMapping
+	restMapping := &meta.RESTMapping{
+		Resource:         gvr,
+		GroupVersionKind: schema.GroupVersionKind{},
+		Scope:            meta.RESTScopeNamespace,
+	}
+
+	return restMapping
+}
+
+func (m *RESTMapping) RESTMapping(gk schema.GroupKind, versions ...string) (*meta.RESTMapping, error) {
+	return createRESTMapping(), nil
+}
+
+func (m *RESTMapping) RESTMappings(gk schema.GroupKind, versions ...string) ([]*meta.RESTMapping, error) {
+	args := m.Called(gk, versions)
+	return args.Get(0).([]*meta.RESTMapping), args.Error(1)
+}
+
+func (m *RESTMapping) ResourceSingularizer(resource string) (string, error) {
+	args := m.Called(resource)
+	return args.String(0), args.Error(1)
 }
 
 // TestVolumeCreationSuite_Run
@@ -953,7 +1016,108 @@ func TestVolumeIoSuite_Parameters(t *testing.T) {
 	}
 }
 
-// TODO TestVolumeGroupSnapSuite_Run
+// TestVolumeGroupSnapSuite_Run
+func TestVolumeGroupSnapSuite_Run(t *testing.T) {
+	// Create a new context
+	ctx := context.Background()
+
+	// Create a new VolumeGroupSnapSuite instance
+	vgs := &VolumeGroupSnapSuite{
+		SnapClass:  "testSnap",
+		AccessMode: "ReadWriteOnce",
+	}
+
+	// Create a fake storage class with VolumeBindingMode set to WaitForFirstConsumer
+	storageClass := &storagev1.StorageClass{
+		ObjectMeta: metav1.ObjectMeta{Name: "test-storage-class"},
+		VolumeBindingMode: func() *storagev1.VolumeBindingMode {
+			mode := storagev1.VolumeBindingWaitForFirstConsumer
+			return &mode
+		}(),
+	}
+
+	// Create a fake k8s clientset with the storage class
+	clientset := fake.NewSimpleClientset(storageClass)
+
+	// Set up a reactor to simulate Pods becoming Ready
+	clientset.Fake.PrependReactor("create", "pods", func(action k8stesting.Action) (bool, runtime.Object, error) {
+		createAction := action.(k8stesting.CreateAction)
+		pod := createAction.GetObject().(*v1.Pod)
+		// Set pod phase to Running
+		pod.Status.Phase = v1.PodRunning
+		// Simulate the Ready condition
+		pod.Status.Conditions = append(pod.Status.Conditions, v1.PodCondition{
+			Type:   v1.PodReady,
+			Status: v1.ConditionTrue,
+		})
+		return false, nil, nil // Allow normal processing to continue
+	})
+
+	// Also, when getting pods, return the pod with Running status and Ready condition
+	clientset.Fake.PrependReactor("get", "pods", func(action k8stesting.Action) (bool, runtime.Object, error) {
+		getAction := action.(k8stesting.GetAction)
+		podName := getAction.GetName()
+		// Create a pod object with the expected name and Ready status
+		pod := &v1.Pod{
+			ObjectMeta: metav1.ObjectMeta{
+				Name:      podName,
+				Namespace: "test-namespace",
+			},
+			Status: v1.PodStatus{
+				Phase: v1.PodRunning,
+				Conditions: []v1.PodCondition{
+					{
+						Type:   v1.PodReady,
+						Status: v1.ConditionTrue,
+					},
+				},
+			},
+		}
+		return true, pod, nil
+	})
+
+	// Create a fake k8sclient.KubeClient
+	kubeClient := &k8sclient.KubeClient{
+		ClientSet: clientset,
+		Config:    &rest.Config{},
+	}
+
+	// Create PVC client
+	pvcClient, _ := kubeClient.CreatePVCClient("test-namespace")
+
+	// Create Pod client
+	podClient, _ := kubeClient.CreatePodClient("test-namespace")
+
+	// Create PV client
+	pvClient, _ := kubeClient.CreatePVClient()
+
+	scheme := runtime.NewScheme()
+	if err := vgsAlpha.AddToScheme(scheme); err != nil {
+		panic(err)
+	}
+	restMapperMock := &RESTMapping{}
+	restMapperMock.On("RESTMapping", mock.Anything, mock.Anything).Return(restMapperMock, nil)
+	k8sClient, _ := client.New(kubeClient.Config, client.Options{Scheme: scheme, Mapper: restMapperMock})
+	vgsClient := &volumegroupsnapshot.Client{
+		Interface: k8sClient,
+	}
+
+	// Update the k8sclient.Clients instance with the fake clients
+	clients := &k8sclient.Clients{
+		PVCClient:              pvcClient,
+		PodClient:              podClient,
+		PersistentVolumeClient: pvClient,
+		KubeClient:             kubeClient,
+		VgsClient:              vgsClient,
+	}
+
+	_, err := vgs.Run(ctx, "test-storage-class", clients)
+
+	expectedError := errors.New("Post \"http://localhost/apis/volumegroup.storage.dell.com/v1/namespaces/test-namespace/resource\": dial tcp 127.0.0.1:80: connect: connection refused")
+	if err.Error() != expectedError.Error() {
+		t.Errorf("Expected error: %v, but got: %v", expectedError, err)
+	}
+}
 
 func TestVolumeGroupSnapSuite_GetObservers(t *testing.T) {
 	vgs := &VolumeGroupSnapSuite{}
@@ -1598,7 +1762,7 @@ func TestCloneVolumeSuite_Run(t *testing.T) {
 	// Create a new context
 	ctx := context.Background()
 
-	// Create a new VolumeHealthMetricsSuite instance
+	// Create a new CloneVolumeSuite instance
 	cs := &CloneVolumeSuite{
 		VolumeNumber:  1,
 		CustomPvcName: "pvc-test",
@@ -1674,10 +1838,6 @@ func TestCloneVolumeSuite_Run(t *testing.T) {
 		PodClient:              podClient,
 		PersistentVolumeClient: pvClient,
 		KubeClient:             kubeClient,
-	}
-
-	FindDriverLogs = func(_ []string) (string, error) {
-		return "", nil
 	}
 
 	// Call the Run method
