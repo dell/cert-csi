@@ -100,7 +100,7 @@ func createRESTMapping() *meta.RESTMapping {
 	return restMapping
 }
 
-func (m *RESTMapping) RESTMapping(gk schema.GroupKind, versions ...string) (*meta.RESTMapping, error) {
+func (m *RESTMapping) RESTMapping(_ schema.GroupKind, _ ...string) (*meta.RESTMapping, error) {
 	return createRESTMapping(), nil
 }
 
