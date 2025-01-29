@@ -3,6 +3,8 @@ package suites
 import (
 	"context"
 	"fmt"
+	"net/http"
+	"net/http/httptest"
 	"reflect"
 	"testing"
 
@@ -24,7 +26,9 @@ import (
 	k8stesting "k8s.io/client-go/testing"
 )
 
+// This file contains HTTP handlers for mocking to the Isilon OneFS REST API.
 var (
+	localhostRouter  http.Handler
 	remotePVCObject  v1.PersistentVolumeClaim
 	remotePVClient   *pv.Client
 	remoteRGClient   *replicationgroup.Client
@@ -36,7 +40,19 @@ type FakeExtendedCoreV1 struct {
 }
 
 func (c *FakeExtendedCoreV1) RESTClient() rest.Interface {
-	return &restfake.RESTClient{}
+	resp := &http.Response{
+		StatusCode: http.StatusOK,
+		Body:       http.NoBody,
+	}
+
+	req := &http.Request{
+		Method: "POST",
+	}
+
+	return &restfake.RESTClient{
+		Resp: resp,
+		Req:  req,
+	}
 }
 
 type FakeExtendedClientset struct {
@@ -50,6 +66,30 @@ func (f *FakeExtendedClientset) CoreV1() typedcorev1.CoreV1Interface {
 func NewFakeClientsetWithRestClient(objs ...runtime.Object) *FakeExtendedClientset {
 	return &FakeExtendedClientset{kfake.NewSimpleClientset(objs...)}
 }
+
+// func getHandler() http.Handler {
+// 	handler := http.HandlerFunc(
+// 		func(w http.ResponseWriter, r *http.Request) {
+// 			if localhostRouter != nil {
+// 				localhostRouter.ServeHTTP(w, r)
+// 			} else {
+// 				getRouter().ServeHTTP(w, r)
+// 			}
+// 		})
+
+// 	return handler
+// }
+
+// func getRouter() http.Handler {
+// 	// router := mux.NewRouter()
+// 	// router.HandleFunc("/pods", handlePostPods).Methods("POST")
+// 	// return router
+// }
+
+// // handlePostPods implements POST /pods
+// func handlePostPods(w http.ResponseWriter, _ *http.Request) {
+
+// }
 
 // TestVolumeCreationSuite_Run
 func TestVolumeCreationSuite_Run(t *testing.T) {
@@ -2000,11 +2040,40 @@ func TestMultiAttachSuite_Parameters(t *testing.T) {
 	}
 }
 
+func mockLocalhostTestServerHandler(resp http.ResponseWriter, req *http.Request) {
+	// resp.WriteHeader(http.StatusOK)
+
+	switch req.RequestURI {
+	case "/pods":
+		if req.Method == http.MethodGet {
+			resp.WriteHeader(http.StatusOK)
+			// response := types.CompatibilityManagement{
+			// 	ID: "mock-compatibility-system-id",
+			// }
+			// content, err := json.Marshal(response)
+			// if err != nil {
+			// 	http.Error(resp, err.Error(), http.StatusNotFound)
+			// }
+			// resp.Write(content)
+		} else if req.Method == http.MethodPost {
+			resp.WriteHeader(http.StatusOK)
+			// response := types.CompatibilityManagement{
+			// 	ID: "mock-compatibility-management-id",
+			// }
+			// content, err := json.Marshal(response)
+			// if err != nil {
+			// 	http.Error(resp, err.Error(), http.StatusNotFound)
+			// }
+			// resp.Write(content)
+		}
+	}
+}
+
 func TestBlockSnapSuite_Run(t *testing.T) {
 	// Create a context
 	ctx := context.Background()
 
-	// Create a BlockSnapSuite instance
+	// Create a BlockSnapSuite instance5
 	bss := &BlockSnapSuite{
 		SnapClass:   "testSnap",
 		Description: "testDesc",
@@ -2062,10 +2131,17 @@ func TestBlockSnapSuite_Run(t *testing.T) {
 		return true, pod, nil
 	})
 
+	mockServer := httptest.NewServer(http.HandlerFunc(mockLocalhostTestServerHandler))
+	defer mockServer.Close()
+	// mockServer.URL = "127.0.0.1:443"
+	mockServer.URL = "https://localhost"
+
 	// Create a fake KubeClient
 	kubeClient := &k8sclient.KubeClient{
 		ClientSet: clientSet,
-		Config:    &rest.Config{},
+		Config: &rest.Config{
+			Host: mockServer.URL,
+		},
 	}
 
 	// Create the necessary clients
@@ -2085,9 +2161,11 @@ func TestBlockSnapSuite_Run(t *testing.T) {
 		// SnapClientBeta:    snapBeta,
 	}
 
+	fmt.Printf("mockServer listening on %s\n", mockServer.URL)
+
 	// Run the suite with connection refused error
 	delFunc, err := bss.Run(ctx, "test-storage-class", clients)
-	assert.Error(t, err)
+	assert.NoError(t, err)
 	assert.Nil(t, delFunc)
 }
 
