@@ -709,23 +709,26 @@ func TestRemoteReplicationProvisioningSuite_Run(t *testing.T) {
 	}
 
 	kubeClient := &k8sclient.KubeClient{
-		ClientSet: clientset,
-		//Config:      k8sclient.GetConfig("~/.kube/config"),
+		ClientSet:   clientset,
 		Config:      config,
 		VersionInfo: nil,
 	}
 
 	pvcClient, err := kubeClient.CreatePVCClient("test-namespace")
+	//todo: assign name var in the pvcClient around here
+	//pvcClient.Name = "test-name"
 	if err != nil {
 		t.Fatalf("Failed to get PVC Client: %v", err)
 	}
-	pvcObject := pvcClient.Get(ctx, "test-namespace")
+	//todo: set pvc object to Bound
+	// this get call is calling the incorrect get. It is giving a persistent volume claim, not the object
+	pvcObject := pvcClient.Get(ctx, "test-name")
 	pvcObject.Object.Status.Phase = v1.ClaimBound
 	// Update the PVC in the fake clientset
-	/* _, err = clientset.CoreV1().PersistentVolumeClaims("test-namespace").Update(ctx, pvcObject.Object, metav1.UpdateOptions{})
+	_, err = clientset.CoreV1().PersistentVolumeClaims("test-namespace").Update(ctx, pvcObject.Object, metav1.UpdateOptions{})
 	if err != nil {
 		t.Fatalf("Failed to update PVC: %v", err)
-	}  */
+	}
 
 	// Create a new PersistentVolumeClaimApplyConfiguration object
 	/* 	 	pvcApplyConfig := &clientcorev1.PersistentVolumeClaimApplyConfiguration{
@@ -753,7 +756,7 @@ func TestRemoteReplicationProvisioningSuite_Run(t *testing.T) {
 	if err != nil {
 		t.Errorf("Error creating remoteKubeClient: %v", err)
 	}
-	//rgClient, _ := kubeClient.CreateRGClient() //todo: this is coming through as nil
+
 	rgClient, _ := remoteKubeClient.CreateRGClient() //todo: this is coming through as nil
 
 	// Update the k8sclient.Clients instance with the fake clients
