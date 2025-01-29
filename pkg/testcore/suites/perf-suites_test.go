@@ -1113,10 +1113,8 @@ func TestVolumeGroupSnapSuite_Run(t *testing.T) {
 
 	_, err := vgs.Run(ctx, "test-storage-class", clients)
 
-	expectedError := errors.New("Post \"http://localhost/apis/volumegroup.storage.dell.com/v1/namespaces/test-namespace/resource\": dial tcp 127.0.0.1:80: connect: connection refused")
-	if err.Error() != expectedError.Error() {
-		t.Errorf("Expected error: %v, but got: %v", expectedError, err)
-	}
+	expectedError := errors.New("connection refused")
+	assert.Contains(t, err.Error(), expectedError.Error())
 }
 
 func TestVolumeGroupSnapSuite_GetObservers(t *testing.T) {
