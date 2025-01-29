@@ -720,15 +720,16 @@ func TestRemoteReplicationProvisioningSuite_Run(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Failed to get PVC Client: %v", err)
 	}
-	//todo: set pvc object to Bound
-	// this get call is calling the incorrect get. It is giving a persistent volume claim, not the object
-	pvcObject := pvcClient.Get(ctx, "test-name")
-	pvcObject.Object.Status.Phase = v1.ClaimBound
-	// Update the PVC in the fake clientset
-	_, err = clientset.CoreV1().PersistentVolumeClaims("test-namespace").Update(ctx, pvcObject.Object, metav1.UpdateOptions{})
+	// Create a Mock PVC object that is bound
+	pvcMockObject := pvcClient.Get(ctx, "test-name")
+	pvcMockObject.Object.Status.Phase = v1.ClaimBound
+	// Update the PVC in the fake clientset with the Mock PVC object
+	_, err = clientset.CoreV1().PersistentVolumeClaims("test-namespace").Update(ctx, pvcMockObject.Object, metav1.UpdateOptions{})
 	if err != nil {
 		t.Fatalf("Failed to update PVC: %v", err)
 	}
+
+	//todo: this commented out section is also attempting the same thing as above, but with the ClaimApplyConfiguration object. Try this if it doesn't work
 
 	// Create a new PersistentVolumeClaimApplyConfiguration object
 	/* 	 	pvcApplyConfig := &clientcorev1.PersistentVolumeClaimApplyConfiguration{
