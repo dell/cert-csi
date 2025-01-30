@@ -83,12 +83,13 @@ type Config struct {
 
 // Client contains node client information
 type Client struct {
-	Interface v1core.PodInterface
-	ClientSet kubernetes.Interface
-	Config    *restclient.Config
-	Namespace string
-	Timeout   int
-	nodeInfos []*resource.Info
+	Interface      v1core.PodInterface
+	ClientSet      kubernetes.Interface
+	Config         *restclient.Config
+	Namespace      string
+	Timeout        int
+	nodeInfos      []*resource.Info
+	RemoteExecutor RemoteExecutor
 }
 
 // Pod contains pod related information
@@ -270,8 +271,6 @@ func (c *Client) DeleteAll(ctx context.Context) error {
 // Exec runs the pod
 func (c *Client) Exec(ctx context.Context, pod *v1.Pod, command []string, stdout, stderr io.Writer, quiet bool) error {
 	log := utils.GetLoggerFromContext(ctx)
-	executor := DefaultRemoteExecutor{}
-
 	restClient := c.ClientSet.CoreV1().RESTClient()
 	if !quiet {
 		log.Infof("Executing command: %v", command)
@@ -291,7 +290,8 @@ func (c *Client) Exec(ctx context.Context, pod *v1.Pod, command []string, stdout
 		Stderr:    true,
 		TTY:       true,
 	}, scheme.ParameterCodec)
-	return executor.Execute("POST", req.URL(), c.Config, nil, stdout, stderr, false, nil)
+
+	return c.RemoteExecutor.Execute("POST", req.URL(), c.Config, nil, stdout, stderr, false, nil)
 }
 
 // ReadyPodsCount returns the number of Pods in Ready state
@@ -520,8 +520,12 @@ func GetPodConditionFromList(conditions []v1.PodCondition, conditionType v1.PodC
 // DefaultRemoteExecutor represents default remote executor
 type DefaultRemoteExecutor struct{}
 
+type RemoteExecutor interface {
+	Execute(method string, url *url.URL, config *restclient.Config, stdin io.Reader, stdout, stderr io.Writer, tty bool, terminalSizeQueue remotecommand.TerminalSizeQueue) error
+}
+
 // Execute executes remote command
-func (*DefaultRemoteExecutor) Execute(method string, url *url.URL, config *restclient.Config, stdin io.Reader, stdout, stderr io.Writer, tty bool, terminalSizeQueue remotecommand.TerminalSizeQueue) error {
+func (DefaultRemoteExecutor) Execute(method string, url *url.URL, config *restclient.Config, stdin io.Reader, stdout, stderr io.Writer, tty bool, terminalSizeQueue remotecommand.TerminalSizeQueue) error {
 	exec, err := remotecommand.NewSPDYExecutor(config, method, url)
 	if err != nil {
 		return err

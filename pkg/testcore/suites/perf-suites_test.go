@@ -3,8 +3,10 @@ package suites
 import (
 	"context"
 	"fmt"
+	"io"
 	"net/http"
 	"net/http/httptest"
+	"net/url"
 	"reflect"
 	"testing"
 
@@ -22,8 +24,10 @@ import (
 	kfake "k8s.io/client-go/kubernetes/fake"
 	typedcorev1 "k8s.io/client-go/kubernetes/typed/core/v1"
 	"k8s.io/client-go/rest"
+	restclient "k8s.io/client-go/rest"
 	restfake "k8s.io/client-go/rest/fake"
 	k8stesting "k8s.io/client-go/testing"
+	"k8s.io/client-go/tools/remotecommand"
 )
 
 // This file contains HTTP handlers for mocking to the Isilon OneFS REST API.
@@ -2069,6 +2073,13 @@ func mockLocalhostTestServerHandler(resp http.ResponseWriter, req *http.Request)
 	}
 }
 
+type FakeRemoteExecutor struct{}
+
+// another option is to use mockgen to mock the RemoteExecutor interface
+func (FakeRemoteExecutor) Execute(method string, url *url.URL, config *restclient.Config, stdin io.Reader, stdout, stderr io.Writer, tty bool, terminalSizeQueue remotecommand.TerminalSizeQueue) error {
+	return nil
+}
+
 func TestBlockSnapSuite_Run(t *testing.T) {
 	// Create a context
 	ctx := context.Background()
@@ -2147,6 +2158,7 @@ func TestBlockSnapSuite_Run(t *testing.T) {
 	// Create the necessary clients
 	pvcClient, _ := kubeClient.CreatePVCClient(namespace)
 	podClient, _ := kubeClient.CreatePodClient(namespace)
+	podClient.RemoteExecutor = &FakeRemoteExecutor{}
 	vaClient, _ := kubeClient.CreateVaClient(namespace)
 	metricsClient, _ := kubeClient.CreateMetricsClient(namespace)
 	// snapGA, snapBeta, snErr := GetSnapshotClient(namespace, client)

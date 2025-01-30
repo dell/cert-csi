@@ -246,11 +246,12 @@ func (c *KubeClient) CreateNodeClient() (*node.Client, error) {
 // CreatePodClient creates a new instance of Pod client
 func (c *KubeClient) CreatePodClient(namespace string) (*pod.Client, error) {
 	podc := &pod.Client{
-		Interface: c.ClientSet.CoreV1().Pods(namespace),
-		ClientSet: c.ClientSet,
-		Config:    c.Config,
-		Namespace: namespace,
-		Timeout:   c.timeout,
+		Interface:      c.ClientSet.CoreV1().Pods(namespace),
+		ClientSet:      c.ClientSet,
+		Config:         c.Config,
+		Namespace:      namespace,
+		Timeout:        c.timeout,
+		RemoteExecutor: &pod.DefaultRemoteExecutor{},
 	}
 	logrus.Debugf("Created Pod client in %s namespace", namespace)
 	return podc, nil
