@@ -721,13 +721,27 @@ func TestRemoteReplicationProvisioningSuite_Run(t *testing.T) {
 		t.Fatalf("Failed to get PVC Client: %v", err)
 	}
 	// Create a Mock PVC object that is bound
-	pvcMockObject := pvcClient.Get(ctx, "test-name")
-	pvcMockObject.Object.Status.Phase = v1.ClaimBound
+	//pvcMockObject := pvcClient.Get(ctx, "test-name")
+	//pvcMockObject.Object.Status.Phase = v1.ClaimBound
+	pvcClient.Update(ctx, &v1.PersistentVolumeClaim{
+		ObjectMeta: metav1.ObjectMeta{
+			Name: "test-pvc",
+		},
+		Spec: v1.PersistentVolumeClaimSpec{
+			AccessModes: []v1.PersistentVolumeAccessMode{
+				v1.ReadWriteOnce,
+			},
+		},
+		Status: v1.PersistentVolumeClaimStatus{
+			Phase: v1.ClaimBound,
+		},
+	})
+
 	// Update the PVC in the fake clientset with the Mock PVC object
-	_, err = clientset.CoreV1().PersistentVolumeClaims("test-namespace").Update(ctx, pvcMockObject.Object, metav1.UpdateOptions{})
+	/*_, err = clientset.CoreV1().PersistentVolumeClaims("test-namespace").Update(ctx, pvcMockObject.Object, metav1.UpdateOptions{})
 	if err != nil {
 		t.Fatalf("Failed to update PVC: %v", err)
-	}
+	}*/
 
 	//todo: this commented out section is also attempting the same thing as above, but with the ClaimApplyConfiguration object. Try this if it doesn't work
 
@@ -758,7 +772,7 @@ func TestRemoteReplicationProvisioningSuite_Run(t *testing.T) {
 		t.Errorf("Error creating remoteKubeClient: %v", err)
 	}
 
-	rgClient, _ := remoteKubeClient.CreateRGClient() //todo: this is coming through as nil
+	rgClient, _ := remoteKubeClient.CreateRGClient()
 
 	// Update the k8sclient.Clients instance with the fake clients
 	k8sClients := &k8sclient.Clients{
