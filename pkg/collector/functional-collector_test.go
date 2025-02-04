@@ -16,9 +16,10 @@
 package collector
 
 import (
+	"testing"
+
 	"github.com/dell/cert-csi/pkg/store"
 	"github.com/stretchr/testify/assert"
-	"testing"
 )
 
 func TestCollectFunctionalMetrics(t *testing.T) {
