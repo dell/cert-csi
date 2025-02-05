@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"io"
 	"net/http"
-	"net/http/httptest"
 	"net/url"
 	"reflect"
 	"testing"
@@ -15,6 +14,7 @@ import (
 	"github.com/dell/cert-csi/pkg/k8sclient/resources/pvc"
 	"github.com/dell/cert-csi/pkg/k8sclient/resources/replicationgroup"
 	"github.com/dell/cert-csi/pkg/observer"
+	v1beta1 "github.com/kubernetes-csi/external-snapshotter/client/v4/apis/volumesnapshot/v1beta1"
 	"github.com/stretchr/testify/assert"
 	v1 "k8s.io/api/core/v1"
 	storagev1 "k8s.io/api/storage/v1"
@@ -44,19 +44,7 @@ type FakeExtendedCoreV1 struct {
 }
 
 func (c *FakeExtendedCoreV1) RESTClient() rest.Interface {
-	resp := &http.Response{
-		StatusCode: http.StatusOK,
-		Body:       http.NoBody,
-	}
-
-	req := &http.Request{
-		Method: "POST",
-	}
-
-	return &restfake.RESTClient{
-		Resp: resp,
-		Req:  req,
-	}
+	return &restfake.RESTClient{}
 }
 
 type FakeExtendedClientset struct {
@@ -70,30 +58,6 @@ func (f *FakeExtendedClientset) CoreV1() typedcorev1.CoreV1Interface {
 func NewFakeClientsetWithRestClient(objs ...runtime.Object) *FakeExtendedClientset {
 	return &FakeExtendedClientset{kfake.NewSimpleClientset(objs...)}
 }
-
-// func getHandler() http.Handler {
-// 	handler := http.HandlerFunc(
-// 		func(w http.ResponseWriter, r *http.Request) {
-// 			if localhostRouter != nil {
-// 				localhostRouter.ServeHTTP(w, r)
-// 			} else {
-// 				getRouter().ServeHTTP(w, r)
-// 			}
-// 		})
-
-// 	return handler
-// }
-
-// func getRouter() http.Handler {
-// 	// router := mux.NewRouter()
-// 	// router.HandleFunc("/pods", handlePostPods).Methods("POST")
-// 	// return router
-// }
-
-// // handlePostPods implements POST /pods
-// func handlePostPods(w http.ResponseWriter, _ *http.Request) {
-
-// }
 
 // TestVolumeCreationSuite_Run
 func TestVolumeCreationSuite_Run(t *testing.T) {
@@ -2044,35 +2008,6 @@ func TestMultiAttachSuite_Parameters(t *testing.T) {
 	}
 }
 
-func mockLocalhostTestServerHandler(resp http.ResponseWriter, req *http.Request) {
-	// resp.WriteHeader(http.StatusOK)
-
-	switch req.RequestURI {
-	case "/pods":
-		if req.Method == http.MethodGet {
-			resp.WriteHeader(http.StatusOK)
-			// response := types.CompatibilityManagement{
-			// 	ID: "mock-compatibility-system-id",
-			// }
-			// content, err := json.Marshal(response)
-			// if err != nil {
-			// 	http.Error(resp, err.Error(), http.StatusNotFound)
-			// }
-			// resp.Write(content)
-		} else if req.Method == http.MethodPost {
-			resp.WriteHeader(http.StatusOK)
-			// response := types.CompatibilityManagement{
-			// 	ID: "mock-compatibility-management-id",
-			// }
-			// content, err := json.Marshal(response)
-			// if err != nil {
-			// 	http.Error(resp, err.Error(), http.StatusNotFound)
-			// }
-			// resp.Write(content)
-		}
-	}
-}
-
 type FakeRemoteExecutor struct{}
 
 // another option is to use mockgen to mock the RemoteExecutor interface
@@ -2142,17 +2077,44 @@ func TestBlockSnapSuite_Run(t *testing.T) {
 		return true, pod, nil
 	})
 
-	mockServer := httptest.NewServer(http.HandlerFunc(mockLocalhostTestServerHandler))
-	defer mockServer.Close()
-	// mockServer.URL = "127.0.0.1:443"
-	mockServer.URL = "https://localhost"
+	// Set up a reactor to simulate VolumeSnaps becoming Ready
+	clientSet.Fake.PrependReactor("create", "snapshot", func(action k8stesting.Action) (bool, runtime.Object, error) {
+		createAction := action.(k8stesting.CreateAction)
+		snapshot := createAction.GetObject().(*v1beta1.VolumeSnapshot)
+		// Set pod phase to Running
+		snapshot.Status = &v1beta1.VolumeSnapshotStatus{
+			ReadyToUse: func() *bool {
+				b := true
+				return &b
+			}(),
+		}
+		return false, nil, nil // Allow normal processing to continue
+	})
+
+	// Also, when getting snapshots, return the pod with Running status and Ready condition
+	clientSet.Fake.PrependReactor("get", "snapshot", func(action k8stesting.Action) (bool, runtime.Object, error) {
+		getAction := action.(k8stesting.GetAction)
+		snapshotName := getAction.GetName()
+		// Create a pod object with the expected name and Ready status
+		snapshot := &v1beta1.VolumeSnapshot{
+			ObjectMeta: metav1.ObjectMeta{
+				Name:      snapshotName,
+				Namespace: namespace,
+			},
+			Status: &v1beta1.VolumeSnapshotStatus{
+				ReadyToUse: func() *bool {
+					b := true
+					return &b
+				}(),
+			},
+		}
+		return true, snapshot, nil
+	})
 
 	// Create a fake KubeClient
 	kubeClient := &k8sclient.KubeClient{
 		ClientSet: clientSet,
-		Config: &rest.Config{
-			Host: mockServer.URL,
-		},
+		Config:    &rest.Config{},
 	}
 
 	// Create the necessary clients
@@ -2161,7 +2123,7 @@ func TestBlockSnapSuite_Run(t *testing.T) {
 	podClient.RemoteExecutor = &FakeRemoteExecutor{}
 	vaClient, _ := kubeClient.CreateVaClient(namespace)
 	metricsClient, _ := kubeClient.CreateMetricsClient(namespace)
-	// snapGA, snapBeta, snErr := GetSnapshotClient(namespace, client)
+	snapGA, snapBeta, _ := GetSnapshotClient(namespace, kubeClient)
 
 	clients := &k8sclient.Clients{
 		PVCClient:         pvcClient,
@@ -2169,11 +2131,9 @@ func TestBlockSnapSuite_Run(t *testing.T) {
 		VaClient:          vaClient,
 		StatefulSetClient: nil,
 		MetricsClient:     metricsClient,
-		// SnapClientGA:      snapGA,
-		// SnapClientBeta:    snapBeta,
+		SnapClientGA:      snapGA,
+		SnapClientBeta:    snapBeta,
 	}
-
-	fmt.Printf("mockServer listening on %s\n", mockServer.URL)
 
 	// Run the suite with connection refused error
 	delFunc, err := bss.Run(ctx, "test-storage-class", clients)
