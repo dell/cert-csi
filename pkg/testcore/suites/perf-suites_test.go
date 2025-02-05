@@ -4,6 +4,8 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"io"
+	"net/url"
 	"reflect"
 	"testing"
 
@@ -14,6 +16,7 @@ import (
 	"github.com/dell/cert-csi/pkg/k8sclient/resources/volumegroupsnapshot"
 	"github.com/dell/cert-csi/pkg/observer"
 	vgsAlpha "github.com/dell/csi-volumegroup-snapshotter/api/v1"
+	v1beta1 "github.com/kubernetes-csi/external-snapshotter/client/v4/apis/volumesnapshot/v1beta1"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 	v1 "k8s.io/api/core/v1"
@@ -26,8 +29,10 @@ import (
 	kfake "k8s.io/client-go/kubernetes/fake"
 	typedcorev1 "k8s.io/client-go/kubernetes/typed/core/v1"
 	"k8s.io/client-go/rest"
+	restclient "k8s.io/client-go/rest"
 	restfake "k8s.io/client-go/rest/fake"
 	k8stesting "k8s.io/client-go/testing"
+	"k8s.io/client-go/tools/remotecommand"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 )
 
@@ -2158,6 +2163,13 @@ func TestMultiAttachSuite_Parameters(t *testing.T) {
 	}
 }
 
+type FakeRemoteExecutor struct{}
+
+// another option is to use mockgen to mock the RemoteExecutor interface
+func (FakeRemoteExecutor) Execute(method string, url *url.URL, config *restclient.Config, stdin io.Reader, stdout, stderr io.Writer, tty bool, terminalSizeQueue remotecommand.TerminalSizeQueue) error {
+	return nil
+}
+
 func TestBlockSnapSuite_Run(t *testing.T) {
 	// Create a context
 	ctx := context.Background()
@@ -2220,6 +2232,40 @@ func TestBlockSnapSuite_Run(t *testing.T) {
 		return true, pod, nil
 	})
 
+	// Set up a reactor to simulate VolumeSnaps becoming Ready
+	clientSet.Fake.PrependReactor("create", "snapshot", func(action k8stesting.Action) (bool, runtime.Object, error) {
+		createAction := action.(k8stesting.CreateAction)
+		snapshot := createAction.GetObject().(*v1beta1.VolumeSnapshot)
+		// Set pod phase to Running
+		snapshot.Status = &v1beta1.VolumeSnapshotStatus{
+			ReadyToUse: func() *bool {
+				b := true
+				return &b
+			}(),
+		}
+		return false, nil, nil // Allow normal processing to continue
+	})
+
+	// Also, when getting snapshots, return the pod with Running status and Ready condition
+	clientSet.Fake.PrependReactor("get", "snapshot", func(action k8stesting.Action) (bool, runtime.Object, error) {
+		getAction := action.(k8stesting.GetAction)
+		snapshotName := getAction.GetName()
+		// Create a pod object with the expected name and Ready status
+		snapshot := &v1beta1.VolumeSnapshot{
+			ObjectMeta: metav1.ObjectMeta{
+				Name:      snapshotName,
+				Namespace: namespace,
+			},
+			Status: &v1beta1.VolumeSnapshotStatus{
+				ReadyToUse: func() *bool {
+					b := true
+					return &b
+				}(),
+			},
+		}
+		return true, snapshot, nil
+	})
+
 	// Create a fake KubeClient
 	kubeClient := &k8sclient.KubeClient{
 		ClientSet: clientSet,
@@ -2229,9 +2275,10 @@ func TestBlockSnapSuite_Run(t *testing.T) {
 	// Create the necessary clients
 	pvcClient, _ := kubeClient.CreatePVCClient(namespace)
 	podClient, _ := kubeClient.CreatePodClient(namespace)
+	podClient.RemoteExecutor = &FakeRemoteExecutor{}
 	vaClient, _ := kubeClient.CreateVaClient(namespace)
 	metricsClient, _ := kubeClient.CreateMetricsClient(namespace)
-	// snapGA, snapBeta, snErr := GetSnapshotClient(namespace, client)
+	snapGA, snapBeta, _ := GetSnapshotClient(namespace, kubeClient)
 
 	clients := &k8sclient.Clients{
 		PVCClient:         pvcClient,
@@ -2239,8 +2286,8 @@ func TestBlockSnapSuite_Run(t *testing.T) {
 		VaClient:          vaClient,
 		StatefulSetClient: nil,
 		MetricsClient:     metricsClient,
-		// SnapClientGA:      snapGA,
-		// SnapClientBeta:    snapBeta,
+		SnapClientGA:      snapGA,
+		SnapClientBeta:    snapBeta,
 	}
 
 	// Run the suite with connection refused error
