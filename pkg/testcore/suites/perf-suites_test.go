@@ -715,58 +715,33 @@ func TestRemoteReplicationProvisioningSuite_Run(t *testing.T) {
 	}
 
 	pvcClient, err := kubeClient.CreatePVCClient("test-namespace")
-	//todo: assign name var in the pvcClient around here
-	//pvcClient.Name = "test-name"
 	if err != nil {
 		t.Fatalf("Failed to get PVC Client: %v", err)
 	}
-	// Create a Mock PVC object that is bound
-	//pvcMockObject := pvcClient.Get(ctx, "test-name")
-	//pvcMockObject.Object.Status.Phase = v1.ClaimBound
-	pvcClient.Update(ctx, &v1.PersistentVolumeClaim{
-		ObjectMeta: metav1.ObjectMeta{
-			Name: "test-pvc",
-		},
-		Spec: v1.PersistentVolumeClaimSpec{
-			AccessModes: []v1.PersistentVolumeAccessMode{
-				v1.ReadWriteOnce,
-			},
-		},
-		Status: v1.PersistentVolumeClaimStatus{
-			Phase: v1.ClaimBound,
-		},
+
+	// Create the PVC status & set to Bound
+	clientset.Fake.PrependReactor("create", "persistentvolumeclaims", func(action k8stesting.Action) (handled bool, ret runtime.Object, err error) {
+		createAction := action.(k8stesting.CreateAction)
+		createdPVC := createAction.GetObject().(*v1.PersistentVolumeClaim)
+		createdPVC.Status.Phase = v1.ClaimBound
+		return true, createdPVC, nil
 	})
 
-	// Update the PVC in the fake clientset with the Mock PVC object
-	/*_, err = clientset.CoreV1().PersistentVolumeClaims("test-namespace").Update(ctx, pvcMockObject.Object, metav1.UpdateOptions{})
-	if err != nil {
-		t.Fatalf("Failed to update PVC: %v", err)
-	}*/
-
-	//todo: this commented out section is also attempting the same thing as above, but with the ClaimApplyConfiguration object. Try this if it doesn't work
-
-	// Create a new PersistentVolumeClaimApplyConfiguration object
-	/* 	 	pvcApplyConfig := &clientcorev1.PersistentVolumeClaimApplyConfiguration{
-		ObjectMeta: metav1.ObjectMeta{
-			Name: "test-pvc",
-		},
-		Spec: v1.PersistentVolumeClaimSpec{
-			AccessModes: []v1.PersistentVolumeAccessMode{
-				v1.ReadWriteOnce,
-			},
-			Resources: v1.ResourceRequirements{
-				Requests: v1.ResourceList{
-					v1.ResourceStorage: resource.MustParse("1Gi"),
-				},
-			},
-		},
-	}  */
-
-	// Call ApplyStatus with the new configuration
-	//pvcClient.Interface.ApplyStatus(ctx, pvcApplyConfig, metav1.ApplyOptions{})
 	podClient, _ := kubeClient.CreatePodClient("test-namespace")
 	scClient, _ := kubeClient.CreateSCClient()
 	pvClient, _ := kubeClient.CreatePVClient()
+	// todo: maybe remove this update
+	pvClient.Update(ctx, &v1.PersistentVolume{
+		ObjectMeta: metav1.ObjectMeta{
+			Name: "test-pv",
+		},
+		Spec: v1.PersistentVolumeSpec{
+			StorageClassName: "test-storage-class",
+		},
+		Status: v1.PersistentVolumeStatus{
+			Phase: v1.VolumeBound,
+		},
+	})
 	remoteKubeClient, err := k8sclient.NewRemoteKubeClient(kubeClient.Config, 10)
 	if err != nil {
 		t.Errorf("Error creating remoteKubeClient: %v", err)
