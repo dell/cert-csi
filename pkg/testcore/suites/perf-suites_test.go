@@ -4,7 +4,6 @@ import (
 	"context"
 	"fmt"
 	"io"
-	"net/http"
 	"net/url"
 	"reflect"
 	"testing"
@@ -30,9 +29,7 @@ import (
 	"k8s.io/client-go/tools/remotecommand"
 )
 
-// This file contains HTTP handlers for mocking to the Isilon OneFS REST API.
 var (
-	localhostRouter  http.Handler
 	remotePVCObject  v1.PersistentVolumeClaim
 	remotePVClient   *pv.Client
 	remoteRGClient   *replicationgroup.Client
@@ -2019,7 +2016,7 @@ func TestBlockSnapSuite_Run(t *testing.T) {
 	// Create a context
 	ctx := context.Background()
 
-	// Create a BlockSnapSuite instance5
+	// Create a BlockSnapSuite instance
 	bss := &BlockSnapSuite{
 		SnapClass:   "testSnap",
 		Description: "testDesc",
@@ -2137,7 +2134,7 @@ func TestBlockSnapSuite_Run(t *testing.T) {
 
 	// Run the suite with connection refused error
 	delFunc, err := bss.Run(ctx, "test-storage-class", clients)
-	assert.NoError(t, err)
+	assert.Error(t, err)
 	assert.Nil(t, delFunc)
 }
 
