@@ -445,7 +445,7 @@ func (rrps *RemoteReplicationProvisioningSuite) Run(ctx context.Context, storage
 	for i := 0; i < rrps.VolumeNumber; i++ {
 		// Create PVCs
 		var volumeName string
-		vcconf := testcore.VolumeCreationConfig(storageClass, rrps.VolumeSize, volumeName, rrps.VolAccessMode) //todo: volumeName and VolAccessMode are empty. VolAccessMode being empty is fine
+		vcconf := testcore.VolumeCreationConfig(storageClass, rrps.VolumeSize, volumeName, rrps.VolAccessMode)
 		volTmpl := pvcClient.MakePVC(vcconf)
 		pvc := pvcClient.Create(ctx, volTmpl)
 		if pvc.HasError() {
@@ -454,7 +454,7 @@ func (rrps *RemoteReplicationProvisioningSuite) Run(ctx context.Context, storage
 		pvcNames = append(pvcNames, pvc.Object.Name)
 	}
 
-	err = pvcClient.WaitForAllToBeBound(ctx) //todo: does context need a value here?
+	err = pvcClient.WaitForAllToBeBound(ctx)
 	if err != nil {
 		return delFunc, err
 	}

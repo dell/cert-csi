@@ -89,7 +89,6 @@ type Client struct {
 	ClientSet kubernetes.Interface
 	Namespace string
 	Timeout   int
-	//Name      string //todo: remove if adding a name to Client struct doesn't work
 }
 
 // PersistentVolumeClaim conatins pvc client and claim
