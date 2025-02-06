@@ -710,6 +710,119 @@ func TestProvisioningSuite_validateCustomPodName(t *testing.T) {
 }
 
 // TODO TestRemoteReplicationProvisioningSuite_Run
+func TestRemoteReplicationProvisioningSuite_Run(t *testing.T) {
+	ctx := context.Background()
+
+	rrps := &RemoteReplicationProvisioningSuite{}
+
+	// Create a fake storage class with VolumeBindingMode set to WaitForFirstConsumer
+	storageClass := &storagev1.StorageClass{
+		ObjectMeta: metav1.ObjectMeta{Name: "test-storage-class"},
+		VolumeBindingMode: func() *storagev1.VolumeBindingMode {
+			mode := storagev1.VolumeBindingWaitForFirstConsumer
+			return &mode
+		}(),
+		Parameters: map[string]string{
+			"replication.storage.dell.com/isReplicationEnabled": "true",
+		},
+	}
+
+	//clientset := fake.NewSimpleClientset(storageClass)
+	clientset := NewFakeClientsetWithRestClient(storageClass)
+
+	// Create a fake k8s client with the storage class
+	clientset.Fake.PrependReactor("create", "pods", func(action k8stesting.Action) (bool, runtime.Object, error) {
+		createAction := action.(k8stesting.CreateAction)
+		pod := createAction.GetObject().(*v1.Pod)
+		// Set pod phase to Running
+		pod.Status.Phase = v1.PodRunning
+		// Simulate the Ready condition
+		pod.Status.Conditions = append(pod.Status.Conditions, v1.PodCondition{
+			Type:   v1.PodReady,
+			Status: v1.ConditionTrue,
+		})
+		return false, nil, nil
+	})
+
+	// Create a fake k8s clientset with the storage class
+	clientset.Fake.PrependReactor("get", "pods", func(action k8stesting.Action) (bool, runtime.Object, error) {
+		getAction := action.(k8stesting.GetAction)
+		podName := getAction.GetName()
+		// Create a pod object with the expected name and Ready status
+		pod := &v1.Pod{
+			ObjectMeta: metav1.ObjectMeta{
+				Name:      podName,
+				Namespace: "test-namespace",
+			},
+			Status: v1.PodStatus{
+				Phase: v1.PodRunning,
+				Conditions: []v1.PodCondition{
+					{
+						Type:   v1.PodReady,
+						Status: v1.ConditionTrue,
+					},
+				},
+			},
+		}
+		return true, pod, nil
+	})
+
+	// Note: This test requires a kube config on the machine that is running the test
+	configPath := "/root/.kube/config"
+	config, configErr := k8sclient.GetConfig(configPath)
+	if configErr != nil {
+		t.Errorf("Error creating k8sClient.Config: %v", configErr)
+	}
+
+	kubeClient := &k8sclient.KubeClient{
+		ClientSet:   clientset,
+		Config:      config,
+		VersionInfo: nil,
+	}
+
+	pvcClient, err := kubeClient.CreatePVCClient("test-namespace")
+	if err != nil {
+		t.Fatalf("Failed to get PVC Client: %v", err)
+	}
+
+	// Create the PVC status & set to Bound
+	clientset.Fake.PrependReactor("create", "persistentvolumeclaims", func(action k8stesting.Action) (handled bool, ret runtime.Object, err error) {
+		createAction := action.(k8stesting.CreateAction)
+		createdPVC := createAction.GetObject().(*v1.PersistentVolumeClaim)
+		createdPVC.Status.Phase = v1.ClaimBound
+		return true, createdPVC, nil
+	})
+
+	podClient, _ := kubeClient.CreatePodClient("test-namespace")
+	scClient, _ := kubeClient.CreateSCClient()
+	pvClient, _ := kubeClient.CreatePVClient()
+	remoteKubeClient, err := k8sclient.NewRemoteKubeClient(kubeClient.Config, 10)
+	if err != nil {
+		t.Errorf("Error creating remoteKubeClient: %v", err)
+	}
+
+	rgClient, _ := remoteKubeClient.CreateRGClient()
+
+	// Update the k8sclient.Clients instance with the fake clients
+	k8sClients := &k8sclient.Clients{
+		PVCClient:              pvcClient,
+		PodClient:              podClient,
+		SCClient:               scClient,
+		PersistentVolumeClient: pvClient,
+		KubeClient:             kubeClient,
+		RgClient:               rgClient,
+	}
+
+	// Run the RemoteReplicationProvisioningSuite
+	gotRunFunc, err := rrps.Run(ctx, "test-storage-class", k8sClients)
+
+	// Check if there was an error
+	if gotRunFunc != nil {
+		if err != nil {
+			t.Errorf("Error running RemoteReplicationProvisioningSuite.Run(): %v", err)
+		}
+	}
+}
 
 func TestRemoteReplicationProvisioningSuite_GetObservers(t *testing.T) {
 	rrps := &RemoteReplicationProvisioningSuite{}
