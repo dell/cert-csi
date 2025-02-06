@@ -645,11 +645,7 @@ func TestProvisioningSuite_validateCustomPodName(t *testing.T) {
 func TestRemoteReplicationProvisioningSuite_Run(t *testing.T) {
 	ctx := context.Background()
 
-	rrps := &RemoteReplicationProvisioningSuite{
-		VolumeNumber: 1,
-		VolumeSize:   "3Gi",
-		Image:        "quay.io/centos/centos:latest",
-	}
+	rrps := &RemoteReplicationProvisioningSuite{}
 
 	// Create a fake storage class with VolumeBindingMode set to WaitForFirstConsumer
 	storageClass := &storagev1.StorageClass{
@@ -732,18 +728,6 @@ func TestRemoteReplicationProvisioningSuite_Run(t *testing.T) {
 	podClient, _ := kubeClient.CreatePodClient("test-namespace")
 	scClient, _ := kubeClient.CreateSCClient()
 	pvClient, _ := kubeClient.CreatePVClient()
-	// todo: maybe remove this update
-	pvClient.Update(ctx, &v1.PersistentVolume{
-		ObjectMeta: metav1.ObjectMeta{
-			Name: "test-pv",
-		},
-		Spec: v1.PersistentVolumeSpec{
-			StorageClassName: "test-storage-class",
-		},
-		Status: v1.PersistentVolumeStatus{
-			Phase: v1.VolumeBound,
-		},
-	})
 	remoteKubeClient, err := k8sclient.NewRemoteKubeClient(kubeClient.Config, 10)
 	if err != nil {
 		t.Errorf("Error creating remoteKubeClient: %v", err)
