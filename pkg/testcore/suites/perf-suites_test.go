@@ -663,7 +663,8 @@ func TestRemoteReplicationProvisioningSuite_Run(t *testing.T) {
 		},
 	}
 
-	clientset := fake.NewSimpleClientset(storageClass)
+	//clientset := fake.NewSimpleClientset(storageClass)
+	clientset := NewFakeClientsetWithRestClient(storageClass)
 
 	// Create a fake k8s client with the storage class
 	clientset.Fake.PrependReactor("create", "pods", func(action k8stesting.Action) (bool, runtime.Object, error) {
@@ -702,6 +703,7 @@ func TestRemoteReplicationProvisioningSuite_Run(t *testing.T) {
 		return true, pod, nil
 	})
 
+	// Note: This test requires a kube config on the machine that is running the test
 	configPath := "/root/.kube/config"
 	config, configErr := k8sclient.GetConfig(configPath)
 	if configErr != nil {
