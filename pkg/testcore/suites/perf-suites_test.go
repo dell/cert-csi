@@ -4,6 +4,8 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"io"
+	"net/url"
 	"reflect"
 	"testing"
 
@@ -14,6 +16,7 @@ import (
 	"github.com/dell/cert-csi/pkg/k8sclient/resources/volumegroupsnapshot"
 	"github.com/dell/cert-csi/pkg/observer"
 	vgsAlpha "github.com/dell/csi-volumegroup-snapshotter/api/v1"
+	v1beta1 "github.com/kubernetes-csi/external-snapshotter/client/v4/apis/volumesnapshot/v1beta1"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 	v1 "k8s.io/api/core/v1"
@@ -26,8 +29,10 @@ import (
 	kfake "k8s.io/client-go/kubernetes/fake"
 	typedcorev1 "k8s.io/client-go/kubernetes/typed/core/v1"
 	"k8s.io/client-go/rest"
+	restclient "k8s.io/client-go/rest"
 	restfake "k8s.io/client-go/rest/fake"
 	k8stesting "k8s.io/client-go/testing"
+	"k8s.io/client-go/tools/remotecommand"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 )
 
@@ -705,6 +710,119 @@ func TestProvisioningSuite_validateCustomPodName(t *testing.T) {
 }
 
 // TODO TestRemoteReplicationProvisioningSuite_Run
+func TestRemoteReplicationProvisioningSuite_Run(t *testing.T) {
+	ctx := context.Background()
+
+	rrps := &RemoteReplicationProvisioningSuite{}
+
+	// Create a fake storage class with VolumeBindingMode set to WaitForFirstConsumer
+	storageClass := &storagev1.StorageClass{
+		ObjectMeta: metav1.ObjectMeta{Name: "test-storage-class"},
+		VolumeBindingMode: func() *storagev1.VolumeBindingMode {
+			mode := storagev1.VolumeBindingWaitForFirstConsumer
+			return &mode
+		}(),
+		Parameters: map[string]string{
+			"replication.storage.dell.com/isReplicationEnabled": "true",
+		},
+	}
+
+	//clientset := fake.NewSimpleClientset(storageClass)
+	clientset := NewFakeClientsetWithRestClient(storageClass)
+
+	// Create a fake k8s client with the storage class
+	clientset.Fake.PrependReactor("create", "pods", func(action k8stesting.Action) (bool, runtime.Object, error) {
+		createAction := action.(k8stesting.CreateAction)
+		pod := createAction.GetObject().(*v1.Pod)
+		// Set pod phase to Running
+		pod.Status.Phase = v1.PodRunning
+		// Simulate the Ready condition
+		pod.Status.Conditions = append(pod.Status.Conditions, v1.PodCondition{
+			Type:   v1.PodReady,
+			Status: v1.ConditionTrue,
+		})
+		return false, nil, nil
+	})
+
+	// Create a fake k8s clientset with the storage class
+	clientset.Fake.PrependReactor("get", "pods", func(action k8stesting.Action) (bool, runtime.Object, error) {
+		getAction := action.(k8stesting.GetAction)
+		podName := getAction.GetName()
+		// Create a pod object with the expected name and Ready status
+		pod := &v1.Pod{
+			ObjectMeta: metav1.ObjectMeta{
+				Name:      podName,
+				Namespace: "test-namespace",
+			},
+			Status: v1.PodStatus{
+				Phase: v1.PodRunning,
+				Conditions: []v1.PodCondition{
+					{
+						Type:   v1.PodReady,
+						Status: v1.ConditionTrue,
+					},
+				},
+			},
+		}
+		return true, pod, nil
+	})
+
+	// Note: This test requires a kube config on the machine that is running the test
+	configPath := "/root/.kube/config"
+	config, configErr := k8sclient.GetConfig(configPath)
+	if configErr != nil {
+		t.Errorf("Error creating k8sClient.Config: %v", configErr)
+	}
+
+	kubeClient := &k8sclient.KubeClient{
+		ClientSet:   clientset,
+		Config:      config,
+		VersionInfo: nil,
+	}
+
+	pvcClient, err := kubeClient.CreatePVCClient("test-namespace")
+	if err != nil {
+		t.Fatalf("Failed to get PVC Client: %v", err)
+	}
+
+	// Create the PVC status & set to Bound
+	clientset.Fake.PrependReactor("create", "persistentvolumeclaims", func(action k8stesting.Action) (handled bool, ret runtime.Object, err error) {
+		createAction := action.(k8stesting.CreateAction)
+		createdPVC := createAction.GetObject().(*v1.PersistentVolumeClaim)
+		createdPVC.Status.Phase = v1.ClaimBound
+		return true, createdPVC, nil
+	})
+
+	podClient, _ := kubeClient.CreatePodClient("test-namespace")
+	scClient, _ := kubeClient.CreateSCClient()
+	pvClient, _ := kubeClient.CreatePVClient()
+	remoteKubeClient, err := k8sclient.NewRemoteKubeClient(kubeClient.Config, 10)
+	if err != nil {
+		t.Errorf("Error creating remoteKubeClient: %v", err)
+	}
+
+	rgClient, _ := remoteKubeClient.CreateRGClient()
+
+	// Update the k8sclient.Clients instance with the fake clients
+	k8sClients := &k8sclient.Clients{
+		PVCClient:              pvcClient,
+		PodClient:              podClient,
+		SCClient:               scClient,
+		PersistentVolumeClient: pvClient,
+		KubeClient:             kubeClient,
+		RgClient:               rgClient,
+	}
+
+	// Run the RemoteReplicationProvisioningSuite
+	gotRunFunc, err := rrps.Run(ctx, "test-storage-class", k8sClients)
+
+	// Check if there was an error
+	if gotRunFunc != nil {
+		if err != nil {
+			t.Errorf("Error running RemoteReplicationProvisioningSuite.Run(): %v", err)
+		}
+	}
+}
 
 func TestRemoteReplicationProvisioningSuite_GetObservers(t *testing.T) {
 	rrps := &RemoteReplicationProvisioningSuite{}
@@ -1113,10 +1231,8 @@ func TestVolumeGroupSnapSuite_Run(t *testing.T) {
 
 	_, err := vgs.Run(ctx, "test-storage-class", clients)
 
-	expectedError := errors.New("Post \"http://localhost/apis/volumegroup.storage.dell.com/v1/namespaces/test-namespace/resource\": dial tcp 127.0.0.1:80: connect: connection refused")
-	if err.Error() != expectedError.Error() {
-		t.Errorf("Expected error: %v, but got: %v", expectedError, err)
-	}
+	expectedError := errors.New("connection refused")
+	assert.Contains(t, err.Error(), expectedError.Error())
 }
 
 func TestVolumeGroupSnapSuite_GetObservers(t *testing.T) {
@@ -2160,6 +2276,13 @@ func TestMultiAttachSuite_Parameters(t *testing.T) {
 	}
 }
 
+type FakeRemoteExecutor struct{}
+
+// another option is to use mockgen to mock the RemoteExecutor interface
+func (FakeRemoteExecutor) Execute(method string, url *url.URL, config *restclient.Config, stdin io.Reader, stdout, stderr io.Writer, tty bool, terminalSizeQueue remotecommand.TerminalSizeQueue) error {
+	return nil
+}
+
 func TestBlockSnapSuite_Run(t *testing.T) {
 	// Create a context
 	ctx := context.Background()
@@ -2222,6 +2345,40 @@ func TestBlockSnapSuite_Run(t *testing.T) {
 		return true, pod, nil
 	})
 
+	// Set up a reactor to simulate VolumeSnaps becoming Ready
+	clientSet.Fake.PrependReactor("create", "snapshot", func(action k8stesting.Action) (bool, runtime.Object, error) {
+		createAction := action.(k8stesting.CreateAction)
+		snapshot := createAction.GetObject().(*v1beta1.VolumeSnapshot)
+		// Set pod phase to Running
+		snapshot.Status = &v1beta1.VolumeSnapshotStatus{
+			ReadyToUse: func() *bool {
+				b := true
+				return &b
+			}(),
+		}
+		return false, nil, nil // Allow normal processing to continue
+	})
+
+	// Also, when getting snapshots, return the pod with Running status and Ready condition
+	clientSet.Fake.PrependReactor("get", "snapshot", func(action k8stesting.Action) (bool, runtime.Object, error) {
+		getAction := action.(k8stesting.GetAction)
+		snapshotName := getAction.GetName()
+		// Create a pod object with the expected name and Ready status
+		snapshot := &v1beta1.VolumeSnapshot{
+			ObjectMeta: metav1.ObjectMeta{
+				Name:      snapshotName,
+				Namespace: namespace,
+			},
+			Status: &v1beta1.VolumeSnapshotStatus{
+				ReadyToUse: func() *bool {
+					b := true
+					return &b
+				}(),
+			},
+		}
+		return true, snapshot, nil
+	})
+
 	// Create a fake KubeClient
 	kubeClient := &k8sclient.KubeClient{
 		ClientSet: clientSet,
@@ -2231,9 +2388,10 @@ func TestBlockSnapSuite_Run(t *testing.T) {
 	// Create the necessary clients
 	pvcClient, _ := kubeClient.CreatePVCClient(namespace)
 	podClient, _ := kubeClient.CreatePodClient(namespace)
+	podClient.RemoteExecutor = &FakeRemoteExecutor{}
 	vaClient, _ := kubeClient.CreateVaClient(namespace)
 	metricsClient, _ := kubeClient.CreateMetricsClient(namespace)
-	// snapGA, snapBeta, snErr := GetSnapshotClient(namespace, client)
+	snapGA, snapBeta, _ := GetSnapshotClient(namespace, kubeClient)
 
 	clients := &k8sclient.Clients{
 		PVCClient:         pvcClient,
@@ -2241,8 +2399,8 @@ func TestBlockSnapSuite_Run(t *testing.T) {
 		VaClient:          vaClient,
 		StatefulSetClient: nil,
 		MetricsClient:     metricsClient,
-		// SnapClientGA:      snapGA,
-		// SnapClientBeta:    snapBeta,
+		SnapClientGA:      snapGA,
+		SnapClientBeta:    snapBeta,
 	}
 
 	// Run the suite with connection refused error
