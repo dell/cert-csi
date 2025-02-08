@@ -71,6 +71,36 @@ func (suite *ScTestSuite) TestSC_MakeStorageClass() {
 		_ = scClient.MakeStorageClass("powerstore", "powerstore")
 	})
 }
+func (suite *ScTestSuite) TestSC_Get_NonExistent() {
+	scClient, err := suite.kubeClient.CreateSCClient()
+	suite.NoError(err)
+	suite.Run("sc get non-existent", func() {
+		sc := scClient.Get(context.Background(), "non-existent-sc")
+		suite.Error(sc.GetError(), "expected error for non-existent storage class")
+	})
+}
+func (suite *ScTestSuite) TestSC_Delete_NonExistent() {
+	scClient, err := suite.kubeClient.CreateSCClient()
+	suite.NoError(err)
+	suite.Run("sc delete non-existent", func() {
+		err = scClient.Delete(context.Background(), "non-existent-sc")
+		suite.Error(err, "expected error for deleting non-existent storage class")
+	})
+}
+
+func (suite *ScTestSuite) TestSC_DuplicateStorageClass() {
+	scClient, err := suite.kubeClient.CreateSCClient()
+	suite.NoError(err)
+	suite.Run("sc duplicate storage class", func() {
+		sourceSc := &storagev1.StorageClass{
+			ObjectMeta: metav1.ObjectMeta{Name: "source-sc"},
+		}
+		newSc := scClient.DuplicateStorageClass("new-sc", sourceSc)
+		suite.NotNil(newSc, "expected non-nil duplicated storage class")
+		suite.Equal("new-sc", newSc.GetName(), "expected 'new-sc' name")
+	})
+}
+
 func TestScSuite(t *testing.T) {
 	suite.Run(t, new(ScTestSuite))
 }
