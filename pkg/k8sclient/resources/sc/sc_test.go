@@ -63,7 +63,14 @@ func (suite *ScTestSuite) TestSC_Delete() {
 	})
 
 }
-
+func (suite *ScTestSuite) TestSC_MakeStorageClass() {
+	scClient, err := suite.kubeClient.CreateSCClient()
+	scClient.Timeout = 1
+	suite.NoError(err)
+	suite.Run("sc make storage class", func() {
+		_ = scClient.MakeStorageClass("powerstore", "powerstore")
+	})
+}
 func TestScSuite(t *testing.T) {
 	suite.Run(t, new(ScTestSuite))
 }
