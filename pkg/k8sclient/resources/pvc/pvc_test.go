@@ -18,6 +18,7 @@ package pvc_test
 
 import (
 	"context"
+	"fmt"
 	"github.com/dell/cert-csi/pkg/k8sclient"
 	pvc2 "github.com/dell/cert-csi/pkg/k8sclient/resources/pvc"
 	"github.com/stretchr/testify/suite"
@@ -25,6 +26,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes/fake"
 	"testing"
+	"time"
 )
 
 type PVCTestSuite struct {
@@ -126,6 +128,35 @@ func (suite *PVCTestSuite) TestCreateMultiplePVCs() {
 		suite.Error(err, "expected error for empty PVC size")
 		suite.EqualError(err, "volume size cannot be nulls")
 	})
+}
+
+func (suite *PVCTestSuite) TestUpdate() {
+	// Generate a unique PVC name to avoid conflicts
+	pvcName := fmt.Sprintf("test-pvc-%d", time.Now().UnixNano())
+
+	// Create PVC client
+	pvcClient, err := suite.kubeClient.CreatePVCClient("default")
+	suite.Require().NoError(err, "Expected no error while creating PVC client")
+	suite.Require().NotNil(pvcClient, "PVC client should not be nil")
+
+	// Create PVC
+	pvc := &v1.PersistentVolumeClaim{ObjectMeta: metav1.ObjectMeta{Name: pvcName}}
+	createdPVC := pvcClient.Create(context.Background(), pvc)
+	suite.Require().NotNil(createdPVC, "Created PVC object should not be nil")
+	suite.NoError(createdPVC.GetError(), "Expected no error for valid PVC creation")
+	suite.Equal(pvcName, createdPVC.Object.GetName(), "Expected PVC name to match created name")
+
+	// Update PVC
+	updatedPVC := pvcClient.Update(context.Background(), pvc)
+	suite.Require().NotNil(updatedPVC, "Updated PVC object should not be nil")
+	suite.NoError(updatedPVC.GetError(), "Expected no error for valid PVC update")
+	suite.Equal(pvcName, updatedPVC.Object.GetName(), "Expected PVC name to remain the same after update")
+
+	// Delete PVC
+	deletedPVC := pvcClient.Delete(context.Background(), pvc)
+	suite.Require().NotNil(deletedPVC, "Deleted PVC object should not be nil")
+	suite.NoError(deletedPVC.GetError(), "Expected no error for valid PVC deletion")
+	suite.Equal(pvcName, deletedPVC.Object.GetName(), "Expected PVC name to match before deletion")
 }
 
 func TestPVCSuite(t *testing.T) {
