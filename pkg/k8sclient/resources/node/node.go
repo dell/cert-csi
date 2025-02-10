@@ -18,6 +18,8 @@ package node
 
 import (
 	"context"
+	"time"
+	"fmt"
 
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
@@ -42,14 +44,37 @@ type Client struct {
 
 // NodeCordon cordons a node
 func (c *Client) NodeCordon(ctx context.Context, nodename string) error {
-	return c.cordonUnCordon(ctx, nodename, true)
+	// Create a new context with a timeout
+	timeoutCtx, cancel := context.WithTimeout(ctx, time.Second)
+	defer cancel()
+
+	// Call the actual cordon logic
+	err := c.cordonUnCordon(timeoutCtx, nodename, true)
+
+	// Check if the context timed out
+	if timeoutCtx.Err() == context.DeadlineExceeded {
+		return fmt.Errorf("timeout error: failed to cordon node within the specified timeout")
+	}
+
+	return err
 }
 
 // NodeUnCordon uncordons a node
 func (c *Client) NodeUnCordon(ctx context.Context, nodename string) error {
-	return c.cordonUnCordon(ctx, nodename, false)
-}
+	// Create a new context with a timeout
+	timeoutCtx, cancel := context.WithTimeout(ctx, time.Second)
+	defer cancel()
 
+	// Call the actual uncordon logic
+	err := c.cordonUnCordon(timeoutCtx, nodename, false)
+
+	// Check if the context timed out
+	if timeoutCtx.Err() == context.DeadlineExceeded {
+		return fmt.Errorf("timeout error: failed to uncordon node within the specified timeout")
+	}
+
+	return err
+}
 func (c *Client) cordonUnCordon(ctx context.Context, nodename string, cordon bool) error {
 	node, err := c.Interface.Get(ctx, nodename, metav1.GetOptions{})
 	if err != nil {
