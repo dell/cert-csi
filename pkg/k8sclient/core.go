@@ -293,6 +293,7 @@ func (c *KubeClient) CreateRGClient() (*rg.Client, error) {
 
 	k8sClient, err := client.New(c.Config, client.Options{Scheme: scheme})
 	if err != nil {
+		logrus.Debugf("Error creating RG client: %s", err)
 		return nil, err
 	}
 
