@@ -2583,3 +2583,176 @@ func TestVolumeMigrateSuite_Parameters(t *testing.T) {
 // 		})
 // 	}
 // }
+
+func TestSnapSuite_Run(t *testing.T) {
+
+	// Mock storageClass
+	// Create a fake storage class with VolumeBindingMode set to WaitForFirstConsumer
+	storageClass := &storagev1.StorageClass{
+		ObjectMeta: metav1.ObjectMeta{Name: "test-storage-class"},
+		VolumeBindingMode: func() *storagev1.VolumeBindingMode {
+			mode := storagev1.VolumeBindingWaitForFirstConsumer
+			return &mode
+		}(),
+	}
+
+	clientset := NewFakeClientsetWithRestClient(storageClass)
+
+	clientset.Fake.PrependReactor("create", "pods", func(action k8stesting.Action) (bool, runtime.Object, error) {
+		createAction := action.(k8stesting.CreateAction)
+		pod := createAction.GetObject().(*v1.Pod)
+		// Set pod phase to Running
+		pod.Status.Phase = v1.PodRunning
+		// Simulate the Ready condition
+		pod.Status.Conditions = append(pod.Status.Conditions, v1.PodCondition{
+			Type:   v1.PodReady,
+			Status: v1.ConditionTrue,
+		})
+		return false, nil, nil // Allow normal processing to continue
+	})
+
+	// Also, when getting pods, return the pod with Running status and Ready condition
+	clientset.Fake.PrependReactor("get", "pods", func(action k8stesting.Action) (bool, runtime.Object, error) {
+		getAction := action.(k8stesting.GetAction)
+		podName := getAction.GetName()
+		//podName := "delete-pod"
+		// Create a pod object with the expected name and Ready status
+		pod := &v1.Pod{
+			ObjectMeta: metav1.ObjectMeta{
+				Name:      podName,
+				Namespace: "test-namespace",
+			},
+			Status: v1.PodStatus{
+				Phase: v1.PodRunning,
+				Conditions: []v1.PodCondition{
+					{
+						Type:   v1.PodReady,
+						Status: v1.ConditionTrue,
+					},
+				},
+			},
+		}
+		return true, pod, nil
+	})
+
+	// Also, when deleting pods, return the pod with Running status and Ready condition
+	clientset.Fake.PrependReactor("delete", "pods", func(action k8stesting.Action) (bool, runtime.Object, error) {
+		getAction := action.(k8stesting.DeleteAction)
+		podName := getAction.GetName()
+		//var pod *v1.Pod
+		// Create a pod object with the expected name and Ready status
+		pod := &v1.Pod{
+			ObjectMeta: metav1.ObjectMeta{
+				Name:      podName,
+				Namespace: "test-namespace",
+			},
+		}
+		fmt.Printf("Pod %v deleted\n", pod)
+		return true, nil, nil
+	})
+
+	// Create a fake k8sclient.KubeClient
+	kubeClient := &k8sclient.KubeClient{
+		ClientSet: clientset,
+	}
+
+	// Create PVC client
+	pvcClient, _ := kubeClient.CreatePVCClient("test-namespace")
+
+	// Create Pod client
+	podClient, _ := kubeClient.CreatePodClient("test-namespace")
+	podClient.RemoteExecutor = &FakeRemoteExecutor{}
+
+	// Create PV client
+	pvClient, _ := kubeClient.CreatePVClient()
+
+	// Update the k8sclient.Clients instance with the fake clients
+	clients := &k8sclient.Clients{
+		PVCClient:              pvcClient,
+		PodClient:              podClient,
+		PersistentVolumeClient: pvClient,
+		KubeClient:             kubeClient,
+	}
+
+	tests := []struct {
+		name           string
+		snapSuite      *SnapSuite
+		storageClass   string
+		clients        *k8sclient.Clients
+		wantError      bool
+		wantDeleteFunc bool
+	}{
+		{
+			name: "Testing Run with default parameters",
+			snapSuite: &SnapSuite{
+				SnapAmount:         0,
+				SnapClass:          "",
+				VolumeSize:         "",
+				Description:        "",
+				CustomSnapName:     "",
+				AccessModeOriginal: "",
+				AccessModeRestored: "",
+				Image:              "",
+			},
+			storageClass:   "test-storage-class",
+			clients:        clients,
+			wantError:      false,
+			wantDeleteFunc: false,
+		},
+		{
+			name: "Testing Run with custom parameters",
+			snapSuite: &SnapSuite{
+				SnapAmount:         5,
+				SnapClass:          "test-snap-class",
+				VolumeSize:         "10Gi",
+				Description:        "test-description",
+				CustomSnapName:     "test-snap-name",
+				AccessModeOriginal: "ReadWriteOnce",
+				AccessModeRestored: "ReadWriteMany",
+				Image:              "quay.io/centos/centos:latest",
+			},
+			storageClass:   "test-storage-class",
+			clients:        clients,
+			wantError:      false,
+			wantDeleteFunc: false,
+		},
+		{
+			name: "Testing Run with error",
+			snapSuite: &SnapSuite{
+				SnapAmount:         5,
+				SnapClass:          "test-snap-class",
+				VolumeSize:         "10Gi",
+				Description:        "test-description",
+				CustomSnapName:     "test-snap-name",
+				AccessModeOriginal: "ReadWriteOnce",
+				AccessModeRestored: "ReadWriteMany",
+				Image:              "quay.io/centos/centos:latest",
+			},
+			storageClass:   "test-storage-class",
+			clients:        &k8sclient.Clients{},
+			wantError:      true,
+			wantDeleteFunc: false,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			delFunc, err := tt.snapSuite.Run(context.Background(), tt.storageClass, tt.clients)
+			if tt.wantError {
+				if err == nil {
+					t.Errorf("SnapSuite.Run() expected error, but got nil")
+				}
+			} else if err != nil {
+				t.Errorf("SnapSuite.Run() returned error: %v", err)
+			}
+
+			if tt.wantDeleteFunc {
+				if delFunc == nil {
+					t.Errorf("SnapSuite.Run() expected delete function, but got nil")
+				}
+			} else if delFunc != nil {
+				t.Errorf("SnapSuite.Run() returned unexpected delete function")
+			}
+		})
+	}
+}
