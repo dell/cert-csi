@@ -22,6 +22,7 @@ import (
 	v1 "k8s.io/api/core/v1"
 	storagev1 "k8s.io/api/storage/v1"
 	"k8s.io/apimachinery/pkg/api/meta"
+	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/schema"
@@ -709,7 +710,6 @@ func TestProvisioningSuite_validateCustomPodName(t *testing.T) {
 	}
 }
 
-// TODO TestRemoteReplicationProvisioningSuite_Run
 func TestRemoteReplicationProvisioningSuite_Run(t *testing.T) {
 	ctx := context.Background()
 
@@ -1521,7 +1521,6 @@ func TestReplicationSuite_Parameters(t *testing.T) {
 	}
 }
 
-// TODO TestVolumeExpansionSuite_Run
 func TestVolumeExpansionSuite_Run(t *testing.T) {
 	// Create a new context
 	ctx := context.Background()
@@ -1588,7 +1587,7 @@ func TestVolumeExpansionSuite_Run(t *testing.T) {
 		return false, nil, nil // Allow normal processing to continue
 	})
 
-	// Also, when getting pods, return the pod with Running status and Ready condition
+	// When getting pods, return the pod with Running status and Ready condition
 	clientset.Fake.PrependReactor("get", "pods", func(action k8stesting.Action) (bool, runtime.Object, error) {
 		getAction := action.(k8stesting.GetAction)
 		podName := getAction.GetName()
@@ -1629,6 +1628,145 @@ func TestVolumeExpansionSuite_Run(t *testing.T) {
 	// Run the suite
 	_, err := ves.Run(ctx, "test-storage-class", k8Clients)
 
+	// Check if there was an error
+	if err != nil {
+		t.Errorf("Error running VolumeExpansionSuite.Run(): %v", err)
+	}
+}
+
+func TestVolumeExpansionSuite_Run_NonBlock(t *testing.T) {
+	// Create a new context
+	ctx := context.Background()
+
+	// Create a new VolumeExpansionSuite instance
+	ves := &VolumeExpansionSuite{
+		VolumeNumber: 1,
+		//PodNumber:    1,
+		IsBlock:      false,
+		InitialSize:  "1Gi",
+		ExpandedSize: "2Gi",
+		Description:  "test-description",
+		AccessMode:   "ReadWriteOnce",
+		//Image:        "quay.io/centos/centos:latest",
+	}
+
+	// Create a fake storage class with VolumeBindingMode set to WaitForFirstConsumer
+	storageClass := &storagev1.StorageClass{
+		ObjectMeta: metav1.ObjectMeta{Name: "test-storage-class"},
+		VolumeBindingMode: func() *storagev1.VolumeBindingMode {
+			mode := storagev1.VolumeBindingWaitForFirstConsumer
+			return &mode
+		}(),
+	}
+
+	// Create a fake k8s clientset with the storage class
+	//clientset := fake.NewSimpleClientset(storageClass)
+	clientset := NewFakeClientsetWithRestClient(storageClass)
+
+	// Create a fake k8sclient.KubeClient
+	kubeClient := k8sclient.KubeClient{
+		ClientSet:   clientset,
+		Config:      &rest.Config{},
+		VersionInfo: nil,
+	}
+
+	// Set up a reactor to simulate Pods becoming Ready
+	clientset.Fake.PrependReactor("create", "pods", func(action k8stesting.Action) (bool, runtime.Object, error) {
+		createAction := action.(k8stesting.CreateAction)
+		pod := createAction.GetObject().(*v1.Pod)
+		// Set pod phase to Running
+		pod.Status.Phase = v1.PodRunning
+		// Simulate the Ready condition
+		pod.Status.Conditions = append(pod.Status.Conditions, v1.PodCondition{
+			Type:   v1.PodReady,
+			Status: v1.ConditionTrue,
+		})
+
+		// Simulate the "FileSystemResizeSuccessful" event
+		event := &v1.Event{
+			ObjectMeta: metav1.ObjectMeta{
+				Namespace: pod.Namespace,
+				Name:      "test-event",
+			},
+			InvolvedObject: v1.ObjectReference{
+				Namespace: pod.Namespace,
+				Name:      pod.Name,
+				UID:       pod.UID,
+			},
+			Message: "Filesystem resize successful",
+			Reason:  "FileSystemResizeSuccessful",
+			Type:    v1.EventTypeNormal,
+		}
+
+		volume := &v1.PersistentVolumeClaim{
+			ObjectMeta: metav1.ObjectMeta{
+				Name:      "test-pvc",
+				Namespace: pod.Namespace,
+			},
+			Spec: v1.PersistentVolumeClaimSpec{
+				Resources: v1.VolumeResourceRequirements{
+					Requests: v1.ResourceList{
+						v1.ResourceStorage: resource.MustParse(ves.InitialSize),
+					},
+				},
+				AccessModes: []v1.PersistentVolumeAccessMode{
+					v1.PersistentVolumeAccessMode(ves.AccessMode),
+				},
+			},
+		}
+
+		// Update the volume size
+		//volume.Spec.Resources.Requests[v1.ResourceStorage] = resource.MustParse(ves.ExpandedSize)
+
+		// Add the event and volume to the fake clientset
+		clientset.Tracker().Add(event)
+		clientset.Tracker().Add(volume)
+
+		//return false, nil, nil // Allow normal processing to continue
+		return true, pod, nil
+	})
+
+	// When getting pods, return the pod with Running status and Ready condition
+	clientset.Fake.PrependReactor("get", "pods", func(action k8stesting.Action) (bool, runtime.Object, error) {
+		getAction := action.(k8stesting.GetAction)
+		podName := getAction.GetName()
+		// Create a pod object with the expected name and Ready status
+		pod := &v1.Pod{
+			ObjectMeta: metav1.ObjectMeta{
+				Name:      podName,
+				Namespace: "test-namespace",
+			},
+			Status: v1.PodStatus{
+				Phase: v1.PodRunning,
+				Conditions: []v1.PodCondition{
+					{
+						Type:   v1.PodReady,
+						Status: v1.ConditionTrue,
+					},
+				},
+			},
+		}
+		return true, pod, nil
+	})
+
+	namespace := ves.GetNamespace()
+
+	// Create the necessary clients
+	pvcClient, _ := kubeClient.CreatePVCClient(namespace)
+	podClient, _ := kubeClient.CreatePodClient(namespace)
+	podClient.RemoteExecutor = &FakeRemoteExecutor{}
+	scClient, _ := kubeClient.CreateSCClient()
+	pvClient, _ := kubeClient.CreatePVClient()
+	k8Clients := &k8sclient.Clients{
+		KubeClient:             &kubeClient,
+		PodClient:              podClient,
+		PVCClient:              pvcClient,
+		SCClient:               scClient,
+		PersistentVolumeClient: pvClient,
+	}
+
+	// Run the suite
+	_, err := ves.Run(ctx, "test-storage-class", k8Clients)
 	// Check if there was an error
 	if err != nil {
 		t.Errorf("Error running VolumeExpansionSuite.Run(): %v", err)
