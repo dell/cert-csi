@@ -22,6 +22,7 @@ import (
 	"github.com/dell/cert-csi/pkg/k8sclient"
 	pvc2 "github.com/dell/cert-csi/pkg/k8sclient/resources/pvc"
 	"github.com/dell/cert-csi/pkg/k8sclient/resources/sc"
+	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/suite"
 	v1 "k8s.io/api/core/v1"
 	v2 "k8s.io/api/storage/v1"
@@ -48,6 +49,86 @@ func (suite *PVCTestSuite) SetupSuite() {
 		VersionInfo: nil,
 	}
 	suite.kubeClient.SetTimeout(1)
+}
+
+type PersistentVolumeClaimSuite struct {
+	suite.Suite
+	pvcClient  *pvc2.PersistentVolumeClaim
+	kubeClient *pvc2.Client
+}
+
+func (suite *PersistentVolumeClaimSuite) SetupSuite() {
+	// Create the fake client.
+	client := fake.NewSimpleClientset()
+	suite.kubeClient = &pvc2.Client{
+		ClientSet: client,
+		Interface: client.CoreV1().PersistentVolumeClaims("default"),
+	}
+	suite.pvcClient = &pvc2.PersistentVolumeClaim{
+		Client:  suite.kubeClient,
+		Object:  &v1.PersistentVolumeClaim{},
+		Deleted: false,
+	}
+}
+func (suite *PersistentVolumeClaimSuite) TestWaitToBeBound() {
+	ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
+	defer cancel()
+
+	suite.pvcClient.Object = &v1.PersistentVolumeClaim{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      "test-pvc",
+			Namespace: "default",
+		},
+		Status: v1.PersistentVolumeClaimStatus{
+			Phase: v1.ClaimPending, // Initially not bound
+		},
+	}
+
+	// Run in a separate goroutine to simulate PVC being bound later
+	go func() {
+		time.Sleep(1 * time.Second) // Simulate some delay
+		suite.pvcClient.Object.Status.Phase = v1.ClaimBound
+	}()
+
+	err := suite.pvcClient.WaitToBeBound(ctx)
+	assert.NoError(suite.T(), err, "Expected no error when PVC gets bound")
+}
+func (suite *PersistentVolumeClaimSuite) TestWaitToBeBoundTimeout() {
+	ctx, cancel := context.WithTimeout(context.Background(), 1*time.Second)
+	defer cancel()
+
+	suite.pvcClient.Object = &v1.PersistentVolumeClaim{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      "test-pvc",
+			Namespace: "default",
+		},
+		Status: v1.PersistentVolumeClaimStatus{
+			Phase: v1.ClaimPending, // Never changes to bound
+		},
+	}
+
+	err := suite.pvcClient.WaitToBeBound(ctx)
+	assert.Error(suite.T(), err, "Expected an error due to timeout")
+}
+func (suite *PersistentVolumeClaimSuite) TestWaitUntilGone() {
+	ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
+	defer cancel()
+
+	suite.pvcClient.Object = &v1.PersistentVolumeClaim{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      "test-pvc",
+			Namespace: "default",
+		},
+	}
+
+	// Simulate PVC being deleted after some delay
+	go func() {
+		time.Sleep(1 * time.Second)
+		suite.pvcClient.Object = nil // Simulate deletion
+	}()
+
+	err := suite.pvcClient.WaitUntilGone(ctx)
+	assert.NoError(suite.T(), err, "Expected no error when PVC is deleted")
 }
 
 func (suite *PVCTestSuite) TestMakePVC() {
@@ -415,6 +496,8 @@ func (suite *PVCTestSuite) TestCreatePVCObject_Error() {
 	suite.Empty(pvcObject.Spec.Resources.Requests)
 	suite.Empty(pvcObject.Spec.VolumeName)
 }
+
 func TestPVCSuite(t *t.T) {
 	suite.Run(t, new(PVCTestSuite))
+	suite.Run(t, new(PersistentVolumeClaimSuite))
 }
