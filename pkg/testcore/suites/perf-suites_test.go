@@ -1554,7 +1554,54 @@ func TestVolumeGroupSnapSuite_GetObservers(t *testing.T) {
 	// Add more assertions based on expected behavior
 }
 
-// TODO TestVolumeGroupSnapSuite_GetClients
+func TestVolumeGroupSnapSuite_GetClients(t *testing.T) {
+	client := fake.NewSimpleClientset()
+
+	kubeClient := k8sclient.KubeClient{
+		ClientSet:   client,
+		Config:      &rest.Config{},
+		VersionInfo: nil,
+	}
+
+	pvcClient, _ := kubeClient.CreatePVCClient("test-namespace")
+	metricsClient, _ := kubeClient.CreateMetricsClient("test-namespace")
+
+	type args struct {
+		namespace string
+		client    *k8sclient.KubeClient
+	}
+	tests := []struct {
+		name    string
+		vgs     *VolumeGroupSnapSuite
+		args    args
+		want    *k8sclient.Clients
+		wantErr bool
+	}{
+		{
+			name: "Testing GetClients",
+			vgs:  &VolumeGroupSnapSuite{SnapClass: "test-snap-class"},
+			args: args{
+				namespace: "test-namespace",
+				client:    &kubeClient,
+			},
+			want: &k8sclient.Clients{
+				PVCClient:     pvcClient,
+				MetricsClient: metricsClient,
+			},
+			wantErr: false,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got, err := tt.vgs.GetClients(tt.args.namespace, tt.args.client)
+			fmt.Println(got, err)
+
+			expectedError := errors.New("connection refused")
+			assert.Contains(t, err.Error(), expectedError.Error())
+		})
+	}
+}
+
 func TestVolumeGroupSnapSuite_GetNamespace(t *testing.T) {
 	tests := []struct {
 		name string
