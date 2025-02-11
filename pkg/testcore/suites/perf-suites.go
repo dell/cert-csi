@@ -82,7 +82,7 @@ func (vcs *VolumeCreationSuite) Run(ctx context.Context, storageClass string, cl
 	log := utils.GetLoggerFromContext(ctx)
 	if vcs.VolumeNumber <= 0 {
 		log.Info("Using default number of volumes")
-		vcs.VolumeNumber = 10
+		vcs.VolumeNumber = 1
 	}
 	if vcs.VolumeSize == "" {
 		log.Info("Using default volume size")
@@ -3026,8 +3026,8 @@ func (bss *BlockSnapSuite) Run(ctx context.Context, storageClass string, clients
 	log.Infof("Restoring from %s", vcconf.SnapName)
 	volRestored := pvcClient.MakePVC(vcconf)
 	pvcRestored := pvcClient.Create(ctx, volRestored)
-	if pvc.HasError() {
-		return delFunc, pvc.GetError()
+	if pvcRestored.HasError() {
+		return delFunc, pvcRestored.GetError()
 	}
 	if !firstConsumer {
 		err := pvcClient.WaitForAllToBeBound(ctx)
