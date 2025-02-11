@@ -21,10 +21,12 @@ import (
 	"fmt"
 	"github.com/dell/cert-csi/pkg/k8sclient"
 	pvc2 "github.com/dell/cert-csi/pkg/k8sclient/resources/pvc"
+	"github.com/sirupsen/logrus"
 	"github.com/stretchr/testify/suite"
 	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes/fake"
+	"os"
 	"testing"
 	"time"
 )
@@ -159,6 +161,89 @@ func (suite *PVCTestSuite) TestUpdate() {
 	suite.Equal(pvcName, deletedPVC.Object.GetName(), "Expected PVC name to match before deletion")
 }
 
+func (suite *PVCTestSuite) TestMakePVCFromYaml() {
+	// Create a sample PVC YAML file
+	pvcYaml := `
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: test-pvc
+  namespace: default
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 10Gi
+`
+	// Write the sample PVC YAML to a temporary file
+	tmpFile, err := os.CreateTemp("", "pvc-*.yaml")
+	suite.NoError(err)
+	defer func(name string) {
+		err := os.Remove(name)
+		if err != nil {
+
+		}
+	}(tmpFile.Name())
+
+	_, err = tmpFile.Write([]byte(pvcYaml))
+	suite.NoError(err)
+	err = tmpFile.Close()
+	if err != nil {
+		return
+	}
+
+	// Create a context
+	ctx := context.TODO()
+	pvcClient, err := suite.kubeClient.CreatePVCClient("default")
+	suite.NoError(err)
+	// Call the MakePVCFromYaml function
+	pvc, err := pvcClient.MakePVCFromYaml(ctx, tmpFile.Name())
+
+	// Assertions
+	suite.NoError(err)
+	suite.NotNil(pvc, "expected non-nil PVC")
+	suite.Equal("test-pvc", pvc.Name, "expected PVC name 'test-pvc'")
+	suite.Equal("default", pvc.Namespace, "expected PVC namespace 'default'")
+}
+
+func (suite *PVCTestSuite) TestCreateMultiple() {
+	// Create a PersistentVolumeClaim object
+	pvc := &v1.PersistentVolumeClaim{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      "test-pvc",
+			Namespace: "default",
+		},
+	}
+
+	// Create a context
+	ctx := context.TODO()
+
+	// Test case: invalid pvcNum
+	err := suite.client.CreateMultiple(ctx, pvc, 0, "10Gi")
+	suite.Error(err)
+	suite.EqualError(err, "number of pvcs can't be less or equal than zero")
+
+	// Test case: invalid pvcSize
+	err = suite.client.CreateMultiple(ctx, pvc, 1, "")
+	suite.Error(err)
+	suite.EqualError(err, "volume size cannot be nulls")
+
+	// Test case: valid inputs
+	err = suite.client.CreateMultiple(ctx, pvc, 3, "10Gi")
+	suite.NoError(err)
+
+	// Verify that 3 PVCs were created
+	for i := 0; i < 3; i++ {
+		createdPVC, err := suite.client.Interface.Get(ctx, pvc.Name, metav1.GetOptions{})
+		suite.NoError(err)
+		suite.NotNil(createdPVC)
+	}
+
+	// Check the log output (optional)
+	logrus.SetLevel(logrus.DebugLevel)
+	logrus.Debugf("Created %d PVCs of size:%s", 3, "10Gi")
+}
 func TestPVCSuite(t *testing.T) {
 	suite.Run(t, new(PVCTestSuite))
 }
