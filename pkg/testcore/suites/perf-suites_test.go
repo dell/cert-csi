@@ -210,6 +210,14 @@ func TestVolumeCreationSuite_Run(t *testing.T) {
 	// Create a new VolumeCreationSuite instance
 	vcs := &VolumeCreationSuite{
 		VolumeNumber: -1,
+		VolumeSize:   "1Gi",
+		AccessMode:   "ReadWriteOnce",
+		RawBlock:     true,
+		CustomName:   "test-custom-pvc-name",
+	}
+
+	vcs_new := &VolumeCreationSuite{
+		VolumeNumber: 1,
 		VolumeSize:   "",
 		AccessMode:   "ReadWriteOnce",
 		RawBlock:     true,
@@ -271,6 +279,12 @@ func TestVolumeCreationSuite_Run(t *testing.T) {
 	// Check if there was an error
 	if err != nil {
 		t.Errorf("Error running VolumeCreationSuite.Run(): %v", err)
+	}
+	// Call the Run method
+	_, err1 := vcs_new.Run(ctx, "test-storage-class", k8Clients)
+	// Check if there was an error
+	if err1 != nil {
+		t.Errorf("Error running VolumeCreationSuite.Run(): %v", err1)
 	}
 }
 
