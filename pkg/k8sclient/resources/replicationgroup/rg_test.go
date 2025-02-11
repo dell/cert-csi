@@ -322,11 +322,6 @@ func TestRGSelectDesiredState(t *testing.T) {
 				rgAction: "",
 				expected: "SYNCHRONIZED",
 			},
-			//{
-			//	rgAction:   "REPROTECT_REMOTE",
-			//	driverName: "unity",
-			//	expected:   "SYNCHRONIZED",
-			//},
 		}
 		for _, tc := range testCases {
 			rg := &RG{}
@@ -334,4 +329,40 @@ func TestRGSelectDesiredState(t *testing.T) {
 			assert.Equal(t, tc.expected, actual)
 		}
 	})
+}
+
+func TestGetPreDesiredState(t *testing.T) {
+	testCases := []struct {
+		rgAction   string
+		driverName string
+		expected   string
+	}{
+		{
+			rgAction: "FAILOVER_REMOTE",
+			expected: "SYNCHRONIZED",
+		},
+		{
+			rgAction: "FAILOVER_LOCAL",
+			expected: "SYNCHRONIZED",
+		},
+		{
+			rgAction:   "FAILOVER_REMOTE",
+			driverName: "powermax",
+			expected:   "SYNCHRONIZED",
+		},
+		{
+			rgAction:   "REPROTECT_LOCAL",
+			driverName: "powermax",
+			expected:   "SUSPENDED",
+		},
+		{
+			rgAction:   "REPROTECT_REMOTE",
+			driverName: "unity",
+			expected:   "FAILEDOVER",
+		}}
+	for _, tc := range testCases {
+		rg := &RG{}
+		actual := rg.getPreDesiredState(tc.rgAction, tc.driverName)
+		assert.Equal(t, tc.expected, actual)
+	}
 }
