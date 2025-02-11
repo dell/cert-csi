@@ -192,8 +192,9 @@ func (c *Client) Create(ctx context.Context, pvc *v1.PersistentVolumeClaim, _ ..
 	if err != nil {
 		funcErr = err
 	}
-
-	log.Debugf("Created PVC %s", newPVC.GetName())
+	if newPVC != nil {
+		log.Debugf("Created PVC %s", newPVC.GetName())
+	}
 	return &PersistentVolumeClaim{
 		Client:  c,
 		Object:  newPVC,
