@@ -777,7 +777,6 @@ func TestProvisioningSuite_validateCustomPodName(t *testing.T) {
 	}
 }
 
-// TODO TestRemoteReplicationProvisioningSuite_Run
 func TestRemoteReplicationProvisioningSuite_Run(t *testing.T) {
 	ctx := context.Background()
 
@@ -835,16 +834,9 @@ func TestRemoteReplicationProvisioningSuite_Run(t *testing.T) {
 		return true, pod, nil
 	})
 
-	// Note: This test requires a kube config on the machine that is running the test
-	configPath := "/root/.kube/config"
-	config, configErr := k8sclient.GetConfig(configPath)
-	if configErr != nil {
-		t.Errorf("Error creating k8sClient.Config: %v", configErr)
-	}
-
 	kubeClient := &k8sclient.KubeClient{
 		ClientSet:   clientset,
-		Config:      config,
+		Config:      &rest.Config{},
 		VersionInfo: nil,
 	}
 
