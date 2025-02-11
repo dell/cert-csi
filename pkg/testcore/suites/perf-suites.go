@@ -82,7 +82,7 @@ func (vcs *VolumeCreationSuite) Run(ctx context.Context, storageClass string, cl
 	log := utils.GetLoggerFromContext(ctx)
 	if vcs.VolumeNumber <= 0 {
 		log.Info("Using default number of volumes")
-		vcs.VolumeNumber = 10
+		vcs.VolumeNumber = 1
 	}
 	if vcs.VolumeSize == "" {
 		log.Info("Using default volume size")

@@ -20,6 +20,7 @@ import (
 	snapshotv1 "github.com/kubernetes-csi/external-snapshotter/client/v4/clientset/versioned/typed/volumesnapshot/v1"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
+	corev1 "k8s.io/api/core/v1"
 	v1 "k8s.io/api/core/v1"
 	storagev1 "k8s.io/api/storage/v1"
 	"k8s.io/apimachinery/pkg/api/meta"
@@ -198,15 +199,14 @@ func mockClientSetPodFunctions(clientset interface{}) interface{} {
 func TestVolumeCreationSuite_Run(t *testing.T) {
 	// Create a new context
 	ctx := context.Background()
-
 	// Create a new VolumeCreationSuite instance
 	vcs := &VolumeCreationSuite{
-		VolumeNumber: 1,
-		VolumeSize:   "1Gi",
+		VolumeNumber: -1,
+		VolumeSize:   "",
 		AccessMode:   "ReadWriteOnce",
+		RawBlock:     true,
 	}
-
-	// Create a fake storage class with VolumeBindingMode set to WaitForFirstConsumer
+	// Create a fake storage class with VolumeBindingMode set to Immediate
 	storageClass := &storagev1.StorageClass{
 		ObjectMeta: metav1.ObjectMeta{Name: "test-storage-class"},
 		VolumeBindingMode: func() *storagev1.VolumeBindingMode {
@@ -214,26 +214,52 @@ func TestVolumeCreationSuite_Run(t *testing.T) {
 			return &mode
 		}(),
 	}
-
 	// Create a fake k8s clientset with the storage class
 	clientset := fake.NewSimpleClientset(storageClass)
-
 	// Create a fake k8sclient.KubeClient
 	kubeClient := &k8sclient.KubeClient{
-		ClientSet: clientset,
-		// Other fields can be left as zero values for simplicity
+		ClientSet:   clientset,
+		Config:      &rest.Config{},
+		VersionInfo: nil,
 	}
-
-	// Create a PVC client
-	pvcClient, _ := kubeClient.CreatePVCClient("test-namespace")
-
-	// Update the k8sclient.Clients instance with the fake PVC client
-	clients := &k8sclient.Clients{
-		PVCClient: pvcClient,
+	kubeClient.SetTimeout(2)
+	namespace := "test-namespace"
+	pvcClient, _ := kubeClient.CreatePVCClient(namespace)
+	// Create a fake PVC
+	pvc := &corev1.PersistentVolumeClaim{
+		ObjectMeta: metav1.ObjectMeta{
+			Name: "test-pvc",
+		},
 	}
-
+	clientset.CoreV1().PersistentVolumeClaims(namespace).Create(context.Background(), pvc, metav1.CreateOptions{})
+	// Create a fake PV
+	pv := &corev1.PersistentVolume{
+		ObjectMeta: metav1.ObjectMeta{
+			Name: "test-pv",
+		},
+	}
+	clientset.CoreV1().PersistentVolumes().Create(context.Background(), pv, metav1.CreateOptions{})
+	// Create a fake Pod
+	pod := &corev1.Pod{
+		ObjectMeta: metav1.ObjectMeta{
+			Name: "test-pod",
+		},
+	}
+	clientset.CoreV1().Pods(namespace).Create(context.Background(), pod, metav1.CreateOptions{})
+	// Create a fake VolumeAttachment
+	va := &storagev1.VolumeAttachment{
+		ObjectMeta: metav1.ObjectMeta{
+			Name: "test-va",
+		},
+	}
+	clientset.StorageV1().VolumeAttachments().Create(context.Background(), va, metav1.CreateOptions{})
+	// Create a fake k8sclient.Clients instance
+	k8Clients := &k8sclient.Clients{
+		KubeClient: kubeClient,
+		PVCClient:  pvcClient,
+	}
 	// Call the Run method
-	_, err := vcs.Run(ctx, "test-storage-class", clients)
+	_, err := vcs.Run(ctx, "test-storage-class", k8Clients)
 	// Check if there was an error
 	if err != nil {
 		t.Errorf("Error running VolumeCreationSuite.Run(): %v", err)
