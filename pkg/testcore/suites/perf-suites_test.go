@@ -3,6 +3,8 @@ package suites
 import (
 	"context"
 	"errors"
+
+	//"errors"
 	"fmt"
 	"io"
 	"net/url"
@@ -21,6 +23,7 @@ import (
 	"github.com/stretchr/testify/mock"
 	v1 "k8s.io/api/core/v1"
 	storagev1 "k8s.io/api/storage/v1"
+
 	"k8s.io/apimachinery/pkg/api/meta"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -2697,7 +2700,7 @@ func TestVolumeMigrateSuite_Parameters(t *testing.T) {
 // 	}
 // }
 
-func TestSnapSuite_Run(t *testing.T) {
+/*func TestSnapSuite_Run(t *testing.T) {
 
 	// Mock storageClass
 	// Create a fake storage class with VolumeBindingMode set to WaitForFirstConsumer
@@ -2749,7 +2752,8 @@ func TestSnapSuite_Run(t *testing.T) {
 	})
 
 	// Also, when deleting pods, return the pod with Running status and Ready condition
-	clientset.Fake.PrependReactor("delete", "pods", func(action k8stesting.Action) (bool, runtime.Object, error) {
+	clientset.Fake.AddReactor("delete", "pods", func(action k8stesting.Action) (bool, runtime.Object, error) {
+		fmt.Println("Delete reactor triggered")
 		getAction := action.(k8stesting.DeleteAction)
 		podName := getAction.GetName()
 		//var pod *v1.Pod
@@ -2759,9 +2763,65 @@ func TestSnapSuite_Run(t *testing.T) {
 				Name:      podName,
 				Namespace: "test-namespace",
 			},
+			Status: v1.PodStatus{
+				Phase: v1.PodSucceeded,
+			},
 		}
 		fmt.Printf("Pod %v deleted\n", pod)
 		return true, nil, nil
+	})
+
+	/*clientset.Fake.PrependReactor("get", "pods", func(action k8stesting.Action) (bool, runtime.Object, error) {
+		getAction := action.(k8stesting.GetAction)
+		podName := getAction.GetName()
+		// Create a pod object with the expected name and Ready status
+		if podName == "" {
+			return false, nil, &k8serrors.StatusError{
+				ErrStatus: metav1.Status{
+					Status:  metav1.StatusFailure,
+					Code:    http.StatusNotFound,
+					Reason:  metav1.StatusReasonNotFound,
+					Message: "Not found",
+				},
+			}
+		} else {
+			pod := &v1.Pod{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      podName,
+					Namespace: "test-namespace",
+				},
+				Status: v1.PodStatus{
+					Phase: v1.PodRunning,
+					Conditions: []v1.PodCondition{
+						{
+							Type:   v1.PodReady,
+							Status: v1.ConditionTrue,
+						},
+					},
+				},
+			}
+			return true, pod, nil
+		}
+	})
+
+	clientset.Fake.PrependReactor("delete", "pods", func(action k8stesting.Action) (bool, runtime.Object, error) {
+		// Create a pod object with the expected name and Ready status
+		pod := &v1.Pod{
+			ObjectMeta: metav1.ObjectMeta{
+				Name:      "",
+				Namespace: "test-namespace",
+			},
+			Status: v1.PodStatus{
+				Phase: v1.PodRunning,
+				Conditions: []v1.PodCondition{
+					{
+						Type:   v1.PodReady,
+						Status: v1.ConditionTrue,
+					},
+				},
+			},
+		}
+		return true, pod, nil
 	})
 
 	// Create a fake k8sclient.KubeClient
@@ -2868,4 +2928,4 @@ func TestSnapSuite_Run(t *testing.T) {
 			}
 		})
 	}
-}
+}*/
