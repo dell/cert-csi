@@ -3026,8 +3026,8 @@ func (bss *BlockSnapSuite) Run(ctx context.Context, storageClass string, clients
 	log.Infof("Restoring from %s", vcconf.SnapName)
 	volRestored := pvcClient.MakePVC(vcconf)
 	pvcRestored := pvcClient.Create(ctx, volRestored)
-	if pvc.HasError() {
-		return delFunc, pvc.GetError()
+	if pvcRestored.HasError() {
+		return delFunc, pvcRestored.GetError()
 	}
 	if !firstConsumer {
 		err := pvcClient.WaitForAllToBeBound(ctx)
