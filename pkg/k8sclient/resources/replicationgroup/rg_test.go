@@ -2,6 +2,7 @@ package replicationgroup
 
 import (
 	"context"
+	"errors"
 	replv1 "github.com/dell/csm-replication/api/v1"
 	"github.com/stretchr/testify/assert"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -51,6 +52,10 @@ func TestClient_Delete(t *testing.T) {
 	assert.Equal(t, rg, result.Object)
 	assert.True(t, result.Deleted)
 	assert.NoError(t, result.error)
+
+	// Call the Delete function
+	result = c.Delete(ctx, rg)
+	assert.Error(t, result.error)
 }
 
 func TestClient_Get(t *testing.T) {
@@ -226,4 +231,107 @@ func TestAction(t *testing.T) {
 		}
 	})
 
+}
+func TestRG_GetError(t *testing.T) {
+	// Test case: RG with error
+	t.Run("RG with error", func(t *testing.T) {
+		testError := errors.New("test error")
+		rg := &RG{
+			error: testError,
+		}
+
+		result := rg.GetError()
+
+		// Check the returned error
+		assert.Equal(t, testError, result)
+	})
+
+	// Test case: RG without error
+	t.Run("RG without error", func(t *testing.T) {
+		rg := &RG{
+			error: nil,
+		}
+
+		result := rg.GetError()
+
+		// Check the returned error
+		assert.Nil(t, result)
+	})
+}
+func TestHasError(t *testing.T) {
+	// Test case: RG with error
+	t.Run("RG with error", func(t *testing.T) {
+		testError := errors.New("test error")
+		rg := &RG{
+			error: testError,
+		}
+
+		result := rg.HasError()
+
+		// Check the returned error
+		assert.True(t, result)
+	})
+
+	// Test case: RG without error
+	t.Run("RG without error", func(t *testing.T) {
+		rg := &RG{
+			error: nil,
+		}
+
+		result := rg.HasError()
+
+		// Check the returned error
+		assert.False(t, result)
+	})
+}
+
+// Test case: RG.selectDesiredState
+func TestRGSelectDesiredState(t *testing.T) {
+	// Test case: RG.selectDesiredState
+	t.Run("RG.selectDesiredState", func(t *testing.T) {
+		testCases := []struct {
+			rgAction   string
+			driverName string
+			expected   string
+		}{
+			{
+				rgAction: "FAILOVER_REMOTE",
+				expected: "FAILEDOVER",
+			},
+			{
+				rgAction:   "FAILOVER_LOCAL",
+				driverName: "unity",
+				expected:   "FAILEDOVER",
+			},
+			{
+				rgAction:   "FAILOVER_REMOTE",
+				driverName: "powermax",
+				expected:   "SUSPENDED",
+			},
+			{
+				rgAction:   "REPROTECT_LOCAL",
+				driverName: "powermax",
+				expected:   "SYNCHRONIZED",
+			},
+			{
+				rgAction:   "REPROTECT_LOCAL",
+				driverName: "unity",
+				expected:   "SYNCHRONIZED",
+			},
+			{
+				rgAction: "",
+				expected: "SYNCHRONIZED",
+			},
+			//{
+			//	rgAction:   "REPROTECT_REMOTE",
+			//	driverName: "unity",
+			//	expected:   "SYNCHRONIZED",
+			//},
+		}
+		for _, tc := range testCases {
+			rg := &RG{}
+			actual := rg.selectDesiredState(tc.rgAction, tc.driverName)
+			assert.Equal(t, tc.expected, actual)
+		}
+	})
 }
