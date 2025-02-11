@@ -152,7 +152,7 @@ func TestAction(t *testing.T) {
 		Client: &Client{
 			Interface: fakeClient,
 			ClientSet: nil,
-			Timeout:   0,
+			Timeout:   10,
 		},
 		Object:  rgObj.Object,
 		Deleted: false,
