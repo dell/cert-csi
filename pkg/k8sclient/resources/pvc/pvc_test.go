@@ -24,9 +24,11 @@ import (
 	"github.com/stretchr/testify/suite"
 	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/client-go/kubernetes/fake"
+	"k8s.io/client-go/testing"
 	"os"
-	"testing"
+	t "testing"
 	"time"
 )
 
@@ -206,6 +208,40 @@ spec:
 	suite.Equal("default", pvc.Namespace, "expected PVC namespace 'default'")
 }
 
-func TestPVCSuite(t *testing.T) {
+func (suite *PVCTestSuite) TestDeleteAll() {
+	ctx := context.Background()
+
+	// Create a list of PVCs to be returned by the fake client
+	pvcList := &v1.PersistentVolumeClaimList{
+		Items: []v1.PersistentVolumeClaim{
+			{ObjectMeta: metav1.ObjectMeta{Name: "pvc-1"}},
+			{ObjectMeta: metav1.ObjectMeta{Name: "pvc-2"}},
+			{ObjectMeta: metav1.ObjectMeta{Name: "pvc-3"}},
+		},
+	}
+
+	// Mock the List function to return the PVC list
+	suite.kubeClient.ClientSet.(*fake.Clientset).PrependReactor("list", "persistentvolumeclaims", func(action testing.Action) (handled bool, ret runtime.Object, err error) {
+		return true, pvcList, nil
+	})
+
+	// Mock the Delete function to simulate successful deletion
+	suite.kubeClient.ClientSet.(*fake.Clientset).PrependReactor("delete", "persistentvolumeclaims", func(action testing.Action) (handled bool, ret runtime.Object, err error) {
+		return true, nil, nil
+	})
+	pvcClient, err := suite.kubeClient.CreatePVCClient("default")
+	suite.NoError(err)
+	// Call the DeleteAll function
+	err = pvcClient.DeleteAll(ctx)
+	suite.NoError(err)
+
+	// Verify that the Delete function was called for each PVC
+	for _, pvc := range pvcList.Items {
+		suite.kubeClient.ClientSet.(*fake.Clientset).Actions()
+		suite.Contains(suite.kubeClient.ClientSet.(*fake.Clientset).Actions(), testing.NewDeleteAction(v1.SchemeGroupVersion.WithResource("persistentvolumeclaims"), "default", pvc.Name))
+	}
+}
+
+func TestPVCSuite(t *t.T) {
 	suite.Run(t, new(PVCTestSuite))
 }
