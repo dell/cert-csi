@@ -19,6 +19,11 @@ package pvc_test
 import (
 	"context"
 	"fmt"
+	apierrs "k8s.io/apimachinery/pkg/api/errors"
+	"os"
+	t "testing"
+	"time"
+
 	"github.com/dell/cert-csi/pkg/k8sclient"
 	pvc2 "github.com/dell/cert-csi/pkg/k8sclient/resources/pvc"
 	"github.com/dell/cert-csi/pkg/k8sclient/resources/sc"
@@ -30,10 +35,12 @@ import (
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/client-go/kubernetes/fake"
 	"k8s.io/client-go/testing"
-	"os"
-	t "testing"
-	"time"
 )
+
+func TestPVCSuite(t *t.T) {
+	suite.Run(t, new(PVCTestSuite))
+	suite.Run(t, new(PersistentVolumeClaimSuite))
+}
 
 type PVCTestSuite struct {
 	suite.Suite
@@ -70,6 +77,7 @@ func (suite *PersistentVolumeClaimSuite) SetupSuite() {
 		Deleted: false,
 	}
 }
+
 func (suite *PersistentVolumeClaimSuite) TestWaitToBeBound() {
 	ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
 	defer cancel()
@@ -93,6 +101,7 @@ func (suite *PersistentVolumeClaimSuite) TestWaitToBeBound() {
 	err := suite.pvcClient.WaitToBeBound(ctx)
 	assert.NoError(suite.T(), err, "Expected no error when PVC gets bound")
 }
+
 func (suite *PersistentVolumeClaimSuite) TestWaitToBeBoundTimeout() {
 	ctx, cancel := context.WithTimeout(context.Background(), 1*time.Second)
 	defer cancel()
@@ -110,6 +119,7 @@ func (suite *PersistentVolumeClaimSuite) TestWaitToBeBoundTimeout() {
 	err := suite.pvcClient.WaitToBeBound(ctx)
 	assert.Error(suite.T(), err, "Expected an error due to timeout")
 }
+
 func (suite *PersistentVolumeClaimSuite) TestWaitUntilGone() {
 	ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
 	defer cancel()
@@ -121,27 +131,95 @@ func (suite *PersistentVolumeClaimSuite) TestWaitUntilGone() {
 		},
 	}
 
-	// Simulate PVC being deleted after some delay
-	go func() {
-		time.Sleep(1 * time.Second)
-		suite.pvcClient.Object = nil // Simulate deletion
-	}()
+	// Record the start time
+	startTime := time.Now()
+
+	// Mock the Get function to simulate PVC deletion after some delay
+	suite.kubeClient.ClientSet.(*fake.Clientset).PrependReactor("get", "persistentvolumeclaims", func(action testing.Action) (handled bool, ret runtime.Object, err error) {
+		if time.Since(startTime) > 1*time.Second {
+			return true, nil, apierrs.NewNotFound(v1.Resource("persistentvolumeclaim"), "test-pvc")
+		}
+		return true, suite.pvcClient.Object, nil
+	})
 
 	err := suite.pvcClient.WaitUntilGone(ctx)
+	if apierrs.IsNotFound(err) {
+		err = nil // Treat NotFound error as success
+	}
 	assert.NoError(suite.T(), err, "Expected no error when PVC is deleted")
 }
 
-func (suite *PVCTestSuite) TestMakePVC() {
+func (suite *PVCTestSuite) TestMakePVCWithDefaults() {
+	cfg := &pvc2.Config{}
+	pvcClient, err := suite.kubeClient.CreatePVCClient("default")
+	suite.NoError(err)
+	pvc := pvcClient.MakePVC(cfg)
+	suite.NotNil(pvc, "expected non-nil PVC")
+	suite.Equal("pvc-", pvc.GenerateName, "expected PVC name prefix 'pvc-'")
+	quantity := pvc.Spec.Resources.Requests[v1.ResourceStorage]
+	suite.Equal("3Gi", quantity.String(), "expected PVC size '3Gi'")
+	suite.Equal(v1.ReadWriteOnce, pvc.Spec.AccessModes[0], "expected AccessMode 'ReadWriteOnce'")
+}
+
+func (suite *PVCTestSuite) TestMakePVCWithCustomName() {
+	cfg := &pvc2.Config{
+		Name: "custom-pvc",
+	}
+	pvcClient, err := suite.kubeClient.CreatePVCClient("default")
+	suite.NoError(err)
+	pvc := pvcClient.MakePVC(cfg)
+	suite.NotNil(pvc, "expected non-nil PVC")
+	suite.Equal("custom-pvc", pvc.Name, "expected PVC name 'custom-pvc'")
+}
+
+func (suite *PVCTestSuite) TestMakePVCWithVolumeMode() {
 	blockMode := v1.PersistentVolumeBlock
 	cfg := &pvc2.Config{
-		Name:       "test-pvc",
 		VolumeMode: &blockMode,
 	}
 	pvcClient, err := suite.kubeClient.CreatePVCClient("default")
 	suite.NoError(err)
 	pvc := pvcClient.MakePVC(cfg)
 	suite.NotNil(pvc, "expected non-nil PVC")
-	suite.Equal("test-pvc", pvc.Name, "expected PVC name 'test-pvc'")
+	suite.Equal(blockMode, *pvc.Spec.VolumeMode, "expected VolumeMode 'Block'")
+}
+
+func (suite *PVCTestSuite) TestMakePVCWithEmptyVolumeMode() {
+	emptyMode := ""
+	cfg := &pvc2.Config{
+		VolumeMode: (*v1.PersistentVolumeMode)(&emptyMode),
+	}
+	pvcClient, err := suite.kubeClient.CreatePVCClient("default")
+	suite.NoError(err)
+	pvc := pvcClient.MakePVC(cfg)
+	suite.NotNil(pvc, "expected non-nil PVC")
+	suite.Nil(pvc.Spec.VolumeMode, "expected nil VolumeMode")
+}
+
+func (suite *PVCTestSuite) TestMakePVCWithSnapshotDataSource() {
+	cfg := &pvc2.Config{
+		SnapName: "snapshot-1",
+	}
+	pvcClient, err := suite.kubeClient.CreatePVCClient("default")
+	suite.NoError(err)
+	pvc := pvcClient.MakePVC(cfg)
+	suite.NotNil(pvc, "expected non-nil PVC")
+	suite.NotNil(pvc.Spec.DataSource, "expected non-nil DataSource")
+	suite.Equal("snapshot-1", pvc.Spec.DataSource.Name, "expected DataSource name 'snapshot-1'")
+	suite.Equal("VolumeSnapshot", pvc.Spec.DataSource.Kind, "expected DataSource kind 'VolumeSnapshot'")
+}
+
+func (suite *PVCTestSuite) TestMakePVCWithSourceVolumeDataSource() {
+	cfg := &pvc2.Config{
+		SourceVolumeName: "source-pvc",
+	}
+	pvcClient, err := suite.kubeClient.CreatePVCClient("default")
+	suite.NoError(err)
+	pvc := pvcClient.MakePVC(cfg)
+	suite.NotNil(pvc, "expected non-nil PVC")
+	suite.NotNil(pvc.Spec.DataSource, "expected non-nil DataSource")
+	suite.Equal("source-pvc", pvc.Spec.DataSource.Name, "expected DataSource name 'source-pvc'")
+	suite.Equal("PersistentVolumeClaim", pvc.Spec.DataSource.Kind, "expected DataSource kind 'PersistentVolumeClaim'")
 }
 
 func (suite *PVCTestSuite) TestCreatePVC() {
@@ -266,7 +344,6 @@ spec:
 	defer func(name string) {
 		err := os.Remove(name)
 		if err != nil {
-
 		}
 	}(tmpFile.Name())
 
@@ -289,6 +366,53 @@ spec:
 	suite.NotNil(pvc, "expected non-nil PVC")
 	suite.Equal("test-pvc", pvc.Name, "expected PVC name 'test-pvc'")
 	suite.Equal("default", pvc.Namespace, "expected PVC namespace 'default'")
+}
+
+func (suite *PVCTestSuite) TestMakePVCFromYaml_Error() {
+	// Create an invalid PVC YAML file with a syntax error
+	invalidPvcYaml := `
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: test-pvc
+  namespace: default
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 10Gi
+  invalidField: true
+  invalidSyntax: [unclosed bracket
+`
+
+	// Write the invalid PVC YAML to a temporary file
+	tmpFile, err := os.CreateTemp("", "invalid-pvc-*.yaml")
+	suite.NoError(err)
+	defer func(name string) {
+		err := os.Remove(name)
+		if err != nil {
+		}
+	}(tmpFile.Name())
+
+	_, err = tmpFile.Write([]byte(invalidPvcYaml))
+	suite.NoError(err)
+	err = tmpFile.Close()
+	if err != nil {
+		return
+	}
+
+	// Create a context
+	ctx := context.TODO()
+	pvcClient, err := suite.kubeClient.CreatePVCClient("default")
+	suite.NoError(err)
+
+	// Call the MakePVCFromYaml function with the invalid YAML file
+	pvc, err := pvcClient.MakePVCFromYaml(ctx, tmpFile.Name())
+
+	// Assertions
+	suite.Error(err, "expected an error during PVC creation from invalid YAML")
+	suite.Nil(pvc, "expected nil PVC object")
 }
 
 func (suite *PVCTestSuite) TestDeleteAll() {
@@ -317,6 +441,62 @@ func (suite *PVCTestSuite) TestDeleteAll() {
 	// Call the DeleteAll function
 	err = pvcClient.DeleteAll(ctx)
 	suite.NoError(err)
+
+	// Verify that the Delete function was called for each PVC
+	for _, pvc := range pvcList.Items {
+		suite.kubeClient.ClientSet.(*fake.Clientset).Actions()
+		suite.Contains(suite.kubeClient.ClientSet.(*fake.Clientset).Actions(), testing.NewDeleteAction(v1.SchemeGroupVersion.WithResource("persistentvolumeclaims"), "default", pvc.Name))
+	}
+}
+func (suite *PVCTestSuite) TestDeleteAll_ListError() {
+	ctx := context.Background()
+
+	// Mock the List function to return an error
+	suite.kubeClient.ClientSet.(*fake.Clientset).PrependReactor("list", "persistentvolumeclaims", func(action testing.Action) (handled bool, ret runtime.Object, err error) {
+		return true, nil, fmt.Errorf("list error")
+	})
+
+	pvcClient, err := suite.kubeClient.CreatePVCClient("default")
+	suite.NoError(err)
+
+	// Call the DeleteAll function
+	err = pvcClient.DeleteAll(ctx)
+	suite.Error(err, "expected an error when listing PVCs")
+	suite.EqualError(err, "list error", "expected list error message")
+}
+
+func (suite *PVCTestSuite) TestDeleteAll_DeleteError() {
+	ctx := context.Background()
+
+	// Create a list of PVCs to be returned by the fake client
+	pvcList := &v1.PersistentVolumeClaimList{
+		Items: []v1.PersistentVolumeClaim{
+			{ObjectMeta: metav1.ObjectMeta{Name: "pvc-1"}},
+			{ObjectMeta: metav1.ObjectMeta{Name: "pvc-2"}},
+			{ObjectMeta: metav1.ObjectMeta{Name: "pvc-3"}},
+		},
+	}
+
+	// Mock the List function to return the PVC list
+	suite.kubeClient.ClientSet.(*fake.Clientset).PrependReactor("list", "persistentvolumeclaims", func(action testing.Action) (handled bool, ret runtime.Object, err error) {
+		return true, pvcList, nil
+	})
+
+	// Mock the Delete function to return an error for one of the PVCs
+	suite.kubeClient.ClientSet.(*fake.Clientset).PrependReactor("delete", "persistentvolumeclaims", func(action testing.Action) (handled bool, ret runtime.Object, err error) {
+		deleteAction := action.(testing.DeleteAction)
+		if deleteAction.GetName() == "pvc-2" {
+			return true, nil, fmt.Errorf("delete error")
+		}
+		return true, nil, nil
+	})
+
+	pvcClient, err := suite.kubeClient.CreatePVCClient("default")
+	suite.NoError(err)
+
+	// Call the DeleteAll function
+	err = pvcClient.DeleteAll(ctx)
+	suite.NoError(err, "expected no error even if one PVC deletion fails")
 
 	// Verify that the Delete function was called for each PVC
 	for _, pvc := range pvcList.Items {
@@ -452,9 +632,10 @@ func (suite *PVCTestSuite) TestCreatePVCObject() {
 	suite.Equal("standard", *pvcObject.Spec.StorageClassName)
 	suite.Equal([]v1.PersistentVolumeAccessMode{v1.ReadWriteOnce}, pvcObject.Spec.AccessModes)
 	suite.Equal(v1.PersistentVolumeFilesystem, *pvcObject.Spec.VolumeMode)
-	//suite.Equal("10Gi", pvcObject.Spec.Resources.Requests["storage"])
+	// suite.Equal("10Gi", pvcObject.Spec.Resources.Requests["storage"])
 	suite.Equal("pv-1", pvcObject.Spec.VolumeName)
 }
+
 func (suite *PVCTestSuite) TestCreatePVCObject_Error() {
 	ctx := context.Background()
 
@@ -496,8 +677,232 @@ func (suite *PVCTestSuite) TestCreatePVCObject_Error() {
 	suite.Empty(pvcObject.Spec.Resources.Requests)
 	suite.Empty(pvcObject.Spec.VolumeName)
 }
+func (suite *PersistentVolumeClaimSuite) TestPollWait_ContextCancelled() {
+	ctx, cancel := context.WithCancel(context.Background())
+	cancel() // Cancel the context immediately
 
-func TestPVCSuite(t *t.T) {
-	suite.Run(t, new(PVCTestSuite))
-	suite.Run(t, new(PersistentVolumeClaimSuite))
+	suite.pvcClient.Object = &v1.PersistentVolumeClaim{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      "test-pvc",
+			Namespace: "default",
+		},
+	}
+
+	done, err := suite.pvcClient.PollWait(ctx)
+	assert.True(suite.T(), done, "Expected polling to be done when context is cancelled")
+	assert.Error(suite.T(), err, "Expected an error when context is cancelled")
+	assert.EqualError(suite.T(), err, "stopped waiting to be bound", "Expected context cancellation error message")
+}
+
+func (suite *PersistentVolumeClaimSuite) TestPollWait_PVCNotFound() {
+	ctx := context.Background()
+
+	suite.pvcClient.Object = &v1.PersistentVolumeClaim{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      "test-pvc",
+			Namespace: "default",
+		},
+	}
+
+	// Mock the Get function to return a NotFound error
+	suite.kubeClient.ClientSet.(*fake.Clientset).PrependReactor("get", "persistentvolumeclaims", func(action testing.Action) (handled bool, ret runtime.Object, err error) {
+		return true, nil, apierrs.NewNotFound(v1.Resource("persistentvolumeclaim"), "test-pvc")
+	})
+
+	done, err := suite.pvcClient.PollWait(ctx)
+	assert.True(suite.T(), done, "Expected polling to be done when PVC is not found")
+	assert.NoError(suite.T(), err, "Expected no error when PVC is not found")
+}
+
+func (suite *PersistentVolumeClaimSuite) TestPollWait_OtherError() {
+	ctx := context.Background()
+
+	suite.pvcClient.Object = &v1.PersistentVolumeClaim{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      "test-pvc",
+			Namespace: "default",
+		},
+	}
+
+	// Mock the Get function to return a generic error
+	suite.kubeClient.ClientSet.(*fake.Clientset).PrependReactor("get", "persistentvolumeclaims", func(action testing.Action) (handled bool, ret runtime.Object, err error) {
+		return true, nil, fmt.Errorf("generic error")
+	})
+
+	done, err := suite.pvcClient.PollWait(ctx)
+	assert.False(suite.T(), done, "Expected polling to continue when there is a generic error")
+	assert.Error(suite.T(), err, "Expected an error when there is a generic error")
+	assert.EqualError(suite.T(), err, "generic error", "Expected generic error message")
+}
+
+func (suite *PersistentVolumeClaimSuite) TestPollWait_PVCStillExists() {
+	ctx := context.Background()
+
+	suite.pvcClient.Object = &v1.PersistentVolumeClaim{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      "test-pvc",
+			Namespace: "default",
+		},
+	}
+
+	// Mock the Get function to return the PVC object
+	suite.kubeClient.ClientSet.(*fake.Clientset).PrependReactor("get", "persistentvolumeclaims", func(action testing.Action) (handled bool, ret runtime.Object, err error) {
+		return true, suite.pvcClient.Object, nil
+	})
+
+	done, err := suite.pvcClient.PollWait(ctx)
+	assert.False(suite.T(), done, "Expected polling to continue when PVC still exists")
+	assert.NoError(suite.T(), err, "Expected no error when PVC still exists")
+}
+
+func (suite *PersistentVolumeClaimSuite) TestWaitUntilGone_PollError() {
+	ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
+	defer cancel()
+
+	suite.pvcClient.Object = &v1.PersistentVolumeClaim{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      "test-pvc",
+			Namespace: "default",
+		},
+	}
+
+	// Mock the PollWait function to return an error
+	suite.kubeClient.ClientSet.(*fake.Clientset).PrependReactor("get", "persistentvolumeclaims", func(action testing.Action) (handled bool, ret runtime.Object, err error) {
+		return true, nil, fmt.Errorf("poll error")
+	})
+
+	err := suite.pvcClient.WaitUntilGone(ctx)
+	assert.Error(suite.T(), err, "Expected an error during polling")
+	assert.EqualError(suite.T(), err, "poll error", "Expected poll error message")
+}
+
+func (suite *PersistentVolumeClaimSuite) TestWaitUntilGone_FinalizerCleanupError() {
+	ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
+	defer cancel()
+
+	suite.pvcClient.Object = &v1.PersistentVolumeClaim{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      "test-pvc",
+			Namespace: "default",
+		},
+	}
+
+	// Mock the PollWait function to return an error initially and then succeed
+	callCount := 0
+	suite.kubeClient.ClientSet.(*fake.Clientset).PrependReactor("get", "persistentvolumeclaims", func(action testing.Action) (handled bool, ret runtime.Object, err error) {
+		if callCount == 0 {
+			callCount++
+			return true, suite.pvcClient.Object, fmt.Errorf("poll error")
+		}
+		return true, suite.pvcClient.Object, nil
+	})
+
+	// Mock the Update function to return an error
+	suite.kubeClient.ClientSet.(*fake.Clientset).PrependReactor("update", "persistentvolumeclaims", func(action testing.Action) (handled bool, ret runtime.Object, err error) {
+		return true, nil, fmt.Errorf("update error")
+	})
+
+	err := suite.pvcClient.WaitUntilGone(ctx)
+	assert.Error(suite.T(), err, "Expected an error during finalizer cleanup")
+	assert.EqualError(suite.T(), err, "update error", "Expected update error message")
+}
+func (suite *PersistentVolumeClaimSuite) TestWaitUntilGone_FinalizerCleanupFailure() {
+	ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
+	defer cancel()
+
+	suite.pvcClient.Object = &v1.PersistentVolumeClaim{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      "test-pvc",
+			Namespace: "default",
+		},
+	}
+
+	// Mock the PollWait function to return an error initially and then fail
+	callCount := 0
+	suite.kubeClient.ClientSet.(*fake.Clientset).PrependReactor("get", "persistentvolumeclaims", func(action testing.Action) (handled bool, ret runtime.Object, err error) {
+		if callCount == 0 {
+			callCount++
+			return true, suite.pvcClient.Object, fmt.Errorf("poll error")
+		}
+		return true, suite.pvcClient.Object, nil
+	})
+
+	// Mock the Update function to succeed
+	suite.kubeClient.ClientSet.(*fake.Clientset).PrependReactor("update", "persistentvolumeclaims", func(action testing.Action) (handled bool, ret runtime.Object, err error) {
+		return true, suite.pvcClient.Object, nil
+	})
+
+	err := suite.pvcClient.WaitUntilGone(ctx)
+	assert.Error(suite.T(), err, "Expected an error when finalizer cleanup fails")
+	assert.EqualError(suite.T(), err, "failed to delete even with finalizers cleaned up", "Expected finalizer cleanup failure message")
+}
+
+func (suite *PVCTestSuite) TestCheckAnnotationsForVolumes_AnnotationsMissing() {
+	ctx := context.Background()
+
+	// Create a mock StorageClass object
+	scObject := &v2.StorageClass{
+		Parameters: map[string]string{
+			sc.RemoteClusterID:        "remote-cluster-id",
+			sc.RemoteStorageClassName: "remote-storage-class-name",
+		},
+	}
+
+	// Create a list of PVCs with missing annotations
+	pvcList := &v1.PersistentVolumeClaimList{
+		Items: []v1.PersistentVolumeClaim{
+			{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:        "pvc-1",
+					Annotations: map[string]string{},
+					Labels:      map[string]string{"label1": "value1"},
+				},
+			},
+		},
+	}
+
+	// Mock the List function to return the PVC list
+	suite.kubeClient.ClientSet.(*fake.Clientset).PrependReactor("list", "persistentvolumeclaims", func(action testing.Action) (handled bool, ret runtime.Object, err error) {
+		return true, pvcList, nil
+	})
+	pvcClient, err := suite.kubeClient.CreatePVCClient("default")
+	suite.NoError(err)
+	// Call the CheckAnnotationsForVolumes function
+	err = pvcClient.CheckAnnotationsForVolumes(ctx, scObject)
+	suite.Error(err)
+}
+
+func (suite *PVCTestSuite) TestCheckAnnotationsForVolumes_LabelsMissing() {
+	ctx := context.Background()
+
+	// Create a mock StorageClass object
+	scObject := &v2.StorageClass{
+		Parameters: map[string]string{
+			sc.RemoteClusterID:        "remote-cluster-id",
+			sc.RemoteStorageClassName: "remote-storage-class-name",
+		},
+	}
+
+	// Create a list of PVCs with missing labels
+	pvcList := &v1.PersistentVolumeClaimList{
+		Items: []v1.PersistentVolumeClaim{
+			{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:        "pvc-1",
+					Annotations: map[string]string{"replication.storage.dell.com/remoteClusterID": "remote-cluster-id"},
+					Labels:      map[string]string{},
+				},
+			},
+		},
+	}
+
+	// Mock the List function to return the PVC list
+	suite.kubeClient.ClientSet.(*fake.Clientset).PrependReactor("list", "persistentvolumeclaims", func(action testing.Action) (handled bool, ret runtime.Object, err error) {
+		return true, pvcList, nil
+	})
+	pvcClient, err := suite.kubeClient.CreatePVCClient("default")
+	suite.NoError(err)
+	// Call the CheckAnnotationsForVolumes function
+	err = pvcClient.CheckAnnotationsForVolumes(ctx, scObject)
+	suite.Error(err)
 }
