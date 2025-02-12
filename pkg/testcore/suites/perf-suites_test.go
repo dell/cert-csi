@@ -1660,7 +1660,6 @@ func TestVolumeExpansionSuite_Run_NonBlock(t *testing.T) {
 	}
 
 	// Create a fake k8s clientset with the storage class
-	//clientset := fake.NewSimpleClientset(storageClass)
 	clientset := NewFakeClientsetWithRestClient(storageClass)
 
 	// Create a fake k8sclient.KubeClient
@@ -1713,6 +1712,12 @@ func TestVolumeExpansionSuite_Run_NonBlock(t *testing.T) {
 					v1.PersistentVolumeAccessMode(ves.AccessMode),
 				},
 			},
+			Status: v1.PersistentVolumeClaimStatus{
+				Phase: v1.ClaimBound,
+				Capacity: v1.ResourceList{
+					v1.ResourceStorage: resource.MustParse(ves.InitialSize),
+				},
+			},
 		}
 
 		// Update the volume size
@@ -1722,8 +1727,7 @@ func TestVolumeExpansionSuite_Run_NonBlock(t *testing.T) {
 		clientset.Tracker().Add(event)
 		clientset.Tracker().Add(volume)
 
-		//return false, nil, nil // Allow normal processing to continue
-		return true, pod, nil
+		return false, nil, nil // Allow normal processing to continue
 	})
 
 	// When getting pods, return the pod with Running status and Ready condition
