@@ -21,14 +21,8 @@ const (
 	RemoteClusterID = "replication.storage.dell.com/remoteClusterID"
 	// ReplicationGroupName represents replication group name
 	ReplicationGroupName = "replication.storage.dell.com/replicationGroupName"
-	// RemotePV represents remove PV
-	RemotePV = "replication.storage.dell.com/remotePV"
 	// RemoteStorageClassName represents remote storage class
 	RemoteStorageClassName = "replication.storage.dell.com/remoteStorageClassName"
-	// RemoteVolume represents remote volume
-	RemoteVolume = "replication.storage.dell.com/remoteVolume"
-	// DriverName represents driver name
-	DriverName = "replication.storage.dell.com/driverName"
 )
 
 var (
