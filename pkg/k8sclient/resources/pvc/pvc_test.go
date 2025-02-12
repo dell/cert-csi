@@ -19,6 +19,10 @@ package pvc_test
 import (
 	"context"
 	"fmt"
+	"os"
+	t "testing"
+	"time"
+
 	"github.com/dell/cert-csi/pkg/k8sclient"
 	pvc2 "github.com/dell/cert-csi/pkg/k8sclient/resources/pvc"
 	"github.com/dell/cert-csi/pkg/k8sclient/resources/sc"
@@ -30,9 +34,6 @@ import (
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/client-go/kubernetes/fake"
 	"k8s.io/client-go/testing"
-	"os"
-	t "testing"
-	"time"
 )
 
 type PVCTestSuite struct {
@@ -70,6 +71,7 @@ func (suite *PersistentVolumeClaimSuite) SetupSuite() {
 		Deleted: false,
 	}
 }
+
 func (suite *PersistentVolumeClaimSuite) TestWaitToBeBound() {
 	ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
 	defer cancel()
@@ -93,6 +95,7 @@ func (suite *PersistentVolumeClaimSuite) TestWaitToBeBound() {
 	err := suite.pvcClient.WaitToBeBound(ctx)
 	assert.NoError(suite.T(), err, "Expected no error when PVC gets bound")
 }
+
 func (suite *PersistentVolumeClaimSuite) TestWaitToBeBoundTimeout() {
 	ctx, cancel := context.WithTimeout(context.Background(), 1*time.Second)
 	defer cancel()
@@ -110,6 +113,7 @@ func (suite *PersistentVolumeClaimSuite) TestWaitToBeBoundTimeout() {
 	err := suite.pvcClient.WaitToBeBound(ctx)
 	assert.Error(suite.T(), err, "Expected an error due to timeout")
 }
+
 func (suite *PersistentVolumeClaimSuite) TestWaitUntilGone() {
 	ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
 	defer cancel()
@@ -131,17 +135,77 @@ func (suite *PersistentVolumeClaimSuite) TestWaitUntilGone() {
 	assert.NoError(suite.T(), err, "Expected no error when PVC is deleted")
 }
 
-func (suite *PVCTestSuite) TestMakePVC() {
+func (suite *PVCTestSuite) TestMakePVCWithDefaults() {
+	cfg := &pvc2.Config{}
+	pvcClient, err := suite.kubeClient.CreatePVCClient("default")
+	suite.NoError(err)
+	pvc := pvcClient.MakePVC(cfg)
+	suite.NotNil(pvc, "expected non-nil PVC")
+	suite.Equal("pvc-", pvc.GenerateName, "expected PVC name prefix 'pvc-'")
+	quantity := pvc.Spec.Resources.Requests[v1.ResourceStorage]
+	suite.Equal("3Gi", quantity.String(), "expected PVC size '3Gi'")
+	suite.Equal(v1.ReadWriteOnce, pvc.Spec.AccessModes[0], "expected AccessMode 'ReadWriteOnce'")
+}
+
+func (suite *PVCTestSuite) TestMakePVCWithCustomName() {
+	cfg := &pvc2.Config{
+		Name: "custom-pvc",
+	}
+	pvcClient, err := suite.kubeClient.CreatePVCClient("default")
+	suite.NoError(err)
+	pvc := pvcClient.MakePVC(cfg)
+	suite.NotNil(pvc, "expected non-nil PVC")
+	suite.Equal("custom-pvc", pvc.Name, "expected PVC name 'custom-pvc'")
+}
+
+func (suite *PVCTestSuite) TestMakePVCWithVolumeMode() {
 	blockMode := v1.PersistentVolumeBlock
 	cfg := &pvc2.Config{
-		Name:       "test-pvc",
 		VolumeMode: &blockMode,
 	}
 	pvcClient, err := suite.kubeClient.CreatePVCClient("default")
 	suite.NoError(err)
 	pvc := pvcClient.MakePVC(cfg)
 	suite.NotNil(pvc, "expected non-nil PVC")
-	suite.Equal("test-pvc", pvc.Name, "expected PVC name 'test-pvc'")
+	suite.Equal(blockMode, *pvc.Spec.VolumeMode, "expected VolumeMode 'Block'")
+}
+
+func (suite *PVCTestSuite) TestMakePVCWithEmptyVolumeMode() {
+	emptyMode := ""
+	cfg := &pvc2.Config{
+		VolumeMode: (*v1.PersistentVolumeMode)(&emptyMode),
+	}
+	pvcClient, err := suite.kubeClient.CreatePVCClient("default")
+	suite.NoError(err)
+	pvc := pvcClient.MakePVC(cfg)
+	suite.NotNil(pvc, "expected non-nil PVC")
+	suite.Nil(pvc.Spec.VolumeMode, "expected nil VolumeMode")
+}
+
+func (suite *PVCTestSuite) TestMakePVCWithSnapshotDataSource() {
+	cfg := &pvc2.Config{
+		SnapName: "snapshot-1",
+	}
+	pvcClient, err := suite.kubeClient.CreatePVCClient("default")
+	suite.NoError(err)
+	pvc := pvcClient.MakePVC(cfg)
+	suite.NotNil(pvc, "expected non-nil PVC")
+	suite.NotNil(pvc.Spec.DataSource, "expected non-nil DataSource")
+	suite.Equal("snapshot-1", pvc.Spec.DataSource.Name, "expected DataSource name 'snapshot-1'")
+	suite.Equal("VolumeSnapshot", pvc.Spec.DataSource.Kind, "expected DataSource kind 'VolumeSnapshot'")
+}
+
+func (suite *PVCTestSuite) TestMakePVCWithSourceVolumeDataSource() {
+	cfg := &pvc2.Config{
+		SourceVolumeName: "source-pvc",
+	}
+	pvcClient, err := suite.kubeClient.CreatePVCClient("default")
+	suite.NoError(err)
+	pvc := pvcClient.MakePVC(cfg)
+	suite.NotNil(pvc, "expected non-nil PVC")
+	suite.NotNil(pvc.Spec.DataSource, "expected non-nil DataSource")
+	suite.Equal("source-pvc", pvc.Spec.DataSource.Name, "expected DataSource name 'source-pvc'")
+	suite.Equal("PersistentVolumeClaim", pvc.Spec.DataSource.Kind, "expected DataSource kind 'PersistentVolumeClaim'")
 }
 
 func (suite *PVCTestSuite) TestCreatePVC() {
@@ -266,7 +330,6 @@ spec:
 	defer func(name string) {
 		err := os.Remove(name)
 		if err != nil {
-
 		}
 	}(tmpFile.Name())
 
@@ -452,9 +515,10 @@ func (suite *PVCTestSuite) TestCreatePVCObject() {
 	suite.Equal("standard", *pvcObject.Spec.StorageClassName)
 	suite.Equal([]v1.PersistentVolumeAccessMode{v1.ReadWriteOnce}, pvcObject.Spec.AccessModes)
 	suite.Equal(v1.PersistentVolumeFilesystem, *pvcObject.Spec.VolumeMode)
-	//suite.Equal("10Gi", pvcObject.Spec.Resources.Requests["storage"])
+	// suite.Equal("10Gi", pvcObject.Spec.Resources.Requests["storage"])
 	suite.Equal("pv-1", pvcObject.Spec.VolumeName)
 }
+
 func (suite *PVCTestSuite) TestCreatePVCObject_Error() {
 	ctx := context.Background()
 
