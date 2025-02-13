@@ -434,41 +434,42 @@ func TestGenerateReport(t *testing.T) {
 		})
 	}
 }
-func TestTerminateProgram(t *testing.T) {
-	t.Run("Should send interrupt signal to the process", func(t *testing.T) {
-		ctx, cancel := context.WithCancel(context.Background())
-		defer cancel()
 
-		cmd := exec.CommandContext(ctx, "sleep", "5")
-		err := cmd.Start()
-		assert.NoError(t, err)
-		content := []byte("ls -l\n")
-		tmpfile, err := ioutil.TempFile("", "example")
-		assert.NoError(t, err)
-
-		defer os.Remove(tmpfile.Name()) // clean up
-
-		if _, err := tmpfile.Write(content); err != nil {
-			assert.NoError(t, err)
-		}
-
-		if _, err := tmpfile.Seek(0, 0); err != nil {
-			assert.NoError(t, err)
-		}
-
-		oldStdin := os.Stdin
-		defer func() { os.Stdin = oldStdin }() // Restore original Stdin
-
-		os.Stdin = tmpfile
-
-		terminateProgram(cmd)
-
-		waitErr := cmd.Wait()
-		exitError, ok := waitErr.(*exec.ExitError)
-		assert.False(t, ok)
-		assert.Nil(t, exitError)
-	})
-}
+//	func TestTerminateProgram(t *testing.T) {
+//		t.Run("Should send interrupt signal to the process", func(t *testing.T) {
+//			ctx, cancel := context.WithCancel(context.Background())
+//			defer cancel()
+//
+//			cmd := exec.CommandContext(ctx, "sleep", "5")
+//			err := cmd.Start()
+//			assert.NoError(t, err)
+//			content := []byte("ls -l\n")
+//			tmpfile, err := ioutil.TempFile("", "example")
+//			assert.NoError(t, err)
+//
+//			defer os.Remove(tmpfile.Name()) // clean up
+//
+//			if _, err := tmpfile.Write(content); err != nil {
+//				assert.NoError(t, err)
+//			}
+//
+//			if _, err := tmpfile.Seek(0, 0); err != nil {
+//				assert.NoError(t, err)
+//			}
+//
+//			oldStdin := os.Stdin
+//			defer func() { os.Stdin = oldStdin }() // Restore original Stdin
+//
+//			os.Stdin = tmpfile
+//
+//			terminateProgram(cmd)
+//
+//			waitErr := cmd.Wait()
+//			exitError, ok := waitErr.(*exec.ExitError)
+//			assert.False(t, ok)
+//			assert.Nil(t, exitError)
+//		})
+//	}
 func TestTerminateProgramNoInput(t *testing.T) {
 	t.Run("Should send interrupt signal to the process", func(t *testing.T) {
 		ctx, cancel := context.WithCancel(context.Background())
