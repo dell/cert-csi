@@ -12,6 +12,7 @@ import (
 	"testing"
 
 	"github.com/dell/cert-csi/pkg/k8sclient"
+	"github.com/dell/cert-csi/pkg/k8sclient/resources/pod"
 	"github.com/dell/cert-csi/pkg/k8sclient/resources/pv"
 	"github.com/dell/cert-csi/pkg/k8sclient/resources/pvc"
 	"github.com/dell/cert-csi/pkg/k8sclient/resources/replicationgroup"
@@ -2554,6 +2555,17 @@ func TestVolumeMigrateSuite_Parameters(t *testing.T) {
 // 	}
 // }
 
+type MockClients struct {
+	mock.Mock
+}
+
+// CreatePodClient is a mock implementation of the CreatePodClient method
+func (c *MockClients) CreatePodClient(namespace string) (*pod.Client, error) {
+	args := c.Called(namespace)
+	podClient, err := args.Get(0).(*pod.Client), args.Error(1)
+	return podClient, err
+}
+
 /*func TestSnapSuite_Run(t *testing.T) {
 
 	// Mock storageClass
@@ -2568,6 +2580,21 @@ func TestVolumeMigrateSuite_Parameters(t *testing.T) {
 
 	clientset := NewFakeClientsetWithRestClient(storageClass)
 
+	// Create a pod to delete
+	pod := &corev1.Pod{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      "test-pod",
+			Namespace: "test-namespace",
+		},
+	}
+
+	// Add the pod to the fake client
+	_, err := clientset.CoreV1().Pods("test-namespace").Create(context.TODO(), pod, metav1.CreateOptions{})
+	if err != nil {
+		fmt.Printf("Error creating pod: %v\n", err)
+		return
+	}
+
 	clientset.Fake.PrependReactor("create", "pods", func(action k8stesting.Action) (bool, runtime.Object, error) {
 		createAction := action.(k8stesting.CreateAction)
 		pod := createAction.GetObject().(*v1.Pod)
@@ -2581,106 +2608,10 @@ func TestVolumeMigrateSuite_Parameters(t *testing.T) {
 		return false, nil, nil // Allow normal processing to continue
 	})
 
-	// Also, when getting pods, return the pod with Running status and Ready condition
-	clientset.Fake.PrependReactor("get", "pods", func(action k8stesting.Action) (bool, runtime.Object, error) {
-		getAction := action.(k8stesting.GetAction)
-		podName := getAction.GetName()
-		//podName := "delete-pod"
-		// Create a pod object with the expected name and Ready status
-		pod := &v1.Pod{
-			ObjectMeta: metav1.ObjectMeta{
-				Name:      podName,
-				Namespace: "test-namespace",
-			},
-			Status: v1.PodStatus{
-				Phase: v1.PodRunning,
-				Conditions: []v1.PodCondition{
-					{
-						Type:   v1.PodReady,
-						Status: v1.ConditionTrue,
-					},
-				},
-			},
-		}
-		return true, pod, nil
-	})
-
-	// Also, when deleting pods, return the pod with Running status and Ready condition
-	clientset.Fake.AddReactor("delete", "pods", func(action k8stesting.Action) (bool, runtime.Object, error) {
-		fmt.Println("Delete reactor triggered")
-		getAction := action.(k8stesting.DeleteAction)
-		podName := getAction.GetName()
-		//var pod *v1.Pod
-		// Create a pod object with the expected name and Ready status
-		pod := &v1.Pod{
-			ObjectMeta: metav1.ObjectMeta{
-				Name:      podName,
-				Namespace: "test-namespace",
-			},
-			Status: v1.PodStatus{
-				Phase: v1.PodSucceeded,
-			},
-		}
-		fmt.Printf("Pod %v deleted\n", pod)
-		return true, nil, nil
-	})
-
-	/*clientset.Fake.PrependReactor("get", "pods", func(action k8stesting.Action) (bool, runtime.Object, error) {
-		getAction := action.(k8stesting.GetAction)
-		podName := getAction.GetName()
-		// Create a pod object with the expected name and Ready status
-		if podName == "" {
-			return false, nil, &k8serrors.StatusError{
-				ErrStatus: metav1.Status{
-					Status:  metav1.StatusFailure,
-					Code:    http.StatusNotFound,
-					Reason:  metav1.StatusReasonNotFound,
-					Message: "Not found",
-				},
-			}
-		} else {
-			pod := &v1.Pod{
-				ObjectMeta: metav1.ObjectMeta{
-					Name:      podName,
-					Namespace: "test-namespace",
-				},
-				Status: v1.PodStatus{
-					Phase: v1.PodRunning,
-					Conditions: []v1.PodCondition{
-						{
-							Type:   v1.PodReady,
-							Status: v1.ConditionTrue,
-						},
-					},
-				},
-			}
-			return true, pod, nil
-		}
-	})
-
-	clientset.Fake.PrependReactor("delete", "pods", func(action k8stesting.Action) (bool, runtime.Object, error) {
-		// Create a pod object with the expected name and Ready status
-		pod := &v1.Pod{
-			ObjectMeta: metav1.ObjectMeta{
-				Name:      "",
-				Namespace: "test-namespace",
-			},
-			Status: v1.PodStatus{
-				Phase: v1.PodRunning,
-				Conditions: []v1.PodCondition{
-					{
-						Type:   v1.PodReady,
-						Status: v1.ConditionTrue,
-					},
-				},
-			},
-		}
-		return true, pod, nil
-	})
-
 	// Create a fake k8sclient.KubeClient
 	kubeClient := &k8sclient.KubeClient{
 		ClientSet: clientset,
+		Config:    &rest.Config{},
 	}
 
 	// Create PVC client
@@ -2692,6 +2623,9 @@ func TestVolumeMigrateSuite_Parameters(t *testing.T) {
 
 	// Create PV client
 	pvClient, _ := kubeClient.CreatePVClient()
+	snapGA, _ := kubeClient.CreateSnapshotGAClient("test-namespace")
+	snapGA.Interface = &FakeVolumeSnapshotInterface{}
+	snapBeta, _ := kubeClient.CreateSnapshotBetaClient("test-namespace")
 
 	// Update the k8sclient.Clients instance with the fake clients
 	clients := &k8sclient.Clients{
@@ -2699,6 +2633,15 @@ func TestVolumeMigrateSuite_Parameters(t *testing.T) {
 		PodClient:              podClient,
 		PersistentVolumeClient: pvClient,
 		KubeClient:             kubeClient,
+		SnapClientGA:           snapGA,
+		SnapClientBeta:         snapBeta,
+	}
+
+	// Delete the pod
+	err = clientset.CoreV1().Pods("test-namespace").Delete(context.TODO(), "test-pod", metav1.DeleteOptions{})
+	if err != nil {
+		fmt.Printf("Error deleting pod: %v\n", err)
+		return
 	}
 
 	tests := []struct {
@@ -2709,7 +2652,7 @@ func TestVolumeMigrateSuite_Parameters(t *testing.T) {
 		wantError      bool
 		wantDeleteFunc bool
 	}{
-		{
+		/*{
 			name: "Testing Run with default parameters",
 			snapSuite: &SnapSuite{
 				SnapAmount:         0,
