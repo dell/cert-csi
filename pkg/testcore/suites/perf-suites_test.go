@@ -1641,13 +1641,11 @@ func TestVolumeExpansionSuite_Run_NonBlock(t *testing.T) {
 	// Create a new VolumeExpansionSuite instance
 	ves := &VolumeExpansionSuite{
 		VolumeNumber: 1,
-		//PodNumber:    1,
 		IsBlock:      false,
 		InitialSize:  "1Gi",
 		ExpandedSize: "2Gi",
 		Description:  "test-description",
 		AccessMode:   "ReadWriteOnce",
-		//Image:        "quay.io/centos/centos:latest",
 	}
 
 	// Create a fake storage class with VolumeBindingMode set to WaitForFirstConsumer
@@ -1720,9 +1718,6 @@ func TestVolumeExpansionSuite_Run_NonBlock(t *testing.T) {
 			},
 		}
 
-		// Update the volume size
-		//volume.Spec.Resources.Requests[v1.ResourceStorage] = resource.MustParse(ves.ExpandedSize)
-
 		// Add the event and volume to the fake clientset
 		clientset.Tracker().Add(event)
 		clientset.Tracker().Add(volume)
@@ -1773,7 +1768,7 @@ func TestVolumeExpansionSuite_Run_NonBlock(t *testing.T) {
 	_, err := ves.Run(ctx, "test-storage-class", k8Clients)
 	// Check if there was an error
 	if err != nil {
-		t.Errorf("Error running VolumeExpansionSuite.Run(): %v", err)
+		t.Errorf("Error running NonBlock iteration of VolumeExpansionSuite.Run(): %v", err)
 	}
 }
 
@@ -2531,10 +2526,25 @@ func TestMultiAttachSuite_Parameters(t *testing.T) {
 	}
 }
 
-type FakeRemoteExecutor struct{}
+type FakeRemoteExecutor struct {
+	callCount int
+}
 
-// another option is to use mockgen to mock the RemoteExecutor interface
-func (FakeRemoteExecutor) Execute(method string, url *url.URL, config *restclient.Config, stdin io.Reader, stdout, stderr io.Writer, tty bool, terminalSizeQueue remotecommand.TerminalSizeQueue) error {
+func (f *FakeRemoteExecutor) Execute(method string, url *url.URL, config *restclient.Config, stdin io.Reader, stdout, stderr io.Writer, tty bool, terminalSizeQueue remotecommand.TerminalSizeQueue) error {
+	// Increment the call count
+	f.callCount++
+
+	// Write the appropriate output based on the call count
+	if f.callCount == 1 {
+		stdout.Write([]byte("Filesystem     1K-blocks    Used Available Use% Mounted on\n"))
+		stdout.Write([]byte("/dev/sda1      1048576   0        1048576    100% /"))
+		stdout.Write([]byte("/data0      1048576   0        1048576    100% /abc"))
+	} else if f.callCount == 2 {
+		stdout.Write([]byte("Filesystem     1K-blocks    Used Available Use% Mounted on\n"))
+		stdout.Write([]byte("/dev/sda1      2097152   0        2097152    100% /"))
+		stdout.Write([]byte("/data0      2097152   0        2097152    100% /abc"))
+	}
+
 	return nil
 }
 
