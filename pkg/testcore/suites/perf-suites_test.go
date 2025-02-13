@@ -28,6 +28,7 @@ import (
 	storagev1 "k8s.io/api/storage/v1"
 
 	"k8s.io/apimachinery/pkg/api/meta"
+	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/schema"
@@ -1876,7 +1877,7 @@ func TestVolumeExpansionSuite_Run(t *testing.T) {
 	}
 }
 
-/* func TestVolumeExpansionSuite_Run_NonBlock(t *testing.T) {
+func TestVolumeExpansionSuite_Run_NonBlock(t *testing.T) {
 	// Create a new context
 	ctx := context.Background()
 
@@ -1995,7 +1996,7 @@ func TestVolumeExpansionSuite_Run(t *testing.T) {
 	// Create the necessary clients
 	pvcClient, _ := kubeClient.CreatePVCClient(namespace)
 	podClient, _ := kubeClient.CreatePodClient(namespace)
-	podClient.RemoteExecutor = &FakeRemoteExecutor{}
+	podClient.RemoteExecutor = &FakeRemoteExecutor_VolExpansion{callCount: 0}
 	scClient, _ := kubeClient.CreateSCClient()
 	pvClient, _ := kubeClient.CreatePVClient()
 	k8Clients := &k8sclient.Clients{
@@ -2012,7 +2013,7 @@ func TestVolumeExpansionSuite_Run(t *testing.T) {
 	if err != nil {
 		t.Errorf("Error running NonBlock iteration of VolumeExpansionSuite.Run(): %v", err)
 	}
-} */
+}
 
 // TODO TestCheckSize
 // TODO TestConvertSpecSize
@@ -2660,13 +2661,19 @@ func TestMultiAttachSuite_Parameters(t *testing.T) {
 	}
 }
 
-type FakeRemoteExecutor struct {
+type FakeRemoteExecutor struct{}
+
+type FakeRemoteExecutor_VolExpansion struct {
 	callCount int
 }
 
 func (f *FakeRemoteExecutor) Execute(method string, url *url.URL, config *restclient.Config, stdin io.Reader, stdout, stderr io.Writer, tty bool, terminalSizeQueue remotecommand.TerminalSizeQueue) error {
+	return nil
+}
+
+func (f *FakeRemoteExecutor_VolExpansion) Execute(method string, url *url.URL, config *restclient.Config, stdin io.Reader, stdout, stderr io.Writer, tty bool, terminalSizeQueue remotecommand.TerminalSizeQueue) error {
 	// Reset the call count if the output for df has been iterated through twice
-	if f.callCount > 2 {
+	if f.callCount >= 2 {
 		f.callCount = 0
 	}
 	// Increment the call count
