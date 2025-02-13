@@ -906,3 +906,36 @@ func (suite *PVCTestSuite) TestCheckAnnotationsForVolumes_LabelsMissing() {
 	err = pvcClient.CheckAnnotationsForVolumes(ctx, scObject)
 	suite.Error(err)
 }
+
+func (suite *PVCTestSuite) TestUpdatePVC() {
+	// Create PVC Client
+	pvcClient, err := suite.kubeClient.CreatePVCClient("default")
+	suite.NoError(err, "expected no error for PVC client creation")
+
+	// Define PVC with a unique name
+	pvc := &v1.PersistentVolumeClaim{
+		ObjectMeta: metav1.ObjectMeta{Name: "test-pvc-update"},
+	}
+
+	// Ensure PVC does not exist before creating
+	pvcClient.Delete(context.Background(), pvc)
+
+	// Create PVC to ensure it exists before updating
+	createdPVC := pvcClient.Create(context.Background(), pvc)
+	suite.NoError(createdPVC.GetError(), "expected no error for valid PVC creation")
+	suite.Equal("test-pvc-update", createdPVC.Object.GetName(), "expected 'test-pvc-update' name")
+
+	// Update PVC
+	pvc.ObjectMeta.Labels = map[string]string{"updated": "true"}
+	updatedPVC := pvcClient.Update(context.Background(), pvc)
+	suite.NoError(updatedPVC.GetError(), "expected no error for valid PVC update")
+	suite.Equal("test-pvc-update", updatedPVC.Object.GetName(), "expected 'test-pvc-update' name after update")
+	suite.Equal("true", updatedPVC.Object.GetLabels()["updated"], "expected 'updated' label to be 'true'")
+
+	// Error Scenario: Update non-existent PVC
+	nonExistentPVC := &v1.PersistentVolumeClaim{
+		ObjectMeta: metav1.ObjectMeta{Name: "non-existent-pvc"},
+	}
+	updatedNonExistentPVC := pvcClient.Update(context.Background(), nonExistentPVC)
+	suite.Error(updatedNonExistentPVC.GetError(), "expected error for updating non-existent PVC")
+}
