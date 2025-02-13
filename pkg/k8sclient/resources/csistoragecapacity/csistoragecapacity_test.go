@@ -33,11 +33,6 @@ import (
 	"k8s.io/client-go/testing"
 )
 
-const (
-	Poll    = 100 * time.Millisecond
-	Timeout = 1 * time.Second
-)
-
 func TestCSIStorageCapacity(t *testing2.T) {
 	suite.Run(t, new(TestCSIStorageCapacitySuite))
 }
@@ -75,7 +70,7 @@ func (suite *TestCSIStorageCapacitySuite) TestGetByStorageClass() {
 	}
 
 	// Add mock objects to the fake client
-	suite.kubeClient.ClientSet.(*fake.Clientset).PrependReactor("list", "csistoragecapacities", func(action testing.Action) (bool, runtime.Object, error) {
+	suite.kubeClient.ClientSet.(*fake.Clientset).PrependReactor("list", "csistoragecapacities", func(_ testing.Action) (bool, runtime.Object, error) {
 		return true, &storagev1.CSIStorageCapacityList{
 			Items: []storagev1.CSIStorageCapacity{*capacity1, *capacity2},
 		}, nil
@@ -111,7 +106,7 @@ func (suite *TestCSIStorageCapacitySuite) TestGetByStorageClass_NoMatch() {
 	}
 
 	// Add mock objects to the fake client
-	suite.kubeClient.ClientSet.(*fake.Clientset).PrependReactor("list", "csistoragecapacities", func(action testing.Action) (bool, runtime.Object, error) {
+	suite.kubeClient.ClientSet.(*fake.Clientset).PrependReactor("list", "csistoragecapacities", func(_ testing.Action) (bool, runtime.Object, error) {
 		return true, &storagev1.CSIStorageCapacityList{
 			Items: []storagev1.CSIStorageCapacity{*capacity1},
 		}, nil
@@ -134,7 +129,7 @@ func (suite *TestCSIStorageCapacitySuite) TestGetByStorageClass_Error() {
 	scName := "test-storage-class"
 
 	// Add reactor to return an error
-	suite.kubeClient.ClientSet.(*fake.Clientset).PrependReactor("list", "csistoragecapacities", func(action testing.Action) (bool, runtime.Object, error) {
+	suite.kubeClient.ClientSet.(*fake.Clientset).PrependReactor("list", "csistoragecapacities", func(_ testing.Action) (bool, runtime.Object, error) {
 		return true, nil, errors.New("failed to list CSIStorageCapacities")
 	})
 
@@ -208,7 +203,7 @@ func (suite *TestCSIStorageCapacitySuite) TestSetCapacityToZero_Error() {
 	}
 
 	// Add reactor to return an error
-	suite.kubeClient.ClientSet.(*fake.Clientset).PrependReactor("update", "csistoragecapacities", func(action testing.Action) (bool, runtime.Object, error) {
+	suite.kubeClient.ClientSet.(*fake.Clientset).PrependReactor("update", "csistoragecapacities", func(_ testing.Action) (bool, runtime.Object, error) {
 		return true, nil, errors.New("failed to update CSIStorageCapacity")
 	})
 
@@ -246,7 +241,7 @@ func (suite *TestCSIStorageCapacitySuite) TestWaitForAllToBeCreated_Success() {
 	}
 
 	// Add mock objects to the fake client
-	suite.kubeClient.ClientSet.(*fake.Clientset).PrependReactor("list", "csistoragecapacities", func(action testing.Action) (bool, runtime.Object, error) {
+	suite.kubeClient.ClientSet.(*fake.Clientset).PrependReactor("list", "csistoragecapacities", func(_ testing.Action) (bool, runtime.Object, error) {
 		return true, &storagev1.CSIStorageCapacityList{
 			Items: []storagev1.CSIStorageCapacity{*capacity1, *capacity2},
 		}, nil
@@ -277,7 +272,7 @@ func (suite *TestCSIStorageCapacitySuite) TestWaitForAllToBeCreated_Timeout() {
 	}
 
 	// Add mock objects to the fake client
-	suite.kubeClient.ClientSet.(*fake.Clientset).PrependReactor("list", "csistoragecapacities", func(action testing.Action) (bool, runtime.Object, error) {
+	suite.kubeClient.ClientSet.(*fake.Clientset).PrependReactor("list", "csistoragecapacities", func(_ testing.Action) (bool, runtime.Object, error) {
 		return true, &storagev1.CSIStorageCapacityList{
 			Items: []storagev1.CSIStorageCapacity{*capacity1},
 		}, nil
@@ -310,7 +305,7 @@ func (suite *TestCSIStorageCapacitySuite) TestWaitForAllToBeCreated_ContextCance
 	}
 
 	// Add mock objects to the fake client
-	suite.kubeClient.ClientSet.(*fake.Clientset).PrependReactor("list", "csistoragecapacities", func(action testing.Action) (bool, runtime.Object, error) {
+	suite.kubeClient.ClientSet.(*fake.Clientset).PrependReactor("list", "csistoragecapacities", func(_ testing.Action) (bool, runtime.Object, error) {
 		return true, &storagev1.CSIStorageCapacityList{
 			Items: []storagev1.CSIStorageCapacity{*capacity1},
 		}, nil
