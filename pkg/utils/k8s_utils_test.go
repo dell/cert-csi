@@ -19,8 +19,12 @@
 package utils
 
 import (
+	"context"
 	"flag"
+	"github.com/stretchr/testify/assert"
+	"io/ioutil"
 	"os"
+	"os/exec"
 	"path/filepath"
 	"reflect"
 	"testing"
@@ -427,6 +431,132 @@ func TestGenerateReport(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(_ *testing.T) {
 			GenerateReport(tt.args.report)
+		})
+	}
+}
+func TestTerminateProgram(t *testing.T) {
+	t.Run("Should send interrupt signal to the process", func(t *testing.T) {
+		ctx, cancel := context.WithCancel(context.Background())
+		defer cancel()
+
+		cmd := exec.CommandContext(ctx, "sleep", "5")
+		err := cmd.Start()
+		assert.NoError(t, err)
+		content := []byte("ls -l\n")
+		tmpfile, err := ioutil.TempFile("", "example")
+		assert.NoError(t, err)
+
+		defer os.Remove(tmpfile.Name()) // clean up
+
+		if _, err := tmpfile.Write(content); err != nil {
+			assert.NoError(t, err)
+		}
+
+		if _, err := tmpfile.Seek(0, 0); err != nil {
+			assert.NoError(t, err)
+		}
+
+		oldStdin := os.Stdin
+		defer func() { os.Stdin = oldStdin }() // Restore original Stdin
+
+		os.Stdin = tmpfile
+
+		terminateProgram(cmd)
+
+		waitErr := cmd.Wait()
+		exitError, ok := waitErr.(*exec.ExitError)
+		assert.False(t, ok)
+		assert.Nil(t, exitError)
+	})
+}
+func TestTerminateProgramNoInput(t *testing.T) {
+	t.Run("Should send interrupt signal to the process", func(t *testing.T) {
+		ctx, cancel := context.WithCancel(context.Background())
+		defer cancel()
+
+		cmd := exec.CommandContext(ctx, "sleep", "5")
+		err := cmd.Start()
+		assert.NoError(t, err)
+		content := []byte("n\n")
+		tmpfile, err := ioutil.TempFile("", "example")
+		assert.NoError(t, err)
+
+		defer os.Remove(tmpfile.Name()) // clean up
+
+		if _, err := tmpfile.Write(content); err != nil {
+			assert.NoError(t, err)
+		}
+
+		if _, err := tmpfile.Seek(0, 0); err != nil {
+			assert.NoError(t, err)
+		}
+
+		oldStdin := os.Stdin
+		defer func() { os.Stdin = oldStdin }() // Restore original Stdin
+
+		os.Stdin = tmpfile
+
+		terminateProgram(cmd)
+
+		waitErr := cmd.Wait()
+		exitError, ok := waitErr.(*exec.ExitError)
+		assert.False(t, ok)
+		assert.Nil(t, exitError)
+	})
+}
+
+func TestTerminateProgramInputFail(t *testing.T) {
+	t.Run("Should send interrupt signal to the process", func(t *testing.T) {
+		ctx, cancel := context.WithCancel(context.Background())
+		defer cancel()
+
+		cmd := exec.CommandContext(ctx, "sleep", "5")
+		err := cmd.Start()
+		assert.NoError(t, err)
+
+		terminateProgram(cmd)
+
+		waitErr := cmd.Wait()
+		exitError, ok := waitErr.(*exec.ExitError)
+		assert.False(t, ok)
+		assert.Nil(t, exitError)
+	})
+}
+func TestTerminateNonExistingProgram(t *testing.T) {
+	type args struct {
+		cmd *exec.Cmd
+	}
+	tests := []struct {
+		name    string
+		args    args
+		wantErr bool
+	}{
+		{
+			name: "Test case for terminating process successfully",
+			args: args{
+				cmd: &exec.Cmd{
+					Process: &os.Process{
+						Pid: os.Getpid(),
+					},
+				},
+			},
+			wantErr: false,
+		},
+		{
+			name: "Test case for terminating non-existent process",
+			args: args{
+				cmd: &exec.Cmd{
+					Process: &os.Process{
+						Pid: -1,
+					},
+				},
+			},
+			wantErr: true,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			terminateProgram(tt.args.cmd)
 		})
 	}
 }

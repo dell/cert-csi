@@ -327,24 +327,7 @@ func ExecuteE2ECommand(args []string, ch chan os.Signal) error {
 		if !ok {
 			return
 		}
-		log.Info("Received termination signal,")
-		log.Info("Do you really want to terminate the process ? (Y/n)")
-		reader := bufio.NewReader(os.Stdin)
-		log.Info("-> ")
-		input, err := reader.ReadString('\n')
-		if err != nil {
-			log.Error(err)
-		}
-		input = strings.TrimSuffix(input, "\n")
-		if input == "n" || input == "N" || input == "No" || input == "no" {
-			return
-		}
-		err = cmd.Process.Signal(syscall.SIGINT)
-		if err != nil {
-			log.Errorf("Unable to terminate the process, Termination failed with -->%s", err.Error())
-			return
-		}
-		log.Infof("Teriminated kubernetes e2e process")
+		terminateProgram(cmd)
 	}()
 
 	var stdBuffer bytes.Buffer
@@ -376,4 +359,25 @@ func ExecuteE2ECommand(args []string, ch chan os.Signal) error {
 		return cmdErr
 	}
 	return nil
+}
+
+func terminateProgram(cmd *exec.Cmd) {
+	log.Info("Received termination signal,")
+	log.Info("Do you really want to terminate the process ? (Y/n)")
+	reader := bufio.NewReader(os.Stdin)
+	log.Info("-> ")
+	input, err := reader.ReadString('\n')
+	if err != nil {
+		log.Error(err)
+	}
+	input = strings.TrimSuffix(input, "\n")
+	if input == "n" || input == "N" || input == "No" || input == "no" {
+		return
+	}
+	err = cmd.Process.Signal(syscall.SIGINT)
+	if err != nil {
+		log.Errorf("Unable to terminate the process, Termination failed with -->%s", err.Error())
+		return
+	}
+	log.Infof("Teriminated kubernetes e2e process")
 }
