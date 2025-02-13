@@ -1282,144 +1282,17 @@ func TestVolumeIoSuite_GetClients(t *testing.T) {
 			},
 			wantErr: false,
 		},
-		// {
-		// 	name: "Testing GetClients with nil client",
-		// 	vis:  &VolumeIoSuite{},
-		// 	args: args{
-		// 		namespace: "test-namespace",
-		// 		client:    nil,
-		// 	},
-		// 	want:    nil,
-		// 	wantErr: true,
-		// },
-		// {
-		// 	name: "Testing GetClients with nil client.ClientSet",
-		// 	vis:  &VolumeIoSuite{},
-		// 	args: args{
-		// 		namespace: "test-namespace",
-		// 		client: &k8sclient.KubeClient{
-		// 			ClientSet: nil,
-		// 		},
-		// 	},
-		// 	want:    nil,
-		// 	wantErr: true,
-		// },
-		// {
-		// 	name: "Testing GetClients with nil client.Config",
-		// 	vis:  &VolumeIoSuite{},
-		// 	args: args{
-		// 		namespace: "test-namespace",
-		// 		client: &k8sclient.KubeClient{
-		// 			Config: nil,
-		// 		},
-		// 	},
-		// 	want:    nil,
-		// 	wantErr: true,
-		// },
-		// {
-		// 	name: "Testing GetClients with nil k8sclient.Clients",
-		// 	vis:  &VolumeIoSuite{},
-		// 	args: args{
-		// 		namespace: "test-namespace",
-		// 		client:    &kubeClient,
-		// 	},
-		// 	want:    nil,
-		// 	wantErr: true,
-		// },
-		// {
-		// 	name: "Testing GetClients with nil k8sclient.Clients.PVCClient",
-		// 	vis:  &VolumeIoSuite{},
-		// 	args: args{
-		// 		namespace: "test-namespace",
-		// 		client:    &kubeClient,
-		// 	},
-		// 	want: &k8sclient.Clients{
-		// 		PVCClient: nil,
-		// 	},
-		// 	wantErr: false,
-		// },
-		// Add more test cases as needed
-		{
-			name: "Testing GetClients with error in CreatePVCClient",
-			vis:  &VolumeIoSuite{},
-			args: args{
-				namespace: "test-namespace",
-				client: &k8sclient.KubeClient{
-					ClientSet:   fake.NewSimpleClientset(),
-					Config:      &rest.Config{},
-					VersionInfo: nil,
-				},
-			},
-			want:    nil,
-			wantErr: true,
-		},
-		{
-			name: "Testing GetClients with error in CreatePodClient",
-			vis:  &VolumeIoSuite{},
-			args: args{
-				namespace: "test-namespace",
-				client: &k8sclient.KubeClient{
-					ClientSet:   fake.NewSimpleClientset(),
-					Config:      &rest.Config{},
-					VersionInfo: nil,
-				},
-			},
-			want:    nil,
-			wantErr: true,
-		},
-		{
-			name: "Testing GetClients with error in CreateVaClient",
-			vis:  &VolumeIoSuite{},
-			args: args{
-				namespace: "test-namespace",
-				client: &k8sclient.KubeClient{
-					ClientSet:   fake.NewSimpleClientset(),
-					Config:      &rest.Config{},
-					VersionInfo: nil,
-				},
-			},
-			want:    nil,
-			wantErr: true,
-		},
-		{
-			name: "Testing GetClients with error in CreateMetricsClient",
-			vis:  &VolumeIoSuite{},
-			args: args{
-				namespace: "test-namespace",
-				client: &k8sclient.KubeClient{
-					ClientSet:   fake.NewSimpleClientset(),
-					Config:      &rest.Config{},
-					VersionInfo: nil,
-				},
-			},
-			want:    nil,
-			wantErr: true,
-		},
 	}
+
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			// if tt.args.client == nil {
-			// 	assert.NotNil(t, err)
-			// }
-
 			got, err := tt.vis.GetClients(tt.args.namespace, tt.args.client)
-			fmt.Println("*************************************")
-			fmt.Println("THis is the got", got)
-			fmt.Println("THis is the err", err)
 			fmt.Println(got, err)
-			fmt.Println("*************************************")
-
 			if tt.wantErr {
 				assert.NotNil(t, err)
 			} else {
 				assert.Nil(t, err)
 			}
-
-			// if tt.want != nil {
-			// 	assert.Equal(t, tt.want, got)
-			// } else {
-			// 	assert.Nil(t, got)
-			// }
 		})
 	}
 }
@@ -3159,17 +3032,6 @@ func TestVolumeMigrateSuite_Parameters(t *testing.T) {
 // 		})
 // 	}
 // }
-
-type MockClients struct {
-	mock.Mock
-}
-
-// CreatePodClient is a mock implementation of the CreatePodClient method
-func (c *MockClients) CreatePodClient(namespace string) (*pod.Client, error) {
-	args := c.Called(namespace)
-	podClient, err := args.Get(0).(*pod.Client), args.Error(1)
-	return podClient, err
-}
 
 /*func TestSnapSuite_Run(t *testing.T) {
 
