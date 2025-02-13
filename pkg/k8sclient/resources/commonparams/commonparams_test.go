@@ -5,68 +5,81 @@ import (
 	"testing"
 )
 
-func TestConstants(t *testing.T) {
-	testCases := []struct {
-		name string
-		want string
-		got  string
-	}{
-		{"RemoteClusterID", RemoteClusterID, "replication.storage.dell.com/remoteClusterID"},
-		{"ReplicationGroupName", ReplicationGroupName, "replication.storage.dell.com/replicationGroupName"},
-		{"RemoteStorageClassName", RemoteStorageClassName, "replication.storage.dell.com/remoteStorageClassName"},
-	}
-	for _, tc := range testCases {
-		t.Run(tc.name, func(t *testing.T) {
-			if tc.want != tc.got {
-				t.Errorf("want %s, got %s", tc.want, tc.got)
-			}
-		})
-	}
-}
-func TestLocalPVCAnnotations(t *testing.T) {
-	expected := []string{RemoteClusterID, ReplicationGroupName, RemoteStorageClassName}
-
-	if !reflect.DeepEqual(LocalPVCAnnotations, expected) {
-		t.Errorf("LocalPVCAnnotations: expected %v, got %v", expected, LocalPVCAnnotations)
+func TestGetRemoteClusterID(t *testing.T) {
+	want := "replication.storage.dell.com/remoteClusterID"
+	if got := GetRemoteClusterID(); got != want {
+		t.Errorf("GetRemoteClusterID() = %v, want %v", got, want)
 	}
 }
 
-func TestLocalPVCLabels(t *testing.T) {
-	expected := []string{RemoteClusterID, ReplicationGroupName}
-
-	if !reflect.DeepEqual(LocalPVCLabels, expected) {
-		t.Errorf("LocalPVCLabels: expected %v, got %v", expected, LocalPVCLabels)
+func TestGetReplicationGroupName(t *testing.T) {
+	want := "replication.storage.dell.com/replicationGroupName"
+	if got := GetReplicationGroupName(); got != want {
+		t.Errorf("GetReplicationGroupName() = %v, want %v", got, want)
 	}
 }
 
-func TestLocalPVAnnotation(t *testing.T) {
-	expected := []string{ReplicationGroupName, RemoteStorageClassName}
-
-	if !reflect.DeepEqual(LocalPVAnnotation, expected) {
-		t.Errorf("LocalPVAnnotation: expected %v, got %v", expected, LocalPVAnnotation)
+func TestGetRemoteStorageClassName(t *testing.T) {
+	want := "replication.storage.dell.com/remoteStorageClassName"
+	if got := GetRemoteStorageClassName(); got != want {
+		t.Errorf("GetRemoteStorageClassName() = %v, want %v", got, want)
 	}
 }
 
-func TestLocalPVLabels(t *testing.T) {
-	expected := []string{ReplicationGroupName}
-
-	if !reflect.DeepEqual(LocalPVLabels, expected) {
-		t.Errorf("LocalPVLabels: expected %v, got %v", expected, LocalPVLabels)
+func TestGetLocalPVCAnnotations(t *testing.T) {
+	want := []string{
+		"replication.storage.dell.com/remoteClusterID",
+		"replication.storage.dell.com/replicationGroupName",
+		"replication.storage.dell.com/remoteStorageClassName",
+	}
+	if got := GetLocalPVCAnnotations(); !reflect.DeepEqual(got, want) {
+		t.Errorf("GetLocalPVCAnnotations() = %v, want %v", got, want)
 	}
 }
 
-func TestRemotePVAnnotations(t *testing.T) {
-	expected := []string{ReplicationGroupName}
-
-	if !reflect.DeepEqual(RemotePVAnnotations, expected) {
-		t.Errorf("RemotePVAnnotations: expected %v, got %v", expected, RemotePVAnnotations)
+func TestGetLocalPVAnnotations(t *testing.T) {
+	want := []string{
+		"replication.storage.dell.com/replicationGroupName",
+		"replication.storage.dell.com/remoteStorageClassName",
+	}
+	if got := GetLocalPVAnnotation(); !reflect.DeepEqual(got, want) {
+		t.Errorf("GetLocalPVAnnotations() = %v, want %v", got, want)
 	}
 }
 
-func TestRemotePVLabels(t *testing.T) {
-	expected := []string{ReplicationGroupName}
+func TestGetLocalPVLabels(t *testing.T) {
+	want := []string{
+		"replication.storage.dell.com/replicationGroupName",
+	}
+	if got := GetLocalPVLabels(); !reflect.DeepEqual(got, want) {
+		t.Errorf("GetLocalPVLabels() = %v, want %v", got, want)
+	}
+}
 
-	if !reflect.DeepEqual(RemotePVLabels, expected) {
-		t.Errorf("RemotePVLabels: expected %v, got %v", expected, RemotePVLabels)
+func TestGetRemotePVAnnotations(t *testing.T) {
+	want := []string{
+		"replication.storage.dell.com/replicationGroupName",
+	}
+	if got := GetRemotePVAnnotations(); !reflect.DeepEqual(got, want) {
+		t.Errorf("GetRemotePVAnnotations() = %v, want %v", got, want)
+	}
+}
+
+func TestGetRemotePVLabels(t *testing.T) {
+	want := []string{
+		"replication.storage.dell.com/replicationGroupName",
+	}
+	if got := GetRemotePVLabels(); !reflect.DeepEqual(got, want) {
+		t.Errorf("GetRemotePVLabels() = %v, want %v", got, want)
+	}
+}
+
+func TestGetLocalPVCLabels(t *testing.T) {
+	want := []string{
+		"replication.storage.dell.com/remoteClusterID",
+		"replication.storage.dell.com/replicationGroupName",
+	}
+	if got := GetLocalPVCLabels(); !reflect.DeepEqual(got, want) {
+		t.Errorf("GetLocalPVCLabels() = %v, want %v", got, want)
 	}
 }
