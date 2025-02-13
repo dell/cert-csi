@@ -1880,9 +1880,7 @@ func TestPodDeletionSuite_Run(t *testing.T) {
 	}
 
 	t.Run("Successful Pod Deletion with PVC and VA", func(t *testing.T) {
-		pod := "test-pod"
-		_, _ = createPod(client, namespace, pod)
-
+		podName := "test-pod"
 		pvcNames := []string{"test-pvc-1", "test-pvc-2"}
 		for _, pvcName := range pvcNames {
 			pvc := &corev1.PersistentVolumeClaim{
@@ -1908,10 +1906,38 @@ func TestPodDeletionSuite_Run(t *testing.T) {
 
 			client.StorageV1().VolumeAttachments().Delete(context.Background(), va.Name, metav1.DeleteOptions{})
 		}
-		pds := &PodDeletionSuite{
-			DeletionStruct: &DeletionStruct{Name: pod},
+
+		podObj := &corev1.Pod{
+			ObjectMeta: metav1.ObjectMeta{
+				Name: podName,
+			},
+			Spec: corev1.PodSpec{
+				Volumes: []corev1.Volume{
+					{
+						Name: "test-va-1",
+						VolumeSource: corev1.VolumeSource{
+							PersistentVolumeClaim: &corev1.PersistentVolumeClaimVolumeSource{
+								ClaimName: "test-pvc-1",
+							},
+						},
+					},
+					{
+						Name: "test-va-2",
+						VolumeSource: corev1.VolumeSource{
+							PersistentVolumeClaim: &corev1.PersistentVolumeClaimVolumeSource{
+								ClaimName: "test-pvc-2",
+							},
+						},
+					},
+				},
+			},
 		}
-		_, err := pds.Run(context.Background(), pod, k8Clients)
+		client.CoreV1().Pods(namespace).Create(context.Background(), podObj, metav1.CreateOptions{})
+
+		pds := &PodDeletionSuite{
+			DeletionStruct: &DeletionStruct{Name: podName},
+		}
+		_, err := pds.Run(context.Background(), podName, k8Clients)
 		assert.NoError(t, err)
 	})
 }
