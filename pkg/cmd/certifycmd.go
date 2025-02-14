@@ -170,252 +170,255 @@ func GetCertifyCommand() cli.Command {
 			},
 		},
 		Before: updatePath,
-		Action: func(c *cli.Context) error {
-			configFilePath := c.String("cert-config")
-			configFilePath = filepath.Clean(configFilePath)
-			// Read the YAML file
-			data, err := os.ReadFile(configFilePath)
-			if err != nil {
-				return fmt.Errorf("can't find config file: %w", err)
-			}
-			// Declare a variable to hold the unmarshaled data
-			var certConfig CertConfig
-			// Unmarshal the YAML data into the struct
-			err = yaml.Unmarshal(data, &certConfig)
-			if err != nil {
-				return fmt.Errorf("unable to decode Config: %w", err)
-			}
-
-			testImage, err := getTestImage(c.String("image-config"))
-			if err != nil {
-				return fmt.Errorf("failed to get test image: %s", err)
-			}
-			// Parse timeout
-			timeout, err := time.ParseDuration(c.String("timeout"))
-			if err != nil {
-				return errors.New("timeout is wrong formatted")
-			}
-			timeOutInSeconds := int(timeout.Seconds())
-
-			var scDBs []*store.StorageClassDB
-			ss := make(map[string][]suites.Interface)
-
-			for _, sc := range certConfig.StorageClasses {
-				pathToDb := fmt.Sprintf("file:%s.db", sc.Name)
-				DB := store.NewSQLiteStore(pathToDb) // dbs should be closed in suite runner
-
-				scDBs = append(scDBs, &store.StorageClassDB{
-					StorageClass: sc.Name,
-					DB:           DB,
-				})
-
-				var s []suites.Interface
-
-				minSize := "8Gi"
-				if sc.MinSize != "" {
-					minSize = sc.MinSize
-				}
-
-				s = append(s, &suites.VolumeIoSuite{
-					VolumeNumber: 2,
-					VolumeSize:   minSize,
-					ChainNumber:  2,
-					ChainLength:  2,
-					Image:        testImage,
-				})
-
-				s = append(s, &suites.ScalingSuite{
-					ReplicaNumber:    2,
-					VolumeNumber:     5,
-					GradualScaleDown: false,
-					PodPolicy:        "Parallel",
-					VolumeSize:       minSize,
-					Image:            testImage,
-				})
-
-				if sc.Clone {
-					s = append(s, &suites.CloneVolumeSuite{
-						VolumeNumber: 1,
-						PodNumber:    2,
-						VolumeSize:   minSize,
-						Image:        testImage,
-					})
-				}
-
-				if sc.Expansion {
-					expSize := resource.MustParse(minSize)
-					expSize.Add(expSize)
-					s = append(s, &suites.VolumeExpansionSuite{
-						VolumeNumber: 1,
-						PodNumber:    1,
-						InitialSize:  minSize,
-						ExpandedSize: expSize.String(),
-						Image:        testImage,
-					})
-
-					if sc.RawBlock {
-						s = append(s, &suites.VolumeExpansionSuite{
-							VolumeNumber: 1,
-							PodNumber:    1,
-							IsBlock:      true,
-							InitialSize:  minSize,
-							ExpandedSize: expSize.String(),
-							Image:        testImage,
-						})
-					}
-				}
-
-				if sc.Snapshot {
-					snapClass := c.String("volumeSnapshotClass")
-					if snapClass == "" {
-						return errors.New("volume snapshot class required to verify `snapshot` capability")
-					}
-					s = append(s, &suites.SnapSuite{
-						SnapAmount: 3,
-						SnapClass:  snapClass,
-						VolumeSize: minSize,
-						Image:      testImage,
-					})
-
-					s = append(s, &suites.ReplicationSuite{
-						VolumeNumber: 5,
-						VolumeSize:   minSize,
-						PodNumber:    2,
-						SnapClass:    snapClass,
-						Image:        testImage,
-					})
-				}
-
-				if sc.RawBlock {
-					s = append(s, &suites.MultiAttachSuite{
-						PodNumber:  5,
-						RawBlock:   true,
-						AccessMode: "ReadWriteMany",
-						VolumeSize: minSize,
-						Image:      testImage,
-					})
-				}
-
-				if sc.RWX {
-					s = append(s, &suites.MultiAttachSuite{
-						PodNumber:  5,
-						RawBlock:   false,
-						AccessMode: "ReadWriteMany",
-						VolumeSize: minSize,
-						Image:      testImage,
-					})
-				}
-
-				if sc.VolumeHealth {
-					s = append(s, &suites.VolumeHealthMetricsSuite{
-						PodNumber:    1,
-						VolumeNumber: 1,
-						VolumeSize:   minSize,
-						Namespace:    c.String("driver-namespace"),
-						Image:        testImage,
-					})
-				}
-
-				if sc.RWOP {
-					s = append(s, &suites.MultiAttachSuite{
-						PodNumber:  5,
-						RawBlock:   false,
-						AccessMode: "ReadWriteOncePod",
-						VolumeSize: minSize,
-						Image:      testImage,
-					})
-				}
-
-				if sc.Ephemeral != nil {
-					s = append(s, &suites.EphemeralVolumeSuite{
-						Driver:           sc.Ephemeral.Driver,
-						FSType:           sc.Ephemeral.FSType,
-						PodNumber:        2,
-						VolumeAttributes: sc.Ephemeral.VolumeAttributes,
-						Image:            testImage,
-					})
-				}
-				if sc.VGS {
-					snapClass := c.String("volumeSnapshotClass")
-					if snapClass == "" {
-						return errors.New("volume snapshot class required to verify `snapshot` capability")
-					}
-					label := c.String("vgs-volume-label")
-					if label == "" {
-						return errors.New("vgs-volume-label required to verify volume group snapshot")
-					}
-					driverName := c.String("driver-name")
-					if driverName == "" {
-						return errors.New("driver-name required to verify volume group snapshot")
-					}
-					vgsName := c.String("vgs-name")
-					if vgsName == "" {
-						return errors.New("vgs-name required to verify volume group snapshot")
-					}
-					s = append(s, &suites.VolumeGroupSnapSuite{
-						SnapClass:       snapClass,
-						VolumeSize:      minSize,
-						AccessMode:      "ReadWriteOnce",
-						VolumeLabel:     label,
-						ReclaimPolicy:   "Delete",
-						VolumeNumber:    2,
-						Driver:          driverName,
-						VolumeGroupName: vgsName,
-						Image:           testImage,
-					})
-				}
-				if sc.CapacityTracking != nil {
-					s = append(s, &suites.CapacityTrackingSuite{
-						DriverNamespace: sc.CapacityTracking.DriverNamespace,
-						StorageClass:    sc.Name,
-						VolumeSize:      minSize,
-						PollInterval:    sc.CapacityTracking.PollInterval,
-						Image:           testImage,
-					})
-				}
-				log.Infof("Suites to run with %s storage class:", color.CyanString(sc.Name))
-				for i, suite := range s {
-					log.Infof("%d. %s %s", i+1, color.HiMagentaString(suite.GetName()), suite.Parameters())
-				}
-				ss[sc.Name] = s
-			}
-
-			fmt.Println("Does it look OK? (Y)es/(n)o")
-			readerCleanup := bufio.NewReader(os.Stdin)
-			fmt.Print("-> ")
-			charCleanup, _, err := readerCleanup.ReadRune()
-			if err != nil {
-				log.Error(err)
-			}
-			switch charCleanup {
-			case 'n', 'N':
-				log.Infof("Cancelling launch of certification")
-				return nil
-			}
-
-			sr := runner.NewSuiteRunner(
-				c.String("config"),
-				c.String("namespace"),
-				c.String("start-hook"),
-				c.String("ready-hook"),
-				c.String("finish-hook"),
-				c.String("observer-type"),
-				c.String("longevity"),
-				c.String("driver-namespace"),
-				timeOutInSeconds,
-				0,
-				c.Bool("sequential"),
-				c.Bool("no-cleanup"),
-				c.Bool("no-cleanup-on-fail"),
-				c.Bool("no-metrics"),
-				c.Bool("no-reports"),
-				scDBs,
-			)
-
-			sr.RunSuites(ss)
-			return nil
-		},
+		Action: getAction,
 	}
 
 	return certCmd
+}
+
+func getAction(c *cli.Context) error {
+	configFilePath := c.String("cert-config")
+	configFilePath = filepath.Clean(configFilePath)
+	// Read the YAML file
+	data, err := os.ReadFile(configFilePath)
+	if err != nil {
+		return fmt.Errorf("can't find config file: %w", err)
+	}
+	// Declare a variable to hold the unmarshal data
+	var certConfig CertConfig
+	// Unmarshal the YAML data into the struct
+	err = yaml.Unmarshal(data, &certConfig)
+	if err != nil {
+		return fmt.Errorf("unable to decode Config: %w", err)
+	}
+
+	testImage, err := getTestImage(c.String("image-config"))
+	if err != nil {
+		return fmt.Errorf("failed to get test image: %s", err)
+	}
+	// Parse timeout
+	timeout, err := time.ParseDuration(c.String("timeout"))
+	if err != nil {
+		return errors.New("timeout is wrong formatted")
+	}
+	timeOutInSeconds := int(timeout.Seconds())
+
+	var scDBs []*store.StorageClassDB
+	ss := make(map[string][]suites.Interface)
+
+	for _, sc := range certConfig.StorageClasses {
+		pathToDb := fmt.Sprintf("file:%s.db", sc.Name)
+		DB := store.NewSQLiteStore(pathToDb) // dbs should be closed in suite runner
+
+		scDBs = append(scDBs, &store.StorageClassDB{
+			StorageClass: sc.Name,
+			DB:           DB,
+		})
+
+		var s []suites.Interface
+
+		minSize := "8Gi"
+		if sc.MinSize != "" {
+			minSize = sc.MinSize
+		}
+
+		s = append(s, &suites.VolumeIoSuite{
+			VolumeNumber: 2,
+			VolumeSize:   minSize,
+			ChainNumber:  2,
+			ChainLength:  2,
+			Image:        testImage,
+		})
+
+		s = append(s, &suites.ScalingSuite{
+			ReplicaNumber:    2,
+			VolumeNumber:     5,
+			GradualScaleDown: false,
+			PodPolicy:        "Parallel",
+			VolumeSize:       minSize,
+			Image:            testImage,
+		})
+
+		if sc.Clone {
+			s = append(s, &suites.CloneVolumeSuite{
+				VolumeNumber: 1,
+				PodNumber:    2,
+				VolumeSize:   minSize,
+				Image:        testImage,
+			})
+		}
+
+		if sc.Expansion {
+			expSize := resource.MustParse(minSize)
+			expSize.Add(expSize)
+			s = append(s, &suites.VolumeExpansionSuite{
+				VolumeNumber: 1,
+				PodNumber:    1,
+				InitialSize:  minSize,
+				ExpandedSize: expSize.String(),
+				Image:        testImage,
+			})
+
+			if sc.RawBlock {
+				s = append(s, &suites.VolumeExpansionSuite{
+					VolumeNumber: 1,
+					PodNumber:    1,
+					IsBlock:      true,
+					InitialSize:  minSize,
+					ExpandedSize: expSize.String(),
+					Image:        testImage,
+				})
+			}
+		}
+
+		if sc.Snapshot {
+			snapClass := c.String("volumeSnapshotClass")
+			if snapClass == "" {
+				return errors.New("volume snapshot class required to verify `snapshot` capability")
+			}
+			s = append(s, &suites.SnapSuite{
+				SnapAmount: 3,
+				SnapClass:  snapClass,
+				VolumeSize: minSize,
+				Image:      testImage,
+			})
+
+			s = append(s, &suites.ReplicationSuite{
+				VolumeNumber: 5,
+				VolumeSize:   minSize,
+				PodNumber:    2,
+				SnapClass:    snapClass,
+				Image:        testImage,
+			})
+		}
+
+		if sc.RawBlock {
+			s = append(s, &suites.MultiAttachSuite{
+				PodNumber:  5,
+				RawBlock:   true,
+				AccessMode: "ReadWriteMany",
+				VolumeSize: minSize,
+				Image:      testImage,
+			})
+		}
+
+		if sc.RWX {
+			s = append(s, &suites.MultiAttachSuite{
+				PodNumber:  5,
+				RawBlock:   false,
+				AccessMode: "ReadWriteMany",
+				VolumeSize: minSize,
+				Image:      testImage,
+			})
+		}
+
+		if sc.VolumeHealth {
+			s = append(s, &suites.VolumeHealthMetricsSuite{
+				PodNumber:    1,
+				VolumeNumber: 1,
+				VolumeSize:   minSize,
+				Namespace:    c.String("driver-namespace"),
+				Image:        testImage,
+			})
+		}
+
+		if sc.RWOP {
+			s = append(s, &suites.MultiAttachSuite{
+				PodNumber:  5,
+				RawBlock:   false,
+				AccessMode: "ReadWriteOncePod",
+				VolumeSize: minSize,
+				Image:      testImage,
+			})
+		}
+
+		if sc.Ephemeral != nil {
+			s = append(s, &suites.EphemeralVolumeSuite{
+				Driver:           sc.Ephemeral.Driver,
+				FSType:           sc.Ephemeral.FSType,
+				PodNumber:        2,
+				VolumeAttributes: sc.Ephemeral.VolumeAttributes,
+				Image:            testImage,
+			})
+		}
+
+		if sc.VGS {
+			snapClass := c.String("volumeSnapshotClass")
+			if snapClass == "" {
+				return errors.New("volume snapshot class required to verify `snapshot` capability")
+			}
+			label := c.String("vgs-volume-label")
+			if label == "" {
+				return errors.New("vgs-volume-label required to verify volume group snapshot")
+			}
+			driverName := c.String("driver-name")
+			if driverName == "" {
+				return errors.New("driver-name required to verify volume group snapshot")
+			}
+			vgsName := c.String("vgs-name")
+			if vgsName == "" {
+				return errors.New("vgs-name required to verify volume group snapshot")
+			}
+			s = append(s, &suites.VolumeGroupSnapSuite{
+				SnapClass:       snapClass,
+				VolumeSize:      minSize,
+				AccessMode:      "ReadWriteOnce",
+				VolumeLabel:     label,
+				ReclaimPolicy:   "Delete",
+				VolumeNumber:    2,
+				Driver:          driverName,
+				VolumeGroupName: vgsName,
+				Image:           testImage,
+			})
+		}
+		if sc.CapacityTracking != nil {
+			s = append(s, &suites.CapacityTrackingSuite{
+				DriverNamespace: sc.CapacityTracking.DriverNamespace,
+				StorageClass:    sc.Name,
+				VolumeSize:      minSize,
+				PollInterval:    sc.CapacityTracking.PollInterval,
+				Image:           testImage,
+			})
+		}
+		log.Infof("Suites to run with %s storage class:", color.CyanString(sc.Name))
+		for i, suite := range s {
+			log.Infof("%d. %s %s", i+1, color.HiMagentaString(suite.GetName()), suite.Parameters())
+		}
+		ss[sc.Name] = s
+	}
+
+	fmt.Println("Does it look OK? (Y)es/(n)o")
+	readerCleanup := bufio.NewReader(os.Stdin)
+	fmt.Print("-> ")
+	charCleanup, _, err := readerCleanup.ReadRune()
+	if err != nil {
+		log.Error(err)
+	}
+	switch charCleanup {
+	case 'n', 'N':
+		log.Infof("Cancelling launch of certification")
+		return nil
+	}
+
+	sr := runner.NewSuiteRunner(
+		c.String("config"),
+		c.String("namespace"),
+		c.String("start-hook"),
+		c.String("ready-hook"),
+		c.String("finish-hook"),
+		c.String("observer-type"),
+		c.String("longevity"),
+		c.String("driver-namespace"),
+		timeOutInSeconds,
+		0,
+		c.Bool("sequential"),
+		c.Bool("no-cleanup"),
+		c.Bool("no-cleanup-on-fail"),
+		c.Bool("no-metrics"),
+		c.Bool("no-reports"),
+		scDBs,
+	)
+
+	sr.RunSuites(ss)
+	return nil
 }
