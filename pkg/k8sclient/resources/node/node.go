@@ -18,8 +18,8 @@ package node
 
 import (
 	"context"
-	"time"
 	"fmt"
+	"time"
 
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
