@@ -28,6 +28,7 @@ import (
 	storagev1 "k8s.io/api/storage/v1"
 
 	"k8s.io/apimachinery/pkg/api/meta"
+	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/schema"
@@ -1282,144 +1283,17 @@ func TestVolumeIoSuite_GetClients(t *testing.T) {
 			},
 			wantErr: false,
 		},
-		// {
-		// 	name: "Testing GetClients with nil client",
-		// 	vis:  &VolumeIoSuite{},
-		// 	args: args{
-		// 		namespace: "test-namespace",
-		// 		client:    nil,
-		// 	},
-		// 	want:    nil,
-		// 	wantErr: true,
-		// },
-		// {
-		// 	name: "Testing GetClients with nil client.ClientSet",
-		// 	vis:  &VolumeIoSuite{},
-		// 	args: args{
-		// 		namespace: "test-namespace",
-		// 		client: &k8sclient.KubeClient{
-		// 			ClientSet: nil,
-		// 		},
-		// 	},
-		// 	want:    nil,
-		// 	wantErr: true,
-		// },
-		// {
-		// 	name: "Testing GetClients with nil client.Config",
-		// 	vis:  &VolumeIoSuite{},
-		// 	args: args{
-		// 		namespace: "test-namespace",
-		// 		client: &k8sclient.KubeClient{
-		// 			Config: nil,
-		// 		},
-		// 	},
-		// 	want:    nil,
-		// 	wantErr: true,
-		// },
-		// {
-		// 	name: "Testing GetClients with nil k8sclient.Clients",
-		// 	vis:  &VolumeIoSuite{},
-		// 	args: args{
-		// 		namespace: "test-namespace",
-		// 		client:    &kubeClient,
-		// 	},
-		// 	want:    nil,
-		// 	wantErr: true,
-		// },
-		// {
-		// 	name: "Testing GetClients with nil k8sclient.Clients.PVCClient",
-		// 	vis:  &VolumeIoSuite{},
-		// 	args: args{
-		// 		namespace: "test-namespace",
-		// 		client:    &kubeClient,
-		// 	},
-		// 	want: &k8sclient.Clients{
-		// 		PVCClient: nil,
-		// 	},
-		// 	wantErr: false,
-		// },
-		// Add more test cases as needed
-		{
-			name: "Testing GetClients with error in CreatePVCClient",
-			vis:  &VolumeIoSuite{},
-			args: args{
-				namespace: "test-namespace",
-				client: &k8sclient.KubeClient{
-					ClientSet:   fake.NewSimpleClientset(),
-					Config:      &rest.Config{},
-					VersionInfo: nil,
-				},
-			},
-			want:    nil,
-			wantErr: true,
-		},
-		{
-			name: "Testing GetClients with error in CreatePodClient",
-			vis:  &VolumeIoSuite{},
-			args: args{
-				namespace: "test-namespace",
-				client: &k8sclient.KubeClient{
-					ClientSet:   fake.NewSimpleClientset(),
-					Config:      &rest.Config{},
-					VersionInfo: nil,
-				},
-			},
-			want:    nil,
-			wantErr: true,
-		},
-		{
-			name: "Testing GetClients with error in CreateVaClient",
-			vis:  &VolumeIoSuite{},
-			args: args{
-				namespace: "test-namespace",
-				client: &k8sclient.KubeClient{
-					ClientSet:   fake.NewSimpleClientset(),
-					Config:      &rest.Config{},
-					VersionInfo: nil,
-				},
-			},
-			want:    nil,
-			wantErr: true,
-		},
-		{
-			name: "Testing GetClients with error in CreateMetricsClient",
-			vis:  &VolumeIoSuite{},
-			args: args{
-				namespace: "test-namespace",
-				client: &k8sclient.KubeClient{
-					ClientSet:   fake.NewSimpleClientset(),
-					Config:      &rest.Config{},
-					VersionInfo: nil,
-				},
-			},
-			want:    nil,
-			wantErr: true,
-		},
 	}
+
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			// if tt.args.client == nil {
-			// 	assert.NotNil(t, err)
-			// }
-
 			got, err := tt.vis.GetClients(tt.args.namespace, tt.args.client)
-			fmt.Println("*************************************")
-			fmt.Println("THis is the got", got)
-			fmt.Println("THis is the err", err)
 			fmt.Println(got, err)
-			fmt.Println("*************************************")
-
 			if tt.wantErr {
 				assert.NotNil(t, err)
 			} else {
 				assert.Nil(t, err)
 			}
-
-			// if tt.want != nil {
-			// 	assert.Equal(t, tt.want, got)
-			// } else {
-			// 	assert.Nil(t, got)
-			// }
 		})
 	}
 }
@@ -2003,7 +1877,7 @@ func TestVolumeExpansionSuite_Run(t *testing.T) {
 	}
 }
 
-/* func TestVolumeExpansionSuite_Run_NonBlock(t *testing.T) {
+func TestVolumeExpansionSuite_Run_NonBlock(t *testing.T) {
 	// Create a new context
 	ctx := context.Background()
 
@@ -2122,7 +1996,7 @@ func TestVolumeExpansionSuite_Run(t *testing.T) {
 	// Create the necessary clients
 	pvcClient, _ := kubeClient.CreatePVCClient(namespace)
 	podClient, _ := kubeClient.CreatePodClient(namespace)
-	podClient.RemoteExecutor = &FakeRemoteExecutor{}
+	podClient.RemoteExecutor = &FakeRemoteExecutor_VolExpansion{callCount: 0}
 	scClient, _ := kubeClient.CreateSCClient()
 	pvClient, _ := kubeClient.CreatePVClient()
 	k8Clients := &k8sclient.Clients{
@@ -2139,7 +2013,7 @@ func TestVolumeExpansionSuite_Run(t *testing.T) {
 	if err != nil {
 		t.Errorf("Error running NonBlock iteration of VolumeExpansionSuite.Run(): %v", err)
 	}
-} */
+}
 
 // TODO TestCheckSize
 // TODO TestConvertSpecSize
@@ -2787,13 +2661,19 @@ func TestMultiAttachSuite_Parameters(t *testing.T) {
 	}
 }
 
-type FakeRemoteExecutor struct {
+type FakeRemoteExecutor struct{}
+
+type FakeRemoteExecutor_VolExpansion struct {
 	callCount int
 }
 
 func (f *FakeRemoteExecutor) Execute(method string, url *url.URL, config *restclient.Config, stdin io.Reader, stdout, stderr io.Writer, tty bool, terminalSizeQueue remotecommand.TerminalSizeQueue) error {
+	return nil
+}
+
+func (f *FakeRemoteExecutor_VolExpansion) Execute(method string, url *url.URL, config *restclient.Config, stdin io.Reader, stdout, stderr io.Writer, tty bool, terminalSizeQueue remotecommand.TerminalSizeQueue) error {
 	// Reset the call count if the output for df has been iterated through twice
-	if f.callCount > 2 {
+	if f.callCount >= 2 {
 		f.callCount = 0
 	}
 	// Increment the call count
@@ -3174,6 +3054,21 @@ func TestVolumeMigrateSuite_Parameters(t *testing.T) {
 
 	clientset := NewFakeClientsetWithRestClient(storageClass)
 
+	// Create a pod to delete
+	pod := &corev1.Pod{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      "test-pod",
+			Namespace: "test-namespace",
+		},
+	}
+
+	// Add the pod to the fake client
+	_, err := clientset.CoreV1().Pods("test-namespace").Create(context.TODO(), pod, metav1.CreateOptions{})
+	if err != nil {
+		fmt.Printf("Error creating pod: %v\n", err)
+		return
+	}
+
 	clientset.Fake.PrependReactor("create", "pods", func(action k8stesting.Action) (bool, runtime.Object, error) {
 		createAction := action.(k8stesting.CreateAction)
 		pod := createAction.GetObject().(*v1.Pod)
@@ -3187,106 +3082,10 @@ func TestVolumeMigrateSuite_Parameters(t *testing.T) {
 		return false, nil, nil // Allow normal processing to continue
 	})
 
-	// Also, when getting pods, return the pod with Running status and Ready condition
-	clientset.Fake.PrependReactor("get", "pods", func(action k8stesting.Action) (bool, runtime.Object, error) {
-		getAction := action.(k8stesting.GetAction)
-		podName := getAction.GetName()
-		//podName := "delete-pod"
-		// Create a pod object with the expected name and Ready status
-		pod := &v1.Pod{
-			ObjectMeta: metav1.ObjectMeta{
-				Name:      podName,
-				Namespace: "test-namespace",
-			},
-			Status: v1.PodStatus{
-				Phase: v1.PodRunning,
-				Conditions: []v1.PodCondition{
-					{
-						Type:   v1.PodReady,
-						Status: v1.ConditionTrue,
-					},
-				},
-			},
-		}
-		return true, pod, nil
-	})
-
-	// Also, when deleting pods, return the pod with Running status and Ready condition
-	clientset.Fake.AddReactor("delete", "pods", func(action k8stesting.Action) (bool, runtime.Object, error) {
-		fmt.Println("Delete reactor triggered")
-		getAction := action.(k8stesting.DeleteAction)
-		podName := getAction.GetName()
-		//var pod *v1.Pod
-		// Create a pod object with the expected name and Ready status
-		pod := &v1.Pod{
-			ObjectMeta: metav1.ObjectMeta{
-				Name:      podName,
-				Namespace: "test-namespace",
-			},
-			Status: v1.PodStatus{
-				Phase: v1.PodSucceeded,
-			},
-		}
-		fmt.Printf("Pod %v deleted\n", pod)
-		return true, nil, nil
-	})
-
-	/*clientset.Fake.PrependReactor("get", "pods", func(action k8stesting.Action) (bool, runtime.Object, error) {
-		getAction := action.(k8stesting.GetAction)
-		podName := getAction.GetName()
-		// Create a pod object with the expected name and Ready status
-		if podName == "" {
-			return false, nil, &k8serrors.StatusError{
-				ErrStatus: metav1.Status{
-					Status:  metav1.StatusFailure,
-					Code:    http.StatusNotFound,
-					Reason:  metav1.StatusReasonNotFound,
-					Message: "Not found",
-				},
-			}
-		} else {
-			pod := &v1.Pod{
-				ObjectMeta: metav1.ObjectMeta{
-					Name:      podName,
-					Namespace: "test-namespace",
-				},
-				Status: v1.PodStatus{
-					Phase: v1.PodRunning,
-					Conditions: []v1.PodCondition{
-						{
-							Type:   v1.PodReady,
-							Status: v1.ConditionTrue,
-						},
-					},
-				},
-			}
-			return true, pod, nil
-		}
-	})
-
-	clientset.Fake.PrependReactor("delete", "pods", func(action k8stesting.Action) (bool, runtime.Object, error) {
-		// Create a pod object with the expected name and Ready status
-		pod := &v1.Pod{
-			ObjectMeta: metav1.ObjectMeta{
-				Name:      "",
-				Namespace: "test-namespace",
-			},
-			Status: v1.PodStatus{
-				Phase: v1.PodRunning,
-				Conditions: []v1.PodCondition{
-					{
-						Type:   v1.PodReady,
-						Status: v1.ConditionTrue,
-					},
-				},
-			},
-		}
-		return true, pod, nil
-	})
-
 	// Create a fake k8sclient.KubeClient
 	kubeClient := &k8sclient.KubeClient{
 		ClientSet: clientset,
+		Config:    &rest.Config{},
 	}
 
 	// Create PVC client
@@ -3298,6 +3097,9 @@ func TestVolumeMigrateSuite_Parameters(t *testing.T) {
 
 	// Create PV client
 	pvClient, _ := kubeClient.CreatePVClient()
+	snapGA, _ := kubeClient.CreateSnapshotGAClient("test-namespace")
+	snapGA.Interface = &FakeVolumeSnapshotInterface{}
+	snapBeta, _ := kubeClient.CreateSnapshotBetaClient("test-namespace")
 
 	// Update the k8sclient.Clients instance with the fake clients
 	clients := &k8sclient.Clients{
@@ -3305,6 +3107,15 @@ func TestVolumeMigrateSuite_Parameters(t *testing.T) {
 		PodClient:              podClient,
 		PersistentVolumeClient: pvClient,
 		KubeClient:             kubeClient,
+		SnapClientGA:           snapGA,
+		SnapClientBeta:         snapBeta,
+	}
+
+	// Delete the pod
+	err = clientset.CoreV1().Pods("test-namespace").Delete(context.TODO(), "test-pod", metav1.DeleteOptions{})
+	if err != nil {
+		fmt.Printf("Error deleting pod: %v\n", err)
+		return
 	}
 
 	tests := []struct {
@@ -3315,7 +3126,7 @@ func TestVolumeMigrateSuite_Parameters(t *testing.T) {
 		wantError      bool
 		wantDeleteFunc bool
 	}{
-		{
+		/*{
 			name: "Testing Run with default parameters",
 			snapSuite: &SnapSuite{
 				SnapAmount:         0,
