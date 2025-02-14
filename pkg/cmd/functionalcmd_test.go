@@ -197,3 +197,24 @@ users:
 	t.Logf("Created dummy kube config file at: %s", confPath)
 	return confPath, nil
 }
+
+func TestGetFunctionalTestCommand(t *testing.T) {
+	// Test the functionality of the GetFunctionalTestCommand function
+	// by asserting the expected command and flags.
+	command := GetFunctionalTestCommand()
+	assert.Equal(t, "functional-test", command.Name)
+	assert.Equal(t, "Test csi-driver functionality", command.Usage)
+	assert.Equal(t, "main", command.Category)
+
+	// Test the subcommands of the command
+	assert.Equal(t, "list", command.Subcommands[0].Name)
+	assert.Equal(t, "volume-deletion", command.Subcommands[1].Name)
+	assert.Equal(t, "pod-deletion", command.Subcommands[2].Name)
+	assert.Equal(t, "clone-volume-deletion", command.Subcommands[3].Name)
+	assert.Equal(t, "volume-creation", command.Subcommands[4].Name)
+	assert.Equal(t, "provisioning", command.Subcommands[5].Name)
+	assert.Equal(t, "clone-volume", command.Subcommands[6].Name)
+	assert.Equal(t, "snapshot", command.Subcommands[7].Name)
+}
+
+// Add more test cases for other functions in functionalcmd.go
