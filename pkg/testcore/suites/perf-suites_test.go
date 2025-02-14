@@ -1087,6 +1087,17 @@ func (c *MockClients) CreatePodClient(namespace string) (*pod.Client, error) {
 	return podClient, err
 }
 
+type FakeHashRemoteExecutor struct{}
+
+func (FakeHashRemoteExecutor) Execute(method string, url *url.URL, config *restclient.Config, stdin io.Reader, stdout, stderr io.Writer, tty bool, terminalSizeQueue remotecommand.TerminalSizeQueue) error {
+	Output := "OK"
+	_, err := fmt.Fprint(stdout, Output)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
 // TODO TestVolumeIoSuite_Run
 func TestVolumeIoSuite_Run(t *testing.T) {
 	// Create a context
@@ -1097,7 +1108,7 @@ func TestVolumeIoSuite_Run(t *testing.T) {
 		VolumeNumber: 1,
 		VolumeSize:   "1Gi",
 		ChainNumber:  1,
-		ChainLength:  1,
+		ChainLength:  2,
 		Image:        "quay.io/centos/centos:latest",
 	}
 
@@ -1158,6 +1169,7 @@ func TestVolumeIoSuite_Run(t *testing.T) {
 	pvcClient, _ := kubeClient.CreatePVCClient("test-namespace")
 	podClient, _ := kubeClient.CreatePodClient("test-namespace")
 	podClient.RemoteExecutor = &FakeRemoteExecutor{}
+	podClient.RemoteExecutor = &FakeHashRemoteExecutor{}
 	vaClient, _ := kubeClient.CreateVaClient("test-namespace")
 
 	// Create a fake clients instance
@@ -1183,7 +1195,7 @@ func TestVolumeIoSuite_Run(t *testing.T) {
 			wantErr:      false,
 		},
 		{
-			name:         "Testing Run with valid inputs2",
+			name:         "Testing Run with valid inputs3",
 			vis:          vis2,
 			storageClass: "test-storage-class",
 			clients:      clients1,
@@ -1193,18 +1205,6 @@ func TestVolumeIoSuite_Run(t *testing.T) {
 			wantErr: false,
 		},
 	}
-
-	// Call the Run function
-	// delFunc, err := vis.Run(ctx, "test-storage-class", clients)
-	// delFunc2, err := vis2.Run(ctx, "test-storage-class", clients)
-	// if err != nil {
-	// 	t.Errorf("Error running ProvisioningSuite.Run(): %v", err)
-	// }
-	// Check the result
-	// assert.NoError(t, err)
-	// assert.Error(t, err)
-	// assert.Nil(t, delFunc)
-	// assert.Nil(t, delFunc2)
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
