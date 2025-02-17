@@ -332,7 +332,7 @@ func (suite *TestCSIStorageCapacitySuite) TestWaitForAllToBeCreated_ListError() 
 	expectedCount := 2
 
 	// Add reactor to return an error
-	suite.kubeClient.ClientSet.(*fake.Clientset).PrependReactor("list", "csistoragecapacities", func(action testing.Action) (bool, runtime.Object, error) {
+	suite.kubeClient.ClientSet.(*fake.Clientset).PrependReactor("list", "csistoragecapacities", func(_ testing.Action) (bool, runtime.Object, error) {
 		return true, nil, errors.New("failed to list CSIStorageCapacities")
 	})
 
@@ -361,7 +361,7 @@ func (suite *TestCSIStorageCapacitySuite) TestWaitForAllToBeDeleted_Success() {
 	}
 
 	// Add mock objects to the fake client
-	suite.kubeClient.ClientSet.(*fake.Clientset).PrependReactor("list", "csistoragecapacities", func(action testing.Action) (bool, runtime.Object, error) {
+	suite.kubeClient.ClientSet.(*fake.Clientset).PrependReactor("list", "csistoragecapacities", func(_ testing.Action) (bool, runtime.Object, error) {
 		return true, &storagev1.CSIStorageCapacityList{
 			Items: []storagev1.CSIStorageCapacity{},
 		}, nil
@@ -391,7 +391,7 @@ func (suite *TestCSIStorageCapacitySuite) TestWaitForAllToBeDeleted_Timeout() {
 	}
 
 	// Add mock objects to the fake client
-	suite.kubeClient.ClientSet.(*fake.Clientset).PrependReactor("list", "csistoragecapacities", func(action testing.Action) (bool, runtime.Object, error) {
+	suite.kubeClient.ClientSet.(*fake.Clientset).PrependReactor("list", "csistoragecapacities", func(_ testing.Action) (bool, runtime.Object, error) {
 		return true, &storagev1.CSIStorageCapacityList{
 			Items: []storagev1.CSIStorageCapacity{*capacity1},
 		}, nil
@@ -423,7 +423,7 @@ func (suite *TestCSIStorageCapacitySuite) TestWaitForAllToBeDeleted_ContextCance
 	}
 
 	// Add mock objects to the fake client
-	suite.kubeClient.ClientSet.(*fake.Clientset).PrependReactor("list", "csistoragecapacities", func(action testing.Action) (bool, runtime.Object, error) {
+	suite.kubeClient.ClientSet.(*fake.Clientset).PrependReactor("list", "csistoragecapacities", func(_ testing.Action) (bool, runtime.Object, error) {
 		return true, &storagev1.CSIStorageCapacityList{
 			Items: []storagev1.CSIStorageCapacity{*capacity1},
 		}, nil
@@ -449,7 +449,7 @@ func (suite *TestCSIStorageCapacitySuite) TestWaitForAllToBeDeleted_ListError() 
 	scName := "test-storage-class"
 
 	// Add reactor to return an error
-	suite.kubeClient.ClientSet.(*fake.Clientset).PrependReactor("list", "csistoragecapacities", func(action testing.Action) (bool, runtime.Object, error) {
+	suite.kubeClient.ClientSet.(*fake.Clientset).PrependReactor("list", "csistoragecapacities", func(_ testing.Action) (bool, runtime.Object, error) {
 		return true, nil, errors.New("failed to list CSIStorageCapacities")
 	})
 
@@ -480,7 +480,7 @@ func (suite *TestCSIStorageCapacitySuite) TestWatchUntilUpdated_Success() {
 	}
 
 	// Add mock watcher to the fake client
-	suite.kubeClient.ClientSet.(*fake.Clientset).PrependWatchReactor("csistoragecapacities", func(action testing.Action) (bool, watch.Interface, error) {
+	suite.kubeClient.ClientSet.(*fake.Clientset).PrependWatchReactor("csistoragecapacities", func(_ testing.Action) (bool, watch.Interface, error) {
 		w := watch.NewFake()
 		go func() {
 			time.Sleep(1 * time.Second)
@@ -522,7 +522,7 @@ func (suite *TestCSIStorageCapacitySuite) TestWatchUntilUpdated_ContextCancelled
 	}
 
 	// Add mock watcher to the fake client
-	suite.kubeClient.ClientSet.(*fake.Clientset).PrependWatchReactor("csistoragecapacities", func(action testing.Action) (bool, watch.Interface, error) {
+	suite.kubeClient.ClientSet.(*fake.Clientset).PrependWatchReactor("csistoragecapacities", func(_ testing.Action) (bool, watch.Interface, error) {
 		w := watch.NewFake()
 		go func() {
 			time.Sleep(3 * time.Second)
@@ -568,7 +568,7 @@ func (suite *TestCSIStorageCapacitySuite) TestWatchUntilUpdated_WatchError() {
 	}
 
 	// Add reactor to return an error
-	suite.kubeClient.ClientSet.(*fake.Clientset).PrependWatchReactor("csistoragecapacities", func(action testing.Action) (bool, watch.Interface, error) {
+	suite.kubeClient.ClientSet.(*fake.Clientset).PrependWatchReactor("csistoragecapacities", func(_ testing.Action) (bool, watch.Interface, error) {
 		return true, nil, errors.New("failed to watch CSIStorageCapacities")
 	})
 
@@ -600,7 +600,7 @@ func (suite *TestCSIStorageCapacitySuite) TestWatchUntilUpdated_UnexpectedType()
 	}
 
 	// Add mock watcher to the fake client
-	suite.kubeClient.ClientSet.(*fake.Clientset).PrependWatchReactor("csistoragecapacities", func(action testing.Action) (bool, watch.Interface, error) {
+	suite.kubeClient.ClientSet.(*fake.Clientset).PrependWatchReactor("csistoragecapacities", func(_ testing.Action) (bool, watch.Interface, error) {
 		w := watch.NewFake()
 		go func() {
 			time.Sleep(1 * time.Second)
