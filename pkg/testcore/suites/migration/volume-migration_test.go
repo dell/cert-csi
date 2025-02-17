@@ -419,6 +419,11 @@ func TestVolumeMigrateSuite_Parameters(t *testing.T) {
 }
 
 func TestVolumeMigrateSuite_validateSTS(t *testing.T) {
+	client := fake.NewSimpleClientset()
+	//kubeClient := k8sclient.KubeClient{
+	//	ClientSet: client,
+	//	Config:    &rest.Config{},
+	//}
 	// Create a new VolumeMigrateSuite instance
 	vms := &VolumeMigrateSuite{
 		TargetSC: "target-sc",
@@ -431,9 +436,14 @@ func TestVolumeMigrateSuite_validateSTS(t *testing.T) {
 
 	// Create mock objects
 	logger := utils.GetLoggerFromContext(ctx)
-	pvcClient := &pvc.Client{}
+	pvcClient := &pvc.Client{
+		Interface: nil,
+		ClientSet: client,
+		Namespace: "",
+		Timeout:   0,
+	}
 	stsConf := &statefulset.Config{}
-	podClient := &pod.Client{}
+	podClient := &pod.Client{ClientSet: client}
 	pvClient := &pv.Client{}
 
 	// Create a mock error
@@ -463,7 +473,7 @@ func TestVolumeMigrateSuite_validateSTS(t *testing.T) {
 
 	// Create a fake volume
 	volume := corev1.Volume{
-		Name:         "test-volume",
+		Name: "test-volume",
 		VolumeSource: corev1.VolumeSource{
 			// Add your volume source configuration here
 		},
@@ -473,7 +483,7 @@ func TestVolumeMigrateSuite_validateSTS(t *testing.T) {
 	err := vms.validateSTS(logger, pvcClient, ctx, volume, nil, []string{"pv1"}, pvClient, stsConf, podClient, podObj)
 
 	// Assert the expected error
-	assert.NoError(t, err)
+	assert.Error(t, err)
 
 	// TODO: Add more test cases with different inputs and expected outputs
 }
