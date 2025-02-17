@@ -20,6 +20,7 @@ import (
 	"bytes"
 	"context"
 	"fmt"
+	"github.com/dell/cert-csi/pkg/testcore/suites/common"
 	"os"
 	"strconv"
 	"strings"
@@ -1020,7 +1021,7 @@ func (cts *CapacityTrackingSuite) Parameters() string {
 
 // GetObservers returns all observers
 func (cts *CapacityTrackingSuite) GetObservers(obsType observer.Type) []observer.Interface {
-	return getAllObservers(obsType)
+	return common.GetAllObservers(obsType)
 }
 
 // GetNamespace returns storage capacity tracking suite namespace
