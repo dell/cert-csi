@@ -41,6 +41,9 @@ func TestE2eReportParser(t *testing.T) {
 		wantErr bool
 	}{
 		{"Check generated config", args{"testdata/execution_powerstore-nfs.xml"}, preResult, false},
+		{"Check generated config with external storage", args{"testdata/execution_powerstore-nfs-external.xml"}, preResult, false},
+		{"Fake file", args{"testdata/fake.xml"}, nil, true},
+		{"Invalid file", args{"testdata/invalid-file.xml"}, nil, true},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {

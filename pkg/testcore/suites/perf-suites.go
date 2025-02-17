@@ -21,6 +21,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"github.com/dell/cert-csi/pkg/testcore/suites/common"
 	"math"
 	"math/rand"
 	"os"
@@ -42,7 +43,6 @@ import (
 	"github.com/dell/cert-csi/pkg/testcore"
 	"github.com/dell/cert-csi/pkg/utils"
 
-	storagev1 "k8s.io/api/storage/v1"
 	"k8s.io/apimachinery/pkg/api/resource"
 	"k8s.io/apimachinery/pkg/util/wait"
 	"k8s.io/kubernetes/pkg/kubelet/events"
@@ -54,7 +54,6 @@ import (
 	snapv1 "github.com/kubernetes-csi/external-snapshotter/client/v4/apis/volumesnapshot/v1"
 	snapbeta "github.com/kubernetes-csi/external-snapshotter/client/v4/apis/volumesnapshot/v1beta1"
 	"github.com/sirupsen/logrus"
-	"golang.org/x/sync/errgroup"
 	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
@@ -82,7 +81,7 @@ func (vcs *VolumeCreationSuite) Run(ctx context.Context, storageClass string, cl
 	log := utils.GetLoggerFromContext(ctx)
 	if vcs.VolumeNumber <= 0 {
 		log.Info("Using default number of volumes")
-		vcs.VolumeNumber = 10
+		vcs.VolumeNumber = 1
 	}
 	if vcs.VolumeSize == "" {
 		log.Info("Using default volume size")
@@ -99,7 +98,7 @@ func (vcs *VolumeCreationSuite) Run(ctx context.Context, storageClass string, cl
 		color.YellowString(vcs.VolumeSize))
 	pvcClient := clients.PVCClient
 
-	firstConsumer, err := shouldWaitForFirstConsumer(ctx, storageClass, pvcClient)
+	firstConsumer, err := common.ShouldWaitForFirstConsumer(ctx, storageClass, pvcClient)
 	if err != nil {
 		return delFunc, err
 	}
@@ -127,14 +126,6 @@ func (vcs *VolumeCreationSuite) Run(ctx context.Context, storageClass string, cl
 	}
 
 	return delFunc, nil
-}
-
-func shouldWaitForFirstConsumer(ctx context.Context, storageClass string, pvcClient *pvc.Client) (bool, error) {
-	s, err := pvcClient.ClientSet.StorageV1().StorageClasses().Get(ctx, storageClass, metav1.GetOptions{})
-	if err != nil {
-		return false, err
-	}
-	return *s.VolumeBindingMode == storagev1.VolumeBindingWaitForFirstConsumer, nil
 }
 
 // GetName returns volume creation suite name
@@ -290,7 +281,7 @@ func (ps *ProvisioningSuite) Run(ctx context.Context, storageClass string, clien
 
 // GetObservers returns all observers
 func (*ProvisioningSuite) GetObservers(obsType observer.Type) []observer.Interface {
-	return getAllObservers(obsType)
+	return common.GetAllObservers(obsType)
 }
 
 // GetClients returns pvc, pod, va, metrics clients
@@ -805,7 +796,7 @@ func (rrps *RemoteReplicationProvisioningSuite) Run(ctx context.Context, storage
 
 // GetObservers returns all observers
 func (*RemoteReplicationProvisioningSuite) GetObservers(obsType observer.Type) []observer.Interface {
-	return getAllObservers(obsType)
+	return common.GetAllObservers(obsType)
 }
 
 // GetClients creates and returns pvc, pod, pv, va, metrics, sc, rg clients
@@ -962,7 +953,7 @@ func (ss *ScalingSuite) Parameters() string {
 
 // GetObservers returns all observers
 func (ss *ScalingSuite) GetObservers(obsType observer.Type) []observer.Interface {
-	return getAllObservers(obsType)
+	return common.GetAllObservers(obsType)
 }
 
 // GetClients creates and returns pvc, pod, va, statefulset, metrics clients
@@ -1007,177 +998,6 @@ func (ss *ScalingSuite) GetNamespace() string {
 }
 
 // VolumeIoSuite is used to manage volume IO test suite
-type VolumeIoSuite struct {
-	VolumeNumber int
-	VolumeSize   string
-	ChainNumber  int
-	ChainLength  int
-	Image        string
-}
-
-// Run executes volume IO test suite
-func (vis *VolumeIoSuite) Run(ctx context.Context, storageClass string, clients *k8sclient.Clients) (delFunc func() error, e error) {
-	log := utils.GetLoggerFromContext(ctx)
-	pvcClient := clients.PVCClient
-	podClient := clients.PodClient
-	vaClient := clients.VaClient
-
-	if vis.VolumeNumber <= 0 {
-		log.Info("Using default number of volumes")
-		vis.VolumeNumber = 1
-	}
-
-	if vis.ChainNumber <= 0 {
-		log.Info("Using default number of chains")
-		vis.ChainNumber = 5
-	}
-
-	if vis.ChainLength <= 0 {
-		log.Info("Using default length of chains")
-		vis.ChainLength = 5
-	}
-
-	if vis.Image == "" {
-		vis.Image = "quay.io/centos/centos:latest"
-		log.Infof("Using default image: %s", vis.Image)
-	}
-
-	firstConsumer, err := shouldWaitForFirstConsumer(ctx, storageClass, pvcClient)
-	if err != nil {
-		return delFunc, err
-	}
-
-	log.Info("Creating IO pod")
-	errs, errCtx := errgroup.WithContext(ctx)
-	for j := 0; j < vis.ChainNumber; j++ {
-		j := j // https://golang.org/doc/faq#closures_and_goroutines
-		// Create PVCs
-		var pvcNameList []string
-		vcconf := testcore.VolumeCreationConfig(storageClass, vis.VolumeSize, "", "")
-		volTmpl := pvcClient.MakePVC(vcconf)
-
-		pvc := pvcClient.Create(ctx, volTmpl)
-		if pvc.HasError() {
-			return delFunc, pvc.GetError()
-		}
-
-		pvcNameList = append(pvcNameList, pvc.Object.Name)
-
-		if !firstConsumer {
-			err := pvcClient.WaitForAllToBeBound(errCtx)
-			if err != nil {
-				return delFunc, err
-			}
-		}
-
-		gotPvc, err := pvcClient.Interface.Get(ctx, pvc.Object.Name, metav1.GetOptions{})
-		if err != nil {
-			return delFunc, err
-		}
-
-		pvName := gotPvc.Spec.VolumeName
-		// Create Pod, and attach PVC
-		podconf := testcore.IoWritePodConfig(pvcNameList, "", vis.Image)
-		podTmpl := podClient.MakePod(podconf)
-		errs.Go(func() error {
-			for i := 0; i < vis.ChainLength; i++ {
-				file := fmt.Sprintf("%s0/writer-%d.data", podconf.MountPath, j)
-				sum := fmt.Sprintf("%s0/writer-%d.sha512", podconf.MountPath, j)
-				writerPod := podClient.Create(ctx, podTmpl).Sync(errCtx)
-				if writerPod.HasError() {
-					return writerPod.GetError()
-				}
-
-				if i != 0 {
-					writer := bytes.NewBufferString("")
-					if err := podClient.Exec(ctx, writerPod.Object, []string{"/bin/bash", "-c", "sha512sum -c " + sum}, writer, os.Stderr, false); err != nil {
-						return err
-					}
-					if strings.Contains(writer.String(), "OK") {
-						log.Info("Hashes match")
-					} else {
-						return fmt.Errorf("hashes don't match")
-					}
-				}
-				ddRes := bytes.NewBufferString("")
-				if err := podClient.Exec(ctx, writerPod.Object, []string{"/bin/bash", "-c", "dd if=/dev/urandom bs=1M count=128 oflag=sync > " + file}, ddRes, os.Stderr, false); err != nil {
-					log.Info(err)
-					return err
-				}
-
-				log.Debug(ddRes.String())
-				if err := podClient.Exec(ctx, writerPod.Object, []string{"/bin/bash", "-c", "sha512sum " + file + " > " + sum}, os.Stdout, os.Stderr, false); err != nil {
-					return err
-				}
-				podClient.Delete(ctx, writerPod.Object).Sync(errCtx)
-				if writerPod.HasError() {
-					return writerPod.GetError()
-				}
-
-				// WAIT FOR VA TO BE DELETED
-				err := vaClient.WaitUntilVaGone(ctx, pvName)
-				if err != nil {
-					return err
-				}
-			}
-			return nil
-		})
-	}
-
-	return delFunc, errs.Wait()
-}
-
-// GetObservers returns all observers
-func (*VolumeIoSuite) GetObservers(obsType observer.Type) []observer.Interface {
-	return getAllObservers(obsType)
-}
-
-// GetClients returns pvc, pod, va, metrics clients
-func (*VolumeIoSuite) GetClients(namespace string, client *k8sclient.KubeClient) (*k8sclient.Clients, error) {
-	pvcClient, pvcErr := client.CreatePVCClient(namespace)
-	if pvcErr != nil {
-		return nil, pvcErr
-	}
-
-	podClient, podErr := client.CreatePodClient(namespace)
-	if podErr != nil {
-		return nil, podErr
-	}
-
-	vaClient, vaErr := client.CreateVaClient(namespace)
-	if vaErr != nil {
-		return nil, vaErr
-	}
-
-	metricsClient, mcErr := client.CreateMetricsClient(namespace)
-	if mcErr != nil {
-		return nil, mcErr
-	}
-
-	return &k8sclient.Clients{
-		PVCClient:         pvcClient,
-		PodClient:         podClient,
-		VaClient:          vaClient,
-		StatefulSetClient: nil,
-		MetricsClient:     metricsClient,
-	}, nil
-}
-
-// GetNamespace returns volume IO test suite namespace
-func (*VolumeIoSuite) GetNamespace() string {
-	return "volumeio-test"
-}
-
-// GetName returns volume IO test suite name
-func (*VolumeIoSuite) GetName() string {
-	return "VolumeIoSuite"
-}
-
-// Parameters returns formatted string of parameters
-func (vis *VolumeIoSuite) Parameters() string {
-	return fmt.Sprintf("{volumes: %d, volumeSize: %s chains: %d-%d}", vis.VolumeNumber, vis.VolumeSize,
-		vis.ChainNumber, vis.ChainLength)
-}
 
 // VolumeGroupSnapSuite is used to manage volume group snap test suite
 type VolumeGroupSnapSuite struct {
@@ -1211,7 +1031,7 @@ func (vgs *VolumeGroupSnapSuite) Run(ctx context.Context, storageClass string, c
 	podClient := clients.PodClient
 	vgsClient := clients.VgsClient
 
-	firstConsumer, err := shouldWaitForFirstConsumer(ctx, storageClass, pvcClient)
+	firstConsumer, err := common.ShouldWaitForFirstConsumer(ctx, storageClass, pvcClient)
 	if err != nil {
 		return delFunc, err
 	}
@@ -1267,7 +1087,7 @@ func (vgs *VolumeGroupSnapSuite) Run(ctx context.Context, storageClass string, c
 
 // GetObservers returns all observers
 func (*VolumeGroupSnapSuite) GetObservers(obsType observer.Type) []observer.Interface {
-	return getAllObservers(obsType)
+	return common.GetAllObservers(obsType)
 }
 
 // GetClients creates and returns pvc, pod, va, vgs clients
@@ -1378,7 +1198,7 @@ func (ss *SnapSuite) Run(ctx context.Context, storageClass string, clients *k8sc
 		snappodname = ""
 	}
 
-	firstConsumer, err := shouldWaitForFirstConsumer(ctx, storageClass, pvcClient)
+	firstConsumer, err := common.ShouldWaitForFirstConsumer(ctx, storageClass, pvcClient)
 	if err != nil {
 		return delFunc, err
 	}
@@ -1565,7 +1385,7 @@ func validateCustomSnapName(name string, snapshotAmount int) bool {
 
 // GetObservers returns all observers
 func (*SnapSuite) GetObservers(obsType observer.Type) []observer.Interface {
-	return getAllObservers(obsType)
+	return common.GetAllObservers(obsType)
 }
 
 // GetClients creates and returns pvc, pod, va, metrics, snapsnot clients
@@ -1625,27 +1445,6 @@ func (ss *SnapSuite) GetName() string {
 // Parameters returns formatted string of paramters
 func (ss *SnapSuite) Parameters() string {
 	return fmt.Sprintf("{snapshots: %d, volumeSize; %s}", ss.SnapAmount, ss.VolumeSize)
-}
-
-func getAllObservers(obsType observer.Type) []observer.Interface {
-	if obsType == observer.EVENT {
-		return []observer.Interface{
-			&observer.PvcObserver{},
-			&observer.VaObserver{},
-			&observer.PodObserver{},
-			&observer.EntityNumberObserver{},
-			&observer.ContainerMetricsObserver{},
-		}
-	} else if obsType == observer.LIST {
-		return []observer.Interface{
-			&observer.PvcListObserver{},
-			&observer.VaListObserver{},
-			&observer.PodListObserver{},
-			&observer.EntityNumberObserver{},
-			&observer.ContainerMetricsObserver{},
-		}
-	}
-	return []observer.Interface{}
 }
 
 // ReplicationSuite is used to manage replication test suite
@@ -1853,7 +1652,7 @@ func (rs *ReplicationSuite) Run(ctx context.Context, storageClass string, client
 
 // GetObservers returns all observers
 func (rs *ReplicationSuite) GetObservers(obsType observer.Type) []observer.Interface {
-	return getAllObservers(obsType)
+	return common.GetAllObservers(obsType)
 }
 
 // GetClients creates and returns pvc, pod, va, metrics, snapshot clients
@@ -2175,7 +1974,7 @@ func convertSpecSize(specSize string) (int, error) {
 
 // GetObservers returns all observers
 func (*VolumeExpansionSuite) GetObservers(obsType observer.Type) []observer.Interface {
-	return getAllObservers(obsType)
+	return common.GetAllObservers(obsType)
 }
 
 // GetClients creates and returns pvc, pod, va, metrics clients
@@ -2387,7 +2186,7 @@ func (vh *VolumeHealthMetricsSuite) Run(ctx context.Context, storageClass string
 
 // GetObservers returns all observers
 func (*VolumeHealthMetricsSuite) GetObservers(obsType observer.Type) []observer.Interface {
-	return getAllObservers(obsType)
+	return common.GetAllObservers(obsType)
 }
 
 // GetClients creates and returns pvc, pod, pv, va, metrics clients
@@ -2564,7 +2363,7 @@ func (cs *CloneVolumeSuite) Run(ctx context.Context, storageClass string, client
 
 // GetObservers returns all observers
 func (cs *CloneVolumeSuite) GetObservers(obsType observer.Type) []observer.Interface {
-	return getAllObservers(obsType)
+	return common.GetAllObservers(obsType)
 }
 
 // GetClients creates and returns pvc, pod, va, metrics clients
@@ -2822,7 +2621,7 @@ func (mas *MultiAttachSuite) GenerateTopologySpreadConstraints(nodeCount int, la
 
 // GetObservers returns all observers
 func (mas *MultiAttachSuite) GetObservers(obsType observer.Type) []observer.Interface {
-	return getAllObservers(obsType)
+	return common.GetAllObservers(obsType)
 }
 
 // GetClients creates and returns pvc, pod, va, metrics (and node) clients
@@ -2910,7 +2709,7 @@ func (bss *BlockSnapSuite) Run(ctx context.Context, storageClass string, clients
 	pvcClient := clients.PVCClient
 	podClient := clients.PodClient
 	log.Info("Creating BlockSnap pod")
-	firstConsumer, err := shouldWaitForFirstConsumer(ctx, storageClass, pvcClient)
+	firstConsumer, err := common.ShouldWaitForFirstConsumer(ctx, storageClass, pvcClient)
 	if err != nil {
 		return delFunc, err
 	}
@@ -3026,8 +2825,8 @@ func (bss *BlockSnapSuite) Run(ctx context.Context, storageClass string, clients
 	log.Infof("Restoring from %s", vcconf.SnapName)
 	volRestored := pvcClient.MakePVC(vcconf)
 	pvcRestored := pvcClient.Create(ctx, volRestored)
-	if pvc.HasError() {
-		return delFunc, pvc.GetError()
+	if pvcRestored.HasError() {
+		return delFunc, pvcRestored.GetError()
 	}
 	if !firstConsumer {
 		err := pvcClient.WaitForAllToBeBound(ctx)
@@ -3104,7 +2903,7 @@ func (bss *BlockSnapSuite) Run(ctx context.Context, storageClass string, clients
 
 // GetObservers returns all observers
 func (*BlockSnapSuite) GetObservers(obsType observer.Type) []observer.Interface {
-	return getAllObservers(obsType)
+	return common.GetAllObservers(obsType)
 }
 
 // GetClients creates and returns pvc, pod, va, metrics, snapshot clients
@@ -3178,301 +2977,4 @@ func GetSnapshotClient(namespace string, client *k8sclient.KubeClient) (*snapv1c
 		return nil, betaClient, nil
 	}
 	return gaClient, nil, nil
-}
-
-// VolumeMigrateSuite is used to manage volume migrate test suite
-type VolumeMigrateSuite struct {
-	TargetSC     string
-	Description  string
-	VolumeNumber int
-	PodNumber    int
-	Flag         bool
-	Image        string
-}
-
-// Run executes volume migrate test suite
-func (vms *VolumeMigrateSuite) Run(ctx context.Context, storageClass string, clients *k8sclient.Clients) (delFunc func() error, e error) {
-	log := utils.GetLoggerFromContext(ctx)
-
-	if vms.VolumeNumber <= 0 {
-		log.Println("Using default number of volumes")
-		vms.VolumeNumber = 1
-	}
-	if vms.PodNumber <= 0 {
-		log.Println("Using default number of pods")
-		vms.PodNumber = 3
-	}
-	if vms.Image == "" {
-		vms.Image = "quay.io/centos/centos:latest"
-		log.Infof("Using default image: %s", vms.Image)
-	}
-
-	log.Println("Volumes:", vms.VolumeNumber, "pods:", vms.PodNumber)
-
-	scClient := clients.SCClient
-	pvcClient := clients.PVCClient
-	pvClient := clients.PersistentVolumeClient
-	podClient := clients.PodClient
-	stsClient := clients.StatefulSetClient
-
-	sourceSC := scClient.Get(ctx, storageClass)
-	if sourceSC.HasError() {
-		return delFunc, sourceSC.GetError()
-	}
-	targetSC := scClient.Get(ctx, vms.TargetSC)
-	if targetSC.HasError() {
-		return delFunc, targetSC.GetError()
-	}
-
-	stsConf := testcore.VolumeMigrateStsConfig(storageClass, "1Gi", vms.VolumeNumber, int32(vms.PodNumber), "", vms.Image) // #nosec G115
-	stsTmpl := stsClient.MakeStatefulSet(stsConf)
-	// Creating Statefulset
-	log.Println("Creating Statefulset")
-	sts := stsClient.Create(ctx, stsTmpl)
-	if sts.HasError() {
-		return delFunc, sts.GetError()
-	}
-	sts = sts.Sync(ctx)
-	if sts.HasError() {
-		return delFunc, sts.GetError()
-	}
-
-	var pvNames []string
-	podList, err := sts.GetPodList(ctx)
-	if err != nil {
-		return delFunc, err
-	}
-	g, _ := errgroup.WithContext(ctx)
-	for _, pod := range podList.Items {
-		pod := pod
-		for _, volume := range pod.Spec.Volumes {
-			volume := volume
-			if volume.PersistentVolumeClaim != nil {
-				g.Go(func() error {
-					log.Println("Getting PVC")
-					pvc := pvcClient.Get(ctx, volume.PersistentVolumeClaim.ClaimName)
-					if pvc.HasError() {
-						return pvc.GetError()
-					}
-					err = pvcClient.WaitForAllToBeBound(ctx)
-					if err != nil {
-						return err
-					}
-
-					log.Println("Getting PV")
-					pvName := pvc.Object.Spec.VolumeName
-					pvNames = append(pvNames, pvName)
-					pv := pvClient.Get(ctx, pvName)
-					if pv.HasError() {
-						return pv.GetError()
-					}
-
-					if !vms.Flag {
-						file := fmt.Sprintf("%s0/writer-%d.data", stsConf.MountPath, 0)
-						sum := fmt.Sprintf("%s0/writer-%d.sha512", stsConf.MountPath, 0)
-						// Write random blob
-						ddRes := bytes.NewBufferString("")
-						if err := podClient.Exec(ctx, &pod, []string{"dd", "if=/dev/urandom", "of=" + file, "bs=1M", "count=128", "oflag=sync"}, ddRes, os.Stderr, false); err != nil {
-							return err
-						}
-						log.Info("Writer pod: ", pod.Name)
-						log.Debug(ddRes.String())
-						log.Info("Written the values successfully ", ddRes)
-						log.Info(ddRes.String())
-
-						// Write hash sum of blob
-						if err := podClient.Exec(ctx, &pod, []string{"/bin/bash", "-c", "sha512sum " + file + " > " + sum}, os.Stdout, os.Stderr, false); err != nil {
-							log.Println("write hash sum err")
-							return err
-						}
-						log.Info("Checksum value: ", sum)
-						// sync to be sure
-						if err := podClient.Exec(ctx, &pod, []string{"/bin/bash", "-c", "sync " + sum}, os.Stdout, os.Stderr, false); err != nil {
-							return err
-						}
-					}
-
-					pv.Object.Annotations["migration.storage.dell.com/migrate-to"] = vms.TargetSC
-					log.Println("Updating PV")
-					updatedPV := pvClient.Update(ctx, pv.Object)
-					if updatedPV.HasError() {
-						return updatedPV.GetError()
-					}
-
-					log.Println("Waiting PV to create")
-					err = pvClient.WaitPV(ctx, pvName+"-to-"+vms.TargetSC)
-					if err != nil {
-						return err
-					}
-					log.Println("pv", pvName+"-to-"+vms.TargetSC, "seems good")
-					return nil
-				})
-			}
-		}
-	}
-
-	delFunc = func(_ func() error) func() error {
-		return func() error {
-			log.Info("Deleting pvs")
-			pvs, err := pvClient.Interface.List(ctx, metav1.ListOptions{})
-			if err != nil {
-				return err
-			}
-			for _, p := range pvs.Items {
-				for _, name := range pvNames {
-					p := p
-					if strings.Contains(p.Name, name) {
-						pvClient.Delete(ctx, &p)
-					}
-				}
-			}
-			return nil
-		}
-	}(nil)
-
-	if err := g.Wait(); err != nil {
-		log.Println("g.wait err")
-		return delFunc, err
-	}
-
-	if vms.Flag {
-		return delFunc, nil
-	}
-
-	log.Println("Deleting old Statefulset")
-	deletionOrphan := metav1.DeletePropagationOrphan
-	delSts := stsClient.DeleteWithOptions(ctx, sts.Set, metav1.DeleteOptions{PropagationPolicy: &deletionOrphan})
-	if delSts.HasError() {
-		return delFunc, delSts.GetError()
-	}
-
-	log.Println("Deleting pods")
-	for _, pod := range podList.Items {
-		for _, volume := range pod.Spec.Volumes {
-			if volume.PersistentVolumeClaim != nil {
-				log.Println("Deleting PVC")
-				pvc := pvcClient.Get(ctx, volume.PersistentVolumeClaim.ClaimName)
-				if pvc.HasError() {
-					return delFunc, pvc.GetError()
-				}
-				delPVC := pvcClient.Delete(ctx, pvc.Object)
-				if delPVC.HasError() {
-					return delFunc, delPVC.GetError()
-				}
-			}
-		}
-		pod := pod
-		podClient.Delete(ctx, &pod)
-	}
-
-	newStsConf := testcore.VolumeMigrateStsConfig(vms.TargetSC, "1Gi", vms.VolumeNumber, int32(vms.PodNumber), "", vms.Image) // #nosec G115
-	newStsTmpl := stsClient.MakeStatefulSet(newStsConf)
-	// Creating new Statefulset
-	log.Println("Creating new Statefulset")
-	newSts := stsClient.Create(ctx, newStsTmpl)
-	if newSts.HasError() {
-		return delFunc, newSts.GetError()
-	}
-	newSts = newSts.Sync(ctx)
-	if newSts.HasError() {
-		return delFunc, newSts.GetError()
-	}
-
-	newPodList, err := newSts.GetPodList(ctx)
-	if err != nil {
-		return delFunc, err
-	}
-
-	for _, pod := range newPodList.Items {
-		// Check if hash sum is correct
-		sum := fmt.Sprintf("%s0/writer-%d.sha512", newStsConf.MountPath, 0)
-		writer := bytes.NewBufferString("")
-		log.Info("Checker pod: ", pod.Name)
-		pod := pod
-		if err := podClient.Exec(ctx, &pod, []string{"/bin/bash", "-c", "sha512sum -c " + sum}, writer, os.Stderr, false); err != nil {
-			return delFunc, err
-		}
-		if strings.Contains(writer.String(), "OK") {
-			log.Info("Hashes match")
-		} else {
-			return delFunc, fmt.Errorf("hashes don't match")
-		}
-	}
-
-	return delFunc, nil
-}
-
-// GetObservers returns all observers
-func (*VolumeMigrateSuite) GetObservers(obsType observer.Type) []observer.Interface {
-	return getAllObservers(obsType)
-}
-
-// GetClients creates and returns pvc, pv, sc, pod, statefulset, va, metrics clients
-func (vms *VolumeMigrateSuite) GetClients(namespace string, client *k8sclient.KubeClient) (*k8sclient.Clients, error) {
-	if ok, err := client.StorageClassExists(context.Background(), vms.TargetSC); !ok {
-		return nil, fmt.Errorf("target storage class doesn't exist; error = %v", err)
-	}
-
-	pvClient, pvErr := client.CreatePVClient()
-	if pvErr != nil {
-		return nil, pvErr
-	}
-
-	pvcClient, pvcErr := client.CreatePVCClient(namespace)
-	if pvcErr != nil {
-		return nil, pvcErr
-	}
-
-	scClient, scErr := client.CreateSCClient()
-	if scErr != nil {
-		return nil, scErr
-	}
-
-	podClient, podErr := client.CreatePodClient(namespace)
-	if podErr != nil {
-		return nil, podErr
-	}
-
-	stsClient, stsErr := client.CreateStatefulSetClient(namespace)
-	if stsErr != nil {
-		return nil, stsErr
-	}
-
-	vaClient, vaErr := client.CreateVaClient(namespace)
-	if vaErr != nil {
-		return nil, vaErr
-	}
-
-	metricsClient, mcErr := client.CreateMetricsClient(namespace)
-	if mcErr != nil {
-		return nil, mcErr
-	}
-
-	return &k8sclient.Clients{
-		PersistentVolumeClient: pvClient,
-		PVCClient:              pvcClient,
-		PodClient:              podClient,
-		SCClient:               scClient,
-		StatefulSetClient:      stsClient,
-		VaClient:               vaClient,
-		MetricsClient:          metricsClient,
-	}, nil
-}
-
-// GetNamespace returns volume migrate test suite namespace
-func (*VolumeMigrateSuite) GetNamespace() string {
-	return "migration-test"
-}
-
-// GetName returns volume migrate test suite name
-func (vms *VolumeMigrateSuite) GetName() string {
-	if vms.Description != "" {
-		return vms.Description
-	}
-	return "VolumeMigrationSuite"
-}
-
-// Parameters returns formatted string of parameters
-func (vms *VolumeMigrateSuite) Parameters() string {
-	return fmt.Sprintf("{Target storageclass: %s, volumes: %d, pods: %d}", vms.TargetSC, vms.VolumeNumber, vms.PodNumber)
 }

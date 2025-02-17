@@ -20,6 +20,7 @@ import (
 	"bytes"
 	"context"
 	"fmt"
+	"github.com/dell/cert-csi/pkg/testcore/suites/common"
 	"os"
 	"strconv"
 	"strings"
@@ -134,7 +135,7 @@ func (ps *PostgresqlSuite) Run(ctx context.Context, storageClass string, clients
 
 // GetObservers returns all observers
 func (*PostgresqlSuite) GetObservers(obsType observer.Type) []observer.Interface {
-	return getAllObservers(obsType)
+	return common.GetAllObservers(obsType)
 }
 
 // GetClients creates and returns pvc, pod, va, metrics clients

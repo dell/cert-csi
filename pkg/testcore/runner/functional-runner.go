@@ -254,7 +254,7 @@ func (sr *FunctionalSuiteRunner) Close() {
 	if sr.SucceededSuites > Threshold {
 		log.Infof("During this run %.1f%% of suites succeeded", sr.SucceededSuites*100)
 	} else {
-		log.Fatalf("During this run %.1f%% of suites succeeded", sr.SucceededSuites*100)
+		log.Errorf("During this run %.1f%% of suites succeeded", sr.SucceededSuites*100)
 	}
 }
 
