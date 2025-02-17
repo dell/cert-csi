@@ -18,9 +18,11 @@ package cmd
 
 import (
 	"fmt"
-	volumemigration "github.com/dell/cert-csi/pkg/testcore/suites/migration"
-	"github.com/dell/cert-csi/pkg/testcore/suites/volumeio"
 	"time"
+
+	volumemigration "github.com/dell/cert-csi/pkg/testcore/suites/migration"
+	remotereplicationprovisioning "github.com/dell/cert-csi/pkg/testcore/suites/remotereplicationprovisioning"
+	"github.com/dell/cert-csi/pkg/testcore/suites/volumeio"
 
 	"github.com/dell/cert-csi/pkg/plotter"
 	"github.com/dell/cert-csi/pkg/store"
@@ -366,7 +368,7 @@ func getRemoteReplicationProvisioningCommand(globalFlags []cli.Flag) cli.Command
 				return fmt.Errorf("failed to get test image: %s", err)
 			}
 			s := []suites.Interface{
-				&suites.RemoteReplicationProvisioningSuite{
+				&remotereplicationprovisioning.RemoteReplicationProvisioningSuite{
 					VolumeNumber:     volNum,
 					RemoteConfigPath: remoteConfigPath,
 					NoFailover:       noFailover,
