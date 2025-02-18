@@ -21,7 +21,6 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"github.com/dell/cert-csi/pkg/testcore/suites/common"
 	"math"
 	"math/rand"
 	"os"
@@ -29,6 +28,8 @@ import (
 	"strconv"
 	"strings"
 	"time"
+
+	"github.com/dell/cert-csi/pkg/testcore/suites/common"
 
 	"github.com/dell/cert-csi/pkg/k8sclient"
 	"github.com/dell/cert-csi/pkg/k8sclient/resources/commonparams"
@@ -2998,6 +2999,7 @@ func (bss *BlockSnapSuite) Run(ctx context.Context, storageClass string, clients
 
 	// Create second PVC from snapshot
 	vcconf.SnapName = createSnap.Name()
+	vcconf.Name = vcconf.SnapName + "-restore"
 	var mode v1.PersistentVolumeMode = pod.Block
 	vcconf.VolumeMode = &mode
 
@@ -3019,6 +3021,7 @@ func (bss *BlockSnapSuite) Run(ctx context.Context, storageClass string, clients
 	// Create Pod, and attach PVC from snapshot
 	podRestored := testcore.BlockSnapPodConfig([]string{pvcRestored.Object.Name}, bss.Image)
 	podRestored.VolumeMode = pod.Block
+	podRestored.Name = podRestored.Name + "-restore-pod"
 	podTmplRestored := podClient.MakePod(podRestored)
 
 	writerPod = podClient.Create(ctx, podTmplRestored).Sync(ctx)

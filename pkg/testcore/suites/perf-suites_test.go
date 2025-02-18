@@ -3,6 +3,7 @@ package suites
 import (
 	"context"
 	"errors"
+
 	"github.com/dell/cert-csi/pkg/testcore/suites/common"
 
 	//"errors"
@@ -2695,17 +2696,7 @@ func (f *FakeRemoteExecutor_VolExpansion) Execute(method string, url *url.URL, c
 }
 
 func TestBlockSnapSuite_Run(t *testing.T) {
-	// Create a context
-	ctx := context.Background()
-
-	// Create a BlockSnapSuite instance
-	bss := &BlockSnapSuite{
-		SnapClass:   "testSnap",
-		Description: "testDesc",
-		AccessMode:  "test",
-	}
-
-	namespace := bss.GetNamespace()
+	namespace := "block-snap-test"
 
 	// Mock storageClass
 	// Create a fake storage class with VolumeBindingMode set to WaitForFirstConsumer
@@ -2747,10 +2738,74 @@ func TestBlockSnapSuite_Run(t *testing.T) {
 		SnapClientBeta:    snapBeta,
 	}
 
-	// Run the suite with connection refused error
-	delFunc, err := bss.Run(ctx, "test-storage-class", clients)
-	assert.Error(t, err)
-	assert.Nil(t, delFunc)
+	tests := []struct {
+		name           string
+		blockSnapSuite *BlockSnapSuite
+		storageClass   string
+		clients        *k8sclient.Clients
+		wantError      bool
+		wantDeleteFunc bool
+	}{
+		{
+			name: "Testing Run with default parameters",
+			blockSnapSuite: &BlockSnapSuite{
+				SnapClass:   "testSnap",
+				Description: "testDesc",
+				AccessMode:  "test",
+			},
+			storageClass:   "test-storage-class",
+			clients:        clients,
+			wantError:      false,
+			wantDeleteFunc: false,
+		},
+		// {
+		// 	name: "Testing Run with custom parameters",
+		// 	blockSnapSuite: &BlockSnapSuite{
+		// 		SnapClass:   "testSnap",
+		// 		Description: "testDesc",
+		// 		AccessMode:  "test",
+		// 		VolumeSize:  "4Gi",
+		// 		Image:       "quay.io/centos/centos:latest",
+		// 	},
+		// 	storageClass:   "test-storage-class",
+		// 	clients:        clients,
+		// 	wantError:      false,
+		// 	wantDeleteFunc: false,
+		// },
+		// {
+		// 	name: "Testing Run with error",
+		// 	blockSnapSuite: &BlockSnapSuite{
+		// 		SnapClass:   "testSnap",
+		// 		Description: "testDesc",
+		// 		AccessMode:  "test",
+		// 	},
+		// 	storageClass:   "test-storage-class",
+		// 	clients:        &k8sclient.Clients{},
+		// 	wantError:      true,
+		// 	wantDeleteFunc: false,
+		// },
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			delFunc, err := tt.blockSnapSuite.Run(context.Background(), tt.storageClass, tt.clients)
+			if tt.wantError {
+				if err == nil {
+					t.Errorf("BlockSnapSuite.Run() expected error, but got nil")
+				}
+			} else if err != nil {
+				t.Errorf("BlockSnapSuite.Run() returned error: %v", err)
+			}
+
+			if tt.wantDeleteFunc {
+				if delFunc == nil {
+					t.Errorf("BlockSnapSuite.Run() expected delete function, but got nil")
+				}
+			} else if delFunc != nil {
+				t.Errorf("BlockSnapSuite.Run() returned unexpected delete function")
+			}
+		})
+	}
 }
 
 func TestBlockSnapSuite_GetObservers(t *testing.T) {
@@ -2876,7 +2931,7 @@ func TestBlockSnapSuite_Parameters(t *testing.T) {
 // 	}
 // }
 
-/*func TestSnapSuite_Run(t *testing.T) {
+func TestSnapSuite_Run(t *testing.T) {
 
 	// Mock storageClass
 	// Create a fake storage class with VolumeBindingMode set to WaitForFirstConsumer
@@ -2962,7 +3017,7 @@ func TestBlockSnapSuite_Parameters(t *testing.T) {
 		wantError      bool
 		wantDeleteFunc bool
 	}{
-		/*{
+		{
 			name: "Testing Run with default parameters",
 			snapSuite: &SnapSuite{
 				SnapAmount:         0,
@@ -3035,4 +3090,4 @@ func TestBlockSnapSuite_Parameters(t *testing.T) {
 			}
 		})
 	}
-}*/
+}
