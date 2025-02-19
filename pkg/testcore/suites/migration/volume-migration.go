@@ -131,22 +131,22 @@ func (vms *VolumeMigrateSuite) Run(ctx context.Context, storageClass string, cli
 	}
 
 	log.Println("Deleting pods")
-	for _, pod := range podList.Items {
-		for _, volume := range pod.Spec.Volumes {
+	for _, podItem := range podList.Items {
+		for _, volume := range podItem.Spec.Volumes {
 			if volume.PersistentVolumeClaim != nil {
 				log.Println("Deleting PVC")
-				pvc := pvcClient.Get(ctx, volume.PersistentVolumeClaim.ClaimName)
-				if pvc.HasError() {
-					return delFunc, pvc.GetError()
+				pvcObj := pvcClient.Get(ctx, volume.PersistentVolumeClaim.ClaimName)
+				if pvcObj.HasError() {
+					return delFunc, pvcObj.GetError()
 				}
-				delPVC := pvcClient.Delete(ctx, pvc.Object)
+				delPVC := pvcClient.Delete(ctx, pvcObj.Object)
 				if delPVC.HasError() {
 					return delFunc, delPVC.GetError()
 				}
 			}
 		}
-		pod := pod
-		podClient.Delete(ctx, &pod)
+		podObj := podItem
+		podClient.Delete(ctx, &podObj)
 	}
 
 	newStsConf := testcore.VolumeMigrateStsConfig(vms.TargetSC, "1Gi", vms.VolumeNumber, int32(vms.PodNumber), "", vms.Image) // #nosec G115
@@ -167,13 +167,13 @@ func (vms *VolumeMigrateSuite) Run(ctx context.Context, storageClass string, cli
 		return delFunc, err
 	}
 
-	for _, pod := range newPodList.Items {
+	for _, podItemObj := range newPodList.Items {
 		// Check if hash sum is correct
 		sum := fmt.Sprintf("%s0/writer-%d.sha512", newStsConf.MountPath, 0)
 		writer := bytes.NewBufferString("")
-		log.Info("Checker item: ", pod.Name)
-		pod := pod
-		if err := podClient.Exec(ctx, &pod, []string{"/bin/bash", "-c", "sha512sum -c " + sum}, writer, os.Stderr, false); err != nil {
+		log.Info("Checker item: ", podItemObj.Name)
+		podObj := podItemObj
+		if err = podClient.Exec(ctx, &podObj, []string{"/bin/bash", "-c", "sha512sum -c " + sum}, writer, os.Stderr, false); err != nil {
 			return delFunc, err
 		}
 		if strings.Contains(writer.String(), "OK") {
@@ -212,7 +212,8 @@ func (vms *VolumeMigrateSuite) validateSTS(log *log.Entry, pvcClient *pvc.Client
 		sum := fmt.Sprintf("%s0/writer-%d.sha512", stsConf.MountPath, 0)
 		// Write random blob
 		ddRes := bytes.NewBufferString("")
-		if err := podClient.Exec(ctx, &pod, []string{"dd", "if=/dev/urandom", "of=" + file, "bs=1M", "count=128", "oflag=sync"}, ddRes, os.Stderr, false); err != nil {
+		if err = podClient.Exec(ctx, &pod, []string{"dd", "if=/dev/urandom", "of=" + file, "bs=1M", "count=128", "oflag=sync"},
+			ddRes, os.Stderr, false); err != nil {
 			return err
 		}
 		log.Info("Writer pod: ", pod.Name)
@@ -221,13 +222,13 @@ func (vms *VolumeMigrateSuite) validateSTS(log *log.Entry, pvcClient *pvc.Client
 		log.Info(ddRes.String())
 
 		// Write hash sum of blob
-		if err := podClient.Exec(ctx, &pod, []string{"/bin/bash", "-c", "sha512sum " + file + " > " + sum}, os.Stdout, os.Stderr, false); err != nil {
+		if err = podClient.Exec(ctx, &pod, []string{"/bin/bash", "-c", "sha512sum " + file + " > " + sum}, os.Stdout, os.Stderr, false); err != nil {
 			log.Println("write hash sum err")
 			return err
 		}
 		log.Info("Checksum value: ", sum)
 		// sync to be sure
-		if err := podClient.Exec(ctx, &pod, []string{"/bin/bash", "-c", "sync " + sum}, os.Stdout, os.Stderr, false); err != nil {
+		if err = podClient.Exec(ctx, &pod, []string{"/bin/bash", "-c", "sync " + sum}, os.Stdout, os.Stderr, false); err != nil {
 			return err
 		}
 		return nil

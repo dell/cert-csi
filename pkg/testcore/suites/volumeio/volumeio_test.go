@@ -6,82 +6,17 @@ import (
 	"github.com/dell/cert-csi/pkg/k8sclient"
 	"github.com/dell/cert-csi/pkg/k8sclient/resources/pod"
 	"github.com/dell/cert-csi/pkg/observer"
+	"github.com/dell/cert-csi/pkg/testcore/suites/mockutils"
 	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/mock"
-	"io"
 	v1 "k8s.io/api/core/v1"
 	storagev1 "k8s.io/api/storage/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	kfake "k8s.io/client-go/kubernetes/fake"
-	typedcorev1 "k8s.io/client-go/kubernetes/typed/core/v1"
 	"k8s.io/client-go/rest"
-	restclient "k8s.io/client-go/rest"
-	restfake "k8s.io/client-go/rest/fake"
 	k8stesting "k8s.io/client-go/testing"
-	"k8s.io/client-go/tools/remotecommand"
-	"net/url"
 	"testing"
 )
-
-// TODO put this repeated types and funcs in a common test file
-type FakeHashRemoteExecutor struct{}
-
-func (FakeHashRemoteExecutor) Execute(method string, url *url.URL, config *restclient.Config, stdin io.Reader, stdout,
-	stderr io.Writer, tty bool, terminalSizeQueue remotecommand.TerminalSizeQueue) error {
-	Output := "OK"
-	_, err := fmt.Fprint(stdout, Output)
-	if err != nil {
-		return err
-	}
-	return nil
-}
-
-type FakeRemoteExecutor struct{}
-
-type FakeRemoteExecutor_VolExpansion struct {
-	callCount int
-}
-
-func (f *FakeRemoteExecutor) Execute(method string, url *url.URL, config *restclient.Config, stdin io.Reader, stdout,
-	stderr io.Writer, tty bool, terminalSizeQueue remotecommand.TerminalSizeQueue) error {
-	return nil
-}
-
-type FakeExtendedCoreV1 struct {
-	typedcorev1.CoreV1Interface
-	restClient rest.Interface
-}
-
-func (c *FakeExtendedCoreV1) RESTClient() rest.Interface {
-	if c.restClient == nil {
-		c.restClient = &restfake.RESTClient{}
-	}
-	return c.restClient
-}
-
-type FakeExtendedClientset struct {
-	*kfake.Clientset
-}
-
-func (f *FakeExtendedClientset) CoreV1() typedcorev1.CoreV1Interface {
-	return &FakeExtendedCoreV1{f.Clientset.CoreV1(), nil}
-}
-
-func NewFakeClientsetWithRestClient(objs ...runtime.Object) *FakeExtendedClientset {
-	return &FakeExtendedClientset{kfake.NewSimpleClientset(objs...)}
-}
-
-type MockClients struct {
-	mock.Mock
-}
-
-// CreatePodClient is a mock implementation of the CreatePodClient method
-func (c *MockClients) CreatePodClient(namespace string) (*pod.Client, error) {
-	args := c.Called(namespace)
-	podClient, err := args.Get(0).(*pod.Client), args.Error(1)
-	return podClient, err
-}
 
 // TODO TestVolumeIoSuite_Run
 func TestVolumeIoSuite_Run(t *testing.T) {
@@ -115,8 +50,7 @@ func TestVolumeIoSuite_Run(t *testing.T) {
 		}(),
 	}
 
-	// clientSet := fake.NewSimpleClientset(storageClass)
-	clientSet := NewFakeClientsetWithRestClient(storageClass)
+	clientSet := mockutils.NewFakeClientsetWithRestClient(storageClass)
 
 	// Set up a reactor to simulate Pods becoming Ready
 	clientSet.Fake.PrependReactor("create", "pods", func(action k8stesting.Action) (bool, runtime.Object, error) {
@@ -133,7 +67,7 @@ func TestVolumeIoSuite_Run(t *testing.T) {
 	})
 
 	// Create a mock Clients instance
-	mockClients := &MockClients{}
+	mockClients := &mockutils.MockClients{}
 
 	// Set up the mock behavior for the CreatePodClient method
 	mockClients.On("CreatePodClient", "test-namespace").Return(
@@ -153,8 +87,8 @@ func TestVolumeIoSuite_Run(t *testing.T) {
 
 	pvcClient, _ := kubeClient.CreatePVCClient("test-namespace")
 	podClient, _ := kubeClient.CreatePodClient("test-namespace")
-	podClient.RemoteExecutor = &FakeRemoteExecutor{}
-	podClient.RemoteExecutor = &FakeHashRemoteExecutor{}
+	podClient.RemoteExecutor = &mockutils.FakeRemoteExecutor{}
+	podClient.RemoteExecutor = &mockutils.FakeHashRemoteExecutor{}
 	vaClient, _ := kubeClient.CreateVaClient("test-namespace")
 
 	// Create a fake clients instance
