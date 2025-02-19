@@ -2,6 +2,8 @@ package remotereplicationprovisioning
 
 import (
 	"context"
+	"io"
+	"net/url"
 	"testing"
 
 	"github.com/dell/cert-csi/pkg/k8sclient"
@@ -14,8 +16,93 @@ import (
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/client-go/kubernetes/fake"
 	"k8s.io/client-go/rest"
+	restclient "k8s.io/client-go/rest"
 	k8stesting "k8s.io/client-go/testing"
+	"k8s.io/client-go/tools/remotecommand"
 )
+
+type FakeRemoteExecutor struct{}
+
+func (f *FakeRemoteExecutor) Execute(method string, url *url.URL, config *restclient.Config, stdin io.Reader, stdout, stderr io.Writer, tty bool, terminalSizeQueue remotecommand.TerminalSizeQueue) error {
+	return nil
+}
+
+func TestRemoteReplicationProvisioningSuite_GetObservers(t *testing.T) {
+	rrps := &RemoteReplicationProvisioningSuite{}
+	obsType := observer.Type("someType")
+	observers := rrps.GetObservers(obsType)
+	assert.NotNil(t, observers)
+	// Add more assertions based on expected behavior
+}
+
+// TestRemoteReplicationProvisioningSuite_GetClients
+func TestRemoteReplicationProvisioningSuite_GetClients(t *testing.T) {
+	// Create a fake clientset
+	client := fake.NewSimpleClientset()
+
+	// Create a fake KubeClient
+	kubeClient := &k8sclient.KubeClient{
+		ClientSet:   client,
+		Config:      &rest.Config{},
+		VersionInfo: nil,
+	}
+
+	type args struct {
+		namespace string
+		client    *k8sclient.KubeClient
+	}
+	tests := []struct {
+		name    string
+		rrps    *RemoteReplicationProvisioningSuite
+		args    args
+		wantErr bool
+	}{
+		{
+			name: "Testing GetClients expecting error",
+			rrps: &RemoteReplicationProvisioningSuite{},
+			args: args{
+				namespace: "test-namespace",
+				client:    kubeClient,
+			},
+			wantErr: true, // We expect an error due to RG client creation failure
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			_, err := tt.rrps.GetClients(tt.args.namespace, tt.args.client)
+			if (err != nil) != tt.wantErr {
+				t.Errorf("RemoteReplicationProvisioningSuite.GetClients() error = %v, wantErr %v", err, tt.wantErr)
+			}
+		})
+	}
+}
+
+func TestRemoteReplicationProvisioningSuite_GetNamespace(t *testing.T) {
+	rrps := &RemoteReplicationProvisioningSuite{}
+	namespace := rrps.GetNamespace()
+	assert.Equal(t, "repl-prov-test", namespace)
+}
+
+func TestRemoteReplicationProvisioningSuite_GetName(t *testing.T) {
+	rrps := &RemoteReplicationProvisioningSuite{}
+	name := rrps.GetName()
+	assert.Equal(t, "RemoteReplicationProvisioningSuite", name)
+
+	rrps.Description = "CustomName"
+	name = rrps.GetName()
+	assert.Equal(t, "CustomName", name)
+}
+
+func TestRemoteReplicationProvisioningSuite_Parameters(t *testing.T) {
+	rrps := &RemoteReplicationProvisioningSuite{
+		VolumeNumber:     5,
+		VolumeSize:       "10Gi",
+		RemoteConfigPath: "/path/to/config",
+	}
+	params := rrps.Parameters()
+	expected := "{volumes: 5, volumeSize: 10Gi, remoteConfig: /path/to/config}"
+	assert.Equal(t, expected, params)
+}
 
 func TestRemoteReplicationProvisioningSuite_Run_Empty(t *testing.T) {
 	ctx := context.Background()
@@ -98,10 +185,13 @@ func TestRemoteReplicationProvisioningSuite_Run_Empty(t *testing.T) {
 	pvClient, _ := kubeClient.CreatePVClient()
 	remoteKubeClient, err := k8sclient.NewRemoteKubeClient(kubeClient.Config, 10)
 	if err != nil {
-		t.Errorf("Error creating remoteKubeClient: %v", err)
+		t.Errorf("Error creating remote kube client: %v", err)
 	}
 
-	rgClient, _ := remoteKubeClient.CreateRGClient()
+	rgClient, err := remoteKubeClient.CreateRGClient()
+	if err != nil {
+		t.Errorf("Error creating replication group client: %v", err)
+	}
 
 	// Update the k8sclient.Clients instance with the fake clients
 	k8sClients := &k8sclient.Clients{
@@ -209,14 +299,18 @@ func TestRemoteReplicationProvisioningSuite_Run(t *testing.T) {
 	})
 
 	podClient, _ := kubeClient.CreatePodClient("test-namespace")
+	podClient.RemoteExecutor = &FakeRemoteExecutor{}
 	scClient, _ := kubeClient.CreateSCClient()
 	pvClient, _ := kubeClient.CreatePVClient()
 	remoteKubeClient, err := k8sclient.NewRemoteKubeClient(kubeClient.Config, 10)
 	if err != nil {
-		t.Errorf("Error creating remoteKubeClient: %v", err)
+		t.Errorf("Error creating remote kube client: %v", err)
 	}
 
-	rgClient, _ := remoteKubeClient.CreateRGClient()
+	rgClient, err := remoteKubeClient.CreateRGClient()
+	if err != nil {
+		t.Errorf("Error creating replication group client: %v", err)
+	}
 
 	// Update the k8sclient.Clients instance with the fake clients
 	k8sClients := &k8sclient.Clients{
@@ -241,81 +335,4 @@ func TestRemoteReplicationProvisioningSuite_Run(t *testing.T) {
 	delFunc, err := rrps.Run(ctx, "test-storage-class", k8sClients)
 	assert.NoError(t, err)
 	assert.Nil(t, delFunc)
-}
-
-func TestRemoteReplicationProvisioningSuite_GetObservers(t *testing.T) {
-	rrps := &RemoteReplicationProvisioningSuite{}
-	obsType := observer.Type("someType")
-	observers := rrps.GetObservers(obsType)
-	assert.NotNil(t, observers)
-	// Add more assertions based on expected behavior
-}
-
-// TestRemoteReplicationProvisioningSuite_GetClients
-func TestRemoteReplicationProvisioningSuite_GetClients(t *testing.T) {
-	// Create a fake clientset
-	client := fake.NewSimpleClientset()
-
-	// Create a fake KubeClient
-	kubeClient := &k8sclient.KubeClient{
-		ClientSet:   client,
-		Config:      &rest.Config{},
-		VersionInfo: nil,
-	}
-
-	type args struct {
-		namespace string
-		client    *k8sclient.KubeClient
-	}
-	tests := []struct {
-		name    string
-		rrps    *RemoteReplicationProvisioningSuite
-		args    args
-		wantErr bool
-	}{
-		{
-			name: "Testing GetClients expecting error",
-			rrps: &RemoteReplicationProvisioningSuite{},
-			args: args{
-				namespace: "test-namespace",
-				client:    kubeClient,
-			},
-			wantErr: true, // We expect an error due to RG client creation failure
-		},
-	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			_, err := tt.rrps.GetClients(tt.args.namespace, tt.args.client)
-			if (err != nil) != tt.wantErr {
-				t.Errorf("RemoteReplicationProvisioningSuite.GetClients() error = %v, wantErr %v", err, tt.wantErr)
-			}
-		})
-	}
-}
-
-func TestRemoteReplicationProvisioningSuite_GetNamespace(t *testing.T) {
-	rrps := &RemoteReplicationProvisioningSuite{}
-	namespace := rrps.GetNamespace()
-	assert.Equal(t, "repl-prov-test", namespace)
-}
-
-func TestRemoteReplicationProvisioningSuite_GetName(t *testing.T) {
-	rrps := &RemoteReplicationProvisioningSuite{}
-	name := rrps.GetName()
-	assert.Equal(t, "RemoteReplicationProvisioningSuite", name)
-
-	rrps.Description = "CustomName"
-	name = rrps.GetName()
-	assert.Equal(t, "CustomName", name)
-}
-
-func TestRemoteReplicationProvisioningSuite_Parameters(t *testing.T) {
-	rrps := &RemoteReplicationProvisioningSuite{
-		VolumeNumber:     5,
-		VolumeSize:       "10Gi",
-		RemoteConfigPath: "/path/to/config",
-	}
-	params := rrps.Parameters()
-	expected := "{volumes: 5, volumeSize: 10Gi, remoteConfig: /path/to/config}"
-	assert.Equal(t, expected, params)
 }

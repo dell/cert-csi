@@ -20,7 +20,9 @@ import (
 	"github.com/dell/cert-csi/pkg/utils"
 	"github.com/fatih/color"
 	v1 "k8s.io/api/core/v1"
+	"k8s.io/apimachinery/pkg/api/meta"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/runtime"
 )
 
 // RemoteReplicationProvisioningSuite is used to manage remote replication provisioning test suite
@@ -541,4 +543,33 @@ func (rrps *RemoteReplicationProvisioningSuite) GetName() string {
 // Parameters returns formatted string of parameters
 func (rrps *RemoteReplicationProvisioningSuite) Parameters() string {
 	return fmt.Sprintf("{volumes: %d, volumeSize: %s, remoteConfig: %s}", rrps.VolumeNumber, rrps.VolumeSize, rrps.RemoteConfigPath)
+}
+
+//todo: get this uncommented and working, it will be used to overload the NewClient call when the test is ran
+/* var clientNewFunc = func(config *rest.Config, options Options) (Client, error) {
+	return client.NewClient(config, options)
+} */
+
+// Options are creation options for a Client.
+type Options struct {
+	// Scheme, if provided, will be used to map go structs to GroupVersionKinds
+	Scheme *runtime.Scheme
+
+	// Mapper, if provided, will be used to map GroupVersionKinds to Resources
+	Mapper meta.RESTMapper
+
+	// Opts is used to configure the warning handler responsible for
+	// surfacing and handling warnings messages sent by the API server.
+	Opts WarningHandlerOptions
+}
+
+type WarningHandlerOptions struct {
+	// SuppressWarnings decides if the warnings from the
+	// API server are suppressed or surfaced in the client.
+	SuppressWarnings bool
+	// AllowDuplicateLogs does not deduplicate the to-be
+	// logged surfaced warnings messages. See
+	// log.WarningHandlerOptions for considerations
+	// regarding deduplication
+	AllowDuplicateLogs bool
 }
