@@ -23,10 +23,13 @@ func TestProvisioningSuite_Run(t *testing.T) {
 
 	// Create a new ProvisioningSuite instance
 	ps := &ProvisioningSuite{
-		VolumeNumber: -1,
-		PodNumber:    -1,
-		VolumeSize:   "",
-		Image:        "",
+		VolumeNumber:  -1,
+		PodNumber:     -1,
+		VolumeSize:    "",
+		Image:         "",
+		RawBlock:      true,
+		PodCustomName: "custom-pod",
+		ROFlag:        true,
 	}
 
 	// Create a fake storage class with VolumeBindingMode set to WaitForFirstConsumer

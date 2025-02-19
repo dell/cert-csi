@@ -1,0 +1,272 @@
+
+<!DOCTYPE html>
+<html>
+	<head>
+		<meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+		<title>podprovision: Go Coverage Report</title>
+		<style>
+			body {
+				background: black;
+				color: rgb(80, 80, 80);
+			}
+			body, pre, #legend span {
+				font-family: Menlo, monospace;
+				font-weight: bold;
+			}
+			#topbar {
+				background: black;
+				position: fixed;
+				top: 0; left: 0; right: 0;
+				height: 42px;
+				border-bottom: 1px solid rgb(80, 80, 80);
+			}
+			#content {
+				margin-top: 50px;
+			}
+			#nav, #legend {
+				float: left;
+				margin-left: 10px;
+			}
+			#legend {
+				margin-top: 12px;
+			}
+			#nav {
+				margin-top: 10px;
+			}
+			#legend span {
+				margin: 0 5px;
+			}
+			.cov0 { color: rgb(192, 0, 0) }
+.cov1 { color: rgb(128, 128, 128) }
+.cov2 { color: rgb(116, 140, 131) }
+.cov3 { color: rgb(104, 152, 134) }
+.cov4 { color: rgb(92, 164, 137) }
+.cov5 { color: rgb(80, 176, 140) }
+.cov6 { color: rgb(68, 188, 143) }
+.cov7 { color: rgb(56, 200, 146) }
+.cov8 { color: rgb(44, 212, 149) }
+.cov9 { color: rgb(32, 224, 152) }
+.cov10 { color: rgb(20, 236, 155) }
+
+		</style>
+	</head>
+	<body>
+		<div id="topbar">
+			<div id="nav">
+				<select id="files">
+				
+				<option value="file0">github.com/dell/cert-csi/pkg/testcore/suites/podprovision/provisioning.go (89.7%)</option>
+				
+				</select>
+			</div>
+			<div id="legend">
+				<span>not tracked</span>
+			
+				<span class="cov0">not covered</span>
+				<span class="cov8">covered</span>
+			
+			</div>
+		</div>
+		<div id="content">
+		
+		<pre class="file" id="file0" style="display: none">package podprovision
+
+import (
+        "context"
+        "fmt"
+        "strconv"
+
+        "github.com/dell/cert-csi/pkg/k8sclient"
+        "github.com/dell/cert-csi/pkg/k8sclient/resources/pod"
+        "github.com/dell/cert-csi/pkg/k8sclient/resources/pvc"
+        "github.com/dell/cert-csi/pkg/observer"
+        "github.com/dell/cert-csi/pkg/testcore"
+        "github.com/dell/cert-csi/pkg/testcore/suites/common"
+        "github.com/dell/cert-csi/pkg/utils"
+        "github.com/fatih/color"
+        "github.com/sirupsen/logrus"
+        v1 "k8s.io/api/core/v1"
+)
+
+// ProvisioningSuite is used to manage provisioning test suite
+type ProvisioningSuite struct {
+        VolumeNumber  int
+        VolumeSize    string
+        PodCustomName string
+        Description   string
+        PodNumber     int
+        RawBlock      bool
+        VolAccessMode string
+        ROFlag        bool
+        Image         string
+}
+
+// Run executes provisioning test suite
+func (ps *ProvisioningSuite) Run(ctx context.Context, storageClass string, clients *k8sclient.Clients) (delFunc func() error, e error) <span class="cov8" title="1">{
+        log := utils.GetLoggerFromContext(ctx)
+        pvcClient := clients.PVCClient
+        podClient := clients.PodClient
+        if ps.VolumeNumber &lt;= 0 </span><span class="cov8" title="1">{
+                log.Info("Using default number of volumes")
+                ps.VolumeNumber = 1
+        }</span>
+        <span class="cov8" title="1">if ps.PodNumber &lt;= 0 </span><span class="cov8" title="1">{
+                log.Info("Using default number of pods")
+                ps.PodNumber = 1
+        }</span>
+        <span class="cov8" title="1">if ps.VolumeSize == "" </span><span class="cov8" title="1">{
+                log.Info("Using default volume size 1Gi")
+                ps.VolumeSize = "1Gi"
+        }</span>
+        <span class="cov8" title="1">if ps.Image == "" </span><span class="cov8" title="1">{
+                ps.Image = "quay.io/centos/centos:latest"
+                log.Infof("Using default image: %s", ps.Image)
+        }</span>
+        <span class="cov8" title="1">ps.validateCustomPodName()
+
+        log.Infof("Creating %s pods, each with %s volumes", color.YellowString(strconv.Itoa(ps.PodNumber)),
+                color.YellowString(strconv.Itoa(ps.VolumeNumber)))
+
+        for i := 0; i &lt; ps.PodNumber; i++ </span><span class="cov8" title="1">{
+                var pvcNameList []string
+                for j := 0; j &lt; ps.VolumeNumber; j++ </span><span class="cov8" title="1">{
+                        // Create PVCs
+                        var volumeName string
+                        if ps.PodCustomName != "" </span><span class="cov8" title="1">{
+                                volumeName = ps.PodCustomName + "-pvc-" + strconv.Itoa(j)
+                        }</span>
+                        <span class="cov8" title="1">vcconf := testcore.VolumeCreationConfig(storageClass, ps.VolumeSize, volumeName, ps.VolAccessMode)
+                        if ps.RawBlock </span><span class="cov8" title="1">{
+                                log.Info(color.YellowString("Creating Raw Block Volumes"))
+                                var mode v1.PersistentVolumeMode = pvc.Block
+                                vcconf.VolumeMode = &amp;mode
+                        }</span>
+                        <span class="cov8" title="1">volTmpl := pvcClient.MakePVC(vcconf)
+
+                        pvc := pvcClient.Create(ctx, volTmpl)
+                        if pvc.HasError() </span><span class="cov0" title="0">{
+                                return delFunc, pvc.GetError()
+                        }</span>
+
+                        <span class="cov8" title="1">pvcNameList = append(pvcNameList, pvc.Object.Name)</span>
+                }
+
+                // Create Pod, and attach PVC
+                <span class="cov8" title="1">podconf := testcore.ProvisioningPodConfig(pvcNameList, ps.PodCustomName, ps.Image)
+                if ps.RawBlock </span><span class="cov8" title="1">{
+                        podconf.VolumeMode = pod.Block
+                }</span>
+                <span class="cov8" title="1">if ps.ROFlag </span><span class="cov8" title="1">{
+                        podconf.ReadOnlyFlag = true
+                }</span>
+                <span class="cov8" title="1">podTmpl := podClient.MakePod(podconf)
+
+                pod := podClient.Create(ctx, podTmpl)
+                if pod.HasError() </span><span class="cov0" title="0">{
+                        return delFunc, pod.GetError()
+                }</span>
+        }
+
+        <span class="cov8" title="1">readyErr := podClient.WaitForAllToBeReady(ctx)
+        if readyErr != nil </span><span class="cov0" title="0">{
+                return delFunc, readyErr
+        }</span>
+
+        <span class="cov8" title="1">return delFunc, nil</span>
+}
+
+// GetObservers returns all observers
+func (*ProvisioningSuite) GetObservers(obsType observer.Type) []observer.Interface <span class="cov8" title="1">{
+        return common.GetAllObservers(obsType)
+}</span>
+
+// GetClients returns pvc, pod, va, metrics clients
+func (*ProvisioningSuite) GetClients(namespace string, client *k8sclient.KubeClient) (*k8sclient.Clients, error) <span class="cov8" title="1">{
+        pvcClient, pvcErr := client.CreatePVCClient(namespace)
+        if pvcErr != nil </span><span class="cov0" title="0">{
+                return nil, pvcErr
+        }</span>
+
+        <span class="cov8" title="1">podClient, podErr := client.CreatePodClient(namespace)
+        if podErr != nil </span><span class="cov0" title="0">{
+                return nil, podErr
+        }</span>
+
+        <span class="cov8" title="1">vaClient, vaErr := client.CreateVaClient(namespace)
+        if vaErr != nil </span><span class="cov0" title="0">{
+                return nil, vaErr
+        }</span>
+
+        <span class="cov8" title="1">metricsClient, mcErr := client.CreateMetricsClient(namespace)
+        if mcErr != nil </span><span class="cov0" title="0">{
+                return nil, mcErr
+        }</span>
+
+        <span class="cov8" title="1">return &amp;k8sclient.Clients{
+                PVCClient:         pvcClient,
+                PodClient:         podClient,
+                VaClient:          vaClient,
+                StatefulSetClient: nil,
+                MetricsClient:     metricsClient,
+        }, nil</span>
+}
+
+// GetNamespace returns provisioning suite namespace
+func (*ProvisioningSuite) GetNamespace() string <span class="cov8" title="1">{
+        return "prov-test"
+}</span>
+
+// GetName returns provisioning suite name
+func (ps *ProvisioningSuite) GetName() string <span class="cov8" title="1">{
+        if ps.Description != "" </span><span class="cov8" title="1">{
+                return ps.Description
+        }</span>
+        <span class="cov8" title="1">return "ProvisioningSuite"</span>
+}
+
+// Parameters returns formatted string of parameters
+func (ps *ProvisioningSuite) Parameters() string <span class="cov8" title="1">{
+        return fmt.Sprintf("{pods: %d, volumes: %d, volumeSize: %s}", ps.PodNumber, ps.VolumeNumber, ps.VolumeSize)
+}</span>
+
+func (ps *ProvisioningSuite) validateCustomPodName() <span class="cov8" title="1">{
+        // If no. of pods is only 1 then we will take custom name else generated name will be used.
+        if ps.PodNumber == 1 &amp;&amp; len(ps.PodCustomName) != 0 </span><span class="cov8" title="1">{
+                logrus.Infof("using custom pod-name:%s", ps.PodCustomName)
+        }</span> else<span class="cov8" title="1"> {
+                // we will use custom name only if number of volumes is 1 else we will discard custom name
+                ps.PodCustomName = ""
+        }</span>
+}
+</pre>
+		
+		</div>
+	</body>
+	<script>
+	(function() {
+		var files = document.getElementById('files');
+		var visible;
+		files.addEventListener('change', onChange, false);
+		function select(part) {
+			if (visible)
+				visible.style.display = 'none';
+			visible = document.getElementById(part);
+			if (!visible)
+				return;
+			files.value = part;
+			visible.style.display = 'block';
+			location.hash = part;
+		}
+		function onChange() {
+			select(files.value);
+			window.scrollTo(0, 0);
+		}
+		if (location.hash != "") {
+			select(location.hash.substr(1));
+		}
+		if (!visible) {
+			select("file0");
+		}
+	})();
+	</script>
+</html>
