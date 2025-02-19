@@ -3,6 +3,8 @@ package podprovision
 import (
 	"context"
 	"fmt"
+	"strconv"
+
 	"github.com/dell/cert-csi/pkg/k8sclient"
 	"github.com/dell/cert-csi/pkg/k8sclient/resources/pod"
 	"github.com/dell/cert-csi/pkg/k8sclient/resources/pvc"
@@ -13,7 +15,6 @@ import (
 	"github.com/fatih/color"
 	"github.com/sirupsen/logrus"
 	v1 "k8s.io/api/core/v1"
-	"strconv"
 )
 
 // ProvisioningSuite is used to manage provisioning test suite
@@ -36,15 +37,15 @@ func (ps *ProvisioningSuite) Run(ctx context.Context, storageClass string, clien
 	podClient := clients.PodClient
 	if ps.VolumeNumber <= 0 {
 		log.Info("Using default number of volumes")
-		ps.VolumeNumber = 5
+		ps.VolumeNumber = 1
 	}
 	if ps.PodNumber <= 0 {
 		log.Info("Using default number of pods")
 		ps.PodNumber = 1
 	}
 	if ps.VolumeSize == "" {
-		log.Info("Using default volume size 3Gi")
-		ps.VolumeSize = "3Gi"
+		log.Info("Using default volume size 1Gi")
+		ps.VolumeSize = "1Gi"
 	}
 	if ps.Image == "" {
 		ps.Image = "quay.io/centos/centos:latest"

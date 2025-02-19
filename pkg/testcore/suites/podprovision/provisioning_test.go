@@ -3,6 +3,9 @@ package podprovision
 import (
 	"context"
 	"fmt"
+	"reflect"
+	"testing"
+
 	"github.com/dell/cert-csi/pkg/k8sclient"
 	"github.com/dell/cert-csi/pkg/observer"
 	"github.com/dell/cert-csi/pkg/testcore/suites/mockutils"
@@ -11,8 +14,6 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes/fake"
 	"k8s.io/client-go/rest"
-	"reflect"
-	"testing"
 )
 
 // TestProvisioningSuite_Run
@@ -22,10 +23,10 @@ func TestProvisioningSuite_Run(t *testing.T) {
 
 	// Create a new ProvisioningSuite instance
 	ps := &ProvisioningSuite{
-		VolumeNumber: 1,
-		PodNumber:    1,
-		VolumeSize:   "1Gi",
-		Image:        "quay.io/centos/centos:latest",
+		VolumeNumber: -1,
+		PodNumber:    -1,
+		VolumeSize:   "",
+		Image:        "",
 	}
 
 	// Create a fake storage class with VolumeBindingMode set to WaitForFirstConsumer
