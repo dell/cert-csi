@@ -19,6 +19,11 @@ package cmd
 import (
 	"bufio"
 	"fmt"
+	"github.com/dell/cert-csi/pkg/testcore/suites/multivolattach"
+	"github.com/dell/cert-csi/pkg/testcore/suites/podprovision"
+	"github.com/dell/cert-csi/pkg/testcore/suites/volcreation"
+	"github.com/dell/cert-csi/pkg/testcore/suites/volsnap"
+	"github.com/dell/cert-csi/pkg/testcore/suites/volumeclone"
 	"io"
 	"os"
 	"path/filepath"
@@ -359,7 +364,7 @@ func getFunctionalVolumeCreateCommand(globalFlags []cli.Flag) cli.Command {
 			blockVol := c.Bool("block")
 
 			s := []suites.Interface{
-				&suites.VolumeCreationSuite{
+				&volcreation.VolumeCreationSuite{
 					VolumeNumber: volNum,
 					VolumeSize:   volSize,
 					CustomName:   customName,
@@ -423,7 +428,7 @@ func getFunctionalCloneVolumeCommand(globalFlags []cli.Flag) cli.Command {
 			}
 
 			s := []suites.Interface{
-				&suites.CloneVolumeSuite{
+				&volumeclone.CloneVolumeSuite{
 					VolumeNumber:  volNum,
 					PodNumber:     podNum,
 					Description:   desc,
@@ -494,7 +499,7 @@ func getFunctionalProvisioningCommand(globalFlags []cli.Flag) cli.Command {
 				return fmt.Errorf("failed to get test image: %s", err)
 			}
 			s := []suites.Interface{
-				&suites.ProvisioningSuite{
+				&podprovision.ProvisioningSuite{
 					VolumeNumber:  volNum,
 					PodNumber:     podNum,
 					PodCustomName: customName,
@@ -568,7 +573,7 @@ func getFunctionalSnapCreationCommand(globalFlags []cli.Flag) cli.Command {
 				return fmt.Errorf("failed to get test image: %s", err)
 			}
 			s := []suites.Interface{
-				&suites.SnapSuite{
+				&volsnap.SnapSuite{
 					SnapClass:          snapClass,
 					SnapAmount:         snapshotAmount,
 					VolumeSize:         VolumeSize,
@@ -627,7 +632,7 @@ func getFunctionalMultiAttachVolCommand(globalFlags []cli.Flag) cli.Command {
 				return fmt.Errorf("failed to get test image: %s", err)
 			}
 			s := []suites.Interface{
-				&suites.MultiAttachSuite{
+				&multivolattach.MultiAttachSuite{
 					PodNumber:   pods,
 					RawBlock:    isRawBlock,
 					Description: desc,

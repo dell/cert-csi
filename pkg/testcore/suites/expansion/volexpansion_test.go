@@ -252,8 +252,11 @@ func TestVolumeExpansionSuite_Run_NonBlock(t *testing.T) {
 		}
 
 		// Add the event and volume to the fake clientset
-		clientset.Tracker().Add(event)
-		clientset.Tracker().Add(volume)
+		err := clientset.Tracker().Add(event)
+		assert.NoError(t, err)
+		err = clientset.Tracker().Add(volume)
+
+		assert.NoError(t, err)
 
 		return false, nil, nil // Allow normal processing to continue
 	})

@@ -168,7 +168,10 @@ func TestAction(t *testing.T) {
 		timeoutCtx, cancel := context.WithTimeout(context.Background(), 25*time.Second)
 		defer cancel()
 
-		go rgClient.ExecuteAction(timeoutCtx, rgAction)
+		go func() {
+			err := rgClient.ExecuteAction(timeoutCtx, rgAction)
+			assert.NoError(t, err)
+		}()
 
 		rg := rgClient.Client.Get(ctx, "test-rg2")
 
@@ -206,7 +209,10 @@ func TestAction(t *testing.T) {
 		timeoutCtx, cancel := context.WithTimeout(context.Background(), 25*time.Second)
 		defer cancel()
 
-		go rgClient.ExecuteAction(timeoutCtx, rgAction)
+		go func() {
+			err := rgClient.ExecuteAction(timeoutCtx, rgAction)
+			assert.NoError(t, err)
+		}()
 
 		rg := rgClient.Client.Get(ctx, "test-rg2")
 
