@@ -14,7 +14,7 @@
  *
  */
 
-package suites
+package helm
 
 import (
 	"context"

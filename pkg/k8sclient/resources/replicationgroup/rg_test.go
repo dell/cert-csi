@@ -96,7 +96,6 @@ func TestClient_Get(t *testing.T) {
 	// Check the returned RG object
 	assert.Equal(t, c, result.Client)
 	assert.NotNil(t, rg, result.Object)
-	//assert.NoError(t, result.error)
 }
 
 func TestGetName(t *testing.T) {
@@ -259,7 +258,7 @@ func TestRG_GetError(t *testing.T) {
 	})
 }
 func TestHasError(t *testing.T) {
-	// Test case: RG with error
+	//Test case: RG with error
 	t.Run("RG with error", func(t *testing.T) {
 		testError := errors.New("test error")
 		rg := &RG{

@@ -20,6 +20,14 @@ import (
 	"bufio"
 	"errors"
 	"fmt"
+	"github.com/dell/cert-csi/pkg/testcore/suites/expansion"
+	"github.com/dell/cert-csi/pkg/testcore/suites/healthmetric"
+	"github.com/dell/cert-csi/pkg/testcore/suites/multivolattach"
+	"github.com/dell/cert-csi/pkg/testcore/suites/replication"
+	"github.com/dell/cert-csi/pkg/testcore/suites/scale"
+	"github.com/dell/cert-csi/pkg/testcore/suites/vgs"
+	"github.com/dell/cert-csi/pkg/testcore/suites/volsnap"
+	"github.com/dell/cert-csi/pkg/testcore/suites/volumeclone"
 	"os"
 	"path/filepath"
 	"time"
@@ -231,7 +239,7 @@ func getAction(c *cli.Context) error {
 			Image:        testImage,
 		})
 
-		s = append(s, &suites.ScalingSuite{
+		s = append(s, &scale.ScalingSuite{
 			ReplicaNumber:    2,
 			VolumeNumber:     5,
 			GradualScaleDown: false,
@@ -241,7 +249,7 @@ func getAction(c *cli.Context) error {
 		})
 
 		if sc.Clone {
-			s = append(s, &suites.CloneVolumeSuite{
+			s = append(s, &volumeclone.CloneVolumeSuite{
 				VolumeNumber: 1,
 				PodNumber:    2,
 				VolumeSize:   minSize,
@@ -252,7 +260,7 @@ func getAction(c *cli.Context) error {
 		if sc.Expansion {
 			expSize := resource.MustParse(minSize)
 			expSize.Add(expSize)
-			s = append(s, &suites.VolumeExpansionSuite{
+			s = append(s, &expansion.VolumeExpansionSuite{
 				VolumeNumber: 1,
 				PodNumber:    1,
 				InitialSize:  minSize,
@@ -261,7 +269,7 @@ func getAction(c *cli.Context) error {
 			})
 
 			if sc.RawBlock {
-				s = append(s, &suites.VolumeExpansionSuite{
+				s = append(s, &expansion.VolumeExpansionSuite{
 					VolumeNumber: 1,
 					PodNumber:    1,
 					IsBlock:      true,
@@ -277,14 +285,14 @@ func getAction(c *cli.Context) error {
 			if snapClass == "" {
 				return errors.New("volume snapshot class required to verify `snapshot` capability")
 			}
-			s = append(s, &suites.SnapSuite{
+			s = append(s, &volsnap.SnapSuite{
 				SnapAmount: 3,
 				SnapClass:  snapClass,
 				VolumeSize: minSize,
 				Image:      testImage,
 			})
 
-			s = append(s, &suites.ReplicationSuite{
+			s = append(s, &replication.ReplicationSuite{
 				VolumeNumber: 5,
 				VolumeSize:   minSize,
 				PodNumber:    2,
@@ -294,7 +302,7 @@ func getAction(c *cli.Context) error {
 		}
 
 		if sc.RawBlock {
-			s = append(s, &suites.MultiAttachSuite{
+			s = append(s, &multivolattach.MultiAttachSuite{
 				PodNumber:  5,
 				RawBlock:   true,
 				AccessMode: "ReadWriteMany",
@@ -304,7 +312,7 @@ func getAction(c *cli.Context) error {
 		}
 
 		if sc.RWX {
-			s = append(s, &suites.MultiAttachSuite{
+			s = append(s, &multivolattach.MultiAttachSuite{
 				PodNumber:  5,
 				RawBlock:   false,
 				AccessMode: "ReadWriteMany",
@@ -314,7 +322,7 @@ func getAction(c *cli.Context) error {
 		}
 
 		if sc.VolumeHealth {
-			s = append(s, &suites.VolumeHealthMetricsSuite{
+			s = append(s, &healthmetric.VolumeHealthMetricsSuite{
 				PodNumber:    1,
 				VolumeNumber: 1,
 				VolumeSize:   minSize,
@@ -324,7 +332,7 @@ func getAction(c *cli.Context) error {
 		}
 
 		if sc.RWOP {
-			s = append(s, &suites.MultiAttachSuite{
+			s = append(s, &multivolattach.MultiAttachSuite{
 				PodNumber:  5,
 				RawBlock:   false,
 				AccessMode: "ReadWriteOncePod",
@@ -360,7 +368,7 @@ func getAction(c *cli.Context) error {
 			if vgsName == "" {
 				return errors.New("vgs-name required to verify volume group snapshot")
 			}
-			s = append(s, &suites.VolumeGroupSnapSuite{
+			s = append(s, &vgs.VolumeGroupSnapSuite{
 				SnapClass:       snapClass,
 				VolumeSize:      minSize,
 				AccessMode:      "ReadWriteOnce",

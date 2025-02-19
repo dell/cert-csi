@@ -40,14 +40,14 @@ const (
 	Timeout = 300 * time.Second
 )
 
-// SnapshotContentClient is a client for managing volume snapshot content
+// SnapshotContentClient is a client for managing volume blockvolsnapshot content
 type SnapshotContentClient struct {
 	Interface snapshotv1.VolumeSnapshotContentInterface
 	Namespace string
 	Timeout   int
 }
 
-// SnapshotContent contains parameters needed for managing snapshot content
+// SnapshotContent contains parameters needed for managing blockvolsnapshot content
 type SnapshotContent struct {
 	Client  *SnapshotContentClient
 	Object  *v1.VolumeSnapshotContent
@@ -57,7 +57,7 @@ type SnapshotContent struct {
 	error error
 }
 
-// Delete deletes a volume snapshot content
+// Delete deletes a volume blockvolsnapshot content
 func (scc *SnapshotContentClient) Delete(ctx context.Context, snap *v1.VolumeSnapshotContent) *SnapshotContent {
 	var funcErr error
 
@@ -74,7 +74,7 @@ func (scc *SnapshotContentClient) Delete(ctx context.Context, snap *v1.VolumeSna
 	}
 }
 
-// DeleteAll deletes all snapshot contents for a PVC
+// DeleteAll deletes all blockvolsnapshot contents for a PVC
 func (scc *SnapshotContentClient) DeleteAll(ctx context.Context) error {
 	log := utils.GetLoggerFromContext(ctx)
 	snapList, snapErr := scc.Interface.List(ctx, metav1.ListOptions{})
@@ -95,7 +95,7 @@ func (scc *SnapshotContentClient) DeleteAll(ctx context.Context) error {
 	return nil
 }
 
-// WaitUntilGone waits until snapshot content is deleted
+// WaitUntilGone waits until blockvolsnapshot content is deleted
 func (cont *SnapshotContent) WaitUntilGone(ctx context.Context) error {
 	log := utils.GetLoggerFromContext(ctx)
 	startTime := time.Now()
@@ -110,7 +110,7 @@ func (cont *SnapshotContent) WaitUntilGone(ctx context.Context) error {
 	})
 	if pollErr != nil {
 
-		log.Errorf("Failed to delete snap: %v \n", pollErr)
+		log.Errorf("Failed to delete volsnap: %v \n", pollErr)
 		log.Info("Forcing finalizers cleanup")
 		gotsnap, err := cont.Client.Interface.Get(ctx, cont.Object.Name, metav1.GetOptions{})
 		if err != nil {
@@ -127,13 +127,13 @@ func (cont *SnapshotContent) WaitUntilGone(ctx context.Context) error {
 		})
 
 		if pollErr != nil {
-			log.Errorf("Failed to delete snap: %v \n", pollErr)
+			log.Errorf("Failed to delete volsnap: %v \n", pollErr)
 			log.Info("Forcing finalizers cleanup")
 			return errors.New("failed to delete even with finalizers cleaned up")
 		}
 	}
 	yellow := color.New(color.FgHiYellow)
-	log.Debugf("snap %s was deleted in %s", cont.Object.Name, yellow.Sprint(time.Since(startTime)))
+	log.Debugf("volsnap %s was deleted in %s", cont.Object.Name, yellow.Sprint(time.Since(startTime)))
 	return nil
 }
 
@@ -177,7 +177,7 @@ func (cont *SnapshotContent) WaitForRunning(ctx context.Context) error {
 
 			_, err := cont.Client.Interface.Get(ctx, cont.Object.Name, metav1.GetOptions{})
 			if err != nil {
-				log.Errorf("Can't find snap %s", cont.Object.Name)
+				log.Errorf("Can't find volsnap %s", cont.Object.Name)
 				return false, err
 			}
 
@@ -191,17 +191,17 @@ func (cont *SnapshotContent) WaitForRunning(ctx context.Context) error {
 	return nil
 }
 
-// HasError checks if snapshot content has error
+// HasError checks if blockvolsnapshot content has error
 func (cont *SnapshotContent) HasError() bool {
 	return cont.error != nil
 }
 
-// GetError returns snapshot content error
+// GetError returns blockvolsnapshot content error
 func (cont *SnapshotContent) GetError() error {
 	return cont.error
 }
 
-// Sync updates snapshot content state
+// Sync updates blockvolsnapshot content state
 func (cont *SnapshotContent) Sync(ctx context.Context) *SnapshotContent {
 	if cont.Deleted {
 		cont.error = cont.WaitUntilGone(ctx)

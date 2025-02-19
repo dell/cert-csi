@@ -595,7 +595,8 @@ func (suite *PVTestSuite) TestPV_CheckReplicationAnnotationsForRemotePV() {
 			cancel()
 		}()
 
-		client.CheckReplicationAnnotationsForRemotePV(ctx, pvObj)
+		err = client.CheckReplicationAnnotationsForRemotePV(ctx, pvObj)
+		assert.NoError(suite.T(), err)
 		//        suite.Error(err)
 		// suite.Contains(err.Error(), "stopped waiting to be bound")
 	})
