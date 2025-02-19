@@ -37,15 +37,15 @@ func (ps *ProvisioningSuite) Run(ctx context.Context, storageClass string, clien
 	podClient := clients.PodClient
 	if ps.VolumeNumber <= 0 {
 		log.Info("Using default number of volumes")
-		ps.VolumeNumber = 1
+		ps.VolumeNumber = 2
 	}
 	if ps.PodNumber <= 0 {
 		log.Info("Using default number of pods")
 		ps.PodNumber = 1
 	}
 	if ps.VolumeSize == "" {
-		log.Info("Using default volume size 1Gi")
-		ps.VolumeSize = "1Gi"
+		log.Info("Using default volume size 3Gi")
+		ps.VolumeSize = "3Gi"
 	}
 	if ps.Image == "" {
 		ps.Image = "quay.io/centos/centos:latest"
