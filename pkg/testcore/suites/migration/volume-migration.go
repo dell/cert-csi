@@ -83,13 +83,13 @@ func (vms *VolumeMigrateSuite) Run(ctx context.Context, storageClass string, cli
 		return delFunc, err
 	}
 	g, _ := errgroup.WithContext(ctx)
-	for _, pod := range podList.Items {
-		pod := pod
+	for _, item := range podList.Items {
+		pod := item
 		for _, volume := range pod.Spec.Volumes {
 			volume := volume
 			if volume.PersistentVolumeClaim != nil {
 				g.Go(func() error {
-					return vms.validateSTS(log, pvcClient, ctx, volume, err, pvNames, pvClient, stsConf, podClient, pod)
+					return vms.validateSTS(log, pvcClient, ctx, volume, err, &pvNames, pvClient, stsConf, podClient, pod)
 				})
 			}
 		}
@@ -171,7 +171,7 @@ func (vms *VolumeMigrateSuite) Run(ctx context.Context, storageClass string, cli
 		// Check if hash sum is correct
 		sum := fmt.Sprintf("%s0/writer-%d.sha512", newStsConf.MountPath, 0)
 		writer := bytes.NewBufferString("")
-		log.Info("Checker pod: ", pod.Name)
+		log.Info("Checker item: ", pod.Name)
 		pod := pod
 		if err := podClient.Exec(ctx, &pod, []string{"/bin/bash", "-c", "sha512sum -c " + sum}, writer, os.Stderr, false); err != nil {
 			return delFunc, err
@@ -187,7 +187,7 @@ func (vms *VolumeMigrateSuite) Run(ctx context.Context, storageClass string, cli
 }
 
 func (vms *VolumeMigrateSuite) validateSTS(log *log.Entry, pvcClient *pvc.Client, ctx context.Context, volume v1.Volume,
-	err error, pvNames []string, pvClient *pv.Client, stsConf *statefulset.Config, podClient *pod.Client, pod v1.Pod) error {
+	err error, pvNames *[]string, pvClient *pv.Client, stsConf *statefulset.Config, podClient *pod.Client, pod v1.Pod) error {
 
 	log.Println("Getting PVC")
 	pvcObj := pvcClient.Get(ctx, volume.PersistentVolumeClaim.ClaimName)
@@ -201,7 +201,7 @@ func (vms *VolumeMigrateSuite) validateSTS(log *log.Entry, pvcClient *pvc.Client
 
 	log.Println("Getting PV")
 	pvName := pvcObj.Object.Spec.VolumeName
-	pvNames = append(pvNames, pvName)
+	*pvNames = append(*pvNames, pvName)
 	pvObj := pvClient.Get(ctx, pvName)
 	if pvObj.HasError() {
 		return pvObj.GetError()
@@ -230,6 +230,7 @@ func (vms *VolumeMigrateSuite) validateSTS(log *log.Entry, pvcClient *pvc.Client
 		if err := podClient.Exec(ctx, &pod, []string{"/bin/bash", "-c", "sync " + sum}, os.Stdout, os.Stderr, false); err != nil {
 			return err
 		}
+		return nil
 	}
 
 	pvObj.Object.Annotations["migration.storage.dell.com/migrate-to"] = vms.TargetSC
@@ -259,36 +260,13 @@ func (vms *VolumeMigrateSuite) GetClients(namespace string, client *k8sclient.Ku
 		return nil, fmt.Errorf("target storage class doesn't exist; error = %v", err)
 	}
 
-	pvClient, pvErr := client.CreatePVClient()
-	if pvErr != nil {
-		return nil, pvErr
-	}
-
-	pvcClient, pvcErr := client.CreatePVCClient(namespace)
-	if pvcErr != nil {
-		return nil, pvcErr
-	}
-
-	scClient, scErr := client.CreateSCClient()
-	if scErr != nil {
-		return nil, scErr
-	}
-
-	podClient, podErr := client.CreatePodClient(namespace)
-	if podErr != nil {
-		return nil, podErr
-	}
-
-	stsClient, stsErr := client.CreateStatefulSetClient(namespace)
-	if stsErr != nil {
-		return nil, stsErr
-	}
-
-	vaClient, vaErr := client.CreateVaClient(namespace)
-	if vaErr != nil {
-		return nil, vaErr
-	}
-
+	//The Below client generate calls will never throw any errors and hence removed it with a blank identifier
+	pvClient, _ := client.CreatePVClient()
+	pvcClient, _ := client.CreatePVCClient(namespace)
+	scClient, _ := client.CreateSCClient()
+	podClient, _ := client.CreatePodClient(namespace)
+	stsClient, _ := client.CreateStatefulSetClient(namespace)
+	vaClient, _ := client.CreateVaClient(namespace)
 	metricsClient, mcErr := client.CreateMetricsClient(namespace)
 	if mcErr != nil {
 		return nil, mcErr

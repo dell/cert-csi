@@ -65,7 +65,7 @@ func (m *MockVolumeSnapshotInterface) Delete(_ context.Context, name string, _ m
 			return nil
 		}
 	}
-	return fmt.Errorf("snapshot not found")
+	return fmt.Errorf("blockvolsnapshot not found")
 }
 
 func (m *MockVolumeSnapshotInterface) Get(_ context.Context, name string, _ metav1.GetOptions) (*v1.VolumeSnapshot, error) {
@@ -77,7 +77,7 @@ func (m *MockVolumeSnapshotInterface) Get(_ context.Context, name string, _ meta
 			return &snap, nil
 		}
 	}
-	return nil, fmt.Errorf("snapshot not found")
+	return nil, fmt.Errorf("blockvolsnapshot not found")
 }
 
 func (m *MockVolumeSnapshotInterface) Update(_ context.Context, snap *v1.VolumeSnapshot, _ metav1.UpdateOptions) (*v1.VolumeSnapshot, error) {
@@ -90,7 +90,7 @@ func (m *MockVolumeSnapshotInterface) Update(_ context.Context, snap *v1.VolumeS
 			return snap, nil
 		}
 	}
-	return nil, fmt.Errorf("snapshot not found")
+	return nil, fmt.Errorf("blockvolsnapshot not found")
 }
 
 func (m *MockVolumeSnapshotInterface) Create(_ context.Context, snap *v1.VolumeSnapshot, _ metav1.CreateOptions) (*v1.VolumeSnapshot, error) {
@@ -143,7 +143,7 @@ func (suite *SnapshotClientTestSuite) TestDeleteAll_DeleteError() {
 	suite.mockInterface.DeleteError = fmt.Errorf("delete error")
 
 	err := suite.client.DeleteAll(context.Background())
-	assert.NoError(suite.T(), err) // The function should not return an error even if one snapshot fails to delete
+	assert.NoError(suite.T(), err) // The function should not return an error even if one blockvolsnapshot fails to delete
 }
 
 func (suite *SnapshotClientTestSuite) TestWaitForAllToBeReady_Success() {

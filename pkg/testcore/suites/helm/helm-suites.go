@@ -14,7 +14,7 @@
  *
  */
 
-package suites
+package helm
 
 import (
 	"bytes"
@@ -102,14 +102,14 @@ func (ps *PostgresqlSuite) Run(ctx context.Context, storageClass string, clients
 	}
 
 	if err := podClient.Exec(ctx, pod.Object, []string{
-		"pgbench", "-i", "-p", "5432", "-d", "postgres", "--host", "cert-csi-psql-postgresql", "-U", "postgres",
+		"pgbench", "-i", "-p", "5432", "-d", "helm", "--host", "cert-csi-psql-postgresql", "-U", "helm",
 	}, os.Stdout, os.Stderr, false); err != nil {
 		return delFunc, err
 	}
 
 	res := bytes.NewBufferString("")
 	if err := podClient.Exec(ctx, pod.Object, []string{
-		"pgbench", "-c", "50", "-j", "4", "-p", "5432", "-T", "60", "-d", "postgres", "--host", "cert-csi-psql-postgresql", "-U", "postgres",
+		"pgbench", "-c", "50", "-j", "4", "-p", "5432", "-T", "60", "-d", "helm", "--host", "cert-csi-psql-postgresql", "-U", "helm",
 	}, res, os.Stderr, false); err != nil {
 		return delFunc, err
 	}

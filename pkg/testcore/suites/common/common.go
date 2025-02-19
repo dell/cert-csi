@@ -36,3 +36,12 @@ func ShouldWaitForFirstConsumer(ctx context.Context, storageClass string, pvcCli
 	}
 	return *s.VolumeBindingMode == storagev1.VolumeBindingWaitForFirstConsumer, nil
 }
+
+func ValidateCustomName(name string, volumes int) bool {
+	// If no. of volumes is only 1 then we will take custom name else no.
+	if volumes == 1 && len(name) != 0 {
+		return true
+	}
+	// we will use custom name only if number of volumes is 1 else we will discard custom name
+	return false
+}
