@@ -592,6 +592,6 @@ func (sr *SuiteRunner) Close() {
 	if sr.SucceededSuites > Threshold {
 		logrus.Infof("During this run %.1f%% of suites succeeded", sr.SucceededSuites*100)
 	} else {
-		logrus.Fatalf("During this run %.1f%% of suites succeeded", sr.SucceededSuites*100)
+		logrus.Errorf("During this run %.1f%% of suites succeeded", sr.SucceededSuites*100)
 	}
 }

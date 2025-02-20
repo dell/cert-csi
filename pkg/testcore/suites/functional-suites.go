@@ -20,7 +20,9 @@ import (
 	"bytes"
 	"context"
 	"fmt"
+	"github.com/dell/cert-csi/pkg/testcore/suites/common"
 	"os"
+	"os/exec"
 	"strconv"
 	"strings"
 	"time"
@@ -333,7 +335,7 @@ func (pds *ClonedVolDeletionSuite) Parameters() string {
 	return "{}"
 }
 
-// SnapshotDeletionSuite is used for managing snapshot deletion test suite
+// SnapshotDeletionSuite is used for managing blockvolsnapshot deletion test suite
 type SnapshotDeletionSuite struct {
 	*DeletionStruct
 }
@@ -341,10 +343,10 @@ type SnapshotDeletionSuite struct {
 // Run to snaphot the volume created by name and namespace as cli params
 func (sds *SnapshotDeletionSuite) Run(ctx context.Context, _ string, clients *k8sclient.Clients) (delFunc func() error, e error) {
 	if sds.Name == "" {
-		log.Fatalf("Error snap name is required parameter")
+		log.Fatalf("Error volsnap name is required parameter")
 	}
 
-	log.Infof("Deleting snapshot with name:%s", color.YellowString(sds.Name))
+	log.Infof("Deleting blockvolsnapshot with name:%s", color.YellowString(sds.Name))
 	snapClient := clients.SnapClientGA
 	snapObj, _ := snapClient.Interface.Get(ctx, sds.Name, metav1.GetOptions{})
 	err := snapClient.Delete(ctx, snapObj).Sync(ctx).GetError()
@@ -361,9 +363,9 @@ func (sds *SnapshotDeletionSuite) Run(ctx context.Context, _ string, clients *k8
 		return delFunc, err
 	}
 
-	// Deleting restored volume from snapshot
+	// Deleting restored volume from blockvolsnapshot
 	sPvcObj, _ := pvcClient.Interface.Get(ctx, sds.Name+"-restore", metav1.GetOptions{})
-	log.Infof("Deleting restored volume from snapshot with name:%s", color.YellowString(sPvcObj.GetName()))
+	log.Infof("Deleting restored volume from blockvolsnapshot with name:%s", color.YellowString(sPvcObj.GetName()))
 	err = pvcClient.Delete(ctx, sPvcObj).Sync(ctx).GetError()
 	if err != nil {
 		return delFunc, err
@@ -390,7 +392,7 @@ func (sds *SnapshotDeletionSuite) Run(ctx context.Context, _ string, clients *k8
 	return delFunc, nil
 }
 
-// GetName returns snapshot deletion suite name
+// GetName returns blockvolsnapshot deletion suite name
 func (sds *SnapshotDeletionSuite) GetName() string {
 	if sds.Description != "" {
 		return sds.Description
@@ -412,7 +414,7 @@ func (*SnapshotDeletionSuite) GetObservers(obsType observer.Type) []observer.Int
 	return []observer.Interface{}
 }
 
-// GetClients creates and returns pod, pvc, va, metrics, snapshot clients
+// GetClients creates and returns pod, pvc, va, metrics, blockvolsnapshot clients
 func (sds *SnapshotDeletionSuite) GetClients(namespace string, client *k8sclient.KubeClient) (*k8sclient.Clients, error) {
 	podClient, podErr := client.CreatePodClient(sds.Namespace)
 	if podErr != nil {
@@ -465,7 +467,7 @@ func (sds *SnapshotDeletionSuite) GetClients(namespace string, client *k8sclient
 	}, nil
 }
 
-// GetNamespace returns snapshot deletion suite namespace
+// GetNamespace returns blockvolsnapshot deletion suite namespace
 func (sds *SnapshotDeletionSuite) GetNamespace() string {
 	return sds.Namespace
 }
@@ -1020,7 +1022,7 @@ func (cts *CapacityTrackingSuite) Parameters() string {
 
 // GetObservers returns all observers
 func (cts *CapacityTrackingSuite) GetObservers(obsType observer.Type) []observer.Interface {
-	return getAllObservers(obsType)
+	return common.GetAllObservers(obsType)
 }
 
 // GetNamespace returns storage capacity tracking suite namespace
@@ -1063,4 +1065,15 @@ func (cts *CapacityTrackingSuite) GetClients(namespace string, client *k8sclient
 		SCClient:      scClient,
 		CSISCClient:   csiScClient,
 	}, nil
+}
+
+// FindDriverLogs executes command and returns the output
+var FindDriverLogs = func(command []string) (string, error) {
+	cmd := exec.Command(command[0], command[1:]...) // #nosec G204
+	output, err := cmd.Output()
+	if err != nil {
+		return "", err
+	}
+	str := string(output)
+	return str, nil
 }

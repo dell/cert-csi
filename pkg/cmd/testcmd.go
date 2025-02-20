@@ -18,6 +18,21 @@ package cmd
 
 import (
 	"fmt"
+	"github.com/dell/cert-csi/pkg/testcore/suites/blockvolsnapshot"
+	"github.com/dell/cert-csi/pkg/testcore/suites/expansion"
+	"github.com/dell/cert-csi/pkg/testcore/suites/healthmetric"
+	"github.com/dell/cert-csi/pkg/testcore/suites/helm"
+	volumemigration "github.com/dell/cert-csi/pkg/testcore/suites/migration"
+	"github.com/dell/cert-csi/pkg/testcore/suites/multivolattach"
+	"github.com/dell/cert-csi/pkg/testcore/suites/podprovision"
+	"github.com/dell/cert-csi/pkg/testcore/suites/replication"
+	"github.com/dell/cert-csi/pkg/testcore/suites/replicationprovision"
+	"github.com/dell/cert-csi/pkg/testcore/suites/scale"
+	"github.com/dell/cert-csi/pkg/testcore/suites/vgs"
+	"github.com/dell/cert-csi/pkg/testcore/suites/volcreation"
+	"github.com/dell/cert-csi/pkg/testcore/suites/volsnap"
+	"github.com/dell/cert-csi/pkg/testcore/suites/volumeclone"
+	"github.com/dell/cert-csi/pkg/testcore/suites/volumeio"
 	"time"
 
 	"github.com/dell/cert-csi/pkg/plotter"
@@ -257,7 +272,7 @@ func getVolumeCreationCommand(globalFlags []cli.Flag) cli.Command {
 			accessMode := c.String("access-mode")
 
 			s := []suites.Interface{
-				&suites.VolumeCreationSuite{
+				&volcreation.VolumeCreationSuite{
 					VolumeNumber: volNum,
 					VolumeSize:   volSize,
 					AccessMode:   accessMode,
@@ -309,7 +324,7 @@ func getVolumeMigrateCommand(globalFlags []cli.Flag) cli.Command {
 				return fmt.Errorf("failed to get test image: %s", err)
 			}
 			s := []suites.Interface{
-				&suites.VolumeMigrateSuite{
+				&volumemigration.VolumeMigrateSuite{
 					TargetSC:     targetSC,
 					VolumeNumber: volNum,
 					PodNumber:    podNum,
@@ -364,7 +379,7 @@ func getRemoteReplicationProvisioningCommand(globalFlags []cli.Flag) cli.Command
 				return fmt.Errorf("failed to get test image: %s", err)
 			}
 			s := []suites.Interface{
-				&suites.RemoteReplicationProvisioningSuite{
+				&replicationprovision.RemoteReplicationProvisioningSuite{
 					VolumeNumber:     volNum,
 					RemoteConfigPath: remoteConfigPath,
 					NoFailover:       noFailover,
@@ -417,7 +432,7 @@ func getReplicationCommand(globalFlags []cli.Flag) cli.Command {
 				return fmt.Errorf("failed to get test image: %s", err)
 			}
 			s := []suites.Interface{
-				&suites.ReplicationSuite{
+				&replication.ReplicationSuite{
 					VolumeNumber: volNum,
 					PodNumber:    podNum,
 					VolumeSize:   volSize,
@@ -459,7 +474,7 @@ func getCloneVolumeCommand(globalFlags []cli.Flag) cli.Command {
 				return fmt.Errorf("failed to get test image: %s", err)
 			}
 			s := []suites.Interface{
-				&suites.CloneVolumeSuite{
+				&volumeclone.CloneVolumeSuite{
 					VolumeNumber: volNum,
 					PodNumber:    podNum,
 					Image:        testImage,
@@ -506,7 +521,7 @@ func getMultiAttachVolCommand(globalFlags []cli.Flag) cli.Command {
 				return fmt.Errorf("failed to get test image: %s", err)
 			}
 			s := []suites.Interface{
-				&suites.MultiAttachSuite{
+				&multivolattach.MultiAttachSuite{
 					PodNumber:  podNum,
 					RawBlock:   rawBlock,
 					AccessMode: accessMode,
@@ -567,7 +582,7 @@ func getVolumeExpansionCommand(globalFlags []cli.Flag) cli.Command {
 			}
 
 			s := []suites.Interface{
-				&suites.VolumeExpansionSuite{
+				&expansion.VolumeExpansionSuite{
 					VolumeNumber: volNum,
 					PodNumber:    podNum,
 					IsBlock:      isBlock,
@@ -618,7 +633,7 @@ func getVolumeHealthMetricsCommand(globalFlags []cli.Flag) cli.Command {
 				return fmt.Errorf("failed to get test image: %s", err)
 			}
 			s := []suites.Interface{
-				&suites.VolumeHealthMetricsSuite{
+				&healthmetric.VolumeHealthMetricsSuite{
 					VolumeNumber: volNum,
 					PodNumber:    podNum,
 					VolumeSize:   volSize,
@@ -662,7 +677,7 @@ func getProvisioningCommand(globalFlags []cli.Flag) cli.Command {
 				return fmt.Errorf("failed to get test image: %s", err)
 			}
 			s := []suites.Interface{
-				&suites.ProvisioningSuite{
+				&podprovision.ProvisioningSuite{
 					VolumeNumber: volNum,
 					PodNumber:    podNum,
 					Image:        testImage,
@@ -717,7 +732,7 @@ func getScalingCommand(globalFlags []cli.Flag) cli.Command {
 				return fmt.Errorf("failed to get test image: %s", err)
 			}
 			s := []suites.Interface{
-				&suites.ScalingSuite{
+				&scale.ScalingSuite{
 					ReplicaNumber:    repNum,
 					VolumeNumber:     volNum,
 					GradualScaleDown: gradual,
@@ -762,7 +777,7 @@ func getVolumeIoCommand(globalFlags []cli.Flag) cli.Command {
 				return fmt.Errorf("failed to get test image: %s", err)
 			}
 			s := []suites.Interface{
-				&suites.VolumeIoSuite{
+				&volumeio.VolumeIoSuite{
 					ChainNumber: chNumber,
 					ChainLength: chLength,
 					Image:       testImage,
@@ -811,7 +826,7 @@ func getSnapCommand(globalFlags []cli.Flag) cli.Command {
 				return fmt.Errorf("failed to get test image: %s", err)
 			}
 			s := []suites.Interface{
-				&suites.SnapSuite{
+				&volsnap.SnapSuite{
 					SnapClass:  snapClass,
 					SnapAmount: snapshotAmount,
 					VolumeSize: size,
@@ -885,7 +900,7 @@ func getVolumeGroupSnapCommand(globalFlags []cli.Flag) cli.Command {
 				return fmt.Errorf("failed to get test image: %s", err)
 			}
 			s := []suites.Interface{
-				&suites.VolumeGroupSnapSuite{
+				&vgs.VolumeGroupSnapSuite{
 					SnapClass:       snapClass,
 					VolumeSize:      volSize,
 					AccessMode:      accessMode,
@@ -939,7 +954,7 @@ func getBlockSnapCommand(globalFlags []cli.Flag) cli.Command {
 				return fmt.Errorf("failed to get test image: %s", err)
 			}
 			s := []suites.Interface{
-				&suites.BlockSnapSuite{
+				&blockvolsnapshot.BlockSnapSuite{
 					SnapClass:  snapClass,
 					VolumeSize: size,
 					AccessMode: accessMode,
@@ -995,7 +1010,7 @@ func getPostgresCommand(globalFlags []cli.Flag) cli.Command {
 				}
 			}
 			s := []suites.Interface{
-				&suites.PostgresqlSuite{
+				&helm.PostgresqlSuite{
 					ConfigPath:        c.String("config"),
 					VolumeSize:        size,
 					EnableReplication: replication,

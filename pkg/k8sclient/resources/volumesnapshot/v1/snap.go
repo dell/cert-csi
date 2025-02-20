@@ -47,7 +47,7 @@ type SnapshotClient struct {
 	Timeout   int
 }
 
-// Snapshot contains parameters needed for managing volume snapshot
+// Snapshot contains parameters needed for managing volume blockvolsnapshot
 type Snapshot struct {
 	Client  *SnapshotClient
 	Object  *v1.VolumeSnapshot
@@ -67,10 +67,10 @@ func (sc *SnapshotClient) DeleteAll(ctx context.Context) error {
 	log.Debugf("Deleting all Snapshots")
 	for i, pvc := range snapList.Items {
 
-		log.Debugf("Deleting snap %s", pvc.Name)
+		log.Debugf("Deleting volsnap %s", pvc.Name)
 		err := sc.Delete(ctx, &snapList.Items[i]).Sync(ctx).GetError()
 		if err != nil {
-			log.Errorf("Can't delete snap %s; error=%v", pvc.Name, err)
+			log.Errorf("Can't delete volsnap %s; error=%v", pvc.Name, err)
 		}
 
 	}
@@ -78,7 +78,7 @@ func (sc *SnapshotClient) DeleteAll(ctx context.Context) error {
 	return nil
 }
 
-// Create creates a snapshot
+// Create creates a blockvolsnapshot
 func (sc *SnapshotClient) Create(ctx context.Context, snap *v1.VolumeSnapshot) *Snapshot {
 	var funcErr error
 	newSnap, err := sc.Interface.Create(ctx, snap, metav1.CreateOptions{})
@@ -97,7 +97,7 @@ func (sc *SnapshotClient) Create(ctx context.Context, snap *v1.VolumeSnapshot) *
 	}
 }
 
-// Delete deletes a snapshot
+// Delete deletes a blockvolsnapshot
 func (sc *SnapshotClient) Delete(ctx context.Context, snap *v1.VolumeSnapshot) *Snapshot {
 	var funcErr error
 
@@ -153,7 +153,7 @@ func (sc *SnapshotClient) WaitForAllToBeReady(ctx context.Context) error {
 	return nil
 }
 
-// IsSnapReady checks whether snapshot is in ReadyToUse state
+// IsSnapReady checks whether blockvolsnapshot is in ReadyToUse state
 func IsSnapReady(sn *v1.VolumeSnapshot) bool {
 	var ready bool
 	if sn.Status == nil || sn.Status.ReadyToUse == nil {
@@ -161,11 +161,11 @@ func IsSnapReady(sn *v1.VolumeSnapshot) bool {
 	} else {
 		ready = *sn.Status.ReadyToUse
 	}
-	logrus.Debugf("Check snapshot %s is ready: %t", sn.Name, ready)
+	logrus.Debugf("Check blockvolsnapshot %s is ready: %t", sn.Name, ready)
 	return ready
 }
 
-// WaitUntilGone waits until snapshot is deleted
+// WaitUntilGone waits until blockvolsnapshot is deleted
 func (snap *Snapshot) WaitUntilGone(ctx context.Context) error {
 	log := utils.GetLoggerFromContext(ctx)
 	startTime := time.Now()
@@ -183,7 +183,7 @@ func (snap *Snapshot) WaitUntilGone(ctx context.Context) error {
 		if err != nil {
 			return err
 		}
-		log.Errorf("Failed to delete snap: %v \n", pollErr)
+		log.Errorf("Failed to delete volsnap: %v \n", pollErr)
 		log.Info("Forcing finalizers cleanup")
 		gotsnap.SetFinalizers([]string{})
 		_, er := snap.Client.Interface.Update(ctx, gotsnap, metav1.UpdateOptions{})
@@ -196,13 +196,13 @@ func (snap *Snapshot) WaitUntilGone(ctx context.Context) error {
 		})
 
 		if pollErr != nil {
-			log.Errorf("Failed to delete snap: %v \n", pollErr)
+			log.Errorf("Failed to delete volsnap: %v \n", pollErr)
 			log.Info("Forcing finalizers cleanup")
 			return errors.New("failed to delete even with finalizers cleaned up")
 		}
 	}
 	yellow := color.New(color.FgHiYellow)
-	log.Debugf("snap %s was deleted in %s", snap.Object.Name, yellow.Sprint(time.Since(startTime)))
+	log.Debugf("volsnap %s was deleted in %s", snap.Object.Name, yellow.Sprint(time.Since(startTime)))
 	return nil
 }
 
@@ -225,7 +225,7 @@ func (snap *Snapshot) pollWait(ctx context.Context) (bool, error) {
 	return false, nil
 }
 
-// WaitForRunning stalls until snapshot is ready
+// WaitForRunning stalls until blockvolsnapshot is ready
 func (snap *Snapshot) WaitForRunning(ctx context.Context) error {
 	log := utils.GetLoggerFromContext(ctx)
 	log.Infof("Waiting for Snapshot '%s' to be READY", snap.Object.Name)
@@ -246,7 +246,7 @@ func (snap *Snapshot) WaitForRunning(ctx context.Context) error {
 
 			p, err := snap.Client.Interface.Get(ctx, snap.Object.Name, metav1.GetOptions{})
 			if err != nil {
-				log.Errorf("Can't find snap %s", snap.Object.Name)
+				log.Errorf("Can't find volsnap %s", snap.Object.Name)
 				return false, err
 			}
 
@@ -265,17 +265,17 @@ func (snap *Snapshot) HasError() bool {
 	return snap.error != nil
 }
 
-// GetError returns snapshot error
+// GetError returns blockvolsnapshot error
 func (snap *Snapshot) GetError() error {
 	return snap.error
 }
 
-// Name returns snapshot name
+// Name returns blockvolsnapshot name
 func (snap *Snapshot) Name() string {
 	return snap.Object.Name
 }
 
-// Sync updates snapshot state
+// Sync updates blockvolsnapshot state
 func (snap *Snapshot) Sync(ctx context.Context) *Snapshot {
 	if snap.Deleted {
 		snap.error = snap.WaitUntilGone(ctx)
