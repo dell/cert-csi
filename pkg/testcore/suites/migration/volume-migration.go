@@ -32,22 +32,22 @@ type VolumeMigrateSuite struct {
 
 // Run executes volume migrate test suite
 func (vms *VolumeMigrateSuite) Run(ctx context.Context, storageClass string, clients *k8sclient.Clients) (delFunc func() error, e error) {
-	log := utils.GetLoggerFromContext(ctx)
+	loggerFromContext := utils.GetLoggerFromContext(ctx)
 
 	if vms.VolumeNumber <= 0 {
-		log.Println("Using default number of volumes")
+		loggerFromContext.Println("Using default number of volumes")
 		vms.VolumeNumber = 1
 	}
 	if vms.PodNumber <= 0 {
-		log.Println("Using default number of pods")
+		loggerFromContext.Println("Using default number of pods")
 		vms.PodNumber = 3
 	}
 	if vms.Image == "" {
 		vms.Image = "quay.io/centos/centos:latest"
-		log.Infof("Using default image: %s", vms.Image)
+		loggerFromContext.Infof("Using default image: %s", vms.Image)
 	}
 
-	log.Println("Volumes:", vms.VolumeNumber, "pods:", vms.PodNumber)
+	loggerFromContext.Println("Volumes:", vms.VolumeNumber, "pods:", vms.PodNumber)
 
 	scClient := clients.SCClient
 	pvcClient := clients.PVCClient
@@ -67,7 +67,7 @@ func (vms *VolumeMigrateSuite) Run(ctx context.Context, storageClass string, cli
 	stsConf := testcore.VolumeMigrateStsConfig(storageClass, "1Gi", vms.VolumeNumber, int32(vms.PodNumber), "", vms.Image) // #nosec G115
 	stsTmpl := stsClient.MakeStatefulSet(stsConf)
 	// Creating Statefulset
-	log.Println("Creating Statefulset")
+	loggerFromContext.Println("Creating Statefulset")
 	sts := stsClient.Create(ctx, stsTmpl)
 	if sts.HasError() {
 		return delFunc, sts.GetError()
@@ -89,7 +89,7 @@ func (vms *VolumeMigrateSuite) Run(ctx context.Context, storageClass string, cli
 			volume := volume
 			if volume.PersistentVolumeClaim != nil {
 				g.Go(func() error {
-					return vms.validateSTS(log, pvcClient, ctx, volume, err, &pvNames, pvClient, stsConf, podClient, pod)
+					return vms.validateSTS(loggerFromContext, pvcClient, ctx, volume, err, &pvNames, pvClient, stsConf, podClient, pod)
 				})
 			}
 		}
@@ -97,25 +97,16 @@ func (vms *VolumeMigrateSuite) Run(ctx context.Context, storageClass string, cli
 
 	delFunc = func(_ func() error) func() error {
 		return func() error {
-			log.Info("Deleting pvs")
-			pvs, err := pvClient.Interface.List(ctx, metav1.ListOptions{})
-			if err != nil {
-				return err
-			}
-			for _, p := range pvs.Items {
-				for _, name := range pvNames {
-					p := p
-					if strings.Contains(p.Name, name) {
-						pvClient.Delete(ctx, &p)
-					}
-				}
+			err2 := deleteFunction(loggerFromContext, pvClient, ctx, pvNames)
+			if err2 != nil {
+				return err2
 			}
 			return nil
 		}
 	}(nil)
 
 	if err := g.Wait(); err != nil {
-		log.Println("g.wait err")
+		loggerFromContext.Println("g.wait err")
 		return delFunc, err
 	}
 
@@ -123,18 +114,18 @@ func (vms *VolumeMigrateSuite) Run(ctx context.Context, storageClass string, cli
 		return delFunc, nil
 	}
 
-	log.Println("Deleting old Statefulset")
+	loggerFromContext.Println("Deleting old Statefulset")
 	deletionOrphan := metav1.DeletePropagationOrphan
 	delSts := stsClient.DeleteWithOptions(ctx, sts.Set, metav1.DeleteOptions{PropagationPolicy: &deletionOrphan})
 	if delSts.HasError() {
 		return delFunc, delSts.GetError()
 	}
 
-	log.Println("Deleting pods")
+	loggerFromContext.Println("Deleting pods")
 	for _, podItem := range podList.Items {
 		for _, volume := range podItem.Spec.Volumes {
 			if volume.PersistentVolumeClaim != nil {
-				log.Println("Deleting PVC")
+				loggerFromContext.Println("Deleting PVC")
 				pvcObj := pvcClient.Get(ctx, volume.PersistentVolumeClaim.ClaimName)
 				if pvcObj.HasError() {
 					return delFunc, pvcObj.GetError()
@@ -152,7 +143,7 @@ func (vms *VolumeMigrateSuite) Run(ctx context.Context, storageClass string, cli
 	newStsConf := testcore.VolumeMigrateStsConfig(vms.TargetSC, "1Gi", vms.VolumeNumber, int32(vms.PodNumber), "", vms.Image) // #nosec G115
 	newStsTmpl := stsClient.MakeStatefulSet(newStsConf)
 	// Creating new Statefulset
-	log.Println("Creating new Statefulset")
+	loggerFromContext.Println("Creating new Statefulset")
 	newSts := stsClient.Create(ctx, newStsTmpl)
 	if newSts.HasError() {
 		return delFunc, newSts.GetError()
@@ -171,19 +162,36 @@ func (vms *VolumeMigrateSuite) Run(ctx context.Context, storageClass string, cli
 		// Check if hash sum is correct
 		sum := fmt.Sprintf("%s0/writer-%d.sha512", newStsConf.MountPath, 0)
 		writer := bytes.NewBufferString("")
-		log.Info("Checker item: ", podItemObj.Name)
+		loggerFromContext.Info("Checker item: ", podItemObj.Name)
 		podObj := podItemObj
 		if err = podClient.Exec(ctx, &podObj, []string{"/bin/bash", "-c", "sha512sum -c " + sum}, writer, os.Stderr, false); err != nil {
 			return delFunc, err
 		}
 		if strings.Contains(writer.String(), "OK") {
-			log.Info("Hashes match")
+			loggerFromContext.Info("Hashes match")
 		} else {
 			return delFunc, fmt.Errorf("hashes don't match")
 		}
 	}
 
 	return delFunc, nil
+}
+
+func deleteFunction(log *log.Entry, pvClient *pv.Client, ctx context.Context, pvNames []string) error {
+	log.Info("Deleting pvs")
+	pvs, err := pvClient.Interface.List(ctx, metav1.ListOptions{})
+	if err != nil {
+		return err
+	}
+	for _, p := range pvs.Items {
+		for _, name := range pvNames {
+			p := p
+			if strings.Contains(p.Name, name) {
+				pvClient.Delete(ctx, &p)
+			}
+		}
+	}
+	return nil
 }
 
 func (vms *VolumeMigrateSuite) validateSTS(log *log.Entry, pvcClient *pvc.Client, ctx context.Context, volume v1.Volume,

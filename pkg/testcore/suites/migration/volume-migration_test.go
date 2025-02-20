@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"github.com/dell/cert-csi/pkg/k8sclient/resources/pod"
 	"github.com/dell/cert-csi/pkg/testcore/suites/mockutils"
+	"github.com/sirupsen/logrus"
 	appsv1 "k8s.io/api/apps/v1"
 	"k8s.io/apimachinery/pkg/api/resource"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -40,16 +41,23 @@ func TestVolumeMigrateSuite_Run(t *testing.T) {
 	// Set up a reactor to simulate Pods becoming Ready
 	clientSet.Fake.PrependReactor("create", "pods", func(action k8stesting.Action) (bool, runtime.Object, error) {
 		createAction := action.(k8stesting.CreateAction)
-		pod := createAction.GetObject().(*v1.Pod)
+		podItemObj := createAction.GetObject().(*v1.Pod)
 		// Set podObj phase to Running
-		pod.Status.Phase = v1.PodRunning
+		podItemObj.Status.Phase = v1.PodRunning
 		// Simulate the Ready condition
-		pod.Status.Conditions = append(pod.Status.Conditions, v1.PodCondition{
+		podItemObj.Status.Conditions = append(podItemObj.Status.Conditions, v1.PodCondition{
 			Type:   v1.PodReady,
 			Status: v1.ConditionTrue,
 		})
-		pod.Labels = map[string]string{"app": "unified-test"}
+		podItemObj.Labels = map[string]string{"app": "unified-test"}
 		return false, nil, nil // Allow normal processing to continue
+	})
+
+	clientSet.Fake.PrependReactor("delete", "pods", func(action k8stesting.Action) (bool, runtime.Object, error) {
+		deleteAction := action.(k8stesting.DeleteAction)
+		podName := deleteAction.GetName()
+		logrus.Infof("Deleting pod %s", podName)
+		return true, nil, nil // Allow normal processing to continue
 	})
 
 	clientSet.Fake.PrependReactor("create", "statefulsets", func(action k8stesting.Action) (handled bool, ret runtime.Object, err error) {
@@ -58,6 +66,12 @@ func TestVolumeMigrateSuite_Run(t *testing.T) {
 		statefulSet.Status.Replicas = *statefulSet.Spec.Replicas
 		statefulSet.Status.ReadyReplicas = 3
 		return true, statefulSet, nil
+	})
+	clientSet.Fake.PrependReactor("delete", "statefulsets", func(action k8stesting.Action) (handled bool, ret runtime.Object, err error) {
+		deleteAction := action.(k8stesting.DeleteAction)
+		name := deleteAction.GetName()
+		logrus.Infof("Deleting statefulset %s", name)
+		return true, nil, nil
 	})
 	// Create a mock Clients instance
 	mockClients := &mockutils.MockClients{}
@@ -117,7 +131,7 @@ func TestVolumeMigrateSuite_Run(t *testing.T) {
 	}, metav1.CreateOptions{})
 	assert.NoError(t, err)
 
-	// create 3 pods in fake namespace
+	// create a pod in fake namespace
 	podObj := &v1.Pod{
 		Spec: v1.PodSpec{
 			Containers: []v1.Container{
@@ -126,7 +140,7 @@ func TestVolumeMigrateSuite_Run(t *testing.T) {
 					Image: "nginx:latest",
 					Ports: []v1.ContainerPort{
 						{
-							ContainerPort: 80,
+							ContainerPort: 9090,
 						},
 					},
 				},
@@ -136,41 +150,56 @@ func TestVolumeMigrateSuite_Run(t *testing.T) {
 	_, err = clientSet.CoreV1().Pods(namespace).Create(context.Background(), podObj, metav1.CreateOptions{})
 	assert.NoError(t, err)
 
-	//podObj2 := &v1.Pod{
-	//	Spec: v1.PodSpec{
-	//		Containers: []v1.Container{
-	//			{
-	//				Name:  "nginx1",
-	//				Image: "nginx:latest",
-	//				Ports: []v1.ContainerPort{
-	//					{
-	//						ContainerPort: 80,
-	//					},
-	//				},
-	//			},
-	//		},
-	//	},
-	//}
-	//_, err = clientSet.CoreV1().Pods(namespace).Create(context.Background(), podObj2, metav1.CreateOptions{})
-	//assert.NoError(t, err)
-	//
-	//podObj3 := &v1.Pod{
-	//	Spec: v1.PodSpec{
-	//		Containers: []v1.Container{
-	//			{
-	//				Name:  "nginx3",
-	//				Image: "nginx:latest",
-	//				Ports: []v1.ContainerPort{
-	//					{
-	//						ContainerPort: 80,
-	//					},
-	//				},
-	//			},
-	//		},
-	//	},
-	//}
-	//_, err = clientSet.CoreV1().Pods(namespace).Create(context.Background(), podObj3, metav1.CreateOptions{})
-	//assert.NoError(t, err)
+	var replicas int32 = 1
+	// Create a fake statefulset
+	sts := &appsv1.StatefulSet{
+		ObjectMeta: metav1.ObjectMeta{
+			//Name:         "sts-volume-migrate-test",
+			Namespace: namespace,
+			//GenerateName: "sts-volume-migrate-test",
+		},
+		Spec: appsv1.StatefulSetSpec{
+			Replicas: &replicas,
+			VolumeClaimTemplates: []v1.PersistentVolumeClaim{
+				{
+					ObjectMeta: metav1.ObjectMeta{
+						Name: "test-pvc",
+					},
+					Spec: v1.PersistentVolumeClaimSpec{
+						AccessModes: []v1.PersistentVolumeAccessMode{
+							v1.ReadWriteOnce,
+						},
+					},
+				},
+			},
+			Template: v1.PodTemplateSpec{
+				Spec: v1.PodSpec{
+					Containers: []v1.Container{
+						{
+							Name: "test-container",
+							Ports: []v1.ContainerPort{
+								{
+									ContainerPort: 80,
+								},
+							},
+						},
+					},
+					Volumes: []v1.Volume{
+						{
+							Name: "test-volume",
+							VolumeSource: v1.VolumeSource{
+								PersistentVolumeClaim: &v1.PersistentVolumeClaimVolumeSource{
+									ClaimName: "test-pvc",
+								},
+							},
+						},
+					},
+				},
+			},
+		},
+	}
+
+	_ = stsClient.Create(context.TODO(), sts)
 
 	suite := &VolumeMigrateSuite{
 		TargetSC:     "target-storage-class",
@@ -179,18 +208,48 @@ func TestVolumeMigrateSuite_Run(t *testing.T) {
 		PodNumber:    1,
 		Image:        "quay.io/centos/centos:latest",
 	}
-
-	t.Run("Test with Default Values", func(t *testing.T) {
-		suite.VolumeNumber = 1
-		suite.PodNumber = 1
-		suite.Image = ""
+	t.Run("Test with Custom Values", func(t *testing.T) {
 		delFunc, err := suite.Run(context.TODO(), "source-storage-class", clients)
 		assert.Error(t, err)
 		assert.NotNil(t, delFunc)
 	})
 
-	t.Run("Test with Invalid StorageClass", func(t *testing.T) {
+	t.Run("Test with Default Values", func(t *testing.T) {
+		suite.VolumeNumber = 0
+		suite.PodNumber = 0
+		suite.Image = ""
+		delFunc, err := suite.Run(context.TODO(), "invalid-storage-class", clients)
+		assert.Error(t, err)
+		assert.Nil(t, delFunc)
+	})
+
+	t.Run("Test with Invalid source StorageClass", func(t *testing.T) {
 		delFunc, err := suite.Run(ctx, "invalid-storage-class", clients)
+		assert.Error(t, err)
+		assert.Nil(t, delFunc)
+	})
+	t.Run("Test with Invalid target StorageClass", func(t *testing.T) {
+		kubeClient := k8sclient.KubeClient{
+			ClientSet: fake.NewSimpleClientset(),
+			Config:    &rest.Config{},
+		}
+		scClient2, _ := kubeClient.CreateSCClient()
+		clients2 := &k8sclient.Clients{
+			PVCClient:              pvcClient,
+			PodClient:              podClient,
+			StatefulSetClient:      stsClient,
+			SCClient:               scClient2,
+			PersistentVolumeClient: pvClient,
+		}
+		// Create a fake storage class
+		sc2 := &storagev1.StorageClass{
+			ObjectMeta: metav1.ObjectMeta{
+				Name: "src",
+			},
+		}
+		err = clients2.SCClient.Create(context.TODO(), sc2)
+		assert.NoError(t, err)
+		delFunc, err := suite.Run(ctx, "src", clients2)
 		assert.Error(t, err)
 		assert.Nil(t, delFunc)
 	})
@@ -460,4 +519,46 @@ func TestVolumeMigrateSuite_validateSTS(t *testing.T) {
 	err = vms.validateSTS(logger, pvcClient, ctx, podObj.Spec.Volumes[0], nil, &[]string{}, pvClient, stsConf, podClient, podObj)
 	// Assert the expected error
 	assert.NoError(t, err)
+}
+
+func TestDeleteFunction(t *testing.T) {
+	client := mockutils.NewFakeClientsetWithRestClient()
+	kubeClient := k8sclient.KubeClient{
+		ClientSet: client,
+		Config:    &rest.Config{},
+	}
+	pvClient, _ := kubeClient.CreatePVClient()
+	ctx := context.Background()
+	log := logrus.Entry{Logger: logrus.New()}
+
+	// Create some fake PVs
+	pv1 := &v1.PersistentVolume{
+		ObjectMeta: metav1.ObjectMeta{
+			Name: "fake",
+		},
+		Spec: v1.PersistentVolumeSpec{
+			Capacity: v1.ResourceList{
+				v1.ResourceStorage: resource.MustParse("1Gi"),
+			},
+			AccessModes: []v1.PersistentVolumeAccessMode{
+				v1.ReadWriteOnce,
+			},
+			PersistentVolumeReclaimPolicy: v1.PersistentVolumeReclaimRetain,
+		},
+	}
+
+	// Create the fake PV
+	_, err := client.CoreV1().PersistentVolumes().Create(context.TODO(), pv1, metav1.CreateOptions{})
+	assert.NoError(t, err)
+
+	t.Run("Test delete function with valid PV names", func(t *testing.T) {
+		// Call the delete function with a list of PV names
+		err = deleteFunction(&log, pvClient, ctx, []string{"fake"})
+		assert.NoError(t, err)
+	})
+	t.Run("Test delete function with invalid PVs", func(t *testing.T) {
+		// Call the delete function with a list of PV names
+		err = deleteFunction(&log, pvClient, ctx, []string{})
+		assert.NoError(t, err)
+	})
 }
