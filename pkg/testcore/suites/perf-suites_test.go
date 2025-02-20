@@ -2758,20 +2758,20 @@ func TestBlockSnapSuite_Run(t *testing.T) {
 			wantError:      false,
 			wantDeleteFunc: false,
 		},
-		// {
-		// 	name: "Testing Run with custom parameters",
-		// 	blockSnapSuite: &BlockSnapSuite{
-		// 		SnapClass:   "testSnap",
-		// 		Description: "testDesc",
-		// 		AccessMode:  "test",
-		// 		VolumeSize:  "4Gi",
-		// 		Image:       "quay.io/centos/centos:latest",
-		// 	},
-		// 	storageClass:   "test-storage-class",
-		// 	clients:        clients,
-		// 	wantError:      false,
-		// 	wantDeleteFunc: false,
-		// },
+		{
+			name: "Testing Run with custom parameters",
+			blockSnapSuite: &BlockSnapSuite{
+				SnapClass:   "testSnap",
+				Description: "testDesc",
+				AccessMode:  "test",
+				VolumeSize:  "4Gi",
+				Image:       "quay.io/centos/centos:latest",
+			},
+			storageClass:   "test-storage-class",
+			clients:        clients,
+			wantError:      false,
+			wantDeleteFunc: false,
+		},
 		// {
 		// 	name: "Testing Run with error",
 		// 	blockSnapSuite: &BlockSnapSuite{
@@ -2805,6 +2805,27 @@ func TestBlockSnapSuite_Run(t *testing.T) {
 				t.Errorf("BlockSnapSuite.Run() returned unexpected delete function")
 			}
 		})
+
+		err := clientSet.CoreV1().PersistentVolumeClaims(namespace).Delete(context.TODO(), "", metav1.DeleteOptions{})
+		if err != nil {
+			fmt.Printf("Error deleting pod: %v\n", err)
+			return
+		}
+		err = clientSet.CoreV1().PersistentVolumeClaims(namespace).Delete(context.TODO(), "-restore", metav1.DeleteOptions{})
+		if err != nil {
+			fmt.Printf("Error deleting pod: %v\n", err)
+			return
+		}
+		err = clientSet.CoreV1().Pods(namespace).Delete(context.TODO(), "", metav1.DeleteOptions{})
+		if err != nil {
+			fmt.Printf("Error deleting pod: %v\n", err)
+			return
+		}
+		err = clientSet.CoreV1().Pods(namespace).Delete(context.TODO(), "-restore-pod", metav1.DeleteOptions{})
+		if err != nil {
+			fmt.Printf("Error deleting pod: %v\n", err)
+			return
+		}
 	}
 }
 
