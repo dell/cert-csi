@@ -17,170 +17,308 @@
 package va_test
 
 import (
+	"bytes"
 	"context"
+	"fmt"
 	"testing"
 	"time"
 
-	"github.com/dell/cert-csi/pkg/k8sclient"
-	"github.com/stretchr/testify/suite"
-	corev1 "k8s.io/api/core/v1"
+	"github.com/dell/cert-csi/pkg/k8sclient/resources/va"
+	"github.com/sirupsen/logrus"
+	"github.com/stretchr/testify/assert"
 	storagev1 "k8s.io/api/storage/v1"
-	"k8s.io/apimachinery/pkg/api/resource"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/client-go/kubernetes/fake"
+	clientgotesting "k8s.io/client-go/testing" // Aliased import
 )
 
-type VaTestSuite struct {
-	suite.Suite
-	kubeClient *k8sclient.KubeClient
-}
 
-func (suite *VaTestSuite) SetupSuite() {
-	// Create the fake client.
-	client := fake.NewSimpleClientset()
-
-	suite.kubeClient = &k8sclient.KubeClient{
-		ClientSet:   client,
-		Config:      nil,
-		VersionInfo: nil,
+func TestWaitUntilNoneLeft(t *testing.T) {
+	tests := []struct {
+		name          string
+		setup         func(client *fake.Clientset)
+		customTimeout time.Duration
+		expectedError string
+	}{
+		{
+			name: "Success",
+			setup: func(client *fake.Clientset) {
+				// Ensure no VolumeAttachments exist
+			},
+			customTimeout: 0,
+			expectedError: "",
+		},
+		{
+			name: "Error",
+			setup: func(client *fake.Clientset) {
+				// Simulate an error
+				client.PrependReactor("list", "volumeattachments", func(action clientgotesting.Action) (bool, runtime.Object, error) {
+					return true, nil, fmt.Errorf("simulated error")
+				})
+			},
+			customTimeout: 0,
+			expectedError: "simulated error",
+		},
+		{
+			name: "NonEmptyList",
+			setup: func(client *fake.Clientset) {
+				// Create a VolumeAttachment to simulate non-empty list
+				va := &storagev1.VolumeAttachment{
+					ObjectMeta: v1.ObjectMeta{
+						Name: "test-va",
+					},
+				}
+				client.StorageV1().VolumeAttachments().Create(context.TODO(), va, v1.CreateOptions{})
+			},
+			customTimeout: 0,
+			expectedError: "timed out waiting for the condition",
+		},
+		{
+			name: "CustomTimeout",
+			setup: func(client *fake.Clientset) {
+				// Ensure no VolumeAttachments exist
+			},
+			customTimeout: 5 * time.Second,
+			expectedError: "",
+		},
 	}
-	suite.kubeClient.SetTimeout(1)
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			client := fake.NewSimpleClientset()
+			vaClient := &va.Client{
+				Interface:     client.StorageV1().VolumeAttachments(),
+				Namespace:     "default",
+				Timeout:       10,
+				CustomTimeout: tt.customTimeout,
+			}
+
+			ctx := context.TODO()
+			tt.setup(client)
+
+			err := vaClient.WaitUntilNoneLeft(ctx)
+			if tt.expectedError == "" {
+				assert.NoError(t, err)
+			} else {
+				assert.Error(t, err)
+				assert.Contains(t, err.Error(), tt.expectedError)
+			}
+		})
+	}
 }
 
-func (suite *VaTestSuite) TestDeleteVaBasedOnPVName() {
-	pvName := "test-pv1"
-	vaName := "test-va"
+func TestWaitUntilVaGone(t *testing.T) {
+	tests := []struct {
+		name          string
+		setup         func(client *fake.Clientset)
+		pvName        string
+		customTimeout time.Duration
+		expectedError string
+	}{
+		{
+			name: "Success",
+			setup: func(client *fake.Clientset) {
+				// Create a VolumeAttachment to be deleted
+				va := &storagev1.VolumeAttachment{
+					ObjectMeta: v1.ObjectMeta{
+						Name: "test-va",
+					},
+					Spec: storagev1.VolumeAttachmentSpec{
+						Source: storagev1.VolumeAttachmentSource{
+							PersistentVolumeName: func() *string { s := "test-pv"; return &s }(),
+						},
+					},
+				}
+				client.StorageV1().VolumeAttachments().Create(context.TODO(), va, v1.CreateOptions{})
 
-	pv, err := suite.kubeClient.ClientSet.CoreV1().PersistentVolumes().Create(context.Background(), &corev1.PersistentVolume{
-		ObjectMeta: metav1.ObjectMeta{
-			Name: pvName,
-		},
-		Spec: corev1.PersistentVolumeSpec{
-			Capacity: corev1.ResourceList{
-				corev1.ResourceStorage: resource.MustParse("1Gi"),
+				// Delete the VolumeAttachment
+				client.StorageV1().VolumeAttachments().Delete(context.TODO(), "test-va", v1.DeleteOptions{})
 			},
-			AccessModes: []corev1.PersistentVolumeAccessMode{
-				corev1.ReadWriteOnce,
-			},
-			PersistentVolumeSource: corev1.PersistentVolumeSource{
-				HostPath: &corev1.HostPathVolumeSource{
-					Path: "/tmp/data",
-				},
-			},
+			pvName:        "test-pv",
+			customTimeout: 0,
+			expectedError: "",
 		},
-	}, metav1.CreateOptions{})
-	suite.NoError(err)
-
-	va, err := suite.kubeClient.ClientSet.StorageV1().VolumeAttachments().Create(context.Background(), &storagev1.VolumeAttachment{
-		ObjectMeta: metav1.ObjectMeta{
-			Name: vaName,
-		},
-		Spec: storagev1.VolumeAttachmentSpec{
-			Source: storagev1.VolumeAttachmentSource{
-				PersistentVolumeName: &pv.Name,
+		{
+			name: "Error",
+			setup: func(client *fake.Clientset) {
+				// Simulate an error
+				client.PrependReactor("list", "volumeattachments", func(action clientgotesting.Action) (bool, runtime.Object, error) {
+					return true, nil, fmt.Errorf("simulated error")
+				})
 			},
+			pvName:        "test-pv",
+			customTimeout: 0,
+			expectedError: "simulated error",
 		},
-	}, metav1.CreateOptions{})
-	suite.NoError(err)
+		{
+			name: "MatchingPVName",
+			setup: func(client *fake.Clientset) {
+				// Create a VolumeAttachment with a matching PersistentVolumeName
+				va := &storagev1.VolumeAttachment{
+					ObjectMeta: v1.ObjectMeta{
+						Name: "test-va",
+					},
+					Spec: storagev1.VolumeAttachmentSpec{
+						Source: storagev1.VolumeAttachmentSource{
+							PersistentVolumeName: func() *string { s := "test-pv"; return &s }(),
+						},
+					},
+				}
+				client.StorageV1().VolumeAttachments().Create(context.TODO(), va, v1.CreateOptions{})
 
-	vaClient, err := suite.kubeClient.CreateVaClient("test-namespace")
-	suite.NoError(err)
+				// Simulate a delay before deleting the VolumeAttachment
+				go func() {
+					time.Sleep(2 * time.Second)
+					client.StorageV1().VolumeAttachments().Delete(context.TODO(), "test-va", v1.DeleteOptions{})
+				}()
+			},
+			pvName:        "test-pv",
+			customTimeout: 0,
+			expectedError: "",
+		},
+		{
+			name: "CustomTimeout",
+			setup: func(client *fake.Clientset) {
+				// Ensure no VolumeAttachments exist
+			},
+			pvName:        "non-existent-pv",
+			customTimeout: 5 * time.Second,
+			expectedError: "",
+		},
+	}
 
-	suite.Run("Successful deletion", func() {
-		err = vaClient.DeleteVaBasedOnPVName(context.Background(), pvName)
-		suite.NoError(err)
-		_, err = suite.kubeClient.ClientSet.StorageV1().VolumeAttachments().Get(context.Background(), va.Name, metav1.GetOptions{})
-		suite.Error(err)
-	})
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			// Set up a buffer to capture log output
+			var logBuffer bytes.Buffer
+			logrus.SetOutput(&logBuffer)
+			logrus.SetLevel(logrus.DebugLevel)
 
-	suite.Run("delete non existent pv", func() {
-		err = vaClient.DeleteVaBasedOnPVName(context.Background(), "non-existent-pv")
-		suite.NoError(err)
-	})
+			client := fake.NewSimpleClientset()
+			vaClient := &va.Client{
+				Interface:     client.StorageV1().VolumeAttachments(),
+				Namespace:     "default",
+				Timeout:       10,
+				CustomTimeout: tt.customTimeout,
+			}
+
+			ctx := context.TODO()
+			tt.setup(client)
+
+			err := vaClient.WaitUntilVaGone(ctx, tt.pvName)
+			if tt.expectedError == "" {
+				assert.NoError(t, err)
+			} else {
+				assert.Error(t, err)
+				assert.Contains(t, err.Error(), tt.expectedError)
+			}
+
+			// Verify the log message for MatchingPVName test case
+			if tt.name == "MatchingPVName" {
+				logOutput := logBuffer.String()
+				assert.Contains(t, logOutput, "Waiting for the volume-attachment to be deleted for :test-pv")
+			}
+		})
+	}
 }
 
-func (suite *VaTestSuite) TestVaClient_WaitUntilNoneLeft() {
-	va, err := suite.kubeClient.ClientSet.StorageV1().VolumeAttachments().Create(context.Background(), &storagev1.VolumeAttachment{
-		ObjectMeta: metav1.ObjectMeta{
-			Name: "test-va",
-		},
-	}, metav1.CreateOptions{})
-	suite.NoError(err)
-
-	vaClient, err := suite.kubeClient.CreateVaClient("test-namespace")
-	vaClient.CustomTimeout = time.Second
-	suite.NoError(err)
-
-	suite.Run("timeout error", func() {
-		err := vaClient.WaitUntilNoneLeft(context.Background())
-		suite.Error(err)
-	})
-
-	vaClient, err = suite.kubeClient.CreateVaClient("test-namespace")
-	suite.NoError(err)
-	err = suite.kubeClient.ClientSet.StorageV1().VolumeAttachments().Delete(context.Background(), va.Name, metav1.DeleteOptions{})
-	suite.NoError(err)
-
-	suite.Run("all deleted", func() {
-		err := vaClient.WaitUntilNoneLeft(context.Background())
-		suite.NoError(err)
-	})
-}
-
-func (suite *VaTestSuite) TestVaClient_WaitUntilVaGone() {
-	pvName := "test-pv2"
-	vaName := "test-va"
-
-	pv, err := suite.kubeClient.ClientSet.CoreV1().PersistentVolumes().Create(context.Background(), &corev1.PersistentVolume{
-		ObjectMeta: metav1.ObjectMeta{
-			Name: pvName,
-		},
-		Spec: corev1.PersistentVolumeSpec{
-			Capacity: corev1.ResourceList{
-				corev1.ResourceStorage: resource.MustParse("1Gi"),
+func TestDeleteVaBasedOnPVName(t *testing.T) {
+	tests := []struct {
+		name          string
+		setup         func(client *fake.Clientset)
+		pvName        string
+		expectedError string
+	}{
+		{
+			name: "Success",
+			setup: func(client *fake.Clientset) {
+				// Create a VolumeAttachment to be deleted
+				va := &storagev1.VolumeAttachment{
+					ObjectMeta: v1.ObjectMeta{
+						Name: "test-va",
+					},
+					Spec: storagev1.VolumeAttachmentSpec{
+						Source: storagev1.VolumeAttachmentSource{
+							PersistentVolumeName: func() *string { s := "test-pv"; return &s }(),
+						},
+					},
+				}
+				client.StorageV1().VolumeAttachments().Create(context.TODO(), va, v1.CreateOptions{})
 			},
-			AccessModes: []corev1.PersistentVolumeAccessMode{
-				corev1.ReadWriteOnce,
-			},
-			PersistentVolumeSource: corev1.PersistentVolumeSource{
-				HostPath: &corev1.HostPathVolumeSource{
-					Path: "/tmp/data",
-				},
-			},
+			pvName:        "test-pv",
+			expectedError: "",
 		},
-	}, metav1.CreateOptions{})
-	suite.NoError(err)
-
-	va, err := suite.kubeClient.ClientSet.StorageV1().VolumeAttachments().Create(context.Background(), &storagev1.VolumeAttachment{
-		ObjectMeta: metav1.ObjectMeta{
-			Name: vaName,
-		},
-		Spec: storagev1.VolumeAttachmentSpec{
-			Source: storagev1.VolumeAttachmentSource{
-				PersistentVolumeName: &pv.Name,
+		{
+			name: "ListError",
+			setup: func(client *fake.Clientset) {
+				// Simulate an error for the List operation
+				client.PrependReactor("list", "volumeattachments", func(action clientgotesting.Action) (bool, runtime.Object, error) {
+					return true, nil, fmt.Errorf("simulated list error")
+				})
 			},
+			pvName:        "test-pv",
+			expectedError: "simulated list error",
 		},
-	}, metav1.CreateOptions{})
-	suite.NoError(err)
+		{
+			name: "DeleteError",
+			setup: func(client *fake.Clientset) {
+				// Create a VolumeAttachment to be deleted
+				va := &storagev1.VolumeAttachment{
+					ObjectMeta: v1.ObjectMeta{
+						Name: "test-va",
+					},
+					Spec: storagev1.VolumeAttachmentSpec{
+						Source: storagev1.VolumeAttachmentSource{
+							PersistentVolumeName: func() *string { s := "test-pv"; return &s }(),
+						},
+					},
+				}
+				client.StorageV1().VolumeAttachments().Create(context.TODO(), va, v1.CreateOptions{})
 
-	vaClient, err := suite.kubeClient.CreateVaClient("test-namespace")
-	suite.NoError(err)
+				// Simulate an error for the Delete operation
+				client.PrependReactor("delete", "volumeattachments", func(action clientgotesting.Action) (bool, runtime.Object, error) {
+					return true, nil, fmt.Errorf("simulated delete error")
+				})
+			},
+			pvName:        "test-pv",
+			expectedError: "simulated delete error",
+		},
+		{
+			name: "NotFound",
+			setup: func(client *fake.Clientset) {
+				// No setup needed for not found case
+			},
+			pvName:        "non-existent-pv",
+			expectedError: "",
+		},
+	}
 
-	err = suite.kubeClient.ClientSet.StorageV1().VolumeAttachments().Delete(context.Background(), va.Name, metav1.DeleteOptions{})
-	suite.NoError(err)
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			client := fake.NewSimpleClientset()
+			vaClient := &va.Client{
+				Interface: client.StorageV1().VolumeAttachments(),
+				Namespace: "default",
+				Timeout:   10,
+			}
 
-	suite.Run("wait until VA is gone", func() {
-		err = vaClient.WaitUntilVaGone(context.Background(), *va.Spec.Source.PersistentVolumeName)
-		suite.NoError(err)
-	})
+			ctx := context.TODO()
+			tt.setup(client)
 
-	suite.Run("no VA found", func() {
-		nonExistentPvName := "non-existent-pv"
-		err = vaClient.WaitUntilVaGone(context.Background(), nonExistentPvName)
-		suite.NoError(err)
-	})
-}
+			err := vaClient.DeleteVaBasedOnPVName(ctx, tt.pvName)
+			if tt.expectedError == "" {
+				assert.NoError(t, err)
+			} else {
+				assert.Error(t, err)
+				assert.Contains(t, err.Error(), tt.expectedError)
+			}
 
-func TestVaTestSuite(t *testing.T) {
-	suite.Run(t, new(VaTestSuite))
+			// Verify the VolumeAttachment is deleted for Success test case
+			if tt.name == "Success" {
+				_, err = client.StorageV1().VolumeAttachments().Get(ctx, "test-va", v1.GetOptions{})
+				assert.Error(t, err)
+			}
+		})
+	}
 }
