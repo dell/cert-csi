@@ -762,7 +762,7 @@ func getVolumeIoCommand(globalFlags []cli.Flag) cli.Command {
 				return fmt.Errorf("failed to get test image: %s", err)
 			}
 			s := []suites.Interface{
-				&volumeio.VolumeIoSuite{
+				&suites.VolumeIoSuite{
 					ChainNumber: chNumber,
 					ChainLength: chLength,
 					Image:       testImage,
