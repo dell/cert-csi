@@ -121,23 +121,9 @@ func (vms *VolumeMigrateSuite) Run(ctx context.Context, storageClass string, cli
 		return delFunc, delSts.GetError()
 	}
 
-	loggerFromContext.Println("Deleting pods")
-	for _, podItem := range podList.Items {
-		for _, volume := range podItem.Spec.Volumes {
-			if volume.PersistentVolumeClaim != nil {
-				loggerFromContext.Println("Deleting PVC")
-				pvcObj := pvcClient.Get(ctx, volume.PersistentVolumeClaim.ClaimName)
-				if pvcObj.HasError() {
-					return delFunc, pvcObj.GetError()
-				}
-				delPVC := pvcClient.Delete(ctx, pvcObj.Object)
-				if delPVC.HasError() {
-					return delFunc, delPVC.GetError()
-				}
-			}
-		}
-		podObj := podItem
-		podClient.Delete(ctx, &podObj)
+	f, err2, done := deletePodsAndVolumes(ctx, loggerFromContext, podList, pvcClient, delFunc, podClient)
+	if done {
+		return f, err2
 	}
 
 	newStsConf := testcore.VolumeMigrateStsConfig(vms.TargetSC, "1Gi", vms.VolumeNumber, int32(vms.PodNumber), "", vms.Image) // #nosec G115
@@ -175,6 +161,30 @@ func (vms *VolumeMigrateSuite) Run(ctx context.Context, storageClass string, cli
 	}
 
 	return delFunc, nil
+}
+
+func deletePodsAndVolumes(ctx context.Context, loggerFromContext *log.Entry, podList *v1.PodList,
+	pvcClient *pvc.Client, delFunc func() error, podClient *pod.Client) (func() error, error, bool) {
+
+	loggerFromContext.Println("Deleting pods")
+	for _, podItem := range podList.Items {
+		for _, volume := range podItem.Spec.Volumes {
+			if volume.PersistentVolumeClaim != nil {
+				loggerFromContext.Println("Deleting PVC")
+				pvcObj := pvcClient.Get(ctx, volume.PersistentVolumeClaim.ClaimName)
+				if pvcObj.HasError() {
+					return delFunc, pvcObj.GetError(), true
+				}
+				delPVC := pvcClient.Delete(ctx, pvcObj.Object)
+				if delPVC.HasError() {
+					return delFunc, delPVC.GetError(), true
+				}
+			}
+		}
+		podObj := podItem
+		podClient.Delete(ctx, &podObj)
+	}
+	return nil, nil, false
 }
 
 func deleteFunction(log *log.Entry, pvClient *pv.Client, ctx context.Context, pvNames []string) error {

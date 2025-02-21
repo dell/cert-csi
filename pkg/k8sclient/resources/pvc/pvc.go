@@ -210,9 +210,10 @@ func (c *Client) Get(ctx context.Context, name string) *PersistentVolumeClaim {
 	newPVC, err := c.Interface.Get(ctx, name, metav1.GetOptions{})
 	if err != nil {
 		funcErr = err
+	} else {
+		log.Debugf("Got PVC %s", newPVC.GetName())
 	}
 
-	log.Debugf("Got PVC %s", newPVC.GetName())
 	return &PersistentVolumeClaim{
 		Client:  c,
 		Object:  newPVC,
