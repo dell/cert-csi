@@ -67,14 +67,36 @@ func (suite *CoreTestSuite) TestNewKubeClient() {
 	})
 }
 
+func (suite *CoreTestSuite) TestNewRemoteKubeClient() {
+	suite.Run("nil config", func() {
+		client, err := NewRemoteKubeClient(nil, 0)
+		suite.Error(err)
+		suite.Nil(client)
+	})
+
+	suite.Run("empty config", func() {
+		client, err := NewRemoteKubeClient(&rest.Config{}, 0)
+		suite.NoError(err)
+		suite.NotNil(client)
+	})
+}
+
 func (suite *CoreTestSuite) TestCreateClients() {
 	namespace := "test-namespace"
+
 	suite.Run("pvc client", func() {
 		pvcClient, err := suite.kubeClient.CreatePVCClient(namespace)
 		suite.NoError(err)
 		suite.NotNil(pvcClient)
 		suite.Equal(namespace, pvcClient.Namespace)
 	})
+
+	suite.Run("sc client", func() {
+		scClient, err := suite.kubeClient.CreateSCClient()
+		suite.NoError(err)
+		suite.NotNil(scClient)
+	})
+
 	suite.Run("pod client", func() {
 		podClient, err := suite.kubeClient.CreatePodClient(namespace)
 		suite.NoError(err)
@@ -101,6 +123,53 @@ func (suite *CoreTestSuite) TestCreateClients() {
 		suite.NoError(err)
 		suite.NotNil(mClient)
 		suite.Equal(namespace, mClient.Namespace)
+	})
+
+	suite.Run("node client", func() {
+		nodeClient, err := suite.kubeClient.CreateNodeClient()
+		suite.NoError(err)
+		suite.NotNil(nodeClient)
+	})
+
+	suite.Run("snapshot GA client", func() {
+		client, err := suite.kubeClient.CreateSnapshotGAClient(namespace)
+		suite.NoError(err)
+		suite.NotNil(client)
+	})
+
+	suite.Run("snapshot beta client", func() {
+		client, err := suite.kubeClient.CreateSnapshotBetaClient(namespace)
+		suite.NoError(err)
+		suite.NotNil(client)
+	})
+
+	suite.Run("snapshot content ga client", func() {
+		client, err := suite.kubeClient.CreateSnapshotContentGAClient()
+		suite.NoError(err)
+		suite.NotNil(client)
+	})
+
+	suite.Run("snapshot content beta client", func() {
+		client, err := suite.kubeClient.CreateSnapshotContentBetaClient()
+		suite.NoError(err)
+		suite.NotNil(client)
+	})
+
+	suite.Run("csi client", func() {
+		client, err := suite.kubeClient.CreateCSISCClient(namespace)
+		suite.NoError(err)
+		suite.NotNil(client)
+	})
+
+	// Rg client and vgs client creation returns error becuase of connection errors
+	suite.Run("rg client", func() {
+		_, err := suite.kubeClient.CreateRGClient()
+		suite.Error(err)
+	})
+
+	suite.Run("vgs client", func() {
+		_, err := suite.kubeClient.CreateVGSClient()
+		suite.Error(err)
 	})
 }
 
@@ -232,6 +301,38 @@ func (suite *CoreTestSuite) TestDeleteNamespace() {
 	suite.NoError(err)
 }
 
+func (suite *CoreTestSuite) TestForceDeleteNamespace() {
+	client := fake.NewSimpleClientset()
+
+	kubeClient := KubeClient{
+		ClientSet:   client,
+		Config:      &rest.Config{},
+		VersionInfo: nil,
+		timeout:     1,
+	}
+
+	name := "test-namespace"
+	err := kubeClient.ForceDeleteNamespace(context.Background(), name)
+	suite.Error(err)
+
+	ns, err := kubeClient.CreateNamespace(context.Background(), name)
+	suite.NoError(err)
+
+	err = kubeClient.ForceDeleteNamespace(context.Background(), ns.Name)
+	suite.Error(err)
+
+	kubeClient.Minor = 17
+
+	err = kubeClient.ForceDeleteNamespace(context.Background(), ns.Name)
+	suite.Error(err)
+}
+
+func (suite *CoreTestSuite) TestSnapshotClassExists() {
+	exists, err := suite.kubeClient.SnapshotClassExists("test-snapshot-class")
+	suite.Error(err)
+	suite.Equal(false, exists)
+}
+
 func (suite *CoreTestSuite) TestStorageExists() {
 	storageClass, err := suite.kubeClient.ClientSet.StorageV1().StorageClasses().Create(context.Background(), &storagev1.StorageClass{
 		ObjectMeta: metav1.ObjectMeta{
@@ -267,12 +368,31 @@ func (suite *CoreTestSuite) TestNamespaceExists() {
 	suite.Equal(true, exists)
 }
 
+func (suite *CoreTestSuite) TestSetTimeout() {
+	kubeClient := &KubeClient{
+		timeout: 0,
+	}
+
+	kubeClient.SetTimeout(10)
+	suite.Equal(kubeClient.timeout, 10)
+
+	kubeClient.SetTimeout(-1)
+	suite.Equal(kubeClient.timeout, -1)
+
+	kubeClient.SetTimeout(0)
+	suite.Equal(kubeClient.timeout, 0)
+}
+
 func (suite *CoreTestSuite) TestGetConfig() {
 	conf, err := GetConfig("testdata/config")
 	suite.NoError(err)
 	suite.NotNil(conf)
 
 	errConf, err := GetConfig("/non/existing/path")
+	suite.Error(err)
+	suite.Nil(errConf)
+
+	errConf, err = GetConfig("")
 	suite.Error(err)
 	suite.Nil(errConf)
 }

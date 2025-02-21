@@ -207,9 +207,9 @@ func getPlotStageMetricHistogramPath(tc collector.TestCaseMetrics, stage interfa
 
 func getPlotStageBoxPath(tc collector.TestCaseMetrics, stage interface{}, reportName string) *PlotPath {
 	var fileName string
-	switch stage.(type) {
+	switch stage := stage.(type) {
 	case collector.PVCStage:
-		fileName = fmt.Sprintf("%s.png", stage.(collector.PVCStage)+"_boxplot")
+		fileName = fmt.Sprintf("%s.png", stage+"_boxplot")
 	default:
 		fileName = fmt.Sprintf("%s.png", stage.(collector.PodStage)+"_boxplot")
 	}
