@@ -222,7 +222,7 @@ func getAction(c *cli.Context) error {
 			minSize = sc.MinSize
 		}
 
-		s = append(s, &suites.VolumeIoSuite{
+		s = append(s, &volumeio.VolumeIoSuite{
 			VolumeNumber: 2,
 			VolumeSize:   minSize,
 			ChainNumber:  2,

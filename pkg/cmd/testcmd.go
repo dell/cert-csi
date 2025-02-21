@@ -18,7 +18,6 @@ package cmd
 
 import (
 	"fmt"
-	volumemigration "github.com/dell/cert-csi/pkg/testcore/suites/migration"
 	"time"
 
 	"github.com/dell/cert-csi/pkg/plotter"
@@ -310,7 +309,7 @@ func getVolumeMigrateCommand(globalFlags []cli.Flag) cli.Command {
 				return fmt.Errorf("failed to get test image: %s", err)
 			}
 			s := []suites.Interface{
-				&volumemigration.VolumeMigrateSuite{
+				&suites.VolumeMigrateSuite{
 					TargetSC:     targetSC,
 					VolumeNumber: volNum,
 					PodNumber:    podNum,
@@ -763,7 +762,7 @@ func getVolumeIoCommand(globalFlags []cli.Flag) cli.Command {
 				return fmt.Errorf("failed to get test image: %s", err)
 			}
 			s := []suites.Interface{
-				&suites.VolumeIoSuite{
+				&volumeio.VolumeIoSuite{
 					ChainNumber: chNumber,
 					ChainLength: chLength,
 					Image:       testImage,

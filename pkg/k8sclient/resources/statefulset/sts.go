@@ -217,8 +217,9 @@ func (c *Client) Create(ctx context.Context, sts *appsv1.StatefulSet) *StatefulS
 	newSTS, err := c.Interface.Create(ctx, sts, metav1.CreateOptions{})
 	if err != nil {
 		funcErr = err
+	} else {
+		log.Infof("Created stateful set %s", newSTS.GetName())
 	}
-	log.Infof("Created stateful set %s", newSTS.GetName())
 	return &StatefulSet{
 		Client:  c,
 		Set:     newSTS,

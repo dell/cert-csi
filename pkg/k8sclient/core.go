@@ -270,6 +270,7 @@ func (c *KubeClient) CreateVaClient(namespace string) (*va.Client, error) {
 
 // CreateMetricsClient creates a new instance of metrics client
 func (c *KubeClient) CreateMetricsClient(namespace string) (*metrics.Client, error) {
+
 	cset, err := metricsclientset.NewForConfig(c.Config)
 	if err != nil {
 		return nil, err
