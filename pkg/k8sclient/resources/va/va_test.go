@@ -27,12 +27,11 @@ import (
 	"github.com/sirupsen/logrus"
 	"github.com/stretchr/testify/assert"
 	storagev1 "k8s.io/api/storage/v1"
-	"k8s.io/apimachinery/pkg/apis/meta/v1"
+	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/client-go/kubernetes/fake"
 	clientgotesting "k8s.io/client-go/testing" // Aliased import
 )
-
 
 func TestWaitUntilNoneLeft(t *testing.T) {
 	tests := []struct {

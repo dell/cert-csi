@@ -32,7 +32,7 @@ func TestNewClient(t *testing.T) {
 	assert.Equal(t, timeout, client.timeout)
 	assert.NotNil(t, client.settings)
 	assert.NotNil(t, client.actionConfig)
-} 
+}
 
 /*
 func TestNewClient_InvalidConfig(t *testing.T) {
@@ -47,9 +47,8 @@ func TestNewClient_InvalidConfig(t *testing.T) {
 	client, err := NewClient(namespace, configPath, timeout)
 	assert.Error(t, err)
 	assert.Nil(t, client)
-} 
-*/ 
-
+}
+*/
 
 func TestAddRepository(t *testing.T) {
 	// Set up environment variables
@@ -167,7 +166,6 @@ func TestInstallChart(t *testing.T) {
 	}()
 }
 
-
 func TestUninstallChart(t *testing.T) {
 	// Set up the Helm action configuration
 	settings := cli.New()
@@ -186,11 +184,9 @@ func TestUninstallChart(t *testing.T) {
 
 	// Call the UninstallChart function
 	err = client.UninstallChart(releaseName)
-	assert.Error(t, err) 
+	assert.Error(t, err)
 
-	
 }
-
 
 func TestIsChartInstallable(t *testing.T) {
 	tests := []struct {
@@ -219,4 +215,3 @@ func TestIsChartInstallable(t *testing.T) {
 		})
 	}
 }
-
