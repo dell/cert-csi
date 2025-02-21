@@ -99,6 +99,7 @@ func TestVolumeMigrateSuite_Run(t *testing.T) {
 
 	pvcClient, err := kubeClient.CreatePVCClient(namespace)
 	podClient, err := kubeClient.CreatePodClient(namespace)
+
 	scClient, _ := kubeClient.CreateSCClient()
 	pvClient, _ := kubeClient.CreatePVClient()
 	stsClient, _ := kubeClient.CreateStatefulSetClient(namespace)
@@ -209,6 +210,15 @@ func TestVolumeMigrateSuite_Run(t *testing.T) {
 	t.Run("Test with Custom Values", func(t *testing.T) {
 		delFunc, err := suite.Run(context.TODO(), "source-storage-class", clients)
 		assert.Error(t, err)
+		assert.NotNil(t, delFunc)
+	})
+	t.Run("Test for data writing success", func(t *testing.T) {
+		// we will set fake hash checker to throw success message on fake object
+		podClient.RemoteExecutor = &mockutils.FakeRemoteExecutor{}
+		podClient.RemoteExecutor = &mockutils.FakeHashRemoteExecutor{}
+
+		delFunc, err := suite.Run(context.TODO(), "source-storage-class", clients)
+		assert.NoError(t, err)
 		assert.NotNil(t, delFunc)
 	})
 	t.Run("Test with Custom Values and volumes inside the pod", func(t *testing.T) {
@@ -955,4 +965,15 @@ func TestDeletePodsAndVolumes(t *testing.T) {
 	pvcs, err := clientset.CoreV1().PersistentVolumeClaims(namespace).List(ctx, metav1.ListOptions{})
 	assert.NoError(t, err)
 	assert.Equal(t, len(pvcs.Items), 0)
+
+	t.Run("Test for PVC Get error", func(t *testing.T) {
+		// Call the delete function with a list of PV names
+		_, err, _ = deletePodsAndVolumes(ctx, &logger, podList, pvcClient, nil, podClient)
+		assert.Error(t, err)
+	})
+	t.Run("Test for PVC Delete error", func(t *testing.T) {
+		// Call the delete function with a list of PV names
+		_, err, _ = deletePodsAndVolumes(ctx, &logger, podList, pvcClient, nil, podClient)
+		assert.Error(t, err)
+	})
 }
