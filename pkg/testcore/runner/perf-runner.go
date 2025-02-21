@@ -55,19 +55,6 @@ type SuiteRunner struct {
 	Duration              time.Duration
 	ScDBs                 []*store.StorageClassDB
 }
-
-// TestResult stores test result
-type TestResult string
-
-const (
-	// SUCCESS represent success result
-	SUCCESS TestResult = "SUCCESS"
-	// FAILURE represents failure result
-	FAILURE TestResult = "FAILURE"
-	// Threshold represents threshold value
-	Threshold = 0.9
-)
-
 func checkValidNamespace(driverNs string, runner *Runner) {
 	// Check if driver namespace exists
 	if driverNs != "" {
