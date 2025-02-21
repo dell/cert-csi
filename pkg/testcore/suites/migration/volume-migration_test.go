@@ -4,9 +4,12 @@ import (
 	"context"
 	"fmt"
 	"github.com/dell/cert-csi/pkg/k8sclient/resources/pod"
+	"github.com/dell/cert-csi/pkg/testcore/suites/mockutils"
+	"github.com/sirupsen/logrus"
+	appsv1 "k8s.io/api/apps/v1"
 	"k8s.io/apimachinery/pkg/api/resource"
-	"k8s.io/client-go/tools/clientcmd/api"
-	"net/http"
+	"k8s.io/apimachinery/pkg/runtime"
+	k8stesting "k8s.io/client-go/testing"
 	"testing"
 	"time"
 
@@ -14,7 +17,7 @@ import (
 	"github.com/dell/cert-csi/pkg/k8sclient/resources/statefulset"
 	"github.com/dell/cert-csi/pkg/utils"
 	"github.com/stretchr/testify/assert"
-	corev1 "k8s.io/api/core/v1"
+	v1 "k8s.io/api/core/v1"
 	storagev1 "k8s.io/api/storage/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes/fake"
@@ -24,13 +27,79 @@ import (
 func TestVolumeMigrateSuite_Run(t *testing.T) {
 	// Create the necessary clients
 	namespace := "fake"
-	client := fake.NewSimpleClientset()
+	// Mock storageClass
+	// Create a fake storage class with VolumeBindingMode set to WaitForFirstConsumer
+	storageClass := &storagev1.StorageClass{
+		ObjectMeta: metav1.ObjectMeta{Name: "test-storage-class"},
+		VolumeBindingMode: func() *storagev1.VolumeBindingMode {
+			mode := storagev1.VolumeBindingWaitForFirstConsumer
+			return &mode
+		}(),
+	}
+	clientSet := mockutils.NewFakeClientsetWithRestClient(storageClass)
+
+	// Set up a reactor to simulate Pods becoming Ready
+	clientSet.Fake.PrependReactor("create", "pods", func(action k8stesting.Action) (bool, runtime.Object, error) {
+		createAction := action.(k8stesting.CreateAction)
+		podItemObj := createAction.GetObject().(*v1.Pod)
+		// Set podObj phase to Running
+		podItemObj.Status.Phase = v1.PodRunning
+		// Simulate the Ready condition
+		podItemObj.Status.Conditions = append(podItemObj.Status.Conditions, v1.PodCondition{
+			Type:   v1.PodReady,
+			Status: v1.ConditionTrue,
+		})
+		podItemObj.Labels = map[string]string{"app": "unified-test"}
+		return false, nil, nil // Allow normal processing to continue
+	})
+
+	clientSet.Fake.PrependReactor("delete", "pods", func(action k8stesting.Action) (bool, runtime.Object, error) {
+		deleteAction := action.(k8stesting.DeleteAction)
+		podName := deleteAction.GetName()
+		logrus.Infof("Deleting pod %s", podName)
+		return true, nil, nil // Allow normal processing to continue
+	})
+
+	clientSet.Fake.PrependReactor("create", "statefulsets", func(action k8stesting.Action) (handled bool, ret runtime.Object, err error) {
+		createAction := action.(k8stesting.CreateAction)
+		statefulSet := createAction.GetObject().(*appsv1.StatefulSet)
+		statefulSet.Status.Replicas = *statefulSet.Spec.Replicas
+		statefulSet.Status.ReadyReplicas = 3
+		return true, statefulSet, nil
+	})
+	clientSet.Fake.PrependReactor("delete", "statefulsets", func(action k8stesting.Action) (handled bool, ret runtime.Object, err error) {
+		deleteAction := action.(k8stesting.DeleteAction)
+		name := deleteAction.GetName()
+		logrus.Infof("Deleting statefulset %s", name)
+		return true, nil, nil
+	})
+	// Create a mock Clients instance
+	mockClients := &mockutils.MockClients{}
+
+	// Set up the mock behavior for the CreatePodClient method
+	mockClients.On("CreatePodClient", namespace).Return(
+		&pod.Client{
+			Interface: clientSet.CoreV1().Pods(namespace),
+		},
+		nil,
+	)
+
+	// Set up the mock behavior for the CreatePodClient method
+	mockClients.On("CreateStatefulSetClient", namespace).Return(
+		&statefulset.Client{
+			Interface: clientSet.AppsV1().StatefulSets(namespace),
+		},
+		nil,
+	)
+
 	kubeClient := k8sclient.KubeClient{
-		ClientSet: client,
+		ClientSet: clientSet,
 		Config:    &rest.Config{},
 	}
+
 	pvcClient, err := kubeClient.CreatePVCClient(namespace)
 	podClient, err := kubeClient.CreatePodClient(namespace)
+
 	scClient, _ := kubeClient.CreateSCClient()
 	pvClient, _ := kubeClient.CreatePVClient()
 	stsClient, _ := kubeClient.CreateStatefulSetClient(namespace)
@@ -46,46 +115,439 @@ func TestVolumeMigrateSuite_Run(t *testing.T) {
 		PersistentVolumeClient: pvClient,
 	}
 
-	storageClass := "source-storage-class"
+	storageClass2 := "source-storage-class"
 	// Simulate the existence of the storage class
-	_, err = client.StorageV1().StorageClasses().Create(context.TODO(), &storagev1.StorageClass{
+	_, err = clientSet.StorageV1().StorageClasses().Create(context.TODO(), &storagev1.StorageClass{
 		ObjectMeta: metav1.ObjectMeta{
-			Name: storageClass,
+			Name: storageClass2,
 		},
 	}, metav1.CreateOptions{})
 
 	assert.NoError(t, err)
 
-	_, err = client.StorageV1().StorageClasses().Create(context.TODO(), &storagev1.StorageClass{
+	_, err = clientSet.StorageV1().StorageClasses().Create(context.TODO(), &storagev1.StorageClass{
 		ObjectMeta: metav1.ObjectMeta{
 			Name: "target-storage-class",
 		},
 	}, metav1.CreateOptions{})
-
 	assert.NoError(t, err)
+
+	// create a pod in fake namespace
+	podObj := &v1.Pod{
+		Spec: v1.PodSpec{
+			Containers: []v1.Container{
+				{
+					Name:  "nginx2",
+					Image: "nginx:latest",
+					Ports: []v1.ContainerPort{
+						{
+							ContainerPort: 9090,
+						},
+					},
+				},
+			},
+		},
+	}
+	_, err = clientSet.CoreV1().Pods(namespace).Create(context.Background(), podObj, metav1.CreateOptions{})
+	assert.NoError(t, err)
+
+	var replicas int32 = 1
+	// Create a fake statefulset
+	sts := &appsv1.StatefulSet{
+		ObjectMeta: metav1.ObjectMeta{
+			Namespace: namespace,
+		},
+		Spec: appsv1.StatefulSetSpec{
+			Replicas: &replicas,
+			VolumeClaimTemplates: []v1.PersistentVolumeClaim{
+				{
+					ObjectMeta: metav1.ObjectMeta{
+						Name: "test-pvc",
+					},
+					Spec: v1.PersistentVolumeClaimSpec{
+						AccessModes: []v1.PersistentVolumeAccessMode{
+							v1.ReadWriteOnce,
+						},
+					},
+				},
+			},
+			Template: v1.PodTemplateSpec{
+				Spec: v1.PodSpec{
+					Containers: []v1.Container{
+						{
+							Name: "test-container",
+							Ports: []v1.ContainerPort{
+								{
+									ContainerPort: 80,
+								},
+							},
+						},
+					},
+					Volumes: []v1.Volume{
+						{
+							Name: "test-volume",
+							VolumeSource: v1.VolumeSource{
+								PersistentVolumeClaim: &v1.PersistentVolumeClaimVolumeSource{
+									ClaimName: "test-pvc",
+								},
+							},
+						},
+					},
+				},
+			},
+		},
+	}
+
+	_ = stsClient.Create(context.TODO(), sts)
 
 	suite := &VolumeMigrateSuite{
 		TargetSC:     "target-storage-class",
 		Description:  "Test Volume Migration",
 		VolumeNumber: 2,
-		PodNumber:    3,
+		PodNumber:    1,
 		Image:        "quay.io/centos/centos:latest",
 	}
+	t.Run("Test with Custom Values", func(t *testing.T) {
+		delFunc, err := suite.Run(context.TODO(), "source-storage-class", clients)
+		assert.Error(t, err)
+		assert.NotNil(t, delFunc)
+	})
+	t.Run("Test for data writing success", func(t *testing.T) {
+		// we will set fake hash checker to throw success message on fake object
+		podClient.RemoteExecutor = &mockutils.FakeRemoteExecutor{}
+		podClient.RemoteExecutor = &mockutils.FakeHashRemoteExecutor{}
+
+		delFunc, err := suite.Run(context.TODO(), "source-storage-class", clients)
+		assert.NoError(t, err)
+		assert.NotNil(t, delFunc)
+	})
+	t.Run("Test with Custom Values and volumes inside the pod", func(t *testing.T) {
+		// Create a fake storage class with VolumeBindingMode set to WaitForFirstConsumer
+		storageClass := &storagev1.StorageClass{
+			ObjectMeta: metav1.ObjectMeta{Name: "test-storage-class"},
+			VolumeBindingMode: func() *storagev1.VolumeBindingMode {
+				mode := storagev1.VolumeBindingWaitForFirstConsumer
+				return &mode
+			}(),
+		}
+		clientSet := mockutils.NewFakeClientsetWithRestClient(storageClass)
+
+		// Set up a reactor to simulate Pods becoming Ready
+		clientSet.Fake.PrependReactor("create", "pods", func(action k8stesting.Action) (bool, runtime.Object, error) {
+			createAction := action.(k8stesting.CreateAction)
+			podItemObj := createAction.GetObject().(*v1.Pod)
+			// Set podObj phase to Running
+			podItemObj.Status.Phase = v1.PodRunning
+			// Simulate the Ready condition
+			podItemObj.Status.Conditions = append(podItemObj.Status.Conditions, v1.PodCondition{
+				Type:   v1.PodReady,
+				Status: v1.ConditionTrue,
+			})
+			podItemObj.Labels = map[string]string{"app": "unified-test"}
+			return false, nil, nil // Allow normal processing to continue
+		})
+
+		clientSet.Fake.PrependReactor("delete", "pods", func(action k8stesting.Action) (bool, runtime.Object, error) {
+			deleteAction := action.(k8stesting.DeleteAction)
+			podName := deleteAction.GetName()
+			logrus.Infof("Deleting pod %s", podName)
+			return true, nil, nil // Allow normal processing to continue
+		})
+
+		clientSet.Fake.PrependReactor("create", "statefulsets", func(action k8stesting.Action) (handled bool, ret runtime.Object, err error) {
+			createAction := action.(k8stesting.CreateAction)
+			statefulSet := createAction.GetObject().(*appsv1.StatefulSet)
+			statefulSet.Status.Replicas = *statefulSet.Spec.Replicas
+			statefulSet.Status.ReadyReplicas = 3
+			return true, statefulSet, nil
+		})
+		clientSet.Fake.PrependReactor("delete", "statefulsets", func(action k8stesting.Action) (handled bool, ret runtime.Object, err error) {
+			deleteAction := action.(k8stesting.DeleteAction)
+			name := deleteAction.GetName()
+			logrus.Infof("Deleting statefulset %s", name)
+			return true, nil, nil
+		})
+		// Create a mock Clients instance
+		mockClients := &mockutils.MockClients{}
+
+		// Set up the mock behavior for the CreatePodClient method
+		mockClients.On("CreatePodClient", namespace).Return(
+			&pod.Client{
+				Interface: clientSet.CoreV1().Pods(namespace),
+			},
+			nil,
+		)
+
+		// Set up the mock behavior for the CreatePodClient method
+		mockClients.On("CreateStatefulSetClient", namespace).Return(
+			&statefulset.Client{
+				Interface: clientSet.AppsV1().StatefulSets(namespace),
+			},
+			nil,
+		)
+
+		kubeClient := k8sclient.KubeClient{
+			ClientSet: clientSet,
+			Config:    &rest.Config{},
+		}
+
+		pvcClient, err := kubeClient.CreatePVCClient(namespace)
+		podClient, err := kubeClient.CreatePodClient(namespace)
+		scClient, _ := kubeClient.CreateSCClient()
+		pvClient, _ := kubeClient.CreatePVClient()
+		stsClient, _ := kubeClient.CreateStatefulSetClient(namespace)
+
+		ctx, cancel = context.WithTimeout(context.Background(), 1*time.Second)
+		defer cancel()
+
+		clients := &k8sclient.Clients{
+			PVCClient:              pvcClient,
+			PodClient:              podClient,
+			StatefulSetClient:      stsClient,
+			SCClient:               scClient,
+			PersistentVolumeClient: pvClient,
+		}
+
+		storageClass2 := "source-storage-class"
+		// Simulate the existence of the storage class
+		_, err = clientSet.StorageV1().StorageClasses().Create(context.TODO(), &storagev1.StorageClass{
+			ObjectMeta: metav1.ObjectMeta{
+				Name: storageClass2,
+			},
+		}, metav1.CreateOptions{})
+
+		assert.NoError(t, err)
+
+		_, err = clientSet.StorageV1().StorageClasses().Create(context.TODO(), &storagev1.StorageClass{
+			ObjectMeta: metav1.ObjectMeta{
+				Name: "target-storage-class",
+			},
+		}, metav1.CreateOptions{})
+		assert.NoError(t, err)
+
+		// create a pod in fake namespace
+		podObj := &v1.Pod{
+			Spec: v1.PodSpec{
+				Volumes: []v1.Volume{
+					{
+						Name: "pvc1",
+						VolumeSource: v1.VolumeSource{
+							PersistentVolumeClaim: &v1.PersistentVolumeClaimVolumeSource{
+								ClaimName: "pvc1",
+							},
+						},
+					},
+				},
+				Containers: []v1.Container{
+					{
+						Name:  "nginx2",
+						Image: "nginx:latest",
+						Ports: []v1.ContainerPort{
+							{
+								ContainerPort: 9090,
+							},
+						},
+					},
+				},
+			},
+		}
+		_, err = clientSet.CoreV1().Pods(namespace).Create(context.Background(), podObj, metav1.CreateOptions{})
+		assert.NoError(t, err)
+
+		var replicas int32 = 1
+		// Create a fake statefulset
+		sts = &appsv1.StatefulSet{
+			ObjectMeta: metav1.ObjectMeta{
+				Namespace: namespace,
+			},
+			Spec: appsv1.StatefulSetSpec{
+				Replicas: &replicas,
+				VolumeClaimTemplates: []v1.PersistentVolumeClaim{
+					{
+						ObjectMeta: metav1.ObjectMeta{
+							Name: "test-pvc",
+						},
+						Spec: v1.PersistentVolumeClaimSpec{
+							AccessModes: []v1.PersistentVolumeAccessMode{
+								v1.ReadWriteOnce,
+							},
+						},
+					},
+				},
+				Template: v1.PodTemplateSpec{
+					Spec: v1.PodSpec{
+						Containers: []v1.Container{
+							{
+								Name: "test-container",
+								Ports: []v1.ContainerPort{
+									{
+										ContainerPort: 80,
+									},
+								},
+							},
+						},
+						Volumes: []v1.Volume{
+							{
+								Name: "test-volume",
+								VolumeSource: v1.VolumeSource{
+									PersistentVolumeClaim: &v1.PersistentVolumeClaimVolumeSource{
+										ClaimName: "test-pvc",
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+		}
+		// Create a PVC object
+		pvc := &v1.PersistentVolumeClaim{
+			ObjectMeta: metav1.ObjectMeta{
+				Name:      "pvc1",
+				Namespace: namespace,
+			},
+			Spec: v1.PersistentVolumeClaimSpec{
+				VolumeName: "fake",
+				AccessModes: []v1.PersistentVolumeAccessMode{
+					v1.ReadWriteOnce,
+				},
+			},
+			Status: v1.PersistentVolumeClaimStatus{
+				Phase: v1.ClaimBound,
+			},
+		}
+
+		// Create the namespace
+		_ = pvcClient.Create(context.TODO(), pvc)
+
+		delFunc, err := suite.Run(context.TODO(), "source-storage-class", clients)
+		assert.Error(t, err)
+		assert.NotNil(t, delFunc)
+	})
 
 	t.Run("Test with Default Values", func(t *testing.T) {
 		suite.VolumeNumber = 0
 		suite.PodNumber = 0
 		suite.Image = ""
-		delFunc, err := suite.Run(ctx, "source-storage-class", clients)
+		delFunc, err := suite.Run(context.TODO(), "invalid-storage-class", clients)
 		assert.Error(t, err)
 		assert.Nil(t, delFunc)
 	})
 
-	t.Run("Test with Invalid StorageClass", func(t *testing.T) {
+	t.Run("Test with Invalid source StorageClass", func(t *testing.T) {
 		delFunc, err := suite.Run(ctx, "invalid-storage-class", clients)
 		assert.Error(t, err)
 		assert.Nil(t, delFunc)
 	})
+	t.Run("Test with Invalid target StorageClass", func(t *testing.T) {
+		kubeClient := k8sclient.KubeClient{
+			ClientSet: fake.NewSimpleClientset(),
+			Config:    &rest.Config{},
+		}
+		scClient2, _ := kubeClient.CreateSCClient()
+		clients2 := &k8sclient.Clients{
+			PVCClient:              pvcClient,
+			PodClient:              podClient,
+			StatefulSetClient:      stsClient,
+			SCClient:               scClient2,
+			PersistentVolumeClient: pvClient,
+		}
+		// Create a fake storage class
+		sc2 := &storagev1.StorageClass{
+			ObjectMeta: metav1.ObjectMeta{
+				Name: "src",
+			},
+		}
+		err = clients2.SCClient.Create(context.TODO(), sc2)
+		assert.NoError(t, err)
+		delFunc, err := suite.Run(ctx, "src", clients2)
+		assert.Error(t, err)
+		assert.Nil(t, delFunc)
+	})
+	t.Run("Test create sync error", func(t *testing.T) {
+		kubeClient := k8sclient.KubeClient{
+			ClientSet: fake.NewSimpleClientset(),
+			Config:    &rest.Config{},
+		}
+		scClient2, _ := kubeClient.CreateSCClient()
+		clients2 := &k8sclient.Clients{
+			PVCClient:              pvcClient,
+			PodClient:              podClient,
+			StatefulSetClient:      stsClient,
+			SCClient:               scClient2,
+			PersistentVolumeClient: pvClient,
+		}
+		// Create a fake storage class
+		sc2 := &storagev1.StorageClass{
+			ObjectMeta: metav1.ObjectMeta{
+				Name: "src",
+			},
+		}
+		err = clients2.SCClient.Create(context.TODO(), sc2)
+		assert.NoError(t, err)
+		sc3 := &storagev1.StorageClass{
+			ObjectMeta: metav1.ObjectMeta{
+				Name: "target-storage-class",
+			},
+		}
+		err = clients2.SCClient.Create(context.TODO(), sc3)
+		assert.NoError(t, err)
+
+		var replicas int32 = 1
+		// Create a fake statefulset
+		sts2 := &appsv1.StatefulSet{
+			ObjectMeta: metav1.ObjectMeta{
+				Namespace:    namespace,
+				Name:         "sts-volume-migrate-test",
+				GenerateName: "sts-volume-migrate-test",
+			},
+			Spec: appsv1.StatefulSetSpec{
+				Replicas: &replicas,
+				VolumeClaimTemplates: []v1.PersistentVolumeClaim{
+					{
+						ObjectMeta: metav1.ObjectMeta{
+							Name: "test-pvc",
+						},
+						Spec: v1.PersistentVolumeClaimSpec{
+							AccessModes: []v1.PersistentVolumeAccessMode{
+								v1.ReadWriteOnce,
+							},
+						},
+					},
+				},
+				Template: v1.PodTemplateSpec{
+					Spec: v1.PodSpec{
+						Containers: []v1.Container{
+							{
+								Name: "test-container",
+								Ports: []v1.ContainerPort{
+									{
+										ContainerPort: 80,
+									},
+								},
+							},
+						},
+						Volumes: []v1.Volume{
+							{
+								Name: "test-volume",
+								VolumeSource: v1.VolumeSource{
+									PersistentVolumeClaim: &v1.PersistentVolumeClaimVolumeSource{
+										ClaimName: "test-pvc",
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+		}
+		stsClient.Create(context.TODO(), sts2)
+
+		delFunc, err := suite.Run(ctx, "src", clients2)
+		assert.Error(t, err)
+		assert.Nil(t, delFunc)
+	})
+
 }
 
 func TestVolumeMigrateSuite_GetClients(t *testing.T) {
@@ -100,7 +562,7 @@ func TestVolumeMigrateSuite_GetClients(t *testing.T) {
 
 	validNs := "valid-namespace"
 	// Define the namespace object
-	namespace := &corev1.Namespace{
+	namespace := &v1.Namespace{
 		ObjectMeta: metav1.ObjectMeta{
 			Name: validNs,
 		},
@@ -190,60 +652,58 @@ func TestVolumeMigrateSuite_Parameters(t *testing.T) {
 	})
 }
 
-// FakeRoundTripper is a custom RoundTripper that returns predefined HTTP responses.
-type FakeRoundTripper struct {
-	Response *http.Response
-	Err      error
-}
-
-// RoundTrip executes a single HTTP transaction and returns a predefined response.
-func (frt *FakeRoundTripper) RoundTrip(req *http.Request) (*http.Response, error) {
-	return frt.Response, frt.Err
-}
 func TestVolumeMigrateSuite_validateSTS(t *testing.T) {
-	client := fake.NewSimpleClientset()
-	kubeClient := k8sclient.KubeClient{
-		ClientSet: client,
-		Config: &rest.Config{
-			Host:                "",
-			APIPath:             "",
-			ContentConfig:       rest.ContentConfig{},
-			Username:            "",
-			Password:            "",
-			BearerToken:         "",
-			BearerTokenFile:     "",
-			Impersonate:         rest.ImpersonationConfig{},
-			AuthProvider:        nil,
-			AuthConfigPersister: nil,
-			ExecProvider: &api.ExecConfig{
-				Command:                 "",
-				Args:                    nil,
-				Env:                     nil,
-				APIVersion:              "",
-				InstallHint:             "",
-				ProvideClusterInfo:      false,
-				InteractiveMode:         "",
-				StdinUnavailable:        false,
-				StdinUnavailableMessage: "",
-			},
-			TLSClientConfig:    rest.TLSClientConfig{},
-			UserAgent:          "",
-			DisableCompression: false,
-			Transport:          &FakeRoundTripper{},
-			WrapTransport:      nil,
-			QPS:                0,
-			Burst:              0,
-			RateLimiter:        nil,
-			WarningHandler:     nil,
-			Timeout:            0,
-			Dial:               nil,
-			Proxy:              nil,
+	// Mock storageClass
+	// Create a fake storage class with VolumeBindingMode set to WaitForFirstConsumer
+	storageClass := &storagev1.StorageClass{
+		ObjectMeta: metav1.ObjectMeta{Name: "test-storage-class"},
+		VolumeBindingMode: func() *storagev1.VolumeBindingMode {
+			mode := storagev1.VolumeBindingWaitForFirstConsumer
+			return &mode
+		}(),
+	}
+	clientSet := mockutils.NewFakeClientsetWithRestClient(storageClass)
+
+	// Set up a reactor to simulate Pods becoming Ready
+	clientSet.Fake.PrependReactor("create", "pods", func(action k8stesting.Action) (bool, runtime.Object, error) {
+		createAction := action.(k8stesting.CreateAction)
+		pod := createAction.GetObject().(*v1.Pod)
+		// Set pod phase to Running
+		pod.Status.Phase = v1.PodRunning
+		// Simulate the Ready condition
+		pod.Status.Conditions = append(pod.Status.Conditions, v1.PodCondition{
+			Type:   v1.PodReady,
+			Status: v1.ConditionTrue,
+		})
+		return false, nil, nil // Allow normal processing to continue
+	})
+
+	clientSet.Fake.PrependReactor("create", "statefulsets", func(action k8stesting.Action) (handled bool, ret runtime.Object, err error) {
+		createAction := action.(k8stesting.CreateAction)
+		statefulSet := createAction.GetObject().(*appsv1.StatefulSet)
+		statefulSet.Status.Replicas = *statefulSet.Spec.Replicas
+
+		return true, statefulSet, nil
+	})
+	// Create a mock Clients instance
+	mockClients := &mockutils.MockClients{}
+
+	// Set up the mock behavior for the CreatePodClient method
+	mockClients.On("CreatePodClient", "test-namespace").Return(
+		&pod.Client{
+			Interface: clientSet.CoreV1().Pods("test-namespace"),
 		},
+		nil,
+	)
+
+	kubeClient := k8sclient.KubeClient{
+		ClientSet: clientSet,
+		Config:    &rest.Config{},
 	}
 	// Create a new VolumeMigrateSuite instance
 	vms := &VolumeMigrateSuite{
 		TargetSC: "target-sc",
-		Flag:     true,
+		Flag:     false,
 		Image:    "quay.io/centos/centos:latest",
 	}
 
@@ -257,33 +717,36 @@ func TestVolumeMigrateSuite_validateSTS(t *testing.T) {
 
 	stsConf := &statefulset.Config{}
 	podClient, _ := kubeClient.CreatePodClient("test-namespace")
-	podClient.Config = &rest.Config{}
-	podClient.RemoteExecutor = &pod.DefaultRemoteExecutor{}
+	podClient.RemoteExecutor = &mockutils.FakeRemoteExecutor{}
+	podClient.RemoteExecutor = &mockutils.FakeHashRemoteExecutor{}
 	pvClient, _ := kubeClient.CreatePVClient()
 
 	// Create a fake v1.Pod object
-	podObj := corev1.Pod{
+	podObj := v1.Pod{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      "test-podObj",
 			Namespace: "test-namespace",
 		},
-		Spec: corev1.PodSpec{
-			Containers: []corev1.Container{
+		Status: v1.PodStatus{
+			Phase: v1.PodRunning,
+		},
+		Spec: v1.PodSpec{
+			Containers: []v1.Container{
 				{
 					Name:  "test-container",
 					Image: "test-image",
-					Ports: []corev1.ContainerPort{
+					Ports: []v1.ContainerPort{
 						{
 							ContainerPort: 80,
 						},
 					},
 				},
 			},
-			Volumes: []corev1.Volume{
+			Volumes: []v1.Volume{
 				{
 					Name: "test-volume",
-					VolumeSource: corev1.VolumeSource{
-						PersistentVolumeClaim: &corev1.PersistentVolumeClaimVolumeSource{
+					VolumeSource: v1.VolumeSource{
+						PersistentVolumeClaim: &v1.PersistentVolumeClaimVolumeSource{
 							ClaimName: "test-pvc",
 						},
 					},
@@ -292,19 +755,19 @@ func TestVolumeMigrateSuite_validateSTS(t *testing.T) {
 		},
 	}
 	// Create a PVC object
-	pvc := &corev1.PersistentVolumeClaim{
+	pvc := &v1.PersistentVolumeClaim{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      "test-pvc",
 			Namespace: "test-namespace",
 		},
-		Spec: corev1.PersistentVolumeClaimSpec{
+		Spec: v1.PersistentVolumeClaimSpec{
 			VolumeName: "fake",
-			AccessModes: []corev1.PersistentVolumeAccessMode{
-				corev1.ReadWriteOnce,
+			AccessModes: []v1.PersistentVolumeAccessMode{
+				v1.ReadWriteOnce,
 			},
 		},
-		Status: corev1.PersistentVolumeClaimStatus{
-			Phase: corev1.ClaimBound,
+		Status: v1.PersistentVolumeClaimStatus{
+			Phase: v1.ClaimBound,
 		},
 	}
 
@@ -313,37 +776,204 @@ func TestVolumeMigrateSuite_validateSTS(t *testing.T) {
 	_ = podClient.Create(context.TODO(), &podObj)
 
 	// Create a fake PV object
-	pv := &corev1.PersistentVolume{
+	pv := &v1.PersistentVolume{
 		ObjectMeta: metav1.ObjectMeta{
 			Annotations: map[string]string{
 				"migration.storage.dell.com/migrate-to": "target-storage-class",
 			},
 			Name: "fake",
 		},
-		Spec: corev1.PersistentVolumeSpec{
-			Capacity: corev1.ResourceList{
-				corev1.ResourceStorage: resource.MustParse("1Gi"),
+		Spec: v1.PersistentVolumeSpec{
+			Capacity: v1.ResourceList{
+				v1.ResourceStorage: resource.MustParse("1Gi"),
 			},
-			AccessModes: []corev1.PersistentVolumeAccessMode{
-				corev1.ReadWriteOnce,
+			AccessModes: []v1.PersistentVolumeAccessMode{
+				v1.ReadWriteOnce,
 			},
-			PersistentVolumeReclaimPolicy: corev1.PersistentVolumeReclaimRetain,
+			PersistentVolumeReclaimPolicy: v1.PersistentVolumeReclaimRetain,
 		},
 	}
 
 	// Create the fake PV
-	_, err = client.CoreV1().PersistentVolumes().Create(context.TODO(), pv, metav1.CreateOptions{})
+	_, err = clientSet.CoreV1().PersistentVolumes().Create(context.TODO(), pv, metav1.CreateOptions{})
 	assert.NoError(t, err)
 
 	pv.Name = "fake-to-target-sc"
 	// Create target fake PV
-	_, err = client.CoreV1().PersistentVolumes().Create(context.TODO(), pv, metav1.CreateOptions{})
+	_, err = clientSet.CoreV1().PersistentVolumes().Create(context.TODO(), pv, metav1.CreateOptions{})
 	assert.NoError(t, err)
 
 	// Call the validateSTS function
 	err = vms.validateSTS(logger, pvcClient, ctx, podObj.Spec.Volumes[0], nil, &[]string{}, pvClient, stsConf, podClient, podObj)
-
 	// Assert the expected error
 	assert.NoError(t, err)
 
+	//when flag is set to true
+	vms.Flag = true
+	// Call the validateSTS function
+	err = vms.validateSTS(logger, pvcClient, ctx, podObj.Spec.Volumes[0], nil, &[]string{}, pvClient, stsConf, podClient, podObj)
+	// Assert the expected error
+	assert.NoError(t, err)
+}
+
+func TestDeleteFunction(t *testing.T) {
+	client := mockutils.NewFakeClientsetWithRestClient()
+	kubeClient := k8sclient.KubeClient{
+		ClientSet: client,
+		Config:    &rest.Config{},
+	}
+	pvClient, _ := kubeClient.CreatePVClient()
+	ctx := context.Background()
+	log := logrus.Entry{Logger: logrus.New()}
+
+	// Create some fake PVs
+	pv1 := &v1.PersistentVolume{
+		ObjectMeta: metav1.ObjectMeta{
+			Name: "fake",
+		},
+		Spec: v1.PersistentVolumeSpec{
+			Capacity: v1.ResourceList{
+				v1.ResourceStorage: resource.MustParse("1Gi"),
+			},
+			AccessModes: []v1.PersistentVolumeAccessMode{
+				v1.ReadWriteOnce,
+			},
+			PersistentVolumeReclaimPolicy: v1.PersistentVolumeReclaimRetain,
+		},
+	}
+
+	// Create the fake PV
+	_, err := client.CoreV1().PersistentVolumes().Create(context.TODO(), pv1, metav1.CreateOptions{})
+	assert.NoError(t, err)
+
+	t.Run("Test delete function with valid PV names", func(t *testing.T) {
+		// Call the delete function with a list of PV names
+		err = deleteFunction(&log, pvClient, ctx, []string{"fake"})
+		assert.NoError(t, err)
+	})
+	t.Run("Test delete function with invalid PVs", func(t *testing.T) {
+		// Call the delete function with a list of PV names
+		err = deleteFunction(&log, pvClient, ctx, []string{})
+		assert.NoError(t, err)
+	})
+}
+func TestDeletePodsAndVolumes(t *testing.T) {
+	// Create a mock Kubernetes clientset
+	clientset := fake.NewSimpleClientset()
+	namespace := "fake-namespace"
+	// Create a fake pod list
+	podList := &v1.PodList{
+		Items: []v1.Pod{
+			{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "pod1",
+					Namespace: namespace,
+				},
+				Spec: v1.PodSpec{
+					Volumes: []v1.Volume{
+						{
+							Name: "pvc1",
+							VolumeSource: v1.VolumeSource{
+								PersistentVolumeClaim: &v1.PersistentVolumeClaimVolumeSource{
+									ClaimName: "pvc1",
+								},
+							},
+						},
+					},
+				},
+			},
+			{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "pod2",
+					Namespace: namespace,
+				},
+				Spec: v1.PodSpec{
+					Volumes: []v1.Volume{
+						{
+							Name: "pvc2",
+							VolumeSource: v1.VolumeSource{
+								PersistentVolumeClaim: &v1.PersistentVolumeClaimVolumeSource{
+									ClaimName: "pvc2",
+								},
+							},
+						},
+					},
+				},
+			},
+		},
+	}
+
+	clientSet := fake.NewSimpleClientset(podList)
+	kubeClient := k8sclient.KubeClient{
+		ClientSet: clientSet,
+		Config:    &rest.Config{},
+	}
+
+	pvcClient, err := kubeClient.CreatePVCClient(namespace)
+	podClient, err := kubeClient.CreatePodClient(namespace)
+
+	// Create a fake logger
+	logger := logrus.Entry{Logger: logrus.New()}
+
+	// Create a context
+	ctx := context.Background()
+	// Create a PVC object
+	pvc := &v1.PersistentVolumeClaim{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      "pvc1",
+			Namespace: namespace,
+		},
+		Spec: v1.PersistentVolumeClaimSpec{
+			VolumeName: "fake",
+			AccessModes: []v1.PersistentVolumeAccessMode{
+				v1.ReadWriteOnce,
+			},
+		},
+		Status: v1.PersistentVolumeClaimStatus{
+			Phase: v1.ClaimBound,
+		},
+	}
+
+	// Create the namespace
+	_ = pvcClient.Create(context.TODO(), pvc)
+
+	pvc2 := &v1.PersistentVolumeClaim{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      "pvc2",
+			Namespace: namespace,
+		},
+		Spec: v1.PersistentVolumeClaimSpec{
+			VolumeName: "pvc2",
+			AccessModes: []v1.PersistentVolumeAccessMode{
+				v1.ReadWriteOnce,
+			},
+		},
+		Status: v1.PersistentVolumeClaimStatus{
+			Phase: v1.ClaimBound,
+		},
+	}
+	_ = pvcClient.Create(context.TODO(), pvc2)
+	// Call the function
+	_, err, _ = deletePodsAndVolumes(ctx, &logger, podList, pvcClient, nil, podClient)
+	assert.NoError(t, err)
+
+	// Check that the pods and pvcs were deleted
+	pods, err := clientset.CoreV1().Pods(namespace).List(ctx, metav1.ListOptions{})
+	assert.NoError(t, err)
+	assert.Equal(t, len(pods.Items), 0)
+
+	pvcs, err := clientset.CoreV1().PersistentVolumeClaims(namespace).List(ctx, metav1.ListOptions{})
+	assert.NoError(t, err)
+	assert.Equal(t, len(pvcs.Items), 0)
+
+	t.Run("Test for PVC Get error", func(t *testing.T) {
+		// Call the delete function with a list of PV names
+		_, err, _ = deletePodsAndVolumes(ctx, &logger, podList, pvcClient, nil, podClient)
+		assert.Error(t, err)
+	})
+	t.Run("Test for PVC Delete error", func(t *testing.T) {
+		// Call the delete function with a list of PV names
+		_, err, _ = deletePodsAndVolumes(ctx, &logger, podList, pvcClient, nil, podClient)
+		assert.Error(t, err)
+	})
 }

@@ -5,6 +5,8 @@ package mockutils
 
 import (
 	"fmt"
+	"github.com/dell/cert-csi/pkg/k8sclient/resources/pod"
+	"github.com/dell/cert-csi/pkg/k8sclient/resources/statefulset"
 	snapshotv1 "github.com/kubernetes-csi/external-snapshotter/client/v4/clientset/versioned/typed/volumesnapshot/v1"
 	"github.com/stretchr/testify/mock"
 	"io"
@@ -161,4 +163,34 @@ func (m *RESTMapping) RESTMappings(gk schema.GroupKind, versions ...string) ([]*
 func (m *RESTMapping) ResourceSingularizer(resource string) (string, error) {
 	args := m.Called(resource)
 	return args.String(0), args.Error(1)
+}
+
+type FakeHashRemoteExecutor struct{}
+
+func (FakeHashRemoteExecutor) Execute(method string, url *url.URL, config *rest.Config, stdin io.Reader, stdout,
+	stderr io.Writer, tty bool, terminalSizeQueue remotecommand.TerminalSizeQueue) error {
+	Output := "OK"
+	_, err := fmt.Fprint(stdout, Output)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+type MockClients struct {
+	mock.Mock
+}
+
+// CreatePodClient is a mock implementation of the CreatePodClient method
+func (c *MockClients) CreatePodClient(namespace string) (*pod.Client, error) {
+	args := c.Called(namespace)
+	podClient, err := args.Get(0).(*pod.Client), args.Error(1)
+	return podClient, err
+}
+
+// CreateStatefulSetClient is a mock implementation of the CreatePodClient method
+func (c *MockClients) CreateStatefulSetClient(namespace string) (*statefulset.Client, error) {
+	args := c.Called(namespace)
+	stsClient, err := args.Get(0).(*statefulset.Client), args.Error(1)
+	return stsClient, err
 }
