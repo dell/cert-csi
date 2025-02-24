@@ -1,10 +1,13 @@
 package cmd
 
 import (
-	"github.com/urfave/cli"
+	"flag"
+	"os"
+	"strings"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/urfave/cli"
 )
 
 func TestGetCleanupCommand(t *testing.T) {
@@ -28,9 +31,117 @@ func TestGetCleanupCommand(t *testing.T) {
 				Usage: "include this flag to auto approve cleanup cmd. Could be useful if you are running cert-csi from non-interactive environment",
 			},
 		},
+		Action: func(c *cli.Context) error {
+			return nil
+		},
 	}
 
 	actual := GetCleanupCommand()
 
+	// Check the non-Action fields. We will test Action in next function
+	expected.Action = nil
+	actual.Action = nil
 	assert.Equal(t, expected, actual)
+}
+
+func TestGetCleanupCommandAction(t *testing.T) {
+	// Create dummy KubeConfig
+	kubeConfig, _ := createDummyKubeConfig(t.TempDir(), t)
+
+	// Default context
+	set := flag.NewFlagSet("test", 0)
+	set.String("config", "", "config for connecting to kubernetes")
+	set.String("timeout", "30s", "set the timeout value for all of the resources (accepts format like 2h30m15s) default is 30s")
+	set.Bool("yes", false, "include this flag to auto approve cleanup cmd. Could be useful if you are running cert-csi from non-interactive environment")
+	falseBoolContext := cli.NewContext(nil, set, nil)
+
+	// Invalid config context
+	set2 := flag.NewFlagSet("test2", 0)
+	set2.String("config", "", "config for connecting to kubernetes")
+	set2.String("timeout", "30s", "set the timeout value for all of the resources (accepts format like 2h30m15s) default is 30s")
+	set2.Bool("yes", true, "include this flag to auto approve cleanup cmd. Could be useful if you are running cert-csi from non-interactive environment")
+	invalidConfigContext := cli.NewContext(nil, set2, nil)
+
+	// Invalid timeout context
+	// set3 := flag.NewFlagSet("test2", 0)
+	// set3.String("config", kubeConfig, "config for connecting to kubernetes")
+	// set3.String("timeout", "sdfsdf", "set the timeout value for all of the resources (accepts format like 2h30m15s) default is 30s")
+	// set3.Bool("yes", true, "include this flag to auto approve cleanup cmd. Could be useful if you are running cert-csi from non-interactive environment")
+	// invalidTimeoutContext := cli.NewContext(nil, set3, nil)
+
+	// Valid config context
+	set4 := flag.NewFlagSet("test2", 0)
+	set4.String("config", kubeConfig, "config for connecting to kubernetes")
+	set4.String("timeout", "30s", "set the timeout value for all of the resources (accepts format like 2h30m15s) default is 30s")
+	set4.Bool("yes", true, "include this flag to auto approve cleanup cmd. Could be useful if you are running cert-csi from non-interactive environment")
+	validContext := cli.NewContext(nil, set4, nil)
+
+	// Get the cleanup command
+	cmd := GetCleanupCommand()
+
+	tests := []struct {
+		name      string
+		context   *cli.Context
+		expectErr bool
+	}{
+		{
+			name:      "Testing with false bool context",
+			context:   falseBoolContext,
+			expectErr: false,
+		},
+		{
+			name:      "Testing with invalid config context",
+			context:   invalidConfigContext,
+			expectErr: true,
+		},
+		// {
+		// 	name:      "Testing with invalid timeout context",
+		// 	context:   invalidTimeoutContext,
+		// 	expectErr: true,
+		// },
+		{
+			name:      "Testing with true bool and valid config context",
+			context:   validContext,
+			expectErr: true,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			// Override the default os.Stdout with our buffer
+			stdout := os.Stdout
+			os.Stdout = os.NewFile(0, "stdout")
+
+			// Mock the user input
+			input := "n"
+
+			// Create a new strings.Reader from the input
+			reader := strings.NewReader(input)
+
+			// Create a new os.File from the strings.Reader
+			stdinFile := os.NewFile(0, "stdin")
+			stdinFile.ReadFrom(reader)
+
+			// Override the default os.Stdin with our file
+			oldStdin := os.Stdin
+			os.Stdin = stdinFile
+
+			// Call the action function
+			action := cmd.Action
+			actionFunc := action.(func(c *cli.Context) error)
+			err := actionFunc(tt.context)
+
+			// Restore the original os.Stdin
+			os.Stdin = oldStdin
+
+			// Restore the original os.Stdout
+			os.Stdout = stdout
+
+			if tt.expectErr {
+				assert.Error(t, err)
+			} else {
+				assert.NoError(t, err)
+			}
+		})
+	}
 }
