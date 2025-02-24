@@ -1,6 +1,6 @@
 /*
  *
- * Copyright © 2022-2023 Dell Inc. or its subsidiaries. All Rights Reserved.
+ * Copyright © 2022-2025 Dell Inc. or its subsidiaries. All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -22,8 +22,6 @@ import (
 	"strconv"
 	"strings"
 	"time"
-
-	log "github.com/sirupsen/logrus"
 )
 
 const (
@@ -41,47 +39,31 @@ type ExtendedDuration struct {
 }
 
 // ParseDuration parse duration string and returns ExtendedDuration struct
-func ParseDuration(str string) (*ExtendedDuration, error) {
-	r := regexp.MustCompile(`(?P<weeks>\d+[wW])?(?P<days>\d+[dD])?(?P<hours>\d+[hH])?(?P<minutes>\d+[mM])?(?P<seconds>\d+[sS])?`)
+func ParseDuration(duration string) (*ExtendedDuration, error) {
+	durationRE := regexp.MustCompile(`(?P<weeks>\d+[wW])?(?P<days>\d+[dD])?(?P<hours>\d+[hH])?(?P<minutes>\d+[mM])?(?P<seconds>\d+[sS])?`)
 	result := &ExtendedDuration{}
-	var err error
-	res := r.FindAllStringSubmatch(str, -1)
+	res := durationRE.FindAllStringSubmatch(duration, -1)
 	for idx := range res {
 		if result.Weeks == 0 && strings.ContainsRune(strings.ToLower(res[idx][1]), 'w') {
-			result.Weeks, err = strconv.Atoi(res[idx][1][:len(res[idx][1])-1])
-			if err != nil {
-				log.Errorf("")
-			}
+			result.Weeks, _ = strconv.Atoi(res[idx][1][:len(res[idx][1])-1])
 		}
 		if result.Days == 0 && strings.ContainsRune(strings.ToLower(res[idx][2]), 'd') {
-			result.Days, err = strconv.Atoi(res[idx][2][:len(res[idx][2])-1])
-			if err != nil {
-				log.Errorf("")
-			}
+			result.Days, _ = strconv.Atoi(res[idx][2][:len(res[idx][2])-1])
 		}
 		if result.Hours == 0 && strings.ContainsRune(strings.ToLower(res[idx][3]), 'h') {
-			result.Hours, err = strconv.Atoi(res[idx][3][:len(res[idx][3])-1])
-			if err != nil {
-				log.Errorf("")
-			}
+			result.Hours, _ = strconv.Atoi(res[idx][3][:len(res[idx][3])-1])
 		}
 		if result.Minutes == 0 && strings.ContainsRune(strings.ToLower(res[idx][4]), 'm') {
-			result.Minutes, err = strconv.Atoi(res[idx][4][:len(res[idx][4])-1])
-			if err != nil {
-				log.Errorf("")
-			}
+			result.Minutes, _ = strconv.Atoi(res[idx][4][:len(res[idx][4])-1])
 		}
 		if result.Seconds == 0 && strings.ContainsRune(strings.ToLower(res[idx][5]), 's') {
-			result.Seconds, err = strconv.Atoi(res[idx][5][:len(res[idx][5])-1])
-			if err != nil {
-				log.Errorf("")
-			}
+			result.Seconds, _ = strconv.Atoi(res[idx][5][:len(res[idx][5])-1])
 		}
 	}
 	if result.Duration() == 0 {
-		return nil, errors.New("wrongly formatted")
+		return nil, errors.New("duration string is not in the correct format")
 	}
-	return result, err
+	return result, nil
 }
 
 // Duration returns time duration
