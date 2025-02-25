@@ -717,9 +717,6 @@ func (suite *PodTestSuite) TestEvictPods() {
 }
 
 func TestCheckEvictionSupport(t *testing.T) {
-	clientSet := fake.NewSimpleClientset()
-	discoveryClient := clientSet.Discovery().(*discoveryFake.FakeDiscovery)
-
 	tests := []struct {
 		name                 string
 		serverGroups         []metav1.APIGroup
@@ -771,7 +768,18 @@ func TestCheckEvictionSupport(t *testing.T) {
 				{
 					Name: "policy",
 					PreferredVersion: metav1.GroupVersionForDiscovery{
-						GroupVersion: "",
+						GroupVersion: "v1",
+					},
+				},
+			},
+			serverResources: []*metav1.APIResourceList{
+				{
+					GroupVersion: "v1",
+					APIResources: []metav1.APIResource{
+						{
+							Name: "pods/eviction",
+							Kind: "Eviction",
+						},
 					},
 				},
 			},
@@ -782,14 +790,16 @@ func TestCheckEvictionSupport(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+			clientSet := fake.NewSimpleClientset()
+			discoveryClient := clientSet.Discovery().(*discoveryFake.FakeDiscovery)
 			discoveryClient.Resources = tt.serverResources
 			// Simulate the server groups response
 			discoveryClient.Fake.Resources = tt.serverResources
-			discoveryClient.Fake.PrependReactor("get", "servergroups", func(_ clientgotesting.Action) (handled bool, ret runtime.Object, err error) {
+			discoveryClient.Fake.PrependReactor("list", "servergroups", func(_ clientgotesting.Action) (handled bool, ret runtime.Object, err error) {
 				return true, &metav1.APIGroupList{Groups: tt.serverGroups}, nil
 			})
 
-			discoveryClient.Fake.PrependReactor("get", "serverresources", func(action clientgotesting.Action) (handled bool, ret runtime.Object, err error) {
+			discoveryClient.Fake.PrependReactor("list", "serverresources", func(action clientgotesting.Action) (handled bool, ret runtime.Object, err error) {
 				getAction := action.(clientgotesting.GetAction)
 				groupVersion := getAction.GetResource().GroupVersion().String()
 				for _, resourceList := range tt.serverResources {
