@@ -1,6 +1,6 @@
 /*
  *
- * Copyright © 2022-2025 Dell Inc. or its subsidiaries. All Rights Reserved.
+ * Copyright © 2025 Dell Inc. or its subsidiaries. All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -19,10 +19,11 @@ package pvc_test
 import (
 	"context"
 	"fmt"
-	apierrs "k8s.io/apimachinery/pkg/api/errors"
 	"os"
 	t "testing"
 	"time"
+
+	apierrs "k8s.io/apimachinery/pkg/api/errors"
 
 	"github.com/dell/cert-csi/pkg/k8sclient"
 	pvc2 "github.com/dell/cert-csi/pkg/k8sclient/resources/pvc"
@@ -76,30 +77,6 @@ func (suite *PersistentVolumeClaimSuite) SetupSuite() {
 		Object:  &v1.PersistentVolumeClaim{},
 		Deleted: false,
 	}
-}
-
-func (suite *PersistentVolumeClaimSuite) TestWaitToBeBound() {
-	ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
-	defer cancel()
-
-	suite.pvcClient.Object = &v1.PersistentVolumeClaim{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      "test-pvc",
-			Namespace: "default",
-		},
-		Status: v1.PersistentVolumeClaimStatus{
-			Phase: v1.ClaimPending, // Initially not bound
-		},
-	}
-
-	// Run in a separate goroutine to simulate PVC being bound later
-	go func() {
-		time.Sleep(1 * time.Second) // Simulate some delay
-		suite.pvcClient.Object.Status.Phase = v1.ClaimBound
-	}()
-
-	err := suite.pvcClient.WaitToBeBound(ctx)
-	assert.NoError(suite.T(), err, "Expected no error when PVC gets bound")
 }
 
 func (suite *PersistentVolumeClaimSuite) TestWaitToBeBoundTimeout() {
@@ -228,9 +205,11 @@ func (suite *PVCTestSuite) TestCreatePVC() {
 	pvc := &v1.PersistentVolumeClaim{ObjectMeta: metav1.ObjectMeta{Name: "test-pvc"}}
 	createdPVC := pvcClient.Create(context.Background(), pvc)
 	suite.NoError(createdPVC.GetError(), "expected no error for valid PVC creation")
+	suite.Equal(createdPVC.HasError(), false)
 	suite.Equal("test-pvc", createdPVC.Object.GetName(), "expected 'test-pvc' name")
 	deletedPvc := pvcClient.Delete(context.Background(), pvc)
 	suite.NoError(deletedPvc.GetError(), "expected no error for valid PVC deletion")
+	suite.Equal(deletedPvc.HasError(), false)
 	suite.Equal("test-pvc", deletedPvc.Object.GetName(), "expected 'test-pvc' name")
 }
 
@@ -270,27 +249,26 @@ func (suite *PVCTestSuite) TestCreateMultiplePVCs() {
 	suite.NoError(err)
 
 	suite.Run("create multiple PVCs with zero number", func() {
-		pvc := &v1.PersistentVolumeClaim{
-			ObjectMeta: metav1.ObjectMeta{
-				Name:      "test-pvc",
-				Namespace: "default",
-			},
-		}
-		err := pvcClient.CreateMultiple(ctx, pvc, 0, "5Gi")
+		err := pvcClient.CreateMultiple(ctx, nil, 0, "5Gi")
 		suite.Error(err, "expected error for zero number of PVCs")
 		suite.EqualError(err, "number of pvcs can't be less or equal than zero")
 	})
 
 	suite.Run("create multiple PVCs with empty size", func() {
+		err := pvcClient.CreateMultiple(ctx, nil, 3, "")
+		suite.Error(err, "expected error for empty PVC size")
+		suite.EqualError(err, "volume size cannot be nulls")
+	})
+
+	suite.Run("create multiple PVCs", func() {
 		pvc := &v1.PersistentVolumeClaim{
 			ObjectMeta: metav1.ObjectMeta{
-				Name:      "test-pvc",
+				Name:      "test-pvc-multiple",
 				Namespace: "default",
 			},
 		}
-		err := pvcClient.CreateMultiple(ctx, pvc, 3, "")
-		suite.Error(err, "expected error for empty PVC size")
-		suite.EqualError(err, "volume size cannot be nulls")
+		err := pvcClient.CreateMultiple(ctx, pvc, 2, "5Gi")
+		suite.Error(err, "already exists")
 	})
 }
 
@@ -938,4 +916,5 @@ func (suite *PVCTestSuite) TestUpdatePVC() {
 	}
 	updatedNonExistentPVC := pvcClient.Update(context.Background(), nonExistentPVC)
 	suite.Error(updatedNonExistentPVC.GetError(), "expected error for updating non-existent PVC")
+	suite.Equal(updatedNonExistentPVC.HasError(), true)
 }

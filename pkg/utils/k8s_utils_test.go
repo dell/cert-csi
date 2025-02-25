@@ -21,13 +21,14 @@ package utils
 import (
 	"context"
 	"flag"
-	"github.com/stretchr/testify/assert"
 	"io/ioutil"
 	"os"
 	"os/exec"
 	"path/filepath"
 	"reflect"
 	"testing"
+
+	"github.com/stretchr/testify/assert"
 
 	"github.com/urfave/cli"
 )
@@ -216,13 +217,14 @@ func TestPrerequisites(t *testing.T) {
 		args    args
 		wantErr bool
 	}{
-		{"check with valid version", args{"v1.25.0"}, false},
-		{"check with invalid version", args{"v1.2.0"}, true},
+		{"binary exists", args{"v1.25.0"}, false},
+		{"binary does not exist", args{"v1.31.0"}, false},
+		{"binary does not exist and fails to download", args{"v1.2.0"}, true},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			if err := Prerequisites(tt.args.version); (err != nil) != tt.wantErr {
-				t.Errorf("Prerequisites() error = %v, wantErr %v", err, tt.wantErr)
+			if got := Prerequisites(tt.args.version); (got != nil) != tt.wantErr {
+				t.Errorf("Prerequisites() error = %v, wantErr %v", got, tt.wantErr)
 			}
 		})
 	}
@@ -237,7 +239,8 @@ func TestReadTestDriverConfig(t *testing.T) {
 		args args
 		want string
 	}{
-		{"get storage class name", args{"testdata/config-nfs.yaml"}, "powerstore-nfs"},
+		{"get storage class name from valid config", args{"testdata/config-nfs.yaml"}, "powerstore-nfs"},
+		{"get storage class name from invalid config", args{"testdata/invalid-config.yaml"}, ""},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -258,7 +261,8 @@ func TestSkipTests(t *testing.T) {
 		want    string
 		wantErr bool
 	}{
-		{"get skip tests", args{"ignore.yaml"}, "Generic Ephemeral-volume|\\[Feature:|\\[Disruptive\\]", false},
+		{"get skip tests from valid file", args{"ignore.yaml"}, "Generic Ephemeral-volume|\\[Feature:|\\[Disruptive\\]", false},
+		{"get skip tests from invalid file", args{"testdata/invalid-config.yaml"}, "", true},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -435,41 +439,6 @@ func TestGenerateReport(t *testing.T) {
 	}
 }
 
-//	func TestTerminateProgram(t *testing.T) {
-//		t.Run("Should send interrupt signal to the process", func(t *testing.T) {
-//			ctx, cancel := context.WithCancel(context.Background())
-//			defer cancel()
-//
-//			cmd := exec.CommandContext(ctx, "sleep", "5")
-//			err := cmd.Start()
-//			assert.NoError(t, err)
-//			content := []byte("ls -l\n")
-//			tmpfile, err := ioutil.TempFile("", "example")
-//			assert.NoError(t, err)
-//
-//			defer os.Remove(tmpfile.Name()) // clean up
-//
-//			if _, err := tmpfile.Write(content); err != nil {
-//				assert.NoError(t, err)
-//			}
-//
-//			if _, err := tmpfile.Seek(0, 0); err != nil {
-//				assert.NoError(t, err)
-//			}
-//
-//			oldStdin := os.Stdin
-//			defer func() { os.Stdin = oldStdin }() // Restore original Stdin
-//
-//			os.Stdin = tmpfile
-//
-//			terminateProgram(cmd)
-//
-//			waitErr := cmd.Wait()
-//			exitError, ok := waitErr.(*exec.ExitError)
-//			assert.False(t, ok)
-//			assert.Nil(t, exitError)
-//		})
-//	}
 func TestTerminateProgramNoInput(t *testing.T) {
 	t.Run("Should send interrupt signal to the process", func(t *testing.T) {
 		ctx, cancel := context.WithCancel(context.Background())
@@ -505,59 +474,3 @@ func TestTerminateProgramNoInput(t *testing.T) {
 		assert.Nil(t, exitError)
 	})
 }
-
-//	func TestTerminateProgramInputFail(t *testing.T) {
-//		t.Run("Should send interrupt signal to the process", func(t *testing.T) {
-//			ctx, cancel := context.WithCancel(context.Background())
-//			defer cancel()
-//
-//			cmd := exec.CommandContext(ctx, "sleep", "5")
-//			err := cmd.Start()
-//			assert.NoError(t, err)
-//
-//			terminateProgram(cmd)
-//
-//			waitErr := cmd.Wait()
-//			exitError, ok := waitErr.(*exec.ExitError)
-//			assert.False(t, ok)
-//			assert.Nil(t, exitError)
-//		})
-//	}
-//func TestTerminateNonExistingProgram(t *testing.T) {
-//	type args struct {
-//		cmd *exec.Cmd
-//	}
-//	tests := []struct {
-//		name    string
-//		args    args
-//		wantErr bool
-//	}{
-//		{
-//			name: "Test case for terminating process successfully",
-//			args: args{
-//				cmd: &exec.Cmd{
-//					Process: &os.Process{
-//						Pid: os.Getpid(),
-//					},
-//				},
-//			},
-//			wantErr: false,
-//		},
-//		{
-//			name: "Test case for terminating non-existent process",
-//			args: args{
-//				cmd: &exec.Cmd{
-//					Process: &os.Process{
-//						Pid: -1,
-//					},
-//				},
-//			},
-//			wantErr: true,
-//		},
-//	}
-//	for _, tt := range tests {
-//		t.Run(tt.name, func(t *testing.T) {
-//			terminateProgram(tt.args.cmd)
-//		})
-//	}
-//}
