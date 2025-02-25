@@ -27,6 +27,14 @@ func TestHTMLReporter_Generate(t *testing.T) {
 			mc:      nil,
 			wantErr: true,
 		},
+		{
+			name:    "error 2 during report generation",
+			runName: "/",
+			mc:      &collector.MetricsCollection{
+				// fill in with test data
+			},
+			wantErr: true,
+		},
 		// add more test cases with different scenarios
 	}
 
