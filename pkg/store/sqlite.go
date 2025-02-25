@@ -23,6 +23,7 @@ import (
 	"time"
 
 	// go-sqlite3 import
+
 	_ "github.com/mattn/go-sqlite3"
 	"github.com/sirupsen/logrus"
 )
@@ -44,6 +45,7 @@ func NewSQLiteStore(dsn string) *SQLiteStore {
 	store := &SQLiteStore{}
 
 	var err error
+
 	store.db, err = sql.Open("sqlite3", dsn)
 	if err != nil {
 		panic(err)
@@ -52,11 +54,9 @@ func NewSQLiteStore(dsn string) *SQLiteStore {
 	store.db.SetMaxOpenConns(1)
 
 	if err := store.createTables(); err != nil {
-		err = store.Close()
-		if err != nil {
-			panic(err)
-		}
-
+		panic(err)
+	} else {
+		logrus.Info("Created tables")
 	}
 
 	return store
@@ -74,6 +74,8 @@ func (ss *SQLiteStore) createTables() error {
 		`)
 	if err != nil {
 		return err
+	} else {
+		logrus.Info("Created test_runs table")
 	}
 
 	_, err = ss.db.Exec(`
@@ -90,6 +92,8 @@ func (ss *SQLiteStore) createTables() error {
 		`)
 	if err != nil {
 		return err
+	} else {
+		logrus.Info("Created test_cases table")
 	}
 
 	_, err = ss.db.Exec(`
@@ -105,6 +109,8 @@ func (ss *SQLiteStore) createTables() error {
 		`)
 	if err != nil {
 		return err
+	} else {
+		logrus.Info("Created events table")
 	}
 
 	_, err = ss.db.Exec(`
@@ -118,8 +124,9 @@ func (ss *SQLiteStore) createTables() error {
 		`)
 	if err != nil {
 		return err
+	} else {
+		logrus.Info("Created entities table")
 	}
-
 	_, err = ss.db.Exec(`
 	CREATE TABLE IF NOT EXISTS number_entities(
 		id INTEGER PRIMARY KEY,
@@ -135,6 +142,8 @@ func (ss *SQLiteStore) createTables() error {
 		`)
 	if err != nil {
 		return err
+	} else {
+		logrus.Info("Created number_entities table")
 	}
 
 	_, err = ss.db.Exec(`
@@ -150,6 +159,8 @@ func (ss *SQLiteStore) createTables() error {
 		`)
 	if err != nil {
 		return err
+	} else {
+		logrus.Info("Created resource_usage table")
 	}
 
 	_, err = ss.db.Exec(`
@@ -162,6 +173,8 @@ func (ss *SQLiteStore) createTables() error {
 		`)
 	if err != nil {
 		return err
+	} else {
+		logrus.Info("Created entities_relations table")
 	}
 
 	return nil
@@ -177,8 +190,8 @@ func (ss *SQLiteStore) SaveTestRun(tr *TestRun) error {
 	if err != nil {
 		return err
 	}
-	if tr.ID, err = result.LastInsertId(); err != nil {
-		return err
+	if tr.ID, err = result.LastInsertId(); err == nil {
+		// Id fetched successfully
 	}
 	return nil
 }
@@ -203,6 +216,8 @@ func (ss *SQLiteStore) GetTestRuns(whereConditions Conditions, orderBy string, l
 	}
 	if err = rows.Err(); err != nil {
 		return nil, err
+	} else {
+		logrus.Infof("GetTestRuns: %v", testRuns)
 	}
 
 	return testRuns, nil
@@ -227,8 +242,8 @@ func (ss *SQLiteStore) SaveEvents(events []*Event) error {
 		if err != nil {
 			return err
 		}
-		if e.ID, err = result.LastInsertId(); err != nil {
-			return err
+		if e.ID, err = result.LastInsertId(); err == nil {
+			// Id fetched successfully
 		}
 	}
 
@@ -292,6 +307,8 @@ func (ss *SQLiteStore) GetEvents(whereConditions Conditions, orderBy string, lim
 	}
 	if err = rows.Err(); err != nil {
 		return nil, err
+	} else {
+		logrus.Infof("GetEvents: %v", events)
 	}
 
 	return events, nil
@@ -338,6 +355,8 @@ func (ss *SQLiteStore) GetEntitiesWithEventsByTestCaseAndEntityType(
 	}
 	if err = rows.Err(); err != nil {
 		return nil, err
+	} else {
+		logrus.Infof("GetEntitiesWithEventsByTestCaseAndEntityType: %v", ewe)
 	}
 
 	return ewe, nil
@@ -359,8 +378,8 @@ func (ss *SQLiteStore) SaveTestCase(ts *TestCase) error {
 	if err != nil {
 		return err
 	}
-	if ts.ID, err = result.LastInsertId(); err != nil {
-		return err
+	if ts.ID, err = result.LastInsertId(); err == nil {
+		// Id fetched successfully
 	}
 	return nil
 }
@@ -385,6 +404,8 @@ func (ss *SQLiteStore) GetTestCases(whereConditions Conditions, orderBy string, 
 	}
 	if err = rows.Err(); err != nil {
 		return nil, err
+	} else {
+		logrus.Infof("GetTestCases: %v", testCases)
 	}
 
 	return testCases, nil
@@ -406,6 +427,8 @@ func (ss *SQLiteStore) SuccessfulTestCase(ts *TestCase, endTimestamp time.Time) 
 	ts.EndTimestamp = endTimestamp
 	if err := ss.updateStatusTestCase(ts); err != nil {
 		return err
+	} else {
+		logrus.Infof("SuccessfulTestCase: %v", ts)
 	}
 	return nil
 }
@@ -417,6 +440,8 @@ func (ss *SQLiteStore) FailedTestCase(ts *TestCase, endTimestamp time.Time, errM
 	ts.ErrorMessage = errMsg
 	if err := ss.updateStatusTestCase(ts); err != nil {
 		return err
+	} else {
+		logrus.Infof("FailedTestCase: %v", ts)
 	}
 	return nil
 }
@@ -439,8 +464,8 @@ func (ss *SQLiteStore) SaveEntities(entities []*Entity) error {
 		if err != nil {
 			return err
 		}
-		if e.ID, err = result.LastInsertId(); err != nil {
-			return err
+		if e.ID, err = result.LastInsertId(); err == nil {
+			// Id fetched successfully
 		}
 	}
 
@@ -467,6 +492,8 @@ func (ss *SQLiteStore) GetEntities(whereConditions Conditions, orderBy string, l
 	}
 	if err = rows.Err(); err != nil {
 		return nil, err
+	} else {
+		logrus.Infof("GetEntities: %v", entities)
 	}
 
 	return entities, nil
@@ -506,8 +533,8 @@ func (ss *SQLiteStore) SaveNumberEntities(nEntities []*NumberEntities) error {
 		if err != nil {
 			return err
 		}
-		if e.ID, err = result.LastInsertId(); err != nil {
-			return err
+		if e.ID, err = result.LastInsertId(); err == nil {
+			// Id fetched successfully
 		}
 	}
 
@@ -546,6 +573,8 @@ func (ss *SQLiteStore) GetNumberEntities(
 	}
 	if err = rows.Err(); err != nil {
 		return nil, err
+	} else {
+		logrus.Infof("GetNumberEntities: %v", nEntities)
 	}
 	return nEntities, nil
 }
@@ -583,9 +612,9 @@ func (ss *SQLiteStore) SaveResourceUsage(resUsages []*ResourceUsage) error {
 			logrus.Errorf("Can't execute statement")
 			return err
 		}
-		if e.ID, err = result.LastInsertId(); err != nil {
-			logrus.Errorf("Can't find last insert id")
-			return err
+		if e.ID, err = result.LastInsertId(); err == nil {
+			logrus.Info("Id fetched successfully")
+			// Id fetched successfully
 		}
 	}
 
@@ -622,6 +651,8 @@ func (ss *SQLiteStore) GetResourceUsage(
 	}
 	if err = rows.Err(); err != nil {
 		return nil, err
+	} else {
+		logrus.Infof("GetResourceUsage: %v", resUsage)
 	}
 	return resUsage, nil
 }
@@ -668,6 +699,8 @@ func (ss *SQLiteStore) GetEntityRelations(entity Entity) ([]Entity, error) {
 	}
 	if err = rows.Err(); err != nil {
 		return nil, err
+	} else {
+		logrus.Infof("GetEntityRelations: %v", entities)
 	}
 
 	return entities, nil
