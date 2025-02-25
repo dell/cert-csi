@@ -1,6 +1,6 @@
 /*
  *
- * Copyright © 2022-2025 Dell Inc. or its subsidiaries. All Rights Reserved.
+ * Copyright © 2025 Dell Inc. or its subsidiaries. All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,6 +18,8 @@ package v1_test
 import (
 	"context"
 	"fmt"
+	t1 "testing"
+
 	"github.com/dell/cert-csi/pkg/k8sclient"
 	snapv1 "github.com/dell/cert-csi/pkg/k8sclient/resources/volumesnapshot/v1"
 	v1 "github.com/kubernetes-csi/external-snapshotter/client/v4/apis/volumesnapshot/v1"
@@ -26,7 +28,6 @@ import (
 	"github.com/stretchr/testify/suite"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes/fake"
-	t1 "testing"
 )
 
 // SnapshotClientTestSuite is a test suite for SnapshotClient
@@ -249,6 +250,7 @@ func (suite *SnapshotClientTestSuite) TestCreate_Success() {
 
 	result := suite.client.Create(ctx, snapshot)
 	assert.NoError(suite.T(), result.GetError())
+	assert.False(suite.T(), result.HasError())
 	assert.Equal(suite.T(), snapshot, result.Object)
 	assert.False(suite.T(), result.Deleted)
 }
@@ -266,6 +268,7 @@ func (suite *SnapshotClientTestSuite) TestCreate_Error() {
 
 	result := suite.client.Create(ctx, snapshot)
 	assert.Error(suite.T(), result.GetError())
+	assert.True(suite.T(), result.HasError())
 	assert.Nil(suite.T(), result.Object)
 	assert.False(suite.T(), result.Deleted)
 }
@@ -283,6 +286,7 @@ func (suite *SnapshotClientTestSuite) TestDelete_Success() {
 
 	result := suite.client.Delete(ctx, snapshot)
 	assert.NoError(suite.T(), result.GetError())
+	assert.False(suite.T(), result.HasError())
 	assert.Equal(suite.T(), snapshot, result.Object)
 	assert.True(suite.T(), result.Deleted)
 }
@@ -301,6 +305,7 @@ func (suite *SnapshotClientTestSuite) TestDelete_Error() {
 
 	result := suite.client.Delete(ctx, snapshot)
 	assert.Error(suite.T(), result.GetError())
+	assert.True(suite.T(), result.HasError())
 	assert.Equal(suite.T(), snapshot, result.Object)
 	assert.True(suite.T(), result.Deleted)
 }
