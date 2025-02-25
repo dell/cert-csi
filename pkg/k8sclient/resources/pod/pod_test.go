@@ -19,6 +19,8 @@ package pod_test
 import (
 	"bytes"
 	"context"
+	"io"
+	"net/url"
 	"testing"
 	"time"
 
@@ -35,8 +37,10 @@ import (
 	kfake "k8s.io/client-go/kubernetes/fake"
 	typedcorev1 "k8s.io/client-go/kubernetes/typed/core/v1"
 	"k8s.io/client-go/rest"
+	restclient "k8s.io/client-go/rest"
 	restfake "k8s.io/client-go/rest/fake"
 	clientgotesting "k8s.io/client-go/testing"
+	"k8s.io/client-go/tools/remotecommand"
 
 	discoveryFake "k8s.io/client-go/discovery/fake"
 	"k8s.io/client-go/kubernetes/fake"
@@ -57,6 +61,49 @@ func (suite *PodTestSuite) SetupSuite() {
 		VersionInfo: nil,
 	}
 	suite.kubeClient.SetTimeout(1)
+}
+
+type FakeExtendedCoreV1 struct {
+	typedcorev1.CoreV1Interface
+	restClient rest.Interface
+}
+
+func (c *FakeExtendedCoreV1) RESTClient() rest.Interface {
+	if c.restClient == nil {
+		c.restClient = &restfake.RESTClient{}
+	}
+	return c.restClient
+}
+
+type FakeExtendedClientset struct {
+	*kfake.Clientset
+}
+
+func (f *FakeExtendedClientset) CoreV1() typedcorev1.CoreV1Interface {
+	return &FakeExtendedCoreV1{f.Clientset.CoreV1(), nil}
+}
+
+func NewFakeClientsetWithRestClient(objs ...runtime.Object) *FakeExtendedClientset {
+	return &FakeExtendedClientset{kfake.NewSimpleClientset(objs...)}
+}
+
+type FakeRemoteExecutor struct{}
+
+func (f *FakeRemoteExecutor) Execute(method string, url *url.URL, config *restclient.Config, stdin io.Reader, stdout, stderr io.Writer, tty bool, terminalSizeQueue remotecommand.TerminalSizeQueue) error {
+	return nil
+}
+
+type FakeRemoteExecutorOCP struct{}
+
+func (f *FakeRemoteExecutorOCP) Execute(method string, url *url.URL, config *restclient.Config, stdin io.Reader, stdout, stderr io.Writer, tty bool, terminalSizeQueue remotecommand.TerminalSizeQueue) error {
+	/* 	output := `NAME      VERSION   AVAILABLE   PROGRESSING   SINCE   STATUS
+	   	version   4.8.12    True        False         2d      Cluster version is 4.8.12` */
+
+	output := `Cluster version is 4.8.12`
+
+	// Print the mock output
+	stdout.Write([]byte(output))
+	return nil
 }
 
 func (suite *PodTestSuite) TestMakePod() {
@@ -95,6 +142,18 @@ func (suite *PodTestSuite) TestMakePod() {
 func (suite *PodTestSuite) TestMakePod_default() {
 	podconf := &pod.Config{}
 	podClient, err := suite.kubeClient.CreatePodClient("test-namespace")
+	suite.NoError(err)
+	podTmpl := podClient.MakePod(podconf)
+	suite.NoError(err)
+	suite.Equal("test-namespace", podTmpl.Namespace)
+	suite.Equal(podconf.ContainerImage, "quay.io/centos/centos:latest")
+	suite.Equal(podconf.Command, []string{"/bin/bash"})
+}
+
+func (suite *PodTestSuite) TestMakePod_OCP() {
+	podconf := &pod.Config{}
+	podClient, err := suite.kubeClient.CreatePodClient("test-namespace")
+	podClient.RemoteExecutor = &FakeRemoteExecutorOCP{}
 	suite.NoError(err)
 	podTmpl := podClient.MakePod(podconf)
 	suite.NoError(err)
@@ -749,8 +808,9 @@ func TestCheckEvictionSupport(t *testing.T) {
 }
 
 func (suite *PodTestSuite) TestExec() {
-	//clientset := fake.NewFakeClientsetWithRestClient()
+	suite.kubeClient.ClientSet = NewFakeClientsetWithRestClient()
 	podClient, err := suite.kubeClient.CreatePodClient("test-namespace")
+	podClient.RemoteExecutor = &FakeRemoteExecutor{}
 	suite.NoError(err)
 	suite.NotNil(podClient)
 
@@ -793,7 +853,65 @@ func (suite *PodTestSuite) TestExec() {
 		err = podClient.Exec(context.Background(), pod, command, stdout, stderr, true)
 		suite.NoError(err)
 	})
+
+	//resetting global clientset to simple clientset for future tests
+	suite.kubeClient.ClientSet = fake.NewSimpleClientset()
 }
+
+/* func TestExecute(t *testing.T) {
+	type args struct {
+		method            string
+		url               *url.URL
+		config            *restclient.Config
+		stdin             io.Reader
+		stdout            io.Writer
+		stderr            io.Writer
+		tty               bool
+		terminalSizeQueue remotecommand.TerminalSizeQueue
+	}
+	tests := []struct {
+		name    string
+		args    args
+		wantErr bool
+	}{
+		{
+			name: "successful execution",
+			args: args{
+				method:            "GET",
+				url:               &url.URL{Scheme: "https", Host: "example.com"},
+				config:            &restclient.Config{},
+				stdin:             nil,
+				stdout:            nil,
+				stderr:            nil,
+				tty:               false,
+				terminalSizeQueue: nil,
+			},
+			wantErr: false,
+		},
+		{
+			name: "failed execution",
+			args: args{
+				method:            "GET",
+				url:               &url.URL{Scheme: "https", Host: "example.com"},
+				config:            &restclient.Config{},
+				stdin:             nil,
+				stdout:            nil,
+				stderr:            nil,
+				tty:               false,
+				terminalSizeQueue: nil,
+			},
+			wantErr: true,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			e := DefaultRemoteExecutor{}
+			if err := e.Execute(tt.args.method, tt.args.url, tt.args.config, tt.args.stdin, tt.args.stdout, tt.args.stderr, tt.args.tty, tt.args.terminalSizeQueue); (err != nil) != tt.wantErr {
+				t.Errorf("DefaultRemoteExecutor.Execute() error = %v, wantErr %v", err, tt.wantErr)
+			}
+		})
+	}
+} */
 
 func (suite *PodTestSuite) TestWaitUntilGone() {
 	client := fake.NewSimpleClientset()
@@ -849,28 +967,4 @@ func (suite *PodTestSuite) TestWaitUntilGone() {
 
 	err = pod.WaitUntilGone(ctx)
 	suite.Error(err)
-}
-
-type FakeExtendedCoreV1 struct {
-	typedcorev1.CoreV1Interface
-	restClient rest.Interface
-}
-
-func (c *FakeExtendedCoreV1) RESTClient() rest.Interface {
-	if c.restClient == nil {
-		c.restClient = &restfake.RESTClient{}
-	}
-	return c.restClient
-}
-
-type FakeExtendedClientset struct {
-	*kfake.Clientset
-}
-
-func (f *FakeExtendedClientset) CoreV1() typedcorev1.CoreV1Interface {
-	return &FakeExtendedCoreV1{f.Clientset.CoreV1(), nil}
-}
-
-func NewFakeClientsetWithRestClient(objs ...runtime.Object) *FakeExtendedClientset {
-	return &FakeExtendedClientset{kfake.NewSimpleClientset(objs...)}
 }
