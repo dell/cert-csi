@@ -74,20 +74,29 @@ const (
 )
 
 // KubeClientInterface contains Kube APIs
+//
+//go:generate mockgen -destination=mocks/kubeclientinterface.go -package=mocks github.com/dell/cert-csi/pkg/k8sclient KubeClientInterface
 type KubeClientInterface interface {
 	CreateStatefulSetClient(namespace string) (*statefulset.Client, error)
 	CreatePVCClient(namespace string) (*pvc.Client, error)
 	CreatePodClient(namespace string) (*pod.Client, error)
 	CreateVaClient(namespace string) (*va.Client, error)
 	CreateMetricsClient(namespace string) (*metrics.Client, error)
-	CreateNamespace(namespace string) (*v1.Namespace, error)
-	CreateNamespaceWithSuffix(namespace string) (*v1.Namespace, error)
-	DeleteNamespace(namespace string) error
-	StorageClassExists(storageClass string) (bool, error)
-	NamespaceExists(namespace string) (bool, error)
-	CreateSCClient(namespace string) (*sc.Client, error)
-	CreateRGClient(namespace string) (*rg.Client, error)
+	CreateNamespace(ctx context.Context, namespace string) (*v1.Namespace, error)
+	CreateNamespaceWithSuffix(ctx context.Context, namespace string) (*v1.Namespace, error)
+	DeleteNamespace(ctx context.Context, namespace string) error
+	StorageClassExists(ctx context.Context, storageClass string) (bool, error)
+	NamespaceExists(ctx context.Context, namespace string) (bool, error)
+	CreateSCClient() (*sc.Client, error)
+	CreateRGClient() (*rg.Client, error)
 	CreateCSISCClient(namespace string) (*csistoragecapacity.Client, error)
+	CreateSnapshotGAClient(namespace string) (*snapv1.SnapshotClient, error)
+	CreateSnapshotBetaClient(namespace string) (*snapbeta.SnapshotClient, error)
+	SnapshotClassExists(snapClass string) (bool, error)
+	CreateVGSClient() (*volumegroupsnapshot.Client, error)
+	CreatePVClient() (*pv.Client, error)
+	CreateNodeClient() (*node.Client, error)
+	GetMinor() int
 	Timeout() int
 }
 
@@ -115,7 +124,7 @@ type Clients struct {
 	SCClient               *sc.Client
 	RgClient               *rg.Client
 	VgsClient              *volumegroupsnapshot.Client
-	KubeClient             *KubeClient
+	KubeClient             KubeClientInterface
 	CSISCClient            *csistoragecapacity.Client
 }
 
@@ -186,6 +195,10 @@ func NewRemoteKubeClient(config *rest.Config, timeout int) (*KubeClient, error) 
 
 	logrus.Info("Created new RemoteKubeClient")
 	return NewkubeClient, nil
+}
+
+func (c *KubeClient) GetMinor() int {
+	return c.Minor
 }
 
 // CreateStatefulSetClient creates a new instance of StatefulSetClient in supplied namespace

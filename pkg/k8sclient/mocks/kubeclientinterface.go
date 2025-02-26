@@ -10,18 +10,24 @@
 package mocks
 
 import (
+	context "context"
 	reflect "reflect"
 
 	csistoragecapacity "github.com/dell/cert-csi/pkg/k8sclient/resources/csistoragecapacity"
 	metrics "github.com/dell/cert-csi/pkg/k8sclient/resources/metrics"
+	node "github.com/dell/cert-csi/pkg/k8sclient/resources/node"
 	pod "github.com/dell/cert-csi/pkg/k8sclient/resources/pod"
+	pv "github.com/dell/cert-csi/pkg/k8sclient/resources/pv"
 	pvc "github.com/dell/cert-csi/pkg/k8sclient/resources/pvc"
 	replicationgroup "github.com/dell/cert-csi/pkg/k8sclient/resources/replicationgroup"
 	sc "github.com/dell/cert-csi/pkg/k8sclient/resources/sc"
 	statefulset "github.com/dell/cert-csi/pkg/k8sclient/resources/statefulset"
 	va "github.com/dell/cert-csi/pkg/k8sclient/resources/va"
+	volumegroupsnapshot "github.com/dell/cert-csi/pkg/k8sclient/resources/volumegroupsnapshot"
+	v1 "github.com/dell/cert-csi/pkg/k8sclient/resources/volumesnapshot/v1"
+	v1beta1 "github.com/dell/cert-csi/pkg/k8sclient/resources/volumesnapshot/v1beta1"
 	gomock "go.uber.org/mock/gomock"
-	v1 "k8s.io/api/core/v1"
+	v10 "k8s.io/api/core/v1"
 )
 
 // MockKubeClientInterface is a mock of KubeClientInterface interface.
@@ -79,33 +85,48 @@ func (mr *MockKubeClientInterfaceMockRecorder) CreateMetricsClient(namespace any
 }
 
 // CreateNamespace mocks base method.
-func (m *MockKubeClientInterface) CreateNamespace(namespace string) (*v1.Namespace, error) {
+func (m *MockKubeClientInterface) CreateNamespace(ctx context.Context, namespace string) (*v10.Namespace, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "CreateNamespace", namespace)
-	ret0, _ := ret[0].(*v1.Namespace)
+	ret := m.ctrl.Call(m, "CreateNamespace", ctx, namespace)
+	ret0, _ := ret[0].(*v10.Namespace)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
 // CreateNamespace indicates an expected call of CreateNamespace.
-func (mr *MockKubeClientInterfaceMockRecorder) CreateNamespace(namespace any) *gomock.Call {
+func (mr *MockKubeClientInterfaceMockRecorder) CreateNamespace(ctx, namespace any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CreateNamespace", reflect.TypeOf((*MockKubeClientInterface)(nil).CreateNamespace), namespace)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CreateNamespace", reflect.TypeOf((*MockKubeClientInterface)(nil).CreateNamespace), ctx, namespace)
 }
 
 // CreateNamespaceWithSuffix mocks base method.
-func (m *MockKubeClientInterface) CreateNamespaceWithSuffix(namespace string) (*v1.Namespace, error) {
+func (m *MockKubeClientInterface) CreateNamespaceWithSuffix(ctx context.Context, namespace string) (*v10.Namespace, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "CreateNamespaceWithSuffix", namespace)
-	ret0, _ := ret[0].(*v1.Namespace)
+	ret := m.ctrl.Call(m, "CreateNamespaceWithSuffix", ctx, namespace)
+	ret0, _ := ret[0].(*v10.Namespace)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
 // CreateNamespaceWithSuffix indicates an expected call of CreateNamespaceWithSuffix.
-func (mr *MockKubeClientInterfaceMockRecorder) CreateNamespaceWithSuffix(namespace any) *gomock.Call {
+func (mr *MockKubeClientInterfaceMockRecorder) CreateNamespaceWithSuffix(ctx, namespace any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CreateNamespaceWithSuffix", reflect.TypeOf((*MockKubeClientInterface)(nil).CreateNamespaceWithSuffix), namespace)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CreateNamespaceWithSuffix", reflect.TypeOf((*MockKubeClientInterface)(nil).CreateNamespaceWithSuffix), ctx, namespace)
+}
+
+// CreateNodeClient mocks base method.
+func (m *MockKubeClientInterface) CreateNodeClient() (*node.Client, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "CreateNodeClient")
+	ret0, _ := ret[0].(*node.Client)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// CreateNodeClient indicates an expected call of CreateNodeClient.
+func (mr *MockKubeClientInterfaceMockRecorder) CreateNodeClient() *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CreateNodeClient", reflect.TypeOf((*MockKubeClientInterface)(nil).CreateNodeClient))
 }
 
 // CreatePVCClient mocks base method.
@@ -121,6 +142,21 @@ func (m *MockKubeClientInterface) CreatePVCClient(namespace string) (*pvc.Client
 func (mr *MockKubeClientInterfaceMockRecorder) CreatePVCClient(namespace any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CreatePVCClient", reflect.TypeOf((*MockKubeClientInterface)(nil).CreatePVCClient), namespace)
+}
+
+// CreatePVClient mocks base method.
+func (m *MockKubeClientInterface) CreatePVClient() (*pv.Client, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "CreatePVClient")
+	ret0, _ := ret[0].(*pv.Client)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// CreatePVClient indicates an expected call of CreatePVClient.
+func (mr *MockKubeClientInterfaceMockRecorder) CreatePVClient() *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CreatePVClient", reflect.TypeOf((*MockKubeClientInterface)(nil).CreatePVClient))
 }
 
 // CreatePodClient mocks base method.
@@ -139,33 +175,63 @@ func (mr *MockKubeClientInterfaceMockRecorder) CreatePodClient(namespace any) *g
 }
 
 // CreateRGClient mocks base method.
-func (m *MockKubeClientInterface) CreateRGClient(namespace string) (*replicationgroup.Client, error) {
+func (m *MockKubeClientInterface) CreateRGClient() (*replicationgroup.Client, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "CreateRGClient", namespace)
+	ret := m.ctrl.Call(m, "CreateRGClient")
 	ret0, _ := ret[0].(*replicationgroup.Client)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
 // CreateRGClient indicates an expected call of CreateRGClient.
-func (mr *MockKubeClientInterfaceMockRecorder) CreateRGClient(namespace any) *gomock.Call {
+func (mr *MockKubeClientInterfaceMockRecorder) CreateRGClient() *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CreateRGClient", reflect.TypeOf((*MockKubeClientInterface)(nil).CreateRGClient), namespace)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CreateRGClient", reflect.TypeOf((*MockKubeClientInterface)(nil).CreateRGClient))
 }
 
 // CreateSCClient mocks base method.
-func (m *MockKubeClientInterface) CreateSCClient(namespace string) (*sc.Client, error) {
+func (m *MockKubeClientInterface) CreateSCClient() (*sc.Client, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "CreateSCClient", namespace)
+	ret := m.ctrl.Call(m, "CreateSCClient")
 	ret0, _ := ret[0].(*sc.Client)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
 // CreateSCClient indicates an expected call of CreateSCClient.
-func (mr *MockKubeClientInterfaceMockRecorder) CreateSCClient(namespace any) *gomock.Call {
+func (mr *MockKubeClientInterfaceMockRecorder) CreateSCClient() *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CreateSCClient", reflect.TypeOf((*MockKubeClientInterface)(nil).CreateSCClient), namespace)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CreateSCClient", reflect.TypeOf((*MockKubeClientInterface)(nil).CreateSCClient))
+}
+
+// CreateSnapshotBetaClient mocks base method.
+func (m *MockKubeClientInterface) CreateSnapshotBetaClient(namespace string) (*v1beta1.SnapshotClient, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "CreateSnapshotBetaClient", namespace)
+	ret0, _ := ret[0].(*v1beta1.SnapshotClient)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// CreateSnapshotBetaClient indicates an expected call of CreateSnapshotBetaClient.
+func (mr *MockKubeClientInterfaceMockRecorder) CreateSnapshotBetaClient(namespace any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CreateSnapshotBetaClient", reflect.TypeOf((*MockKubeClientInterface)(nil).CreateSnapshotBetaClient), namespace)
+}
+
+// CreateSnapshotGAClient mocks base method.
+func (m *MockKubeClientInterface) CreateSnapshotGAClient(namespace string) (*v1.SnapshotClient, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "CreateSnapshotGAClient", namespace)
+	ret0, _ := ret[0].(*v1.SnapshotClient)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// CreateSnapshotGAClient indicates an expected call of CreateSnapshotGAClient.
+func (mr *MockKubeClientInterfaceMockRecorder) CreateSnapshotGAClient(namespace any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CreateSnapshotGAClient", reflect.TypeOf((*MockKubeClientInterface)(nil).CreateSnapshotGAClient), namespace)
 }
 
 // CreateStatefulSetClient mocks base method.
@@ -181,6 +247,21 @@ func (m *MockKubeClientInterface) CreateStatefulSetClient(namespace string) (*st
 func (mr *MockKubeClientInterfaceMockRecorder) CreateStatefulSetClient(namespace any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CreateStatefulSetClient", reflect.TypeOf((*MockKubeClientInterface)(nil).CreateStatefulSetClient), namespace)
+}
+
+// CreateVGSClient mocks base method.
+func (m *MockKubeClientInterface) CreateVGSClient() (*volumegroupsnapshot.Client, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "CreateVGSClient")
+	ret0, _ := ret[0].(*volumegroupsnapshot.Client)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// CreateVGSClient indicates an expected call of CreateVGSClient.
+func (mr *MockKubeClientInterfaceMockRecorder) CreateVGSClient() *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CreateVGSClient", reflect.TypeOf((*MockKubeClientInterface)(nil).CreateVGSClient))
 }
 
 // CreateVaClient mocks base method.
@@ -199,47 +280,76 @@ func (mr *MockKubeClientInterfaceMockRecorder) CreateVaClient(namespace any) *go
 }
 
 // DeleteNamespace mocks base method.
-func (m *MockKubeClientInterface) DeleteNamespace(namespace string) error {
+func (m *MockKubeClientInterface) DeleteNamespace(ctx context.Context, namespace string) error {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "DeleteNamespace", namespace)
+	ret := m.ctrl.Call(m, "DeleteNamespace", ctx, namespace)
 	ret0, _ := ret[0].(error)
 	return ret0
 }
 
 // DeleteNamespace indicates an expected call of DeleteNamespace.
-func (mr *MockKubeClientInterfaceMockRecorder) DeleteNamespace(namespace any) *gomock.Call {
+func (mr *MockKubeClientInterfaceMockRecorder) DeleteNamespace(ctx, namespace any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DeleteNamespace", reflect.TypeOf((*MockKubeClientInterface)(nil).DeleteNamespace), namespace)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DeleteNamespace", reflect.TypeOf((*MockKubeClientInterface)(nil).DeleteNamespace), ctx, namespace)
+}
+
+// GetMinor mocks base method.
+func (m *MockKubeClientInterface) GetMinor() int {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetMinor")
+	ret0, _ := ret[0].(int)
+	return ret0
+}
+
+// GetMinor indicates an expected call of GetMinor.
+func (mr *MockKubeClientInterfaceMockRecorder) GetMinor() *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetMinor", reflect.TypeOf((*MockKubeClientInterface)(nil).GetMinor))
 }
 
 // NamespaceExists mocks base method.
-func (m *MockKubeClientInterface) NamespaceExists(namespace string) (bool, error) {
+func (m *MockKubeClientInterface) NamespaceExists(ctx context.Context, namespace string) (bool, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "NamespaceExists", namespace)
+	ret := m.ctrl.Call(m, "NamespaceExists", ctx, namespace)
 	ret0, _ := ret[0].(bool)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
 // NamespaceExists indicates an expected call of NamespaceExists.
-func (mr *MockKubeClientInterfaceMockRecorder) NamespaceExists(namespace any) *gomock.Call {
+func (mr *MockKubeClientInterfaceMockRecorder) NamespaceExists(ctx, namespace any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "NamespaceExists", reflect.TypeOf((*MockKubeClientInterface)(nil).NamespaceExists), namespace)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "NamespaceExists", reflect.TypeOf((*MockKubeClientInterface)(nil).NamespaceExists), ctx, namespace)
+}
+
+// SnapshotClassExists mocks base method.
+func (m *MockKubeClientInterface) SnapshotClassExists(snapClass string) (bool, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "SnapshotClassExists", snapClass)
+	ret0, _ := ret[0].(bool)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// SnapshotClassExists indicates an expected call of SnapshotClassExists.
+func (mr *MockKubeClientInterfaceMockRecorder) SnapshotClassExists(snapClass any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SnapshotClassExists", reflect.TypeOf((*MockKubeClientInterface)(nil).SnapshotClassExists), snapClass)
 }
 
 // StorageClassExists mocks base method.
-func (m *MockKubeClientInterface) StorageClassExists(storageClass string) (bool, error) {
+func (m *MockKubeClientInterface) StorageClassExists(ctx context.Context, storageClass string) (bool, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "StorageClassExists", storageClass)
+	ret := m.ctrl.Call(m, "StorageClassExists", ctx, storageClass)
 	ret0, _ := ret[0].(bool)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
 // StorageClassExists indicates an expected call of StorageClassExists.
-func (mr *MockKubeClientInterfaceMockRecorder) StorageClassExists(storageClass any) *gomock.Call {
+func (mr *MockKubeClientInterfaceMockRecorder) StorageClassExists(ctx, storageClass any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "StorageClassExists", reflect.TypeOf((*MockKubeClientInterface)(nil).StorageClassExists), storageClass)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "StorageClassExists", reflect.TypeOf((*MockKubeClientInterface)(nil).StorageClassExists), ctx, storageClass)
 }
 
 // Timeout mocks base method.

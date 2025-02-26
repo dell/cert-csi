@@ -34,7 +34,7 @@ import (
 type Runner struct {
 	Config          *rest.Config
 	DriverNamespace string
-	KubeClient      *k8sclient.KubeClient
+	KubeClient      k8sclient.KubeClientInterface
 	Timeout         int
 	NoCleanupOnFail bool
 	SucceededSuites float64
@@ -101,7 +101,7 @@ func getSuiteRunner(configPath, driverNs, observerType string, timeout int, noCl
 	}
 }
 
-func generateTestRunDetails(scDB *store.StorageClassDB, _ *k8sclient.KubeClient, host string) {
+func generateTestRunDetails(scDB *store.StorageClassDB, _ k8sclient.KubeClientInterface, host string) {
 	scDB.TestRun = store.TestRun{
 		Name:           "test-run-" + k8sclient.RandomSuffix(),
 		StartTimestamp: time.Now(),

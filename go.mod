@@ -4,11 +4,11 @@ go 1.23
 
 require (
 	github.com/cheggaaa/pb/v3 v3.1.5
-        github.com/golang/mock v1.6.0
 	github.com/dell/csi-volumegroup-snapshotter v1.7.0
 	github.com/dell/csm-replication v1.9.0
 	github.com/fatih/color v1.17.0
 	github.com/gofrs/flock v0.8.1
+	github.com/golang/mock v1.6.0
 	github.com/kubernetes-csi/external-snapshotter/client/v4 v4.2.0
 	github.com/mattn/go-sqlite3 v1.14.22
 	github.com/pkg/errors v0.9.1
@@ -18,6 +18,7 @@ require (
 	github.com/stretchr/testify v1.9.0
 	github.com/urfave/cli v1.22.15
 	github.com/x-cray/logrus-prefixed-formatter v0.5.2
+	go.uber.org/mock v0.5.0
 	golang.org/x/sync v0.10.0
 	gonum.org/v1/plot v0.14.0
 	gopkg.in/yaml.v3 v3.0.1

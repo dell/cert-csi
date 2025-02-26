@@ -87,7 +87,7 @@ func (*VolumeDeletionSuite) GetObservers(obsType observer.Type) []observer.Inter
 }
 
 // GetClients creates and returns PVC and Metrics clients
-func (vds *VolumeDeletionSuite) GetClients(_ string, client *k8sclient.KubeClient) (*k8sclient.Clients, error) {
+func (vds *VolumeDeletionSuite) GetClients(_ string, client k8sclient.KubeClientInterface) (*k8sclient.Clients, error) {
 	pvcClient, pvcErr := client.CreatePVCClient(vds.Namespace)
 	if pvcErr != nil {
 		return nil, pvcErr
@@ -176,7 +176,7 @@ func (*PodDeletionSuite) GetObservers(obsType observer.Type) []observer.Interfac
 }
 
 // GetClients creates and returns pod, pvc, va, metrics clients
-func (pds *PodDeletionSuite) GetClients(_ string, client *k8sclient.KubeClient) (*k8sclient.Clients, error) {
+func (pds *PodDeletionSuite) GetClients(_ string, client k8sclient.KubeClientInterface) (*k8sclient.Clients, error) {
 	podClient, podErr := client.CreatePodClient(pds.Namespace)
 	if podErr != nil {
 		return nil, podErr
@@ -297,7 +297,7 @@ func (*ClonedVolDeletionSuite) GetObservers(obsType observer.Type) []observer.In
 }
 
 // GetClients creates and returns pod, pvc, metrics, va clients
-func (pds *ClonedVolDeletionSuite) GetClients(_ string, client *k8sclient.KubeClient) (*k8sclient.Clients, error) {
+func (pds *ClonedVolDeletionSuite) GetClients(_ string, client k8sclient.KubeClientInterface) (*k8sclient.Clients, error) {
 	podClient, pvcErr := client.CreatePodClient(pds.Namespace)
 	if pvcErr != nil {
 		return nil, pvcErr
@@ -413,7 +413,7 @@ func (*SnapshotDeletionSuite) GetObservers(obsType observer.Type) []observer.Int
 }
 
 // GetClients creates and returns pod, pvc, va, metrics, snapshot clients
-func (sds *SnapshotDeletionSuite) GetClients(namespace string, client *k8sclient.KubeClient) (*k8sclient.Clients, error) {
+func (sds *SnapshotDeletionSuite) GetClients(namespace string, client k8sclient.KubeClientInterface) (*k8sclient.Clients, error) {
 	podClient, podErr := client.CreatePodClient(sds.Namespace)
 	if podErr != nil {
 		return nil, podErr
@@ -432,7 +432,7 @@ func (sds *SnapshotDeletionSuite) GetClients(namespace string, client *k8sclient
 	if mcErr != nil {
 		return nil, mcErr
 	}
-	if client.Minor > 17 {
+	if client.GetMinor() > 17 {
 		snapClient, snErr := client.CreateSnapshotGAClient(namespace)
 		if snErr != nil {
 			return nil, snErr
@@ -585,7 +585,7 @@ func (*EphemeralVolumeSuite) GetObservers(obsType observer.Type) []observer.Inte
 }
 
 // GetClients creates and returns pod, va, metrics clients
-func (*EphemeralVolumeSuite) GetClients(namespace string, client *k8sclient.KubeClient) (*k8sclient.Clients, error) {
+func (*EphemeralVolumeSuite) GetClients(namespace string, client k8sclient.KubeClientInterface) (*k8sclient.Clients, error) {
 	podClient, podErr := client.CreatePodClient(namespace)
 	if podErr != nil {
 		return nil, podErr
@@ -695,7 +695,7 @@ func (*NodeDrainSuite) GetObservers(obsType observer.Type) []observer.Interface 
 }
 
 // GetClients creates and returns node, pod, pvc, va, statefulset, metrics clients
-func (nds *NodeDrainSuite) GetClients(_ string, client *k8sclient.KubeClient) (*k8sclient.Clients, error) {
+func (nds *NodeDrainSuite) GetClients(_ string, client k8sclient.KubeClientInterface) (*k8sclient.Clients, error) {
 	nodeClient, nodeErr := client.CreateNodeClient()
 	if nodeErr != nil {
 		return nil, nodeErr
@@ -787,7 +787,7 @@ func (*NodeUncordonSuite) GetObservers(obsType observer.Type) []observer.Interfa
 }
 
 // GetClients creates and returns node, pod, pvc, va, metrics clients
-func (nds *NodeUncordonSuite) GetClients(_ string, client *k8sclient.KubeClient) (*k8sclient.Clients, error) {
+func (nds *NodeUncordonSuite) GetClients(_ string, client k8sclient.KubeClientInterface) (*k8sclient.Clients, error) {
 	nodeClient, nodeErr := client.CreateNodeClient()
 	if nodeErr != nil {
 		return nil, nodeErr
@@ -1029,7 +1029,7 @@ func (cts *CapacityTrackingSuite) GetNamespace() string {
 }
 
 // GetClients creates and returns pvc, pod, va, metrics, storage class, CSI storage capacity clients
-func (cts *CapacityTrackingSuite) GetClients(namespace string, client *k8sclient.KubeClient) (*k8sclient.Clients, error) {
+func (cts *CapacityTrackingSuite) GetClients(namespace string, client k8sclient.KubeClientInterface) (*k8sclient.Clients, error) {
 	pvcClient, pvcErr := client.CreatePVCClient(namespace)
 	if pvcErr != nil {
 		return nil, pvcErr

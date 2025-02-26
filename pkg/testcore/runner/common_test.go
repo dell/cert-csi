@@ -5,8 +5,8 @@ import (
 	"testing"
 
 	"github.com/dell/cert-csi/pkg/testcore/runner/mocks"
-	"github.com/golang/mock/gomock"
 	"github.com/stretchr/testify/assert"
+	"go.uber.org/mock/gomock"
 )
 
 func TestGetSuiteRunner(t *testing.T) {
@@ -39,7 +39,7 @@ func TestGetSuiteRunner(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			client, err := getSuiteRunner(
+			client := getSuiteRunner(
 				tt.configPath,
 				tt.driverNs,
 				tt.observerType,
@@ -49,7 +49,6 @@ func TestGetSuiteRunner(t *testing.T) {
 				tt.noreport,
 				tt.k8s(),
 			)
-			assert.NotNil(t, err)
 			assert.NotNil(t, client)
 
 		})
