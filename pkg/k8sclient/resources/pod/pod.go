@@ -90,6 +90,7 @@ type Client struct {
 	Timeout        int
 	nodeInfos      []*resource.Info
 	RemoteExecutor RemoteExecutor
+	LocalExecutor  LocalExecutor
 }
 
 // Pod contains pod related information
@@ -154,7 +155,7 @@ func (c *Client) MakePod(config *Config) *v1.Pod {
 		}
 		volumes = append(volumes, volume)
 	}
-	isOCP, _ := IsOCP()
+	isOCP, _ := c.IsOCP()
 	securityContext := &v1.SecurityContext{
 		Capabilities: &v1.Capabilities{
 			Add: config.Capabilities,
@@ -576,7 +577,7 @@ func (c *Client) MakeEphemeralPod(config *Config) *v1.Pod {
 		},
 	}
 	volumes = append(volumes, volume)
-	isOCP, _ := IsOCP()
+	isOCP, _ := c.IsOCP()
 
 	securityContext := &v1.SecurityContext{
 		Capabilities: &v1.Capabilities{
@@ -752,12 +753,23 @@ func (pod *Pod) IsInPendingState(ctx context.Context) error {
 	return nil
 }
 
-func IsOCP() (bool, error) {
-	isOCP := false
-	cmd := exec.Command("oc", "get", "clusterversion")
+type LocalExecutor interface {
+	Execute(name string, arg ...string) ([]byte, error)
+}
 
+type commandExecutor struct {
+}
+
+func (c *commandExecutor) Execute(name string, arg ...string) ([]byte, error) {
+	cmd := exec.Command(name, arg...)
+	return cmd.CombinedOutput()
+}
+
+func (c *Client) IsOCP() (bool, error) {
+	isOCP := false
 	// Run the command and capture the output
-	output, err := cmd.CombinedOutput()
+	output, err := c.LocalExecutor.Execute("oc", "get", "clusterversion")
+
 	if err != nil {
 		// Return false and the error encountered while executing the command
 		return false, err
