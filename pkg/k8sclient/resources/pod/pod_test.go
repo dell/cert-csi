@@ -93,17 +93,17 @@ func (f *FakeRemoteExecutor) Execute(method string, url *url.URL, config *restcl
 	return nil
 }
 
-type FakeRemoteExecutorOCP struct{}
+type FakeCommandExecutor struct {
+	isOCP bool
+}
 
-func (f *FakeRemoteExecutorOCP) Execute(method string, url *url.URL, config *restclient.Config, stdin io.Reader, stdout, stderr io.Writer, tty bool, terminalSizeQueue remotecommand.TerminalSizeQueue) error {
-	/* 	output := `NAME      VERSION   AVAILABLE   PROGRESSING   SINCE   STATUS
-	   	version   4.8.12    True        False         2d      Cluster version is 4.8.12` */
+func (f *FakeCommandExecutor) Execute(name string, arg ...string) ([]byte, error) {
+	output := ""
+	if f.isOCP {
+		output = "Cluster version is 4.8.12"
+	}
 
-	output := `Cluster version is 4.8.12`
-
-	// Print the mock output
-	stdout.Write([]byte(output))
-	return nil
+	return []byte(output), nil
 }
 
 func (suite *PodTestSuite) TestMakePod() {
@@ -120,6 +120,7 @@ func (suite *PodTestSuite) TestMakePod() {
 	}
 
 	podClient, err := suite.kubeClient.CreatePodClient("test-namespace")
+	podClient.LocalExecutor = &FakeCommandExecutor{}
 	suite.NoError(err)
 	podTmpl := podClient.MakePod(podconf)
 	suite.NoError(err)
@@ -142,6 +143,7 @@ func (suite *PodTestSuite) TestMakePod() {
 func (suite *PodTestSuite) TestMakePod_default() {
 	podconf := &pod.Config{}
 	podClient, err := suite.kubeClient.CreatePodClient("test-namespace")
+	podClient.LocalExecutor = &FakeCommandExecutor{}
 	suite.NoError(err)
 	podTmpl := podClient.MakePod(podconf)
 	suite.NoError(err)
@@ -153,7 +155,9 @@ func (suite *PodTestSuite) TestMakePod_default() {
 func (suite *PodTestSuite) TestMakePod_OCP() {
 	podconf := &pod.Config{}
 	podClient, err := suite.kubeClient.CreatePodClient("test-namespace")
-	podClient.RemoteExecutor = &FakeRemoteExecutorOCP{}
+	podClient.LocalExecutor = &FakeCommandExecutor{
+		isOCP: true,
+	}
 	suite.NoError(err)
 	podTmpl := podClient.MakePod(podconf)
 	suite.NoError(err)
@@ -263,6 +267,7 @@ func (suite *PodTestSuite) TestDelete() {
 	}
 
 	client, err := suite.kubeClient.CreatePodClient("test-namespace")
+	client.LocalExecutor = &FakeCommandExecutor{}
 	suite.NoError(err)
 
 	podTmpl := client.MakePod(podconf)
@@ -466,6 +471,25 @@ func (suite *PodTestSuite) TestWaitForRunning() {
 
 func (suite *PodTestSuite) TestMakeEphemeralPod() {
 	podClient, err := suite.kubeClient.CreatePodClient("test-namespace")
+	podClient.LocalExecutor = &FakeCommandExecutor{}
+	suite.NoError(err)
+
+	podconf := &pod.Config{
+		Name: "test-pod",
+	}
+	podClient.MakeEphemeralPod(podconf)
+
+	suite.Equal(podconf.NamePrefix, "pod-")
+	suite.Equal(podconf.MountPath, "/data")
+	suite.Equal(podconf.ContainerName, "test-container")
+	suite.Equal(podconf.ContainerImage, "quay.io/centos/centos:latest")
+}
+
+func (suite *PodTestSuite) TestMakeEphemeralPod_WithOCP() {
+	podClient, err := suite.kubeClient.CreatePodClient("test-namespace")
+	podClient.LocalExecutor = &FakeCommandExecutor{
+		isOCP: true,
+	}
 	suite.NoError(err)
 
 	podconf := &pod.Config{
@@ -536,6 +560,7 @@ func (suite *PodTestSuite) TestDeleteOrEvictPods() {
 
 func (suite *PodTestSuite) TestEvictPod() {
 	podClient, err := suite.kubeClient.CreatePodClient("test-namespace")
+	podClient.LocalExecutor = &FakeCommandExecutor{}
 	suite.NoError(err)
 
 	pod1 := podClient.MakeEphemeralPod(&pod.Config{
@@ -699,6 +724,7 @@ func TestGetPodConditionFromList(t *testing.T) {
 
 func (suite *PodTestSuite) TestEvictPods() {
 	podClient, err := suite.kubeClient.CreatePodClient("test-namespace")
+	podClient.LocalExecutor = &FakeCommandExecutor{}
 	suite.NoError(err)
 
 	podList := &corev1.PodList{
@@ -795,11 +821,11 @@ func TestCheckEvictionSupport(t *testing.T) {
 			discoveryClient.Resources = tt.serverResources
 			// Simulate the server groups response
 			discoveryClient.Fake.Resources = tt.serverResources
-			discoveryClient.Fake.PrependReactor("list", "servergroups", func(_ clientgotesting.Action) (handled bool, ret runtime.Object, err error) {
+			discoveryClient.Fake.PrependReactor("get", "group", func(_ clientgotesting.Action) (handled bool, ret runtime.Object, err error) {
 				return true, &metav1.APIGroupList{Groups: tt.serverGroups}, nil
 			})
 
-			discoveryClient.Fake.PrependReactor("list", "serverresources", func(action clientgotesting.Action) (handled bool, ret runtime.Object, err error) {
+			discoveryClient.Fake.PrependReactor("get", "serverresources", func(action clientgotesting.Action) (handled bool, ret runtime.Object, err error) {
 				getAction := action.(clientgotesting.GetAction)
 				groupVersion := getAction.GetResource().GroupVersion().String()
 				for _, resourceList := range tt.serverResources {
@@ -867,61 +893,6 @@ func (suite *PodTestSuite) TestExec() {
 	//resetting global clientset to simple clientset for future tests
 	suite.kubeClient.ClientSet = fake.NewSimpleClientset()
 }
-
-/* func TestExecute(t *testing.T) {
-	type args struct {
-		method            string
-		url               *url.URL
-		config            *restclient.Config
-		stdin             io.Reader
-		stdout            io.Writer
-		stderr            io.Writer
-		tty               bool
-		terminalSizeQueue remotecommand.TerminalSizeQueue
-	}
-	tests := []struct {
-		name    string
-		args    args
-		wantErr bool
-	}{
-		{
-			name: "successful execution",
-			args: args{
-				method:            "GET",
-				url:               &url.URL{Scheme: "https", Host: "example.com"},
-				config:            &restclient.Config{},
-				stdin:             nil,
-				stdout:            nil,
-				stderr:            nil,
-				tty:               false,
-				terminalSizeQueue: nil,
-			},
-			wantErr: false,
-		},
-		{
-			name: "failed execution",
-			args: args{
-				method:            "GET",
-				url:               &url.URL{Scheme: "https", Host: "example.com"},
-				config:            &restclient.Config{},
-				stdin:             nil,
-				stdout:            nil,
-				stderr:            nil,
-				tty:               false,
-				terminalSizeQueue: nil,
-			},
-			wantErr: true,
-		},
-	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			e := DefaultRemoteExecutor{}
-			if err := e.Execute(tt.args.method, tt.args.url, tt.args.config, tt.args.stdin, tt.args.stdout, tt.args.stderr, tt.args.tty, tt.args.terminalSizeQueue); (err != nil) != tt.wantErr {
-				t.Errorf("DefaultRemoteExecutor.Execute() error = %v, wantErr %v", err, tt.wantErr)
-			}
-		})
-	}
-} */
 
 func (suite *PodTestSuite) TestWaitUntilGone() {
 	client := fake.NewSimpleClientset()
