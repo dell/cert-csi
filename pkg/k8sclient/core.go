@@ -190,6 +190,9 @@ func NewRemoteKubeClient(config *rest.Config, timeout int) (*KubeClient, error) 
 
 // CreateStatefulSetClient creates a new instance of StatefulSetClient in supplied namespace
 func (c *KubeClient) CreateStatefulSetClient(namespace string) (*statefulset.Client, error) {
+	if namespace == "" {
+		return nil, fmt.Errorf("namespace can't be empty")
+	}
 	stsclient := &statefulset.Client{
 		Interface: c.ClientSet.AppsV1().StatefulSets(namespace),
 		ClientSet: c.ClientSet,
@@ -270,7 +273,9 @@ func (c *KubeClient) CreateVaClient(namespace string) (*va.Client, error) {
 
 // CreateMetricsClient creates a new instance of metrics client
 func (c *KubeClient) CreateMetricsClient(namespace string) (*metrics.Client, error) {
-
+	if namespace == "" {
+		return nil, fmt.Errorf("namespace connot be empty")
+	}
 	cset, err := metricsclientset.NewForConfig(c.Config)
 	if err != nil {
 		return nil, err
@@ -432,6 +437,9 @@ func (c *KubeClient) CreateNamespace(ctx context.Context, namespace string) (*v1
 
 // CreateNamespaceWithSuffix creates new namespace with provided name and appends random suffix
 func (c *KubeClient) CreateNamespaceWithSuffix(ctx context.Context, namespace string) (*v1.Namespace, error) {
+	if namespace == "" {
+		return nil, fmt.Errorf("namespace can't be empty")
+	}
 	suffix := RandomSuffix()
 	ns, err := c.CreateNamespace(ctx, namespace+"-"+suffix)
 	if err != nil {

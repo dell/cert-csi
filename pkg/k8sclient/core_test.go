@@ -68,21 +68,6 @@ func (suite *CoreTestSuite) TestNewKubeClient() {
 		suite.Error(err)
 		suite.Nil(client)
 	})
-
-	//mockDiscoveryClient := &MockDiscoveryClient{
-	//	VersionInfo: &version.Info{
-	//		Major: "1",
-	//		Minor: "18",
-	//	},
-	//}
-	suite.kubeClient.Config = &rest.Config{
-		Host: "localhost",
-	}
-	//suite.Run("right config", func() {
-	//	client, err := NewKubeClient(&rest.Config{Host: "localhost"}, mockDiscoveryClient)
-	//	suite.Error(err)
-	//	suite.Nil(client)
-	//})
 }
 
 func (suite *CoreTestSuite) TestNewRemoteKubeClient() {
@@ -135,6 +120,12 @@ func (suite *CoreTestSuite) TestCreateClients() {
 		suite.NoError(err)
 		suite.NotNil(stsClient)
 		suite.Equal(namespace, stsClient.Namespace)
+	})
+
+	suite.Run("m client", func() {
+		mClient, err := suite.kubeClient.CreateMetricsClient("")
+		suite.Error(err)
+		suite.Nil(mClient)
 	})
 
 	suite.Run("m client", func() {
@@ -319,6 +310,18 @@ func (suite *CoreTestSuite) TestCreateNamespace() {
 		suite.NotNil(got)
 		suite.Contains(got.Name, "test-namespace-")
 	})
+
+	suite.Run("create with suffix error case", func() {
+		c := &KubeClient{
+			ClientSet:   suite.kubeClient.ClientSet,
+			Config:      suite.kubeClient.Config,
+			VersionInfo: suite.kubeClient.VersionInfo,
+			timeout:     1,
+		}
+		got, err := c.CreateNamespaceWithSuffix(context.Background(), "")
+		suite.Error(err)
+		suite.Nil(got)
+	})
 }
 
 func (suite *CoreTestSuite) TestDeleteNamespace() {
@@ -368,6 +371,9 @@ func (suite *CoreTestSuite) TestForceDeleteNamespace() {
 
 	err = kubeClient.ForceDeleteNamespace(context.Background(), ns.Name)
 	suite.NoError(err)
+
+	err = kubeClient.ForceDeleteNamespace(context.Background(), "")
+	suite.Error(err)
 }
 
 func (suite *CoreTestSuite) TestSnapshotClassExists() {
