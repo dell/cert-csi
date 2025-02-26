@@ -93,6 +93,7 @@ func NewSuiteRunner(configPath, driverNs, startHook, readyHook, finishHook, obse
 		noCleanup,
 		noCleanupOnFail,
 		noReport,
+		&K8sClient{},
 	)
 	for _, scDB := range scDBs {
 		// Checking storage if storageClass exists
