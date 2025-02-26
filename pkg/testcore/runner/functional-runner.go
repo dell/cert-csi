@@ -54,6 +54,7 @@ func NewFunctionalSuiteRunner(configPath, namespace string, timeout int, noClean
 		noCleanup,
 		noCleanupOnFail,
 		noreport,
+		&K8sClient{},
 	)
 	generateTestRunDetails(scDB, r.KubeClient, r.Config.Host)
 

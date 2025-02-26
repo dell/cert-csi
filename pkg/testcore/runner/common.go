@@ -51,7 +51,23 @@ type Runner struct {
 	sync.RWMutex
 }
 
-func getSuiteRunner(configPath, driverNs, observerType string, timeout int, noCleanup, noCleanupOnFail bool, noreport bool) *Runner {
+//go:generate mockgen -destination=mocks/k8sclient.go -package=mocks github.com/dell/cert-csi/pkg/testcore/runner K8sClientInterface
+type K8sClientInterface interface {
+	GetConfig(string) (*rest.Config, error)
+	NewKubeClient(config *rest.Config, timeout int) (*k8sclient.KubeClient, error)
+}
+
+type K8sClient struct{}
+
+func (k *K8sClient) GetConfig(configPath string) (*rest.Config, error) {
+	return k8sclient.GetConfig(configPath)
+}
+
+func (k *K8sClient) NewKubeClient(config *rest.Config, timeout int) (*k8sclient.KubeClient, error) {
+	return k8sclient.NewKubeClient(config, timeout)
+}
+
+func getSuiteRunner(configPath, driverNs, observerType string, timeout int, noCleanup, noCleanupOnFail bool, noreport bool, k8s K8sClientInterface) *Runner {
 	t := strings.ToUpper(observerType)
 	correctType := (t == string(observer.EVENT)) || (t == string(observer.LIST))
 	if !correctType {
@@ -62,13 +78,13 @@ func getSuiteRunner(configPath, driverNs, observerType string, timeout int, noCl
 	log.Infof("Using %s observer type", obsType)
 
 	// Loading config
-	config, err := k8sclient.GetConfig(configPath)
+	config, err := k8s.GetConfig(configPath)
 	if err != nil {
 		log.Error(err)
 	}
 
 	// Connecting to host and creating new Kubernetes Client
-	kubeClient, kubeErr := k8sclient.NewKubeClient(config, timeout)
+	kubeClient, kubeErr := k8s.NewKubeClient(config, timeout)
 	if kubeErr != nil {
 		log.Errorf("Couldn't create new kubernetes client. Error = %v", kubeErr)
 	}
