@@ -821,7 +821,7 @@ func TestCheckEvictionSupport(t *testing.T) {
 			discoveryClient.Resources = tt.serverResources
 			// Simulate the server groups response
 			discoveryClient.Fake.Resources = tt.serverResources
-			discoveryClient.Fake.PrependReactor("get", "group", func(_ clientgotesting.Action) (handled bool, ret runtime.Object, err error) {
+			discoveryClient.Fake.PrependReactor("get", "servergroups", func(_ clientgotesting.Action) (handled bool, ret runtime.Object, err error) {
 				return true, &metav1.APIGroupList{Groups: tt.serverGroups}, nil
 			})
 
