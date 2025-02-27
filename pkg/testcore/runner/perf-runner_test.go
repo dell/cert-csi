@@ -199,13 +199,17 @@ func TestExecuteSuite(t *testing.T) {
 			iterCtx: context.Background(),
 			num:     1,
 			suites: func() map[string][]suites.Interface {
-				suite := runnermocks.NewTestSuite(gomock.NewController(t))
-				suite.EXPECT().Run(gomock.Any()).Times(1).Return(nil)
-				return map[string][]suites.Interface{"testSuite": suite}
+				suite := runnermocks.NewMockInterface(gomock.NewController(t))
+				suite.EXPECT().Run(gomock.Any(), gomock.Any(), gomock.Any()).Times(1).Return(nil, nil)
+				return map[string][]suites.Interface{
+					"testSuite": {
+						suite,
+					},
+				}
 			},
 			suite: func() suites.Interface {
-				suite := runnermocks.NewTestSuite(gomock.NewController(t))
-				suite.EXPECT().Run(gomock.Any()).Times(1).Return(nil)
+				suite := runnermocks.NewMockInterface(gomock.NewController(t))
+				suite.EXPECT().Run(gomock.Any(), gomock.Any(), gomock.Any()).Times(1).Return(nil, nil)
 				return suite
 			},
 			sr:          &SuiteRunner{},
@@ -222,7 +226,7 @@ func TestExecuteSuite(t *testing.T) {
 			// and replace the actual dependencies with the mocks.
 
 			// Call the ExecuteSuite function
-			ExecuteSuite(tt.iterCtx, tt.num, tt.suites, tt.suite, tt.sr, tt.scDB, tt.c)
+			ExecuteSuite(tt.iterCtx, tt.num, tt.suites(), tt.suite(), tt.sr, tt.scDB, tt.c)
 
 			// Assert the expected outcome
 			// For example, you can use testify/assert to make assertions
