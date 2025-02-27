@@ -55,6 +55,10 @@ type SimpleStore struct {
 	events   []*store.Event
 }
 
+func (s *SimpleStore) SaveEntities(entity []*store.Entity) error {
+	return nil
+}
+
 func (s *SimpleStore) SaveNumberEntities(nEntities []*store.NumberEntities) error {
 	s.entities = nEntities
 	return nil

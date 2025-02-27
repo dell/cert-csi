@@ -10,23 +10,28 @@ import (
 	"github.com/dell/cert-csi/pkg/store"
 
 	"github.com/stretchr/testify/assert"
-	storagev1 "k8s.io/api/storage/v1"
+
+	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/watch"
+	"k8s.io/client-go/kubernetes/fake"
 	"k8s.io/client-go/rest"
+	test "k8s.io/client-go/testing"
 )
 
 func TestPvcObserver_StartWatching(t *testing.T) {
 	// Test case: Watching PVCs
 	ctx := context.Background()
 
-	storageClass := &storagev1.StorageClass{
-		ObjectMeta: metav1.ObjectMeta{Name: "test-storage-class"},
-		VolumeBindingMode: func() *storagev1.VolumeBindingMode {
-			mode := storagev1.VolumeBindingWaitForFirstConsumer
-			return &mode
-		}(),
+	// Create a mock PVC
+	pvc := &v1.PersistentVolumeClaim{
+		ObjectMeta: metav1.ObjectMeta{
+			Name: "test-pvc",
+			UID:  "test-uid",
+		},
 	}
-	clientSet := NewFakeClientsetWithRestClient(storageClass)
+
+	clientSet := fake.NewSimpleClientset()
 
 	kubeClient := &k8sclient.KubeClient{
 		ClientSet: clientSet,
@@ -47,9 +52,22 @@ func TestPvcObserver_StartWatching(t *testing.T) {
 	runner.WaitGroup.Add(1)
 
 	obs := &PvcObserver{}
+
+	fakeWatcher := watch.NewFake()
+	pvcClient.ClientSet.(*fake.Clientset).PrependWatchReactor("*", func(action test.Action) (handled bool, ret watch.Interface, err error) {
+		if action.GetVerb() == "watch" {
+			// Return the fake watcher
+			return true, fakeWatcher, nil
+		}
+		return false, nil, nil
+	})
+
 	obs.MakeChannel()
 
 	go obs.StartWatching(ctx, runner)
+
+	fakeWatcher.Add(pvc)
+	fakeWatcher.Modify(pvc)
 
 	time.Sleep(100 * time.Millisecond)
 
