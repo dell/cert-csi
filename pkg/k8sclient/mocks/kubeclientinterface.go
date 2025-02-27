@@ -28,6 +28,7 @@ import (
 	v1beta1 "github.com/dell/cert-csi/pkg/k8sclient/resources/volumesnapshot/v1beta1"
 	gomock "go.uber.org/mock/gomock"
 	v10 "k8s.io/api/core/v1"
+	kubernetes "k8s.io/client-go/kubernetes"
 )
 
 // MockKubeClientInterface is a mock of KubeClientInterface interface.
@@ -291,6 +292,20 @@ func (m *MockKubeClientInterface) DeleteNamespace(ctx context.Context, namespace
 func (mr *MockKubeClientInterfaceMockRecorder) DeleteNamespace(ctx, namespace any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DeleteNamespace", reflect.TypeOf((*MockKubeClientInterface)(nil).DeleteNamespace), ctx, namespace)
+}
+
+// GetClientSet mocks base method.
+func (m *MockKubeClientInterface) GetClientSet() kubernetes.Interface {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetClientSet")
+	ret0, _ := ret[0].(kubernetes.Interface)
+	return ret0
+}
+
+// GetClientSet indicates an expected call of GetClientSet.
+func (mr *MockKubeClientInterfaceMockRecorder) GetClientSet() *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetClientSet", reflect.TypeOf((*MockKubeClientInterface)(nil).GetClientSet))
 }
 
 // GetMinor mocks base method.

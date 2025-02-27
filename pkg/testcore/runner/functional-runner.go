@@ -124,7 +124,7 @@ func (sr *FunctionalSuiteRunner) RunFunctionalSuites(suites []suites.Interface) 
 		}
 	}
 
-	var kubeClient *k8sclient.KubeClient
+	var kubeClient k8sclient.KubeClientInterface
 	for {
 		var kubeErr error
 		log.Infof("Trying to connect to cluster...")

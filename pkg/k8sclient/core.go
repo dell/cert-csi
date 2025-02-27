@@ -96,6 +96,7 @@ type KubeClientInterface interface {
 	CreateVGSClient() (*volumegroupsnapshot.Client, error)
 	CreatePVClient() (*pv.Client, error)
 	CreateNodeClient() (*node.Client, error)
+	GetClientSet() kubernetes.Interface
 	GetMinor() int
 	Timeout() int
 }
@@ -137,7 +138,7 @@ func newRealClientSet(config *rest.Config) (kubernetes.Interface, error) {
 }
 
 // NewKubeClient is a KubeClient constructor, that creates new instance of KubeClient from provided config
-func NewKubeClient(config *rest.Config, timeout int) (*KubeClient, error) {
+func NewKubeClient(config *rest.Config, timeout int) (KubeClientInterface, error) {
 	logrus.Debugf("Creating new KubeClient")
 	if config == nil {
 		return nil, fmt.Errorf("config can't be nil")
@@ -199,6 +200,10 @@ func NewRemoteKubeClient(config *rest.Config, timeout int) (*KubeClient, error) 
 
 func (c *KubeClient) GetMinor() int {
 	return c.Minor
+}
+
+func (c *KubeClient) GetClientSet() kubernetes.Interface {
+	return c.ClientSet
 }
 
 // CreateStatefulSetClient creates a new instance of StatefulSetClient in supplied namespace

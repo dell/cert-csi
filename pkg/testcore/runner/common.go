@@ -54,7 +54,7 @@ type Runner struct {
 //go:generate mockgen -destination=mocks/k8sclient.go -package=mocks github.com/dell/cert-csi/pkg/testcore/runner K8sClientInterface
 type K8sClientInterface interface {
 	GetConfig(string) (*rest.Config, error)
-	NewKubeClient(config *rest.Config, timeout int) (*k8sclient.KubeClient, error)
+	NewKubeClient(config *rest.Config, timeout int) (k8sclient.KubeClientInterface, error)
 }
 
 type K8sClient struct{}
@@ -63,7 +63,7 @@ func (k *K8sClient) GetConfig(configPath string) (*rest.Config, error) {
 	return k8sclient.GetConfig(configPath)
 }
 
-func (k *K8sClient) NewKubeClient(config *rest.Config, timeout int) (*k8sclient.KubeClient, error) {
+func (k *K8sClient) NewKubeClient(config *rest.Config, timeout int) (k8sclient.KubeClientInterface, error) {
 	return k8sclient.NewKubeClient(config, timeout)
 }
 
