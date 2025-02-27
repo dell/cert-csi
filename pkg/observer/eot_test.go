@@ -65,9 +65,6 @@ func (s *SimpleStore) SaveNumberEntities(nEntities []*store.NumberEntities) erro
 	return nil
 }
 
-func (s *SimpleStore) SaveEntities(entity []*store.Entity) error {
-	return nil
-}
 func (s *SimpleStore) SaveEvents(events []*store.Event) error {
 	s.events = events
 	return nil
