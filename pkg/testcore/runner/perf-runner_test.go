@@ -62,7 +62,6 @@ func TestCheckValidNamespace(t *testing.T) {
 }
 
 func TestNewSuiteRunner(t *testing.T) {
-	var k8s K8sClientInterface
 	mock_kube := mocks.NewMockKubeClientInterface(gomock.NewController(t))
 	mock := runnermocks.NewMockK8sClientInterface(gomock.NewController(t))
 	mock.EXPECT().GetConfig(gomock.Any()).AnyTimes().Return(nil, errors.New("new error"))
@@ -86,7 +85,7 @@ func TestNewSuiteRunner(t *testing.T) {
 	noReport := true
 	scDBs := []*store.StorageClassDB{{StorageClass: "sc1"}, {StorageClass: "sc2"}}
 	runner := NewSuiteRunner(configPath, driverNs, startHook, readyHook, finishHook, observerType, longevity, driverNSHealthMetrics,
-		timeout, cooldown, sequentialExecution, noCleanup, noCleanupOnFail, noMetrics, noReport, scDBs, k8s)
+		timeout, cooldown, sequentialExecution, noCleanup, noCleanupOnFail, noMetrics, noReport, scDBs, mock)
 	if runner.CoolDownPeriod != cooldown {
 		t.Errorf("Expected CoolDownPeriod to be %d, got %d", cooldown, runner.CoolDownPeriod)
 	}
@@ -135,7 +134,7 @@ func TestNewSuiteRunner(t *testing.T) {
 	noReport = true
 	scDBs = []*store.StorageClassDB{{StorageClass: "sc1"}}
 	runner = NewSuiteRunner(configPath, driverNs, startHook, readyHook, finishHook, observerType, longevity, driverNSHealthMetrics,
-		timeout, cooldown, sequentialExecution, noCleanup, noCleanupOnFail, noMetrics, noReport, scDBs, k8s)
+		timeout, cooldown, sequentialExecution, noCleanup, noCleanupOnFail, noMetrics, noReport, scDBs, mock)
 	if runner.ScDBs[0].StorageClass != "sc1" {
 		t.Errorf("Expected StorageClass to be %s, got %s", "sc1", runner.ScDBs[0].StorageClass)
 	}
@@ -154,7 +153,7 @@ func TestNewSuiteRunner(t *testing.T) {
 	noReport = true
 	scDBs = []*store.StorageClassDB{{StorageClass: "sc1"}, {StorageClass: "sc2"}}
 	runner = NewSuiteRunner(configPath, driverNs, startHook, readyHook, finishHook, observerType, longevity, driverNSHealthMetrics,
-		timeout, cooldown, sequentialExecution, noCleanup, noCleanupOnFail, noMetrics, noReport, scDBs, k8s)
+		timeout, cooldown, sequentialExecution, noCleanup, noCleanupOnFail, noMetrics, noReport, scDBs, mock)
 	if len(runner.ScDBs) != len(scDBs)-1 {
 		t.Errorf("Expected ScDBs to have length %d, got %d", len(scDBs)-1, len(runner.ScDBs))
 	}
@@ -173,7 +172,7 @@ func TestNewSuiteRunner(t *testing.T) {
 	noReport = true
 	scDBs = []*store.StorageClassDB{{StorageClass: "sc1"}, {StorageClass: "sc2"}}
 	runner = NewSuiteRunner(configPath, driverNs, startHook, readyHook, finishHook, observerType, longevity, driverNSHealthMetrics,
-		timeout, cooldown, sequentialExecution, noCleanup, noCleanupOnFail, noMetrics, noReport, scDBs, k8s)
+		timeout, cooldown, sequentialExecution, noCleanup, noCleanupOnFail, noMetrics, noReport, scDBs, mock)
 	if len(runner.ScDBs) != len(scDBs) {
 		t.Errorf("Expected ScDBs to have length %d, got %d", len(scDBs), len(runner.ScDBs))
 	}
