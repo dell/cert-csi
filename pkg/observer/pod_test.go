@@ -2,9 +2,11 @@ package observer
 
 import (
 	"context"
+	"sync"
 	"testing"
 	"time"
 
+	"github.com/dell/cert-csi/pkg/k8sclient"
 	"github.com/dell/cert-csi/pkg/store"
 
 	"github.com/stretchr/testify/assert"
@@ -12,71 +14,95 @@ import (
 	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/watch"
+	"k8s.io/client-go/kubernetes/fake"
+	"k8s.io/client-go/rest"
+	test "k8s.io/client-go/testing"
 )
 
-// func TestPodObserver_StartWatching(t *testing.T) {
-// 	// Test case: Watching pods
-// 	ctx := context.Background()
+func TestPodObserver_StartWatching(t *testing.T) {
+	// Test case: Watching pods
+	ctx := context.Background()
 
-// 	storageClass := &storagev1.StorageClass{
-// 		ObjectMeta: metav1.ObjectMeta{Name: "test-storage-class"},
-// 		VolumeBindingMode: func() *storagev1.VolumeBindingMode {
-// 			mode := storagev1.VolumeBindingWaitForFirstConsumer
-// 			return &mode
-// 		}(),
-// 	}
-// 	clientSet := NewFakeClientsetWithRestClient(storageClass)
+	// storageClass := &storagev1.StorageClass{
+	// 	ObjectMeta: metav1.ObjectMeta{Name: "test-storage-class"},
+	// 	VolumeBindingMode: func() *storagev1.VolumeBindingMode {
+	// 		mode := storagev1.VolumeBindingWaitForFirstConsumer
+	// 		return &mode
+	// 	}(),
+	// }
+	//clientSet := NewFakeClientsetWithRestClient(storageClass)
+	clientSet := fake.NewSimpleClientset()
 
-// 	pod := &v1.Pod{
-// 		ObjectMeta: metav1.ObjectMeta{
-// 			Name:      "test-pod",
-// 			Namespace: "default",
-// 		},
-// 	}
+	pod := &v1.Pod{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      "test-pod",
+			Namespace: "default",
+		},
+	}
 
-// 	_, err := clientSet.CoreV1().Pods("default").Create(ctx, pod, metav1.CreateOptions{})
-// 	if err != nil {
-// 		t.Errorf("Error creating fake pod: %v", err)
-// 	}
+	_, err := clientSet.CoreV1().Pods("default").Create(ctx, pod, metav1.CreateOptions{})
+	if err != nil {
+		t.Errorf("Error creating fake pod: %v", err)
+	}
 
-// 	kubeClient := &k8sclient.KubeClient{
-// 		ClientSet: clientSet,
-// 		Config:    &rest.Config{},
-// 	}
+	kubeClient := &k8sclient.KubeClient{
+		ClientSet: clientSet,
+		Config:    &rest.Config{},
+	}
 
-// 	podClient, _ := kubeClient.CreatePodClient("test-namespace")
+	podClient, _ := kubeClient.CreatePodClient("test-namespace")
 
-// 	runner := &Runner{
-// 		Clients: &k8sclient.Clients{
-// 			PodClient: podClient,
-// 		},
-// 		TestCase: &store.TestCase{
-// 			ID: 1,
-// 		},
-// 		WaitGroup: sync.WaitGroup{},
-// 		Database:  NewSimpleStore(),
-// 	}
-// 	runner.WaitGroup.Add(1)
+	runner := &Runner{
+		Clients: &k8sclient.Clients{
+			PodClient: podClient,
+		},
+		TestCase: &store.TestCase{
+			ID: 1,
+		},
+		WaitGroup: sync.WaitGroup{},
+		Database:  NewSimpleStore(),
+	}
+	runner.WaitGroup.Add(1)
 
-// 	po := &PodObserver{}
-// 	po.MakeChannel()
+	po := &PodObserver{}
+	po.MakeChannel()
 
-// 	go po.StartWatching(ctx, runner)
+	// timeout := WatchTimeout
+	// w, _ := pvcClient.Interface.Watch(context.Background(), metav1.ListOptions{
+	//     TimeoutSeconds: &timeout,
+	// })
+	// print(w)
+	fakeWatcher := watch.NewFake()
 
-// 	w, _ := clientSet.CoreV1().Pods("default").Watch(ctx, metav1.ListOptions{})
-// 	wait.Until(func() {
-// 		<-w.ResultChan()
-// 	}, time.Second, ctx.Done())
+	podClient.ClientSet.(*fake.Clientset).PrependWatchReactor("*", func(action test.Action) (handled bool, ret watch.Interface, err error) {
+		if action.GetVerb() == "watch" {
+			// Return the fake watcher
+			return true, fakeWatcher, nil
+		}
+		return false, nil, nil
+	})
 
-// 	//time.Sleep(100 * time.Millisecond)
+	go po.StartWatching(ctx, runner)
+	fakeWatcher.Add(pod)
 
-// 	po.StopWatching()
+	//po.MakeChannel()
 
-// 	runner.WaitGroup.Wait()
+	go po.StartWatching(ctx, runner)
 
-// 	// Assert that the function completed successfully
-// 	assert.True(t, true)
-// }
+	// w, _ := clientSet.CoreV1().Pods("default").Watch(ctx, metav1.ListOptions{})
+	// wait.Until(func() {
+	// 	<-w.ResultChan()
+	// }, time.Second, ctx.Done())
+
+	//time.Sleep(100 * time.Millisecond)
+
+	po.StopWatching()
+
+	runner.WaitGroup.Wait()
+
+	// Assert that the function completed successfully
+	assert.True(t, true)
+}
 
 // func TestPodObserver_Deleted(t *testing.T) {
 // 	// Create a context
@@ -129,17 +155,17 @@ import (
 // 	// Start watching pods
 // 	go po.StartWatching(ctx, runner)
 
-// 	// Wait for the ResultChan to receive a pod
-// 	w, _ := clientSet.CoreV1().Pods("default").Watch(ctx, metav1.ListOptions{})
-// 	wait.Until(func() {
-// 		<-w.ResultChan()
-// 	}, time.Second, ctx.Done())
-
 // 	// Delete the fake pod
 // 	err = clientSet.CoreV1().Pods("default").Delete(ctx, pod.Name, metav1.DeleteOptions{})
 // 	if err != nil {
 // 		t.Errorf("Error deleting fake pod: %v", err)
 // 	}
+
+// 	// Wait for the ResultChan to receive a pod
+// 	w, _ := clientSet.CoreV1().Pods("default").Watch(ctx, metav1.ListOptions{})
+// 	wait.Until(func() {
+// 		<-w.ResultChan()
+// 	}, time.Second, ctx.Done())
 
 // 	// Wait for the Deleted case to be executed
 // 	time.Sleep(100 * time.Millisecond)

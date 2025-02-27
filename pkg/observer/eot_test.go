@@ -24,10 +24,11 @@ type FakeExtendedClientset struct {
 
 type FakeExtendedCoreV1 struct {
 	typedcorev1.CoreV1Interface
+	restClient rest.Interface
 }
 
 func (f *FakeExtendedClientset) CoreV1() typedcorev1.CoreV1Interface {
-	return &FakeExtendedCoreV1{f.Clientset.CoreV1()}
+	return &FakeExtendedCoreV1{f.Clientset.CoreV1(), nil}
 }
 
 func NewFakeClientsetWithRestClient(objs ...runtime.Object) *FakeExtendedClientset {
@@ -61,6 +62,10 @@ func (s *SimpleStore) SaveEntities(entity []*store.Entity) error {
 
 func (s *SimpleStore) SaveNumberEntities(nEntities []*store.NumberEntities) error {
 	s.entities = nEntities
+	return nil
+}
+
+func (s *SimpleStore) SaveEntities(entity []*store.Entity) error {
 	return nil
 }
 func (s *SimpleStore) SaveEvents(events []*store.Event) error {
