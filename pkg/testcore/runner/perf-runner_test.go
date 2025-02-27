@@ -12,6 +12,7 @@ import (
 	"k8s.io/client-go/rest"
 
 	runnermocks "github.com/dell/cert-csi/pkg/testcore/runner/mocks"
+	"github.com/dell/cert-csi/pkg/testcore/suites"
 	"go.uber.org/mock/gomock"
 )
 
@@ -181,6 +182,55 @@ func TestNewSuiteRunner(t *testing.T) {
 		t.Errorf("Expected ScDBs to have length %d, got %d", len(scDBs), len(runner.ScDBs))
 	}
 }
+func TestExecuteSuite(t *testing.T) {
+	tests := []struct {
+		name        string
+		iterCtx     context.Context
+		num         int
+		suites      func() map[string][]suites.Interface
+		suite       func() suites.Interface
+		sr          *SuiteRunner
+		scDB        *store.StorageClassDB
+		c           chan os.Signal
+		wantSuccess bool
+	}{
+		{
+			name:    "Successful suite run",
+			iterCtx: context.Background(),
+			num:     1,
+			suites: func() map[string][]suites.Interface {
+				suite := runnermocks.NewTestSuite(gomock.NewController(t))
+				suite.EXPECT().Run(gomock.Any()).Times(1).Return(nil)
+				return map[string][]suites.Interface{"testSuite": suite}
+			},
+			suite: func() suites.Interface {
+				suite := runnermocks.NewTestSuite(gomock.NewController(t))
+				suite.EXPECT().Run(gomock.Any()).Times(1).Return(nil)
+				return suite
+			},
+			sr:          &SuiteRunner{},
+			scDB:        &store.StorageClassDB{},
+			c:           make(chan os.Signal),
+			wantSuccess: true,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			// Mock the necessary dependencies for the test
+			// For example, you can use testify/mock to create mock objects
+			// and replace the actual dependencies with the mocks.
+
+			// Call the ExecuteSuite function
+			ExecuteSuite(tt.iterCtx, tt.num, tt.suites, tt.suite, tt.sr, tt.scDB, tt.c)
+
+			// Assert the expected outcome
+			// For example, you can use testify/assert to make assertions
+			// or write custom assertions based on the expected behavior.
+		})
+	}
+}
+
 func TestRunHook(t *testing.T) {
 	script, err := os.CreateTemp("", "script.sh")
 	if err != nil {
