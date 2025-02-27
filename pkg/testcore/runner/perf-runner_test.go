@@ -2,7 +2,6 @@ package runner
 
 import (
 	"context"
-	"errors"
 	"os"
 	"testing"
 	"time"
@@ -10,6 +9,7 @@ import (
 	"github.com/dell/cert-csi/pkg/k8sclient"
 	"github.com/dell/cert-csi/pkg/k8sclient/mocks"
 	"github.com/dell/cert-csi/pkg/store"
+	"k8s.io/client-go/rest"
 
 	runnermocks "github.com/dell/cert-csi/pkg/testcore/runner/mocks"
 	"go.uber.org/mock/gomock"
@@ -63,9 +63,13 @@ func TestCheckValidNamespace(t *testing.T) {
 
 func TestNewSuiteRunner(t *testing.T) {
 	mock_kube := mocks.NewMockKubeClientInterface(gomock.NewController(t))
+	mock_kube.EXPECT().StorageClassExists(gomock.Any(), gomock.Any()).AnyTimes().Return(true, nil)
+	mock_kube.EXPECT().NamespaceExists(gomock.Any(), gomock.Any()).AnyTimes().Return(true, nil)
 	mock := runnermocks.NewMockK8sClientInterface(gomock.NewController(t))
-	mock.EXPECT().GetConfig(gomock.Any()).AnyTimes().Return(nil, errors.New("new error"))
-	mock.EXPECT().NewKubeClient(gomock.Any(), gomock.Any()).AnyTimes().Return(mock_kube, errors.New("new error"))
+	mock.EXPECT().GetConfig(gomock.Any()).AnyTimes().Return(&rest.Config{
+		Host: "localhost",
+	}, nil)
+	mock.EXPECT().NewKubeClient(gomock.Any(), gomock.Any()).AnyTimes().Return(mock_kube, nil)
 
 	// Test case: Successful creation
 	configPath := "config.yaml"
@@ -154,7 +158,7 @@ func TestNewSuiteRunner(t *testing.T) {
 	scDBs = []*store.StorageClassDB{{StorageClass: "sc1"}, {StorageClass: "sc2"}}
 	runner = NewSuiteRunner(configPath, driverNs, startHook, readyHook, finishHook, observerType, longevity, driverNSHealthMetrics,
 		timeout, cooldown, sequentialExecution, noCleanup, noCleanupOnFail, noMetrics, noReport, scDBs, mock)
-	if len(runner.ScDBs) != len(scDBs)-1 {
+	if len(runner.ScDBs) != len(scDBs) {
 		t.Errorf("Expected ScDBs to have length %d, got %d", len(scDBs)-1, len(runner.ScDBs))
 	}
 	// Test case: Error in namespace check
