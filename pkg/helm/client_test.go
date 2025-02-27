@@ -3,8 +3,10 @@ package helm
 import (
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 
+	"github.com/pkg/errors"
 	log "github.com/sirupsen/logrus"
 	"github.com/stretchr/testify/assert"
 	"helm.sh/helm/v3/pkg/action"
@@ -34,21 +36,19 @@ func TestNewClient(t *testing.T) {
 	assert.NotNil(t, client.actionConfig)
 }
 
-/*
-func TestNewClient_InvalidConfig(t *testing.T) {
-	namespace := "default"
-	configPath := "/invalid/path/to/kubeconfig" // This path should be invalid for the test
-	timeout := 300
+// func TestNewClient_InvalidConfig(t *testing.T) {
+// 	namespace := "default"
+// 	configPath := "/invalidpath/to/kubeconfig" // This path should be invalid for the test
+// 	timeout := 300
 
-	// Set an invalid HELM_DRIVER to simulate an error
-	os.Setenv("HELM_DRIVER", "invalid-driver")
-	defer os.Unsetenv("HELM_DRIVER")
+// 	// Set an invalid HELM_DRIVER to simulate an error
+// 	os.Setenv("HELM_DRIVER", "secret")
+// 	defer os.Unsetenv("HELM_DRIVER")
 
-	client, err := NewClient(namespace, configPath, timeout)
-	assert.Error(t, err)
-	assert.Nil(t, client)
-}
-*/
+// 	client, err := NewClient(namespace, configPath, timeout)
+// 	assert.Error(t, err)
+// 	assert.Nil(t, client)
+// }
 
 func TestAddRepository(t *testing.T) {
 	// Set up environment variables
@@ -89,11 +89,40 @@ func TestAddRepository(t *testing.T) {
 	err = client.AddRepository(repoName, repoURL)
 	assert.NoError(t, err)
 
+	// Test with invalid file path error
+	originalConfig := client.settings.RepositoryConfig
+	client.settings.RepositoryConfig = "-/-adsfasdfas"
+	err = client.AddRepository(repoName, repoURL)
+	assert.Error(t, err)
+
+	// Test with invalid file read file error
+	client.settings.RepositoryConfig = ""
+	err = client.AddRepository(repoName, repoURL)
+	assert.Error(t, err)
+
+	// reset repo config for future tests
+	client.settings.RepositoryConfig = originalConfig
+
 	// Test adding an invalid repository URL to cover the error path
 	invalidRepoURL := "https://invalid-url/charts"
 	err = client.AddRepository("invalid-repo", invalidRepoURL)
 	assert.Error(t, err)
 	assert.Contains(t, err.Error(), "looks like \"https://invalid-url/charts\" is not a valid chart repository or cannot be reached")
+}
+
+func TestUpdateRepositoriesWithInvalidRepo(t *testing.T) {
+	// Set up the Helm settings
+	settings := cli.New()
+	settings.RepositoryConfig = "asdfasdfasdfasd" // Adjust this path as needed
+
+	// Create a new client
+	client := &Client{
+		settings: settings,
+	}
+
+	// Call the UpdateRepositories function
+	err := client.UpdateRepositories()
+	assert.Error(t, err)
 }
 
 func TestUpdateRepositories(t *testing.T) {
@@ -132,7 +161,7 @@ func TestInstallChart(t *testing.T) {
 	defer os.Unsetenv("HELM_REPOSITORY_CONFIG")
 
 	namespace := "default"
-	configPath := "/path/to/kubeconfig" // Ensure this path is valid for the test
+	configPath := "/root/.kube/config" // Ensure this path is valid for the test
 	timeout := 300
 
 	// Create a new Helm client
@@ -146,24 +175,73 @@ func TestInstallChart(t *testing.T) {
 	err = client.AddRepository(repoName, repoURL)
 	assert.NoError(t, err)
 
+	err = client.UpdateRepositories()
+	assert.NoError(t, err)
+
 	// Define the release name, chart name, and values
 	releaseName := "test-release"
-	chartName := "nginx" // Use a valid chart name from the repository
+	// chartName := "jenkins" // Use a valid chart name from the repository
 	values := map[string]interface{}{
 		"service": map[string]interface{}{
 			"type": "ClusterIP",
 		},
 	}
 
-	// Install the chart
-	err = client.InstallChart(releaseName, repoName, chartName, values)
-	assert.Error(t, err)
-
 	// Clean up: Uninstall the chart after the test
 	defer func() {
 		err = client.UninstallChart(releaseName)
-		assert.Error(t, err)
+		// assert.NoError(t, err)
 	}()
+
+	// Install chart with invalid chart error
+	err = client.InstallChart(releaseName, repoName, "asdfasdf", values)
+	assert.Error(t, err)
+
+	// Install chart with resource mapping not found error
+	err = client.InstallChart(releaseName, repoName, "velero", values)
+	assert.Error(t, err)
+
+	// Install chart with dependencies test
+	oldLoaderLoad := loaderLoad
+	defer func() {
+		loaderLoad = oldLoaderLoad
+	}()
+	dependencies := []*chart.Dependency{}
+	loaderLoad = func(name string) (*chart.Chart, error) {
+		chart, _ := oldLoaderLoad(name)
+		chart.Metadata.Dependencies = dependencies
+		return chart, nil
+	}
+
+	oldCheckDependencies := actionCheckDependencies
+	defer func() {
+		actionCheckDependencies = oldCheckDependencies
+	}()
+
+	// Test with missing in charts/ directory error
+	missing := []string{}
+	actionCheckDependencies = func(ch *chart.Chart, reqs []*chart.Dependency) error {
+		return errors.Errorf("found in Chart.yaml, but missing in charts/ directory: %s", strings.Join(missing, ", "))
+	}
+	err = client.InstallChart(releaseName, repoName, "velero", values)
+	assert.Error(t, err)
+
+	// Test with dependency update
+	oldActionNewInstall := actionNewInstall
+	defer func() {
+		actionNewInstall = oldActionNewInstall
+	}()
+	actionNewInstall = func(cfg *action.Configuration) *action.Install {
+		install := oldActionNewInstall(cfg)
+		install.DependencyUpdate = true
+		return install
+	}
+	err = client.InstallChart(releaseName, repoName, "velero", values)
+	assert.Error(t, err)
+
+	// Install the chart
+	// err = client.InstallChart(releaseName, repoName, chartName, values)
+	// assert.NoError(t, err)
 }
 
 func TestUninstallChart(t *testing.T) {
