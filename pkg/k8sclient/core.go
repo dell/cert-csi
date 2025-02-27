@@ -1,6 +1,6 @@
 /*
  *
- * Copyright © 2022-2023 Dell Inc. or its subsidiaries. All Rights Reserved.
+ * Copyright © 2022-2025 Dell Inc. or its subsidiaries. All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -37,10 +37,8 @@ import (
 	"github.com/dell/cert-csi/pkg/k8sclient/resources/statefulset"
 	"github.com/dell/cert-csi/pkg/k8sclient/resources/va"
 	"github.com/dell/cert-csi/pkg/k8sclient/resources/volumegroupsnapshot"
-	snapv1 "github.com/dell/cert-csi/pkg/k8sclient/resources/volumesnapshot/v1"
-	snapbeta "github.com/dell/cert-csi/pkg/k8sclient/resources/volumesnapshot/v1beta1"
-	contentv1 "github.com/dell/cert-csi/pkg/k8sclient/resources/volumesnapshotcontent/v1"
-	contentbeta "github.com/dell/cert-csi/pkg/k8sclient/resources/volumesnapshotcontent/v1beta1"
+	snapv1 "github.com/dell/cert-csi/pkg/k8sclient/resources/volumesnapshot"
+	contentv1 "github.com/dell/cert-csi/pkg/k8sclient/resources/volumesnapshotcontent"
 	"github.com/dell/cert-csi/pkg/utils"
 
 	vgsAlpha "github.com/dell/csi-volumegroup-snapshotter/api/v1"
@@ -109,7 +107,6 @@ type Clients struct {
 	VaClient               *va.Client
 	MetricsClient          *metrics.Client
 	SnapClientGA           *snapv1.SnapshotClient
-	SnapClientBeta         *snapbeta.SnapshotClient
 	PersistentVolumeClient *pv.Client
 	NodeClient             *node.Client
 	SCClient               *sc.Client
@@ -359,23 +356,6 @@ func (c *KubeClient) CreateSnapshotGAClient(namespace string) (*snapv1.SnapshotC
 	return sc, nil
 }
 
-// CreateSnapshotBetaClient creates a new instance of beta snapshot client
-func (c *KubeClient) CreateSnapshotBetaClient(namespace string) (*snapbeta.SnapshotClient, error) {
-	cset, err := snapclient.NewForConfig(c.Config)
-	if err != nil {
-		return nil, err
-	}
-
-	sc := &snapbeta.SnapshotClient{
-		Interface: cset.SnapshotV1beta1().VolumeSnapshots(namespace),
-		Namespace: namespace,
-		Timeout:   c.timeout,
-	}
-
-	logrus.Debugf("Created Beta Snapshot client in %s namespace", namespace)
-	return sc, nil
-}
-
 // CreateSnapshotContentGAClient creates a new instance of snapshot contents client
 func (c *KubeClient) CreateSnapshotContentGAClient() (*contentv1.SnapshotContentClient, error) {
 	cset, err := snapclient.NewForConfig(c.Config)
@@ -388,21 +368,6 @@ func (c *KubeClient) CreateSnapshotContentGAClient() (*contentv1.SnapshotContent
 	}
 
 	logrus.Debugf("Created Alpha Snapshot Content client")
-	return sc, nil
-}
-
-// CreateSnapshotContentBetaClient creates a new instance of beta snapshot contents client
-func (c *KubeClient) CreateSnapshotContentBetaClient() (*contentbeta.SnapshotContentClient, error) {
-	cset, err := snapclient.NewForConfig(c.Config)
-	if err != nil {
-		return nil, err
-	}
-	sc := &contentbeta.SnapshotContentClient{
-		Interface: cset.SnapshotV1beta1().VolumeSnapshotContents(),
-		Timeout:   c.timeout,
-	}
-
-	logrus.Debugf("Created Beta Snapshot Content client")
 	return sc, nil
 }
 
@@ -538,48 +503,24 @@ func (c *KubeClient) ForceDeleteNamespace(ctx context.Context, namespace string)
 	}
 	logrus.Debugf("All Pods are gone")
 
-	if c.Minor >= 17 {
-		logrus.Debug("Beta here")
-		k8sbeta, err := c.CreateSnapshotBetaClient(namespace)
-		if err != nil {
-			return err
-		}
-		sncont, err := c.CreateSnapshotContentBetaClient()
-		if err != nil {
-			return err
-		}
-		err = k8sbeta.DeleteAll(ctx)
-		// it is possible that few resources are not found so better to check it before returning error
-		if err != nil && !apierrs.IsNotFound(err) {
-			logrus.Errorf("Failed to delete all snapshots: %v", err)
-		}
-		logrus.Debugf("All VSs are gone")
-		err = sncont.DeleteAll(ctx)
-		if err != nil && !apierrs.IsNotFound(err) {
-			logrus.Errorf("Failed to delete all snapshot contents: %v", err)
-		}
-		logrus.Debugf("All VSConts are gone")
-	} else {
-		logrus.Debug("Alpha here")
-		k8salpha, err := c.CreateSnapshotGAClient(namespace)
-		if err != nil {
-			return err
-		}
-		sncont, err := c.CreateSnapshotContentGAClient()
-		if err != nil {
-			return err
-		}
-		err = k8salpha.DeleteAll(ctx)
-		if err != nil {
-			logrus.Errorf("Failed to delete all snapshots: %v", err)
-		}
-		logrus.Debugf("All VS's are gone")
-		err = sncont.DeleteAll(ctx)
-		if err != nil && !apierrs.IsNotFound(err) {
-			logrus.Errorf("Failed to delete all snapshot contents: %v", err)
-		}
-		logrus.Debugf("All VSConts are gone")
+	k8salpha, err := c.CreateSnapshotGAClient(namespace)
+	if err != nil {
+		return err
 	}
+	sncont, err := c.CreateSnapshotContentGAClient()
+	if err != nil {
+		return err
+	}
+	err = k8salpha.DeleteAll(ctx)
+	if err != nil {
+		logrus.Errorf("Failed to delete all snapshots: %v", err)
+	}
+	logrus.Debugf("All VS's are gone")
+	err = sncont.DeleteAll(ctx)
+	if err != nil && !apierrs.IsNotFound(err) {
+		logrus.Errorf("Failed to delete all snapshot contents: %v", err)
+	}
+	logrus.Debugf("All VSConts are gone")
 
 	pvcClient, err := c.CreatePVCClient(namespace)
 	if err != nil {
@@ -613,12 +554,9 @@ func (c *KubeClient) SnapshotClassExists(snapClass string) (bool, error) {
 	if err != nil {
 		return false, err
 	}
-	_, err = cset.SnapshotV1beta1().VolumeSnapshotClasses().Get(context.Background(), snapClass, metav1.GetOptions{})
+	_, err = cset.SnapshotV1().VolumeSnapshotClasses().Get(context.Background(), snapClass, metav1.GetOptions{})
 	if err != nil {
-		_, err = cset.SnapshotV1().VolumeSnapshotClasses().Get(context.Background(), snapClass, metav1.GetOptions{})
-		if err != nil {
-			return false, err
-		}
+		return false, err
 	}
 
 	return true, nil

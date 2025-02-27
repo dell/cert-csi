@@ -1,6 +1,6 @@
 /*
  *
- * Copyright © 2022-2023 Dell Inc. or its subsidiaries. All Rights Reserved.
+ * Copyright © 2022-2025 Dell Inc. or its subsidiaries. All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,7 +14,7 @@
  *
  */
 
-package v1beta1
+package volumesnapshotcontent
 
 import (
 	"context"
@@ -25,8 +25,8 @@ import (
 	"github.com/dell/cert-csi/pkg/utils"
 
 	"github.com/fatih/color"
-	"github.com/kubernetes-csi/external-snapshotter/client/v4/apis/volumesnapshot/v1beta1"
-	snapshotv1beta1 "github.com/kubernetes-csi/external-snapshotter/client/v4/clientset/versioned/typed/volumesnapshot/v1beta1"
+	v1 "github.com/kubernetes-csi/external-snapshotter/client/v4/apis/volumesnapshot/v1"
+	snapshotv1 "github.com/kubernetes-csi/external-snapshotter/client/v4/clientset/versioned/typed/volumesnapshot/v1"
 	"github.com/sirupsen/logrus"
 	apierrs "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -42,7 +42,7 @@ const (
 
 // SnapshotContentClient is a client for managing volume blockvolsnapshot content
 type SnapshotContentClient struct {
-	Interface snapshotv1beta1.VolumeSnapshotContentInterface
+	Interface snapshotv1.VolumeSnapshotContentInterface
 	Namespace string
 	Timeout   int
 }
@@ -50,7 +50,7 @@ type SnapshotContentClient struct {
 // SnapshotContent contains parameters needed for managing blockvolsnapshot content
 type SnapshotContent struct {
 	Client  *SnapshotContentClient
-	Object  *v1beta1.VolumeSnapshotContent
+	Object  *v1.VolumeSnapshotContent
 	Deleted bool
 
 	// Used when error arises in syncable methods
@@ -58,8 +58,9 @@ type SnapshotContent struct {
 }
 
 // Delete deletes a volume blockvolsnapshot content
-func (scc *SnapshotContentClient) Delete(ctx context.Context, snap *v1beta1.VolumeSnapshotContent) *SnapshotContent {
+func (scc *SnapshotContentClient) Delete(ctx context.Context, snap *v1.VolumeSnapshotContent) *SnapshotContent {
 	var funcErr error
+
 	err := scc.Interface.Delete(ctx, snap.Name, metav1.DeleteOptions{})
 	if err != nil {
 		funcErr = err
@@ -103,23 +104,24 @@ func (cont *SnapshotContent) WaitUntilGone(ctx context.Context) error {
 		timeout = time.Duration(cont.Client.Timeout) * time.Second
 	}
 
-	pollErr := wait.PollImmediate(Poll, timeout/100*95, func() (done bool, err error) {
+	pollErr := wait.PollImmediate(Poll, timeout/2, func() (done bool, err error) {
 		done, err = cont.pollWait(ctx)
 		return done, err
 	})
 	if pollErr != nil {
+
+		log.Errorf("Failed to delete volsnap: %v \n", pollErr)
+		log.Info("Forcing finalizers cleanup")
 		gotsnap, err := cont.Client.Interface.Get(ctx, cont.Object.Name, metav1.GetOptions{})
 		if err != nil {
 			return err
 		}
-		log.Errorf("Failed to delete volsnap: %v \n", pollErr)
-		log.Info("Forcing finalizers cleanup")
 		gotsnap.SetFinalizers([]string{})
 		_, er := cont.Client.Interface.Update(ctx, gotsnap, metav1.UpdateOptions{})
 		if er != nil {
 			return er
 		}
-		pollErr = wait.PollImmediate(Poll, timeout/2, func() (done bool, err error) {
+		pollErr = wait.PollImmediate(Poll, timeout/100*95, func() (done bool, err error) {
 			done, err = cont.pollWait(ctx)
 			return done, err
 		})

@@ -1,6 +1,6 @@
 /*
  *
- * Copyright © 2022-2023 Dell Inc. or its subsidiaries. All Rights Reserved.
+ * Copyright © 2022-2025 Dell Inc. or its subsidiaries. All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -432,24 +432,7 @@ func (sds *SnapshotDeletionSuite) GetClients(namespace string, client *k8sclient
 	if mcErr != nil {
 		return nil, mcErr
 	}
-	if client.Minor > 17 {
-		snapClient, snErr := client.CreateSnapshotGAClient(namespace)
-		if snErr != nil {
-			return nil, snErr
-		}
-
-		return &k8sclient.Clients{
-			PVCClient:         pvcClient,
-			PodClient:         podClient,
-			VaClient:          vaClient,
-			StatefulSetClient: nil,
-			MetricsClient:     metricsClient,
-			SnapClientGA:      snapClient,
-			SnapClientBeta:    nil,
-		}, nil
-	}
-
-	snapClient, snErr := client.CreateSnapshotBetaClient(namespace)
+	snapClient, snErr := client.CreateSnapshotGAClient(namespace)
 	if snErr != nil {
 		return nil, snErr
 	}
@@ -460,8 +443,7 @@ func (sds *SnapshotDeletionSuite) GetClients(namespace string, client *k8sclient
 		VaClient:          vaClient,
 		StatefulSetClient: nil,
 		MetricsClient:     metricsClient,
-		SnapClientGA:      nil,
-		SnapClientBeta:    snapClient,
+		SnapClientGA:      snapClient,
 	}, nil
 }
 

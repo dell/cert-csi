@@ -11,7 +11,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package v1beta1_test
+package volumesnapshotcontent_test
 
 import (
 	"context"
@@ -19,9 +19,9 @@ import (
 	t1 "testing"
 
 	"github.com/dell/cert-csi/pkg/k8sclient"
-	contentv1 "github.com/dell/cert-csi/pkg/k8sclient/resources/volumesnapshotcontent/v1beta1"
-	v1 "github.com/kubernetes-csi/external-snapshotter/client/v4/apis/volumesnapshot/v1beta1"
-	snapshotv1 "github.com/kubernetes-csi/external-snapshotter/client/v4/clientset/versioned/typed/volumesnapshot/v1beta1"
+	contentv1 "github.com/dell/cert-csi/pkg/k8sclient/resources/volumesnapshotcontent"
+	v1 "github.com/kubernetes-csi/external-snapshotter/client/v4/apis/volumesnapshot/v1"
+	snapshotv1 "github.com/kubernetes-csi/external-snapshotter/client/v4/clientset/versioned/typed/volumesnapshot/v1"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/suite"
