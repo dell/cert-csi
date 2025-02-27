@@ -108,11 +108,23 @@ func (suite *CoreTestSuite) TestCreateClients() {
 		suite.Equal(namespace, podClient.Namespace)
 	})
 
+	suite.Run("pod client error case", func() {
+		podClient, err := suite.kubeClient.CreatePodClient("")
+		suite.Error(err)
+		suite.Nil(podClient)
+	})
+
 	suite.Run("va client", func() {
 		vaClient, err := suite.kubeClient.CreateVaClient(namespace)
 		suite.NoError(err)
 		suite.NotNil(vaClient)
 		suite.Equal(namespace, vaClient.Namespace)
+	})
+
+	suite.Run("va client error case", func() {
+		vaClient, err := suite.kubeClient.CreateVaClient("")
+		suite.Error(err)
+		suite.Nil(vaClient)
 	})
 
 	suite.Run("sts client", func() {
@@ -122,7 +134,7 @@ func (suite *CoreTestSuite) TestCreateClients() {
 		suite.Equal(namespace, stsClient.Namespace)
 	})
 
-	suite.Run("m client", func() {
+	suite.Run("m client error case", func() {
 		mClient, err := suite.kubeClient.CreateMetricsClient("")
 		suite.Error(err)
 		suite.Nil(mClient)

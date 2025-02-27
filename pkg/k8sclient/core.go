@@ -248,6 +248,9 @@ func (c *KubeClient) CreateNodeClient() (*node.Client, error) {
 
 // CreatePodClient creates a new instance of Pod client
 func (c *KubeClient) CreatePodClient(namespace string) (*pod.Client, error) {
+	if namespace == "" {
+		return nil, fmt.Errorf("namespace connot be empty")
+	}
 	podc := &pod.Client{
 		Interface:      c.ClientSet.CoreV1().Pods(namespace),
 		ClientSet:      c.ClientSet,
@@ -262,6 +265,9 @@ func (c *KubeClient) CreatePodClient(namespace string) (*pod.Client, error) {
 
 // CreateVaClient creates a new instance of volume attachment client
 func (c *KubeClient) CreateVaClient(namespace string) (*va.Client, error) {
+	if namespace == "" {
+		return nil, fmt.Errorf("namespace connot be empty")
+	}
 	vac := &va.Client{
 		Interface: c.ClientSet.StorageV1().VolumeAttachments(),
 		Namespace: namespace,
