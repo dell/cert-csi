@@ -182,6 +182,7 @@ func createSuiteRunner(c *cli.Context, s []suites.Interface) (*runner.SuiteRunne
 		c.Bool("no-metrics"),
 		c.Bool("no-reports"),
 		scDBs,
+		&runner.K8sClient{},
 	), ss
 }
 

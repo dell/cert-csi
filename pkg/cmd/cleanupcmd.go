@@ -87,7 +87,7 @@ func GetCleanupCommand() cli.Command {
 				return kubeErr
 			}
 
-			nsList, nsErr := kubeClient.ClientSet.CoreV1().Namespaces().List(context.Background(), metav1.ListOptions{})
+			nsList, nsErr := kubeClient.GetClientSet().CoreV1().Namespaces().List(context.Background(), metav1.ListOptions{})
 			if nsErr != nil {
 				return nsErr
 			}

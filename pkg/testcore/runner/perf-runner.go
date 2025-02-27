@@ -76,14 +76,14 @@ func checkValidNamespace(driverNs string, runner *Runner) {
 			logrus.Errorf("Can't check existence of namespace; error=%v", nsErr)
 		}
 		if !nsEx {
-			logrus.Fatalf("Can't find namespace %s", driverNs)
+			logrus.Infoln("Can't find namespace")
 		}
 	}
 }
 
 // NewSuiteRunner creates and returns SuiteRunner
 func NewSuiteRunner(configPath, driverNs, startHook, readyHook, finishHook, observerType, longevity string, driverNSHealthMetrics string,
-	timeout int, cooldown int, sequentialExecution, noCleanup, noCleanupOnFail, noMetrics bool, noReport bool, scDBs []*store.StorageClassDB,
+	timeout int, cooldown int, sequentialExecution, noCleanup, noCleanupOnFail, noMetrics bool, noReport bool, scDBs []*store.StorageClassDB, k8s K8sClientInterface,
 ) *SuiteRunner {
 	runner := getSuiteRunner(
 		configPath,
@@ -93,7 +93,7 @@ func NewSuiteRunner(configPath, driverNs, startHook, readyHook, finishHook, obse
 		noCleanup,
 		noCleanupOnFail,
 		noReport,
-		&K8sClient{},
+		k8s,
 	)
 	for _, scDB := range scDBs {
 		// Checking storage if storageClass exists
@@ -330,7 +330,7 @@ func (sr *SuiteRunner) RunSuites(suites map[string][]suites.Interface) {
 				}
 			}
 
-			var kubeClient *k8sclient.KubeClient
+			var kubeClient k8sclient.KubeClientInterface
 			for {
 				var kubeErr error
 				logrus.Infof("Trying to connect to cluster...")
@@ -593,6 +593,6 @@ func (sr *SuiteRunner) Close() {
 	if sr.SucceededSuites > Threshold {
 		logrus.Infof("During this run %.1f%% of suites succeeded", sr.SucceededSuites*100)
 	} else {
-		logrus.Errorf("During this run %.1f%% of suites succeeded", sr.SucceededSuites*100)
+		logrus.Fatalf("During this run %.1f%% of suites succeeded", sr.SucceededSuites*100)
 	}
 }

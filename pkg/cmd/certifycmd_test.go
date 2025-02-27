@@ -3,13 +3,14 @@ package cmd
 import (
 	"context"
 	"flag"
+	"testing"
+
 	"github.com/dell/cert-csi/pkg/k8sclient"
 	"github.com/urfave/cli"
 	storagev1 "k8s.io/api/storage/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
-	"testing"
 
 	"github.com/stretchr/testify/assert"
 )

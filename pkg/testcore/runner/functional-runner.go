@@ -124,7 +124,7 @@ func (sr *FunctionalSuiteRunner) RunFunctionalSuites(suites []suites.Interface) 
 		}
 	}
 
-	var kubeClient *k8sclient.KubeClient
+	var kubeClient k8sclient.KubeClientInterface
 	for {
 		var kubeErr error
 		log.Infof("Trying to connect to cluster...")
@@ -255,7 +255,7 @@ func (sr *FunctionalSuiteRunner) Close() {
 	if sr.SucceededSuites > Threshold {
 		log.Infof("During this run %.1f%% of suites succeeded", sr.SucceededSuites*100)
 	} else {
-		log.Errorf("During this run %.1f%% of suites succeeded", sr.SucceededSuites*100)
+		log.Fatalf("During this run %.1f%% of suites succeeded", sr.SucceededSuites*100)
 	}
 }
 
