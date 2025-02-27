@@ -3,12 +3,12 @@ package runner
 import (
 	"context"
 	"errors"
+	"os"
 	"testing"
 	"time"
 
 	"github.com/dell/cert-csi/pkg/k8sclient"
 	"github.com/dell/cert-csi/pkg/k8sclient/mocks"
-
 	"github.com/dell/cert-csi/pkg/store"
 
 	runnermocks "github.com/dell/cert-csi/pkg/testcore/runner/mocks"
@@ -175,5 +175,58 @@ func TestNewSuiteRunner(t *testing.T) {
 		timeout, cooldown, sequentialExecution, noCleanup, noCleanupOnFail, noMetrics, noReport, scDBs, mock)
 	if len(runner.ScDBs) != len(scDBs) {
 		t.Errorf("Expected ScDBs to have length %d, got %d", len(scDBs), len(runner.ScDBs))
+	}
+}
+func TestRunHook(t *testing.T) {
+	script, err := os.CreateTemp("", "script.sh")
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer os.Remove(script.Name())
+	// Write the desired script content to the file
+	scriptContent := `#!/bin/bash
+echo "Hello, World!"
+`
+	_, err = script.Write([]byte(scriptContent))
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	// Close the file to flush the content
+	err = script.Close()
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	// Test case: Run the mock bash script
+	startHook := script.Name()
+	hookName := "Mock Bash Script"
+	_ = os.Chmod(startHook, 0755)
+	err = runHook(startHook, hookName)
+	if err != nil {
+		t.Errorf("Expected no error, got %s", err.Error())
+	}
+	tests := []struct {
+		startHook string
+		hookName  string
+		wantErr   bool
+	}{
+		{
+			startHook: "/path/to/nonexistent.sh",
+			hookName:  "Non-Existent Script",
+			wantErr:   true,
+		},
+		{
+			startHook: "/path/to/nonexistent.py",
+			hookName:  "Non-bash Script",
+			wantErr:   true,
+		},
+	}
+
+	for _, tt := range tests {
+		err := runHook(tt.startHook, tt.hookName)
+		if (err != nil) != tt.wantErr {
+			t.Errorf("runHook(%s, %s) error = %v, wantErr %v", tt.startHook, tt.hookName, err, tt.wantErr)
+		}
 	}
 }
