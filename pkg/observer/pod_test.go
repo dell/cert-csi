@@ -41,8 +41,18 @@ func TestPodObserver_StartWatching(t *testing.T) {
 
 	pod := &v1.Pod{
 		ObjectMeta: metav1.ObjectMeta{
-			Name:      "test-pod",
-			Namespace: "default",
+			Name:              "test-pod",
+			Namespace:         "test-namespace",
+			DeletionTimestamp: &metav1.Time{Time: time.Now()},
+		},
+		Status: v1.PodStatus{
+			Phase: v1.PodRunning,
+			Conditions: []v1.PodCondition{
+				{
+					Type:   v1.PodReady,
+					Status: v1.ConditionTrue,
+				},
+			},
 		},
 	}
 
@@ -56,43 +66,13 @@ func TestPodObserver_StartWatching(t *testing.T) {
 		Config:    &rest.Config{},
 	}
 
-	// Set up a reactor to simulate Pods becoming Ready
-	clientSet.Fake.PrependReactor("create", "pods", func(action k8stesting.Action) (bool, runtime.Object, error) {
-		createAction := action.(k8stesting.CreateAction)
-		pod = createAction.GetObject().(*v1.Pod)
-		// Set pod phase to Running
-		pod.Status.Phase = v1.PodRunning
-		// Simulate the Ready condition
-		pod.Status.Conditions = append(pod.Status.Conditions, v1.PodCondition{
-			Type:   v1.PodReady,
-			Status: v1.ConditionTrue,
-		})
-
-		// Simulate the "FileSystemResizeSuccessful" event
-		event := &v1.Event{
-			ObjectMeta: metav1.ObjectMeta{
-				Namespace: pod.Namespace,
-				Name:      "test-event",
-			},
-			InvolvedObject: v1.ObjectReference{
-				Namespace: pod.Namespace,
-				Name:      pod.Name,
-				UID:       pod.UID,
-			},
-			Reason: "FileSystemResizeSuccessful",
-			Type:   v1.EventTypeNormal,
-		}
-		clientSet.Tracker().Add(event)
-
-		return false, nil, nil // Allow normal processing to continue
-	})
 	clientSet.Fake.PrependReactor("get", "pods", func(action k8stesting.Action) (bool, runtime.Object, error) {
-		getAction := action.(k8stesting.GetAction)
-		podName := getAction.GetName()
+		//getAction := action.(k8stesting.GetAction)
+		//podName := getAction.GetName()
 		// Create a pod object with the expected name and Ready status
 		pod = &v1.Pod{
 			ObjectMeta: metav1.ObjectMeta{
-				Name:      podName,
+				Name:      "test-pod",
 				Namespace: "test-namespace",
 			},
 			Status: v1.PodStatus{
@@ -121,6 +101,24 @@ func TestPodObserver_StartWatching(t *testing.T) {
 	// 	nil,
 	// )
 
+	// mockKubePodInstance := &mockKubePod{}
+
+	// //entities := make(map[string]*store.Entity)
+
+	// // Set up the mock behavior for the IsPodReady() method
+	// mockKubePodInstance.On("IsPodReady", mock.Anything).Return(true)
+	// if pod == nil {
+	// 	t.Errorf("Pod is nil, unable to call IsPodReady")
+	// 	return
+	// }
+	// result := mockKubePodInstance.IsPodReady(pod)
+
+	// if result != true {
+	// 	t.Errorf("Expected IsPodReady to return true, but got false")
+	// }
+
+	// mockKubePodInstance.AssertCalled(t, "IsPodReady", pod)
+
 	podClient, _ := kubeClient.CreatePodClient("test-namespace")
 
 	runner := &Runner{
@@ -133,7 +131,6 @@ func TestPodObserver_StartWatching(t *testing.T) {
 		WaitGroup: sync.WaitGroup{},
 		Database:  NewSimpleStore(),
 	}
-	runner.WaitGroup.Add(1)
 
 	po := &PodObserver{}
 	po.MakeChannel()
@@ -171,9 +168,11 @@ func TestPodObserver_StartWatching(t *testing.T) {
 	// })
 
 	//po.MakeChannel()
+	// runner.WaitGroup.Add(1)
 
-	go po.StartWatching(ctx, runner)
-	fakeWatcher.Add(pod)
+	// go po.StartWatching(ctx, runner)
+	// fakeWatcher.Add(pod)
+	//po.StopWatching()
 
 	// w, _ := clientSet.CoreV1().Pods("default").Watch(ctx, metav1.ListOptions{})
 	// wait.Until(func() {
@@ -184,19 +183,102 @@ func TestPodObserver_StartWatching(t *testing.T) {
 
 	// po.StopWatching()
 
+	// Set up a reactor to simulate Pods becoming Ready
+	// clientSet.Fake.PrependReactor("create", "pods", func(action k8stesting.Action) (bool, runtime.Object, error) {
+	// 	createAction := action.(k8stesting.CreateAction)
+	// 	pod = createAction.GetObject().(*v1.Pod)
+	// 	// Set pod phase to Running
+	// 	pod.Status.Phase = v1.PodRunning
+	// 	// Simulate the Ready condition
+	// 	pod.Status.Conditions = append(pod.Status.Conditions, v1.PodCondition{
+	// 		Type:   v1.PodReady,
+	// 		Status: v1.ConditionTrue,
+	// 	})
+
+	// 	// Simulate the "FileSystemResizeSuccessful" event
+	// 	event := &v1.Event{
+	// 		ObjectMeta: metav1.ObjectMeta{
+	// 			Namespace: pod.Namespace,
+	// 			Name:      "test-event",
+	// 		},
+	// 		InvolvedObject: v1.ObjectReference{
+	// 			Namespace: "test-namespace",
+	// 			Name:      "test-pod",
+	// 			UID:       pod.UID,
+	// 		},
+	// 		Reason: "FileSystemResizeSuccessful",
+	// 		Type:   v1.EventTypeNormal,
+	// 	}
+	// 	clientSet.Tracker().Add(event)
+
+	// 	return false, nil, nil // Allow normal processing to continue
+	// })
+
+	// po2 := &PodObserver{}
+	//po.finished = make(chan bool)
+
 	event := watch.Event{
-		Type:   watch.Modified,
-		Object: pod,
+		Type: watch.Modified,
+		Object: &v1.Pod{
+			ObjectMeta: metav1.ObjectMeta{
+				Name:              "test-pod",
+				Namespace:         "test-namespace",
+				DeletionTimestamp: &metav1.Time{Time: time.Now()},
+			},
+			Status: v1.PodStatus{
+				Phase: v1.PodRunning,
+				Conditions: []v1.PodCondition{
+					{
+						Type:   v1.PodReady,
+						Status: v1.ConditionTrue,
+					},
+				},
+			},
+		},
 	}
-	fakeWatcher.Modify(event.Object)
-	go po.StartWatching(ctx, runner)
+	event3 := watch.Event{
+		Type: watch.Modified,
+		Object: &v1.Pod{
+			ObjectMeta: metav1.ObjectMeta{
+				Name:              "test-pod",
+				Namespace:         "test-namespace",
+				DeletionTimestamp: &metav1.Time{Time: time.Now()},
+			},
+			Status: v1.PodStatus{
+				Phase: v1.PodRunning,
+				Conditions: []v1.PodCondition{
+					{
+						Type:   v1.PodScheduled,
+						Status: v1.ConditionTrue,
+					},
+				},
+			},
+		},
+	}
+
+	// event := watch.Event{
+	// 	Type:   watch.Modified,
+	// 	Object: pod,
+	// }
+
+	//go po.StartWatching(ctx, runner)
+
+	//fakeWatcher.Modify(event.Object)
+
+	//runner.WaitGroup.Add(1)
+	//fakeWatcher.Add(event.Object)
+	//go po.StartWatching(ctx, runner)
+
+	//po.StopWatching()
 
 	event2 := watch.Event{
 		Type:   watch.Deleted,
 		Object: pod,
 	}
-	fakeWatcher.Delete(event2.Object)
-	go po.StartWatching(ctx, runner)
+
+	//go po.StartWatching(ctx, runner)
+	// fakeWatcher.Delete(event2.Object)
+	// runner.WaitGroup.Add(1)
 
 	// w, _ := clientSet.CoreV1().Pods("default").Watch(ctx, metav1.ListOptions{})
 	// wait.Until(func() {
@@ -205,10 +287,21 @@ func TestPodObserver_StartWatching(t *testing.T) {
 
 	// time.Sleep(100 * time.Millisecond)
 
+	runner.WaitGroup.Add(1)
+
+	go po.StartWatching(ctx, runner)
+	fakeWatcher.Add(pod)
+
+	fakeWatcher.Modify(event.Object)
+	fakeWatcher.Modify(event3.Object)
+
+	fakeWatcher.Delete(event2.Object)
+
 	po.StopWatching()
 
 	runner.WaitGroup.Wait()
 
+	// po.StopWatching()
 	// Assert that the function completed successfully
 	assert.True(t, true)
 }

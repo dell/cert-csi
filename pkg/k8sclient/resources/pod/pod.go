@@ -22,9 +22,7 @@ import (
 	"fmt"
 	"io"
 	"net/url"
-	"os/exec"
 	"strconv"
-	"strings"
 	"time"
 
 	"github.com/dell/cert-csi/pkg/utils"
@@ -154,27 +152,7 @@ func (c *Client) MakePod(config *Config) *v1.Pod {
 		}
 		volumes = append(volumes, volume)
 	}
-	isOCP, _ := IsOCP()
-	securityContext := &v1.SecurityContext{
-		Capabilities: &v1.Capabilities{
-			Add: config.Capabilities,
-		},
-	}
-	if isOCP {
-		securityContext = &v1.SecurityContext{
-			AllowPrivilegeEscalation: func(b bool) *bool { return &b }(false),
-			Capabilities: &v1.Capabilities{
-				Drop: []v1.Capability{
-					"ALL",
-				},
-				Add: config.Capabilities,
-			},
-			RunAsNonRoot: func(b bool) *bool { return &b }(false),
-			SeccompProfile: &v1.SeccompProfile{
-				Type: v1.SeccompProfileTypeRuntimeDefault,
-			},
-		}
-	}
+
 	container := v1.Container{
 		Name:            config.ContainerName,
 		Image:           config.ContainerImage,
@@ -182,7 +160,9 @@ func (c *Client) MakePod(config *Config) *v1.Pod {
 		Args:            config.Args,
 		Env:             config.EnvVars,
 		ImagePullPolicy: "IfNotPresent",
-		SecurityContext: securityContext,
+		SecurityContext: &v1.SecurityContext{
+			Capabilities: &v1.Capabilities{Add: config.Capabilities},
+		},
 	}
 
 	container.VolumeMounts = volumeMounts
@@ -225,7 +205,6 @@ func (c *Client) Create(ctx context.Context, pod *v1.Pod) *Pod {
 
 	if err != nil {
 		funcErr = err
-		fmt.Println(funcErr)
 	} else {
 		log.Debugf("Created Pod %s", newPod.GetName())
 	}
@@ -271,11 +250,20 @@ func (c *Client) DeleteAll(ctx context.Context) error {
 // Exec runs the pod
 func (c *Client) Exec(ctx context.Context, pod *v1.Pod, command []string, stdout, stderr io.Writer, quiet bool) error {
 	log := utils.GetLoggerFromContext(ctx)
+
 	restClient := c.ClientSet.CoreV1().RESTClient()
 	if !quiet {
-		log.Infof("Executing command: %v", command)
+		log.Infof("Executing command not quiet: %v", command)
 	}
 	log.Debugf("Executing command: %v", command)
+
+	log.Info("Executing command: ", command)
+
+	// Add print statements to debug the issue
+	log.Info("restClient: ", restClient)
+	log.Info("pod: ", pod)
+	log.Info("pod.Name: ", pod.Name)
+	log.Info("pod.Namespace: ", pod.Namespace)
 
 	req := restClient.Post().
 		Resource("pods").
@@ -292,6 +280,7 @@ func (c *Client) Exec(ctx context.Context, pod *v1.Pod, command []string, stdout
 	}, scheme.ParameterCodec)
 
 	return c.RemoteExecutor.Execute("POST", req.URL(), c.Config, nil, stdout, stderr, false, nil)
+	//return executor.Execute("POST", req.URL(), c.Config, nil, stdout, stderr, false, nil)
 }
 
 // ReadyPodsCount returns the number of Pods in Ready state
@@ -576,28 +565,7 @@ func (c *Client) MakeEphemeralPod(config *Config) *v1.Pod {
 		},
 	}
 	volumes = append(volumes, volume)
-	isOCP, _ := IsOCP()
 
-	securityContext := &v1.SecurityContext{
-		Capabilities: &v1.Capabilities{
-			Add: config.Capabilities,
-		},
-	}
-	if isOCP {
-		securityContext = &v1.SecurityContext{
-			AllowPrivilegeEscalation: func(b bool) *bool { return &b }(false),
-			Capabilities: &v1.Capabilities{
-				Drop: []v1.Capability{
-					"ALL",
-				},
-				Add: config.Capabilities,
-			},
-			RunAsNonRoot: func(b bool) *bool { return &b }(true),
-			SeccompProfile: &v1.SeccompProfile{
-				Type: v1.SeccompProfileTypeRuntimeDefault,
-			},
-		}
-	}
 	container := v1.Container{
 		Name:            config.ContainerName,
 		Image:           config.ContainerImage,
@@ -606,7 +574,9 @@ func (c *Client) MakeEphemeralPod(config *Config) *v1.Pod {
 		Env:             config.EnvVars,
 		VolumeMounts:    volumeMounts,
 		ImagePullPolicy: "IfNotPresent",
-		SecurityContext: securityContext,
+		SecurityContext: &v1.SecurityContext{
+			Capabilities: &v1.Capabilities{Add: config.Capabilities},
+		},
 	}
 
 	ObjMeta := metav1.ObjectMeta{
@@ -750,25 +720,4 @@ func (pod *Pod) IsInPendingState(ctx context.Context) error {
 		return fmt.Errorf("%s pod is in %s state", updatedPod.Name, updatedPod.Status.Phase)
 	}
 	return nil
-}
-
-func IsOCP() (bool, error) {
-	isOCP := false
-	cmd := exec.Command("oc", "get", "clusterversion")
-
-	// Run the command and capture the output
-	output, err := cmd.CombinedOutput()
-	if err != nil {
-		// Return false and the error encountered while executing the command
-		return false, err
-	}
-	outputStr := string(output)
-	lines := strings.Split(outputStr, "\n")
-	for _, line := range lines {
-		if strings.Contains(line, "Cluster version") {
-			isOCP = true
-			break
-		}
-	}
-	return isOCP, nil
 }
