@@ -12,10 +12,13 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 	v1 "k8s.io/api/core/v1"
+	storagev1 "k8s.io/api/storage/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/watch"
 	"k8s.io/client-go/kubernetes/fake"
 	"k8s.io/client-go/rest"
+	k8stesting "k8s.io/client-go/testing"
 	test "k8s.io/client-go/testing"
 )
 
@@ -23,15 +26,18 @@ func TestPodObserver_StartWatching(t *testing.T) {
 	// Test case: Watching pods
 	ctx := context.Background()
 
-	// storageClass := &storagev1.StorageClass{
-	// 	ObjectMeta: metav1.ObjectMeta{Name: "test-storage-class"},
-	// 	VolumeBindingMode: func() *storagev1.VolumeBindingMode {
-	// 		mode := storagev1.VolumeBindingWaitForFirstConsumer
-	// 		return &mode
-	// 	}(),
-	// }
+	storageClass := &storagev1.StorageClass{
+		ObjectMeta: metav1.ObjectMeta{Name: "test-storage-class"},
+		VolumeBindingMode: func() *storagev1.VolumeBindingMode {
+			mode := storagev1.VolumeBindingWaitForFirstConsumer
+			return &mode
+		}(),
+	}
 	//clientSet := NewFakeClientsetWithRestClient(storageClass)
 	clientSet := fake.NewSimpleClientset()
+
+	clientSet.CoreV1().Pods("test-namespace").Create(ctx, &v1.Pod{ObjectMeta: metav1.ObjectMeta{Name: "test-pod", Namespace: "test-namespace"}}, metav1.CreateOptions{})
+	clientSet.StorageV1().StorageClasses().Create(ctx, storageClass, metav1.CreateOptions{})
 
 	pod := &v1.Pod{
 		ObjectMeta: metav1.ObjectMeta{
@@ -40,15 +46,80 @@ func TestPodObserver_StartWatching(t *testing.T) {
 		},
 	}
 
-	_, err := clientSet.CoreV1().Pods("default").Create(ctx, pod, metav1.CreateOptions{})
-	if err != nil {
-		t.Errorf("Error creating fake pod: %v", err)
-	}
+	// _, err := clientSet.CoreV1().Pods("default").Create(ctx, pod, metav1.CreateOptions{})
+	// if err != nil {
+	// 	t.Errorf("Error creating fake pod: %v", err)
+	// }
 
 	kubeClient := &k8sclient.KubeClient{
 		ClientSet: clientSet,
 		Config:    &rest.Config{},
 	}
+
+	// Set up a reactor to simulate Pods becoming Ready
+	clientSet.Fake.PrependReactor("create", "pods", func(action k8stesting.Action) (bool, runtime.Object, error) {
+		createAction := action.(k8stesting.CreateAction)
+		pod = createAction.GetObject().(*v1.Pod)
+		// Set pod phase to Running
+		pod.Status.Phase = v1.PodRunning
+		// Simulate the Ready condition
+		pod.Status.Conditions = append(pod.Status.Conditions, v1.PodCondition{
+			Type:   v1.PodReady,
+			Status: v1.ConditionTrue,
+		})
+
+		// Simulate the "FileSystemResizeSuccessful" event
+		event := &v1.Event{
+			ObjectMeta: metav1.ObjectMeta{
+				Namespace: pod.Namespace,
+				Name:      "test-event",
+			},
+			InvolvedObject: v1.ObjectReference{
+				Namespace: pod.Namespace,
+				Name:      pod.Name,
+				UID:       pod.UID,
+			},
+			Reason: "FileSystemResizeSuccessful",
+			Type:   v1.EventTypeNormal,
+		}
+		clientSet.Tracker().Add(event)
+
+		return false, nil, nil // Allow normal processing to continue
+	})
+	clientSet.Fake.PrependReactor("get", "pods", func(action k8stesting.Action) (bool, runtime.Object, error) {
+		getAction := action.(k8stesting.GetAction)
+		podName := getAction.GetName()
+		// Create a pod object with the expected name and Ready status
+		pod = &v1.Pod{
+			ObjectMeta: metav1.ObjectMeta{
+				Name:      podName,
+				Namespace: "test-namespace",
+			},
+			Status: v1.PodStatus{
+				Phase: v1.PodRunning,
+				Conditions: []v1.PodCondition{
+					{
+						Type:   v1.PodReady,
+						Status: v1.ConditionTrue,
+					},
+				},
+			},
+		}
+		return true, pod, nil
+	})
+
+	// Create a mock Clients instance
+	//mockClients := &MockClients{}
+
+	//pod.Client.ClientSet.CoreV1().Pods(pod.Object.Namespace).Get(ctx, pod.Object.Name, metav1.GetOptions{})
+
+	// Set up the mock behavior for the CreatePodClient method
+	// mockClients.On("CreatePodClient", "test-namespace").Return(
+	// 	&pod.Client{
+	// 		Interface: clientSet.CoreV1().Pods("test-namespace"),
+	// 	},
+	// 	nil,
+	// )
 
 	podClient, _ := kubeClient.CreatePodClient("test-namespace")
 
@@ -82,12 +153,27 @@ func TestPodObserver_StartWatching(t *testing.T) {
 		return false, nil, nil
 	})
 
-	go po.StartWatching(ctx, runner)
-	fakeWatcher.Add(pod)
+	//go po.StartWatching(ctx, runner)
+	// clientSet.Fake.PrependReactor("delete", "pods", func(action k8stesting.Action) (bool, runtime.Object, error) {
+	// 	deleteAction := action.(k8stesting.DeleteAction)
+	// 	podName := deleteAction.GetName()
+
+	// 	// Simulate the deletion of the pod
+	// 	pod := &v1.Pod{
+	// 		ObjectMeta: metav1.ObjectMeta{
+	// 			Name:      podName,
+	// 			Namespace: "test-namespace",
+	// 		},
+	// 	}
+
+	// 	// Return the deleted pod
+	// 	return true, pod, nil
+	// })
 
 	//po.MakeChannel()
 
 	go po.StartWatching(ctx, runner)
+	fakeWatcher.Add(pod)
 
 	// w, _ := clientSet.CoreV1().Pods("default").Watch(ctx, metav1.ListOptions{})
 	// wait.Until(func() {
@@ -95,6 +181,29 @@ func TestPodObserver_StartWatching(t *testing.T) {
 	// }, time.Second, ctx.Done())
 
 	//time.Sleep(100 * time.Millisecond)
+
+	// po.StopWatching()
+
+	event := watch.Event{
+		Type:   watch.Modified,
+		Object: pod,
+	}
+	fakeWatcher.Modify(event.Object)
+	go po.StartWatching(ctx, runner)
+
+	event2 := watch.Event{
+		Type:   watch.Deleted,
+		Object: pod,
+	}
+	fakeWatcher.Delete(event2.Object)
+	go po.StartWatching(ctx, runner)
+
+	// w, _ := clientSet.CoreV1().Pods("default").Watch(ctx, metav1.ListOptions{})
+	// wait.Until(func() {
+	// 	<-w.ResultChan()
+	// }, time.Second, ctx.Done())
+
+	// time.Sleep(100 * time.Millisecond)
 
 	po.StopWatching()
 

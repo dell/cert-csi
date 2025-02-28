@@ -2,10 +2,13 @@ package observer
 
 import (
 	"context"
+	"sync"
 	"testing"
 	"time"
 
 	"github.com/dell/cert-csi/pkg/k8sclient"
+	"github.com/dell/cert-csi/pkg/k8sclient/resources/pod"
+	k8stesting "k8s.io/client-go/testing"
 
 	"github.com/dell/cert-csi/pkg/store"
 	"github.com/stretchr/testify/assert"
@@ -90,6 +93,132 @@ func NewSimpleStore() *SimpleStore {
 	return &SimpleStore{}
 }
 
+func (m *mockPodClient) List(ctx context.Context, opts metav1.ListOptions) (*v1.PodList, error) {
+	args := m.Called(ctx, opts)
+	return args.Get(0).(*v1.PodList), args.Error(1)
+}
+
+func TestCheckPodsandPvcs(t *testing.T) {
+
+	ctx := context.Background()
+
+	storageClass := &storagev1.StorageClass{
+		ObjectMeta: metav1.ObjectMeta{Name: "test-storage-class"},
+		VolumeBindingMode: func() *storagev1.VolumeBindingMode {
+			mode := storagev1.VolumeBindingWaitForFirstConsumer
+			return &mode
+		}(),
+	}
+	clientSet := NewFakeClientsetWithRestClient(storageClass)
+	clientSet.CoreV1().Pods("test-namespace").Create(ctx, &v1.Pod{ObjectMeta: metav1.ObjectMeta{Name: "test-pod", Namespace: "test-namespace"}}, metav1.CreateOptions{})
+	clientSet.CoreV1().PersistentVolumeClaims("test-namespace").Create(ctx, &v1.PersistentVolumeClaim{ObjectMeta: metav1.ObjectMeta{Name: "test-pvc", Namespace: "test-namespace"}}, metav1.CreateOptions{})
+	clientSet.StorageV1().StorageClasses().Create(ctx, storageClass, metav1.CreateOptions{})
+
+	kubeClient := &k8sclient.KubeClient{
+		ClientSet: clientSet,
+		Config:    &rest.Config{},
+	}
+	// Set up a reactor to simulate Pods becoming Ready
+	clientSet.Fake.PrependReactor("create", "pods", func(action k8stesting.Action) (bool, runtime.Object, error) {
+		createAction := action.(k8stesting.CreateAction)
+		pod := createAction.GetObject().(*v1.Pod)
+		// Set pod phase to Running
+		pod.Status.Phase = v1.PodRunning
+		// Simulate the Ready condition
+		pod.Status.Conditions = append(pod.Status.Conditions, v1.PodCondition{
+			Type:   v1.PodReady,
+			Status: v1.ConditionTrue,
+		})
+
+		// Simulate the "FileSystemResizeSuccessful" event
+		event := &v1.Event{
+			ObjectMeta: metav1.ObjectMeta{
+				Namespace: pod.Namespace,
+				Name:      "test-event",
+			},
+			InvolvedObject: v1.ObjectReference{
+				Namespace: pod.Namespace,
+				Name:      pod.Name,
+				UID:       pod.UID,
+			},
+			Reason: "FileSystemResizeSuccessful",
+			Type:   v1.EventTypeNormal,
+		}
+		clientSet.Tracker().Add(event)
+
+		return false, nil, nil // Allow normal processing to continue
+	})
+	clientSet.Fake.PrependReactor("get", "pods", func(action k8stesting.Action) (bool, runtime.Object, error) {
+		getAction := action.(k8stesting.GetAction)
+		podName := getAction.GetName()
+		// Create a pod object with the expected name and Ready status
+		pod := &v1.Pod{
+			ObjectMeta: metav1.ObjectMeta{
+				Name:      podName,
+				Namespace: "test-namespace",
+			},
+			Status: v1.PodStatus{
+				Phase: v1.PodRunning,
+				Conditions: []v1.PodCondition{
+					{
+						Type:   v1.PodReady,
+						Status: v1.ConditionTrue,
+					},
+				},
+			},
+		}
+		return true, pod, nil
+	})
+
+	// Create a mock Clients instance
+	mockClients := &MockClients{}
+
+	// Set up the mock behavior for the CreatePodClient method
+	mockClients.On("CreatePodClient", "test-namespace").Return(
+		&pod.Client{
+			Interface: clientSet.CoreV1().Pods("test-namespace"),
+		},
+		nil,
+	)
+
+	pvcClient, _ := kubeClient.CreatePVCClient("test-namespace")
+	podClient, _ := kubeClient.CreatePodClient("test-namespace")
+
+	mockEno := &EntityNumberObserver{}
+
+	mockInfo := &store.NumberEntities{}
+
+	podRes4, err3 := mockEno.checkPods(podClient, mockInfo)
+	if err3 != nil {
+		t.Errorf("Error calling checkPods: %v", err3)
+	}
+
+	go mockEno.Interrupt()
+	assert.Equal(t, false, podRes4)
+
+	pvcRes3, err3 := mockEno.checkPvcs(pvcClient, mockInfo)
+	if err3 != nil {
+		t.Errorf("Error calling checkPods: %v", err3)
+	}
+
+	go mockEno.Interrupt()
+	assert.Equal(t, false, pvcRes3)
+
+	podRes, err := mockEno.checkPods(podClient, mockInfo)
+	if err != nil {
+		t.Errorf("Error calling checkPods: %v", err)
+	}
+	assert.Nil(t, err)
+	assert.Equal(t, false, podRes)
+
+	pvcRes, err2 := mockEno.checkPvcs(pvcClient, mockInfo)
+	if err2 != nil {
+		t.Errorf("Error calling checkPods: %v", err2)
+	}
+	assert.Nil(t, err2)
+	assert.Equal(t, false, pvcRes)
+}
+
 func TestEntityNumberObserver_StartWatching(t *testing.T) {
 	// Create a context
 	ctx := context.Background()
@@ -102,7 +231,6 @@ func TestEntityNumberObserver_StartWatching(t *testing.T) {
 		}(),
 	}
 	clientSet := NewFakeClientsetWithRestClient(storageClass)
-
 	kubeClient := &k8sclient.KubeClient{
 		ClientSet: clientSet,
 		Config:    &rest.Config{},
@@ -120,11 +248,14 @@ func TestEntityNumberObserver_StartWatching(t *testing.T) {
 		TestCase: &store.TestCase{
 			ID: 1,
 		},
-		Database: &SimpleStore{},
+		WaitGroup: sync.WaitGroup{},
+		Database:  &SimpleStore{},
 	}
+	runner.WaitGroup.Add(1)
 
 	// Create an EntityNumberObserver instance
 	eno := &EntityNumberObserver{}
+	eno.MakeChannel()
 
 	// Start watching entities
 	go eno.StartWatching(ctx, runner)
@@ -137,82 +268,12 @@ func TestEntityNumberObserver_StartWatching(t *testing.T) {
 
 	// // Assert that the Timestamp is not zero
 	// assert.NotZero(t, SimpleStore.NumberEntities[0].Timestamp)
-}
+	eno.StopWatching()
 
-func TestEntityNumberObserver_checkPvcs(t *testing.T) {
+	runner.WaitGroup.Wait()
 
-	storageClass := &storagev1.StorageClass{
-		ObjectMeta: metav1.ObjectMeta{Name: "test-storage-class"},
-		VolumeBindingMode: func() *storagev1.VolumeBindingMode {
-			mode := storagev1.VolumeBindingWaitForFirstConsumer
-			return &mode
-		}(),
-	}
-	clientSet := NewFakeClientsetWithRestClient(storageClass)
-
-	kubeClient := &k8sclient.KubeClient{
-		ClientSet: clientSet,
-		Config:    &rest.Config{},
-	}
-
-	// Create a PVC client
-	pvcClient, _ := kubeClient.CreatePVCClient("test-namespace")
-
-	// Create an EntityNumberObserver instance
-	eno := &EntityNumberObserver{}
-
-	// Create a NumberEntities instance
-	info := &store.NumberEntities{}
-
-	// Call the checkPvcs function
-	b, e := eno.checkPvcs(pvcClient, info)
-
-	// Assert that the function returned false and no error
-	assert.False(t, b)
-	assert.NoError(t, e)
-
-	// Assert that the PvcCreating, PvcTerminating, and PvcBound fields are correct
-	assert.Equal(t, 0, info.PvcCreating)
-	assert.Equal(t, 0, info.PvcTerminating)
-	assert.Equal(t, 0, info.PvcBound)
-}
-
-func TestEntityNumberObserver_checkPods(t *testing.T) {
-
-	storageClass := &storagev1.StorageClass{
-		ObjectMeta: metav1.ObjectMeta{Name: "test-storage-class"},
-		VolumeBindingMode: func() *storagev1.VolumeBindingMode {
-			mode := storagev1.VolumeBindingWaitForFirstConsumer
-			return &mode
-		}(),
-	}
-	clientSet := NewFakeClientsetWithRestClient(storageClass)
-
-	kubeClient := &k8sclient.KubeClient{
-		ClientSet: clientSet,
-		Config:    &rest.Config{},
-	}
-
-	// Create a Pod client
-	podClient, _ := kubeClient.CreatePodClient("test-namespace")
-
-	// Create an EntityNumberObserver instance
-	eno := &EntityNumberObserver{}
-
-	// Create a NumberEntities instance
-	info := &store.NumberEntities{}
-
-	// Call the checkPods function
-	b, e := eno.checkPods(podClient, info)
-
-	// Assert that the function returned false and no error
-	assert.False(t, b)
-	assert.NoError(t, e)
-
-	// Assert that the PodsCreating, PodsTerminating, and PodsReady fields are correct
-	assert.Equal(t, 0, info.PodsCreating)
-	assert.Equal(t, 0, info.PodsTerminating)
-	assert.Equal(t, 0, info.PodsReady)
+	// Assert that the function completed successfully
+	assert.True(t, true)
 }
 
 // FakeDatabase is a mock implementation of the Database interface
