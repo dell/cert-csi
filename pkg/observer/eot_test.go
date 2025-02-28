@@ -87,6 +87,10 @@ func (s *SimpleStore) GetTestRuns(whereConditions store.Conditions, orderBy stri
 	return nil, nil
 }
 
+func (s *SimpleStore) SaveResourceUsage(resUsages []*store.ResourceUsage) error {
+	return nil
+}
+
 // Implement other methods as needed
 
 func NewSimpleStore() *SimpleStore {
