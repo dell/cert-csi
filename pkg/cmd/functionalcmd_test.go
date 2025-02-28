@@ -10,10 +10,13 @@ import (
 
 	"github.com/stretchr/testify/assert"
 
+	"bytes"
+
 	"github.com/dell/cert-csi/pkg/k8sclient"
 	"github.com/dell/cert-csi/pkg/observer"
 	"github.com/dell/cert-csi/pkg/testcore/suites"
 	"github.com/urfave/cli"
+
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/version"
@@ -201,7 +204,12 @@ users:
 func TestGetFunctionalTestCommand(t *testing.T) {
 	// Test the functionality of the GetFunctionalTestCommand function
 	// by asserting the expected command and flags.
+	var buf bytes.Buffer
+	// Create a new CLI app
+	app := cli.NewApp()
 	command := GetFunctionalTestCommand()
+	app.Writer = &buf
+	//ctx := cli.NewContext(app, nil, nil)
 	assert.Equal(t, "functional-test", command.Name)
 	assert.Equal(t, "Test csi-driver functionality", command.Usage)
 	assert.Equal(t, "main", command.Category)
@@ -215,6 +223,63 @@ func TestGetFunctionalTestCommand(t *testing.T) {
 	assert.Equal(t, "provisioning", command.Subcommands[5].Name)
 	assert.Equal(t, "clone-volume", command.Subcommands[6].Name)
 	assert.Equal(t, "snapshot", command.Subcommands[7].Name)
+
+	// Set a mock Action function to capture the output
+	//command.Action = func(c *cli.Context) error {
+	//return GetFunctionalTestCommand().Action(c)
+	//}
+
+	// Run the command
+	//err := command.Run(ctx)
+	//if err != nil {
+	//	t.Fatalf("expected no error, got %v", err)
+	//}
+
 }
 
 // Add more test cases for other functions in functionalcmd.go
+func TestReadEphemeralConfig(t *testing.T) {
+	// Test case for an empty filename
+	config, err := readEphemeralConfig("")
+	if err != nil {
+		t.Errorf("readEphemeralConfig returned an error for an empty filename")
+	}
+	if len(config) != 0 {
+		t.Errorf("readEphemeralConfig returned a non-empty config for an empty filename")
+	}
+
+	// Test case for a valid config file
+	tempFile, err := os.CreateTemp("", "test")
+	if err != nil {
+		t.Fatalf("Could not create temporary file: %v", err)
+	}
+	defer os.Remove(tempFile.Name())
+
+	configData := `
+key1=value1
+key2=value2
+`
+	if _, err := tempFile.WriteString(configData); err != nil {
+		t.Fatalf("Could not write to temporary file: %v", err)
+	}
+
+	config, err = readEphemeralConfig(tempFile.Name())
+	if err != nil {
+		t.Errorf("readEphemeralConfig returned an error for a valid config file: %v", err)
+	}
+	if len(config) != 2 {
+		t.Errorf("readEphemeralConfig returned the wrong number of keys for a valid config file: %d", len(config))
+	}
+	if config["key1"] != "value1" || config["key2"] != "value2" {
+		t.Errorf("readEphemeralConfig returned the wrong values for a valid config file: %v", config)
+	}
+
+	// Test case for a non-existent config file
+	config, err = readEphemeralConfig("/path/to/non/existent/file")
+	if err == nil {
+		t.Errorf("readEphemeralConfig did not return an error for a non-existent config file")
+	}
+	if len(config) != 0 {
+		t.Errorf("readEphemeralConfig returned a non-empty config for a non-existent config file")
+	}
+}

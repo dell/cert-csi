@@ -36,14 +36,14 @@ func GetListCommand() cli.Command {
 		Usage:    "lists different data",
 		Category: "main",
 		Subcommands: []cli.Command{
-			getTestrunsCmd(),
+			GetTestrunsCmd(),
 		},
 	}
 
 	return listCmd
 }
 
-func getTestrunsCmd() cli.Command {
+func GetTestrunsCmd() cli.Command {
 	const padding = 3
 	return cli.Command{
 		Name:      "test-runs",
