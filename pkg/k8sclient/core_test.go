@@ -172,15 +172,12 @@ func (suite *CoreTestSuite) TestCreateClients() {
 		suite.NotNil(client)
 	})
 
-<<<<<<< Updated upstream
-=======
 	suite.Run("snapshot GA client error case", func() {
 		mClient, err := suite.kubeClient.CreateSnapshotGAClient("")
 		suite.Error(err)
 		suite.Nil(mClient)
 	})
 
->>>>>>> Stashed changes
 	suite.Run("snapshot content ga client", func() {
 		client, err := suite.kubeClient.CreateSnapshotContentGAClient()
 		suite.NoError(err)

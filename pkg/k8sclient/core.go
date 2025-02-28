@@ -468,8 +468,7 @@ func (c *KubeClient) DeleteNamespace(ctx context.Context, namespace string) erro
 				return true, nil
 			}
 
-			log.Errorf("Error while waiting for namespace to be terminated: %v", err)
-			return false, err
+			return false, fmt.Errorf("failed to delete namespace: %v", err)
 		}
 
 		return false, nil
@@ -521,18 +520,11 @@ func (c *KubeClient) ForceDeleteNamespace(ctx context.Context, namespace string)
 		return err
 	}
 	err = k8salpha.DeleteAll(ctx)
-<<<<<<< Updated upstream
-	if err != nil {
-		logrus.Errorf("Failed to delete all snapshots: %v", err)
-	}
-	logrus.Debugf("All VS's are gone")
-=======
 	if err != nil && !apierrs.IsNotFound(err) {
 		logrus.Errorf("Failed to delete all snapshots: %v", err)
 	}
 	logrus.Debugf("All VS's are gone")
 
->>>>>>> Stashed changes
 	err = sncont.DeleteAll(ctx)
 	if err != nil && !apierrs.IsNotFound(err) {
 		logrus.Errorf("Failed to delete all snapshot contents: %v", err)
