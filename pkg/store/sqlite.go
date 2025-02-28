@@ -40,6 +40,10 @@ type SQLiteStore struct {
 	db *sql.DB
 }
 
+func NewSQLiteStoreWithDB(db *sql.DB) *SQLiteStore {
+	return &SQLiteStore{db: db}
+}
+
 // NewSQLiteStore creates a new SQLiteStore
 func NewSQLiteStore(dsn string) *SQLiteStore {
 	store := &SQLiteStore{}

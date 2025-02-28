@@ -6,6 +6,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/DATA-DOG/go-sqlmock"
 	"github.com/dell/cert-csi/pkg/k8sclient"
 	"github.com/dell/cert-csi/pkg/k8sclient/mocks"
 	"github.com/dell/cert-csi/pkg/store"
@@ -183,6 +184,7 @@ func TestNewSuiteRunner(t *testing.T) {
 	}
 }
 func TestExecuteSuite(t *testing.T) {
+	db, _, _ := sqlmock.New() //TODO update to use the mock database
 	tests := []struct {
 		name        string
 		iterCtx     context.Context
@@ -214,8 +216,10 @@ func TestExecuteSuite(t *testing.T) {
 				suite.EXPECT().Parameters().Times(1).Return("param1,param2")
 				return suite
 			},
-			sr:          &SuiteRunner{},
-			scDB:        &store.StorageClassDB{},
+			sr: &SuiteRunner{},
+			scDB: &store.StorageClassDB{
+				DB: store.NewSQLiteStoreWithDB(db),
+			},
 			c:           make(chan os.Signal),
 			wantSuccess: true,
 		},
