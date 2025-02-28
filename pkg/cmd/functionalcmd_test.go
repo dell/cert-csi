@@ -1,6 +1,7 @@
 package cmd
 
 import (
+	"bytes"
 	"context"
 	"flag"
 	"fmt"
@@ -9,8 +10,6 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
-
-	"bytes"
 
 	"github.com/dell/cert-csi/pkg/k8sclient"
 	"github.com/dell/cert-csi/pkg/observer"
@@ -209,7 +208,7 @@ func TestGetFunctionalTestCommand(t *testing.T) {
 	app := cli.NewApp()
 	command := GetFunctionalTestCommand()
 	app.Writer = &buf
-	//ctx := cli.NewContext(app, nil, nil)
+	// ctx := cli.NewContext(app, nil, nil)
 	assert.Equal(t, "functional-test", command.Name)
 	assert.Equal(t, "Test csi-driver functionality", command.Usage)
 	assert.Equal(t, "main", command.Category)
@@ -234,7 +233,6 @@ func TestGetFunctionalTestCommand(t *testing.T) {
 	//if err != nil {
 	//	t.Fatalf("expected no error, got %v", err)
 	//}
-
 }
 
 // Add more test cases for other functions in functionalcmd.go

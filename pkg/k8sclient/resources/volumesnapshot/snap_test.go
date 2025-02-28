@@ -237,6 +237,7 @@ func (suite *SnapshotClientTestSuite) TestWaitUntilGone_UpdateError() {
 func boolPtr(b bool) *bool {
 	return &b
 }
+
 func (suite *SnapshotClientTestSuite) TestCreate_Success() {
 	ctx := context.TODO()
 	snapshot := &v1.VolumeSnapshot{
@@ -309,6 +310,7 @@ func (suite *SnapshotClientTestSuite) TestDelete_Error() {
 	assert.Equal(suite.T(), snapshot, result.Object)
 	assert.True(suite.T(), result.Deleted)
 }
+
 func (suite *SnapshotClientTestSuite) TestWaitForRunning_Success() {
 	ctx := context.TODO()
 	snapshot := &v1.VolumeSnapshot{

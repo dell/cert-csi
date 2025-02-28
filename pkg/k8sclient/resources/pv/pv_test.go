@@ -52,7 +52,6 @@ func (suite *PVTestSuite) SetupSuite() {
 		Timeout:   1,
 	}
 	suite.vaClient = vaClient
-
 }
 
 func (suite *PVTestSuite) TestPV_Delete() {
@@ -77,8 +76,8 @@ func (suite *PVTestSuite) TestPV_Delete() {
 		deletedPV := client.Delete(context.Background(), pvObj)
 		suite.True(deletedPV.Deleted)
 	})
-
 }
+
 func (suite *PVTestSuite) TestDeleteAllPV() {
 	pvClient := suite.kubeClient.ClientSet.CoreV1().PersistentVolumes()
 	pvName := generateUniquePVName("test-pv")
@@ -126,7 +125,7 @@ func (suite *PVTestSuite) TestDeleteAllPV() {
 		// suite.Error(err)
 
 		_, err = suite.vaClient.Interface.Get(context.Background(), vaObj.Name, metav1.GetOptions{})
-		//suite.Error(err)
+		// suite.Error(err)
 	})
 
 	suite.Run("delete PV with CSI nil", func() {
@@ -191,7 +190,7 @@ func (suite *PVTestSuite) TestDeleteAllPV() {
 		suite.NoError(err)
 
 		_, err = pvClient.Get(context.Background(), pvObj.Name, metav1.GetOptions{})
-		//suite.Error(err)
+		// suite.Error(err)
 	})
 
 	suite.Run("delete PV with PV deletion error", func() {
@@ -214,13 +213,13 @@ func (suite *PVTestSuite) TestDeleteAllPV() {
 		suite.NoError(err)
 
 		pvClient.Delete(context.Background(), pvObj.Name, metav1.DeleteOptions{})
-		//suite.NoError(err)
+		// suite.NoError(err)
 
 		client.DeleteAllPV(context.Background(), "test-ns", suite.vaClient)
-		//suite.NoError(err)
+		// suite.NoError(err)
 
 		pvClient.Get(context.Background(), pvObj.Name, metav1.GetOptions{})
-		//suite.Error(err)
+		// suite.Error(err)
 	})
 }
 
@@ -280,7 +279,7 @@ func (suite *PVTestSuite) TestPV_Get() {
 		retrievedPV := client.Get(context.Background(), pvName)
 		suite.NotNil(retrievedPV.Object)
 		suite.Equal(pvName, retrievedPV.Object.Name)
-		//suite.NoError(retrievedPV.err)
+		// suite.NoError(retrievedPV.err)
 	})
 }
 
@@ -310,7 +309,7 @@ func (suite *PVTestSuite) TestPV_Update() {
 		suite.NotNil(updatedPV.Object)
 		suite.Equal(pvName, updatedPV.Object.Name)
 		suite.Equal("true", updatedPV.Object.Annotations["updated"])
-		//suite.NoError(updatedPV.Error())
+		// suite.NoError(updatedPV.Error())
 	})
 }
 
@@ -453,7 +452,7 @@ func (suite *PVTestSuite) TestPV_CheckReplicationAnnotationsForPV() {
 		defer cancel()
 
 		client.CheckReplicationAnnotationsForPV(ctx, pvObj)
-		//suite.NoError(err)
+		// suite.NoError(err)
 	})
 
 	suite.Run("check replication annotations and labels with missing annotations", func() {
@@ -804,7 +803,7 @@ func (suite *PVTestSuite) TestPV_Sync() {
 		defer cancel()
 
 		pvInstance.Sync(ctx)
-		//suite.Error(pvInstance.GetError())
+		// suite.Error(pvInstance.GetError())
 	})
 
 	suite.Run("sync non-deleted PV", func() {
@@ -818,7 +817,7 @@ func (suite *PVTestSuite) TestPV_Sync() {
 		defer cancel()
 
 		pvInstance.Sync(ctx)
-		//suite.NoError(pvInstance.GetError())
+		// suite.NoError(pvInstance.GetError())
 	})
 }
 

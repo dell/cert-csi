@@ -40,6 +40,7 @@ type (
 	// EventTypeEnum specifies type of event
 	EventTypeEnum string
 )
+
 type Event struct {
 	ID        int64
 	Name      string
@@ -59,6 +60,7 @@ func (s *SimpleStore) SaveNumberEntities(nEntities []*store.NumberEntities) erro
 	s.entities = nEntities
 	return nil
 }
+
 func (s *SimpleStore) SaveEvents(events []*store.Event) error {
 	s.events = events
 	return nil
@@ -134,7 +136,6 @@ func TestEntityNumberObserver_StartWatching(t *testing.T) {
 }
 
 func TestEntityNumberObserver_checkPvcs(t *testing.T) {
-
 	storageClass := &storagev1.StorageClass{
 		ObjectMeta: metav1.ObjectMeta{Name: "test-storage-class"},
 		VolumeBindingMode: func() *storagev1.VolumeBindingMode {
@@ -172,7 +173,6 @@ func TestEntityNumberObserver_checkPvcs(t *testing.T) {
 }
 
 func TestEntityNumberObserver_checkPods(t *testing.T) {
-
 	storageClass := &storagev1.StorageClass{
 		ObjectMeta: metav1.ObjectMeta{Name: "test-storage-class"},
 		VolumeBindingMode: func() *storagev1.VolumeBindingMode {

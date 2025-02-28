@@ -890,7 +890,7 @@ func (suite *PodTestSuite) TestExec() {
 		suite.NoError(err)
 	})
 
-	//resetting global clientset to simple clientset for future tests
+	// resetting global clientset to simple clientset for future tests
 	suite.kubeClient.ClientSet = fake.NewSimpleClientset()
 }
 

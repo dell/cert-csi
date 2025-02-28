@@ -2,12 +2,13 @@ package sc_test
 
 import (
 	"context"
+	"testing"
+
 	"github.com/dell/cert-csi/pkg/k8sclient"
 	"github.com/stretchr/testify/suite"
 	storagev1 "k8s.io/api/storage/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes/fake"
-	"testing"
 )
 
 type ScTestSuite struct {
@@ -25,6 +26,7 @@ func (suite *ScTestSuite) SetupSuite() {
 	}
 	suite.kubeClient.SetTimeout(1)
 }
+
 func (suite *ScTestSuite) TestSC_Create() {
 	scClient, err := suite.kubeClient.CreateSCClient()
 	scClient.Timeout = 1
@@ -37,6 +39,7 @@ func (suite *ScTestSuite) TestSC_Create() {
 		})
 	})
 }
+
 func (suite *ScTestSuite) TestSC_Get() {
 	sc, err := suite.kubeClient.ClientSet.StorageV1().StorageClasses().Create(context.Background(), &storagev1.StorageClass{
 		ObjectMeta: metav1.ObjectMeta{
@@ -54,6 +57,7 @@ func (suite *ScTestSuite) TestSC_Get() {
 		_ = scClient.Get(context.Background(), sc.Name)
 	})
 }
+
 func (suite *ScTestSuite) TestSC_Delete() {
 	scClient, err := suite.kubeClient.CreateSCClient()
 	scClient.Timeout = 1
@@ -61,8 +65,8 @@ func (suite *ScTestSuite) TestSC_Delete() {
 	suite.Run("sc delete", func() {
 		err = scClient.Delete(context.Background(), "powerstore")
 	})
-
 }
+
 func (suite *ScTestSuite) TestSC_MakeStorageClass() {
 	scClient, err := suite.kubeClient.CreateSCClient()
 	scClient.Timeout = 1
@@ -71,6 +75,7 @@ func (suite *ScTestSuite) TestSC_MakeStorageClass() {
 		_ = scClient.MakeStorageClass("powerstore", "powerstore")
 	})
 }
+
 func (suite *ScTestSuite) TestSC_Get_NonExistent() {
 	scClient, err := suite.kubeClient.CreateSCClient()
 	suite.NoError(err)
@@ -79,6 +84,7 @@ func (suite *ScTestSuite) TestSC_Get_NonExistent() {
 		suite.Error(sc.GetError(), "expected error for non-existent storage class")
 	})
 }
+
 func (suite *ScTestSuite) TestSC_Delete_NonExistent() {
 	scClient, err := suite.kubeClient.CreateSCClient()
 	suite.NoError(err)

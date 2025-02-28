@@ -141,7 +141,7 @@ func TestUpdateRepositories(t *testing.T) {
 		Name: "my-repo",
 		URL:  "https://example.com/charts",
 	})
-	err := repoFile.WriteFile(settings.RepositoryConfig, 0644)
+	err := repoFile.WriteFile(settings.RepositoryConfig, 0o644)
 	assert.NoError(t, err)
 
 	// Call the UpdateRepositories function
@@ -263,7 +263,6 @@ func TestUninstallChart(t *testing.T) {
 	// Call the UninstallChart function
 	err = client.UninstallChart(releaseName)
 	assert.Error(t, err)
-
 }
 
 func TestIsChartInstallable(t *testing.T) {

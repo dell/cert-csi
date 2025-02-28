@@ -45,7 +45,6 @@ type MockVolumeSnapshotContentInterface struct {
 	DeleteError      error
 	GetError         error
 	UpdateError      error
-	CreateError      error
 }
 
 func (m *MockVolumeSnapshotContentInterface) List(_ context.Context, _ metav1.ListOptions) (*v1.VolumeSnapshotContentList, error) {

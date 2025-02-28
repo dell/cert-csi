@@ -82,7 +82,6 @@ func (suite *CoreTestSuite) TestNewRemoteKubeClient() {
 		suite.NoError(err)
 		suite.NotNil(client)
 	})
-
 }
 
 func (suite *CoreTestSuite) TestCreateClients() {
@@ -361,7 +360,6 @@ func (suite *CoreTestSuite) TestDeleteNamespace() {
 
 	err = kubeClient.DeleteNamespace(context.Background(), "fake-namespace")
 	suite.Error(err)
-
 }
 
 func (suite *CoreTestSuite) TestForceDeleteNamespace() {
@@ -396,7 +394,6 @@ func (suite *CoreTestSuite) TestForceDeleteNamespace() {
 }
 
 func (suite *CoreTestSuite) TestSnapshotClassExists() {
-
 	suite.kubeClient.Config = &rest.Config{}
 	cset, _ := snapclient.NewForConfig(suite.kubeClient.Config)
 	volumeSnapshotClass := &vs.VolumeSnapshotClass{

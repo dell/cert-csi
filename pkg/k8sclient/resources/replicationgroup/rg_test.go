@@ -3,13 +3,14 @@ package replicationgroup
 import (
 	"context"
 	"errors"
+	"testing"
+	"time"
+
 	replv1 "github.com/dell/csm-replication/api/v1"
 	"github.com/stretchr/testify/assert"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes/scheme"
 	"sigs.k8s.io/controller-runtime/pkg/client/fake"
-	"testing"
-	"time"
 )
 
 func TestClient_Delete(t *testing.T) {
@@ -179,8 +180,8 @@ func TestAction(t *testing.T) {
 	// Test case: Testing RG action "FAILOVER_LOCAL"
 	t.Run("RG action FAILOVER_LOCAL", func(t *testing.T) {
 		rgAction := "FAILOVER_LOCAL"
-		//driverName := "powermax"
-		//expectedState := "SUSPENDED"
+		// driverName := "powermax"
+		// expectedState := "SUSPENDED"
 		expectedState := "SYNCHRONIZED"
 		rgObj.Object.Status.ReplicationLinkState.State = "SUSPENDED"
 		// Create a new context with a timeout
@@ -199,7 +200,7 @@ func TestAction(t *testing.T) {
 	// Test case: Testing RG action "REPROTECT"
 	t.Run("RG action REPROTECT", func(t *testing.T) {
 		rgAction := "REPROTECT"
-		//expectedState := "REPROTECT"
+		// expectedState := "REPROTECT"
 		expectedState := "SYNCHRONIZED"
 		// Create a new context with a timeout
 		timeoutCtx, cancel := context.WithTimeout(context.Background(), 25*time.Second)
@@ -229,8 +230,8 @@ func TestAction(t *testing.T) {
 			t.Errorf("Expected: %v, got: %v", expectedState, rg.Object.Status.ReplicationLinkState.State)
 		}
 	})
-
 }
+
 func TestRG_GetError(t *testing.T) {
 	// Test case: RG with error
 	t.Run("RG with error", func(t *testing.T) {
@@ -257,8 +258,9 @@ func TestRG_GetError(t *testing.T) {
 		assert.Nil(t, result)
 	})
 }
+
 func TestHasError(t *testing.T) {
-	//Test case: RG with error
+	// Test case: RG with error
 	t.Run("RG with error", func(t *testing.T) {
 		testError := errors.New("test error")
 		rg := &RG{
@@ -358,7 +360,8 @@ func TestGetPreDesiredState(t *testing.T) {
 			rgAction:   "REPROTECT_REMOTE",
 			driverName: "unity",
 			expected:   "FAILEDOVER",
-		}}
+		},
+	}
 	for _, tc := range testCases {
 		rg := &RG{}
 		actual := rg.getPreDesiredState(tc.rgAction, tc.driverName)

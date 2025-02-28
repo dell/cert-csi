@@ -757,8 +757,7 @@ type LocalExecutor interface {
 	Execute(name string, arg ...string) ([]byte, error)
 }
 
-type commandExecutor struct {
-}
+type commandExecutor struct{}
 
 func (c *commandExecutor) Execute(name string, arg ...string) ([]byte, error) {
 	cmd := exec.Command(name, arg...)
@@ -769,7 +768,6 @@ func (c *Client) IsOCP() (bool, error) {
 	isOCP := false
 	// Run the command and capture the output
 	output, err := c.LocalExecutor.Execute("oc", "get", "clusterversion")
-
 	if err != nil {
 		// Return false and the error encountered while executing the command
 		return false, err

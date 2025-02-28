@@ -1,10 +1,11 @@
 package main
 
 import (
-	log "github.com/sirupsen/logrus"
-	"github.com/urfave/cli"
 	"os"
 	"testing"
+
+	log "github.com/sirupsen/logrus"
+	"github.com/urfave/cli"
 )
 
 func TestBefore(t *testing.T) {

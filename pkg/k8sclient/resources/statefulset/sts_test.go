@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"os"
 	t "testing"
+	"time"
 
 	"github.com/dell/cert-csi/pkg/k8sclient"
 	"github.com/dell/cert-csi/pkg/k8sclient/resources/pod"
@@ -15,8 +16,6 @@ import (
 	apierrs "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
-
-	"time"
 
 	v12 "k8s.io/api/core/v1"
 
@@ -58,7 +57,6 @@ func (suite *StatefulSetTestSuite) SetupTest() {
 	if delStatus.GetError() != nil && !apierrs.IsNotFound(delStatus.GetError()) {
 		suite.NoError(delStatus.GetError())
 	}
-
 }
 
 func (suite *StatefulSetTestSuite) TestMakeStatefulSet() {
@@ -74,7 +72,7 @@ func (suite *StatefulSetTestSuite) TestMakeStatefulSet() {
 				suite.NotNil(sts)
 				suite.Equal(int32(1), *sts.Spec.Replicas)
 				suite.Equal("vol0", sts.Spec.Template.Spec.Containers[0].VolumeMounts[0].Name)
-				//suite.Equal("3Gi", sts.Spec.VolumeClaimTemplates[0].Spec.Resources.Requests[v1.ResourceStorage].String())
+				// suite.Equal("3Gi", sts.Spec.VolumeClaimTemplates[0].Spec.Resources.Requests[v1.ResourceStorage].String())
 				suite.Equal("Parallel", string(sts.Spec.PodManagementPolicy))
 			},
 		},
@@ -957,10 +955,12 @@ func (suite *StatefulSetTestSuite) TestSync() {
 	ctx := context.Background()
 	initialReplicas := int32(1)
 
-	sts := &v1.StatefulSet{ObjectMeta: metav1.ObjectMeta{Name: "test-sts1"},
+	sts := &v1.StatefulSet{
+		ObjectMeta: metav1.ObjectMeta{Name: "test-sts1"},
 		Spec: v1.StatefulSetSpec{
 			Replicas: &initialReplicas,
-		}}
+		},
+	}
 	createdSts1 := suite.stsClient.Create(context.Background(), sts)
 	mockPodList1 := createMockPodList(1, true) // Create a mock pod list
 	suite.kubeClient.ClientSet.(*fake.Clientset).Fake.PrependReactor("list", "pods", func(action testing.Action) (handled bool, ret runtime.Object, err error) {
@@ -974,10 +974,12 @@ func (suite *StatefulSetTestSuite) TestSync() {
 	suite.NoError(syncedSts1.GetError())
 	suite.False(syncedSts1.HasError(), "expected no error, but HasError() returned true")
 
-	sts2 := &v1.StatefulSet{ObjectMeta: metav1.ObjectMeta{Name: "test-sts2"},
+	sts2 := &v1.StatefulSet{
+		ObjectMeta: metav1.ObjectMeta{Name: "test-sts2"},
 		Spec: v1.StatefulSetSpec{
 			Replicas: &initialReplicas,
-		}}
+		},
+	}
 	createdSts2 := suite.stsClient.Create(context.Background(), sts2)
 
 	syncedSts2 := createdSts2.Sync(ctx)

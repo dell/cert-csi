@@ -48,8 +48,8 @@ func TestPodListObserver_StartWatching(t *testing.T) {
 		Database: NewSimpleStore(),
 	}
 
-	//WatchTimeout = 10
-	//mockRunner.WatchTimeout = 10
+	// WatchTimeout = 10
+	// mockRunner.WatchTimeout = 10
 
 	// Create a PodListObserver instance
 	po := &PodListObserver{}
@@ -101,7 +101,6 @@ func TestPodListObserver_StartWatching(t *testing.T) {
 }
 
 func TestPodListObserver_StopWatching(t *testing.T) {
-
 	// Create a PodListObserver instance
 	po := &PodListObserver{}
 
