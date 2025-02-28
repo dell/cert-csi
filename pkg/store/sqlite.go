@@ -713,7 +713,3 @@ func (ss *SQLiteStore) Close() error {
 	}
 	return nil
 }
-
-func NewSQLiteStoreWithDB(db *sql.DB) *SQLiteStore {
-	return &SQLiteStore{db: db}
-}
