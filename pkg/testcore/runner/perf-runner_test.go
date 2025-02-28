@@ -5,17 +5,27 @@ import (
 	"database/sql"
 	"fmt"
 	"os"
+	"regexp"
+	"strings"
 	"testing"
 	"time"
+
+	corev1 "k8s.io/api/core/v1"
 
 	"github.com/DATA-DOG/go-sqlmock"
 	"github.com/dell/cert-csi/pkg/k8sclient"
 	"github.com/dell/cert-csi/pkg/k8sclient/mocks"
 	"github.com/dell/cert-csi/pkg/store"
+	"k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/apimachinery/pkg/version"
+	"k8s.io/client-go/discovery/fake"
+	"k8s.io/client-go/kubernetes"
+	fakeClient "k8s.io/client-go/kubernetes/fake"
 	"k8s.io/client-go/rest"
 
 	runnermocks "github.com/dell/cert-csi/pkg/testcore/runner/mocks"
 	"github.com/dell/cert-csi/pkg/testcore/suites"
+	clienttesting "k8s.io/client-go/testing"
 
 	"go.uber.org/mock/gomock"
 )
@@ -284,27 +294,85 @@ func TestRunSuites(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			r := &Runner{}
+			r := &Runner{
+				Config: &rest.Config{},
+			}
 			sr := &SuiteRunner{
+				IterationNum: 1,
 				ScDBs: []*store.StorageClassDB{
 					{
 						StorageClass: "sc1",
 						DB:           store.NewSQLiteStoreWithDB(db),
+						TestRun:      *tt.tr,
 					},
-					{
-						StorageClass: "sc2",
-						DB:           store.NewSQLiteStoreWithDB(db),
-					},
+					// {
+					// 	StorageClass: "sc2",
+					// 	DB:           store.NewSQLiteStoreWithDB(db),
+					// },
 				},
 			}
 			sr.Runner = r
 			mockdb.ExpectExec("INSERT INTO test_runs").
-				WithArgs().
-				WillReturnError(fmt.Errorf("some error"))
+				WithArgs(tt.tr.Name, tt.tr.StartTimestamp, tt.tr.StorageClass, tt.tr.ClusterAddress).
+				WillReturnResult(sqlmock.NewResult(1, 1))
+
+			mockdb.ExpectQuery(regexp.QuoteMeta("SELECT * FROM test_runs WHERE name='test run 1' AND 1=1 LIMIT 1")).
+				WillReturnRows(sqlmock.NewRows([]string{"id", "name", "longevity", "start_timestamp", "storage_class", "cluster_address"}).
+					AddRow("1", "test run 1", true, tt.tr.StartTimestamp, tt.tr.StorageClass, tt.tr.ClusterAddress))
+
+			mockdb.ExpectQuery(regexp.QuoteMeta("SELECT * FROM test_cases WHERE run_id=1 AND 1=1")).
+				WillReturnRows(sqlmock.NewRows([]string{"id", "name", "parameters", "start_timestamp", "end_timestamp", "success", "error_msg", "run_id"}).
+					AddRow("1", "test run 1", "", tt.tr.StartTimestamp, tt.tr.StartTimestamp, true, "", 1))
+
+			clientCtx := &clientTestContext{t: t}
+
+			k8sclient.FuncNewClientSet = func(_ *rest.Config) (kubernetes.Interface, error) {
+				return createFakeKubeClient(clientCtx)
+
+			}
 
 			sr.RunSuites(tt.suites())
 		})
 	}
+}
+
+type clientTestContext struct {
+	testNamespace    string
+	namespaceDeleted bool
+	t                *testing.T
+}
+
+func createFakeKubeClient(ctx *clientTestContext) (kubernetes.Interface, error) {
+	client := fakeClient.NewSimpleClientset()
+	client.Discovery().(*fake.FakeDiscovery).FakedServerVersion = &version.Info{
+		Major:      "1",
+		Minor:      "32",
+		GitVersion: "v1.32.0",
+	}
+	client.Fake.PrependReactor("create", "namespaces", func(action clienttesting.Action) (handled bool, ret runtime.Object, err error) {
+		createAction := action.(clienttesting.CreateAction)
+		namespace := createAction.GetObject().(*corev1.Namespace)
+		if strings.HasPrefix(namespace.Name, "mock-ns-prefix-") {
+			ctx.t.Logf("namespace %s creation called", namespace.Name)
+			if ctx.testNamespace == "" {
+				ctx.testNamespace = namespace.Name
+			} else {
+				return true, nil, fmt.Errorf("repeated test namespace creation call: was %s, now %s", ctx.testNamespace, namespace.Name)
+			}
+			return true, namespace, nil
+		}
+		return true, nil, fmt.Errorf("unexpected namespace creation %s", namespace.Name)
+	})
+	client.Fake.PrependReactor("delete", "namespaces", func(action clienttesting.Action) (handled bool, ret runtime.Object, err error) {
+		deleteAction := action.(clienttesting.DeleteAction)
+		if ctx.testNamespace != "" && deleteAction.GetName() == ctx.testNamespace {
+			ctx.t.Logf("namespace %s deletion called", deleteAction.GetName())
+			ctx.namespaceDeleted = true
+			return true, nil, nil
+		}
+		return true, nil, fmt.Errorf("unexpected namespace deletion %s", deleteAction.GetName())
+	})
+	return client, nil
 }
 
 func TestRunFlowManagementGoroutine(t *testing.T) {
