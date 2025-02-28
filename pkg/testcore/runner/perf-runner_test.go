@@ -2,6 +2,8 @@ package runner
 
 import (
 	"context"
+	"database/sql"
+	"fmt"
 	"os"
 	"testing"
 	"time"
@@ -14,8 +16,13 @@ import (
 
 	runnermocks "github.com/dell/cert-csi/pkg/testcore/runner/mocks"
 	"github.com/dell/cert-csi/pkg/testcore/suites"
+
 	"go.uber.org/mock/gomock"
 )
+
+type SQLiteStore struct {
+	db *sql.DB
+}
 
 func TestCheckValidNamespace(t *testing.T) {
 	tests := []struct {
@@ -183,6 +190,7 @@ func TestNewSuiteRunner(t *testing.T) {
 		t.Errorf("Expected ScDBs to have length %d, got %d", len(scDBs), len(runner.ScDBs))
 	}
 }
+
 func TestExecuteSuite(t *testing.T) {
 	db, _, _ := sqlmock.New() //TODO update to use the mock database
 	tests := []struct {
@@ -241,6 +249,64 @@ func TestExecuteSuite(t *testing.T) {
 	}
 }
 
+func TestRunSuites(t *testing.T) {
+	db, mockdb, err := sqlmock.New()
+	if err != nil {
+		t.Fatalf("Error creating mock database: %v", err)
+	}
+	defer db.Close()
+	tests := []struct {
+		name                    string
+		suites                  func() map[string][]suites.Interface
+		expectedSucceededSuites float64
+		tr                      *store.TestRun
+	}{
+		{
+			name: "Successful test run",
+			suites: func() map[string][]suites.Interface {
+				suite := runnermocks.NewMockInterface(gomock.NewController(t))
+				// suite.EXPECT().Run(gomock.Any(), gomock.Any(), gomock.Any()).Times(1).Return(nil, nil)
+				return map[string][]suites.Interface{
+					"sc1": {
+						suite,
+					},
+				}
+			},
+
+			tr: &store.TestRun{
+				Name:           "test run 1",
+				StartTimestamp: time.Now(),
+				StorageClass:   "sc1",
+				ClusterAddress: "localhost",
+			},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			r := &Runner{}
+			sr := &SuiteRunner{
+				ScDBs: []*store.StorageClassDB{
+					{
+						StorageClass: "sc1",
+						DB:           store.NewSQLiteStoreWithDB(db),
+					},
+					{
+						StorageClass: "sc2",
+						DB:           store.NewSQLiteStoreWithDB(db),
+					},
+				},
+			}
+			sr.Runner = r
+			mockdb.ExpectExec("INSERT INTO test_runs").
+				WithArgs().
+				WillReturnError(fmt.Errorf("some error"))
+
+			sr.RunSuites(tt.suites())
+		})
+	}
+}
+
 func TestRunHook(t *testing.T) {
 	script, err := os.CreateTemp("", "script.sh")
 	if err != nil {
@@ -292,5 +358,225 @@ echo "Hello, World!"
 		if (err != nil) != tt.wantErr {
 			t.Errorf("runHook(%s, %s) error = %v, wantErr %v", tt.startHook, tt.hookName, err, tt.wantErr)
 		}
+	}
+}
+
+func TestShouldClean_Suites(t *testing.T) {
+	tests := []struct {
+		name        string
+		noCleanup   bool
+		noCleaning  bool
+		suiteRes    TestResult
+		expectedRes bool
+	}{
+		{
+			name:        "no cleanup on fail is false and suite result is success",
+			noCleanup:   false,
+			noCleaning:  false,
+			suiteRes:    SUCCESS,
+			expectedRes: true,
+		},
+		{
+			name:        "no cleanup on fail is true and suite result is success",
+			noCleanup:   true,
+			noCleaning:  false,
+			suiteRes:    SUCCESS,
+			expectedRes: false,
+		},
+		{
+			name:        "no cleanup on fail is false and suite result is failure",
+			noCleanup:   false,
+			noCleaning:  false,
+			suiteRes:    FAILURE,
+			expectedRes: true,
+		},
+		{
+			name:        "no cleanup on fail is true and no cleaning is true",
+			noCleanup:   true,
+			noCleaning:  true,
+			suiteRes:    SUCCESS,
+			expectedRes: false,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			r := &Runner{
+				noCleaning:      tt.noCleanup,
+				NoCleanupOnFail: tt.noCleanup,
+			}
+			sr := &SuiteRunner{}
+			sr.Runner = r
+
+			res := sr.ShouldClean(tt.suiteRes)
+			if res != tt.expectedRes {
+				t.Errorf("expected ShouldClean() to return %v, but got %v", tt.expectedRes, res)
+			}
+		})
+	}
+}
+
+func TestNoCleaning(t *testing.T) {
+	tests := []struct {
+		name    string
+		initial bool
+	}{
+		{
+			name:    "Testing NoCleaning with initial value false",
+			initial: false,
+		},
+		{
+			name:    "Testing NoCleaning with initial value true",
+			initial: true,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			r := &Runner{
+				noCleaning: tt.initial,
+			}
+			sr := &SuiteRunner{}
+			sr.Runner = r
+
+			sr.NoCleaning()
+
+			if sr.noCleaning != true {
+				t.Errorf("Expected noCleaning to be true, but got false")
+			}
+		})
+	}
+}
+func TestIsStopped(t *testing.T) {
+	tests := []struct {
+		name        string
+		stop        bool
+		expectedRes bool
+	}{
+		{
+			name:        "test suite is stopped",
+			stop:        true,
+			expectedRes: true,
+		},
+		{
+			name:        "test suite is not stopped",
+			stop:        false,
+			expectedRes: false,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			r := &Runner{
+				stop: tt.stop,
+			}
+			sr := &SuiteRunner{}
+			sr.Runner = r
+			res := sr.IsStopped()
+			if res != tt.expectedRes {
+				t.Errorf("expected IsStopped() to return %v, but got %v", tt.expectedRes, res)
+			}
+		})
+	}
+}
+func TestSuiteRunner_Stop(t *testing.T) {
+	r := &Runner{
+		stop: true,
+	}
+
+	sr := &SuiteRunner{}
+	sr.Runner = r
+
+	// Test case: Setting stop to true
+	sr.Stop()
+	if !sr.stop {
+		t.Errorf("Expected stop to be true, but got false")
+	}
+	// Test case: Setting stop to false
+	sr.stop = false
+	sr.Stop()
+	if !sr.stop {
+		t.Errorf("Expected stop to be true, but got false")
+	}
+}
+func TestSuiteRunner_Close(t *testing.T) {
+	db, _, err := sqlmock.New()
+	if err != nil {
+		t.Fatalf("Error creating mock database: %v", err)
+	}
+	defer db.Close()
+
+	tests := []struct {
+		name           string
+		scDBs          []*store.StorageClassDB
+		noreport       bool
+		NoMetrics      bool
+		expectedLogLen int
+	}{
+		{
+			name: "All databases are closed successfully",
+			scDBs: []*store.StorageClassDB{
+				{
+					DB: store.NewSQLiteStoreWithDB(db),
+				},
+				{
+					DB: store.NewSQLiteStoreWithDB(db),
+				},
+			},
+			noreport:       false,
+			NoMetrics:      false,
+			expectedLogLen: 0,
+		},
+		{
+			name: "Error generating reports",
+			scDBs: []*store.StorageClassDB{
+				{
+					DB: store.NewSQLiteStoreWithDB(db),
+				},
+			},
+			noreport:       false,
+			NoMetrics:      false,
+			expectedLogLen: 1,
+		},
+		{
+			name: "Error generating all reports",
+			scDBs: []*store.StorageClassDB{
+				{
+					DB: store.NewSQLiteStoreWithDB(db),
+				},
+			},
+			noreport:       false,
+			NoMetrics:      true,
+			expectedLogLen: 1,
+		},
+		{
+			name:           "Succeeded suites is greater than threshold",
+			scDBs:          []*store.StorageClassDB{},
+			noreport:       false,
+			NoMetrics:      false,
+			expectedLogLen: 1,
+		},
+		{
+			name:           "Succeeded suites is less than or equal to threshold",
+			scDBs:          []*store.StorageClassDB{},
+			noreport:       false,
+			NoMetrics:      false,
+			expectedLogLen: 1,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			r := &Runner{
+				SucceededSuites: Threshold + 0.1,
+			}
+			sr := &SuiteRunner{
+				ScDBs:     tt.scDBs,
+				NoReport:  tt.noreport,
+				NoMetrics: tt.NoMetrics,
+			}
+			sr.Runner = r
+			sr.Close()
+		})
 	}
 }
