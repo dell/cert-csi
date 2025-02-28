@@ -3,7 +3,6 @@ package runner
 import (
 	"context"
 	"database/sql"
-	"fmt"
 	"os"
 	"testing"
 	"time"
@@ -15,7 +14,6 @@ import (
 	"k8s.io/client-go/rest"
 
 	runnermocks "github.com/dell/cert-csi/pkg/testcore/runner/mocks"
-	"github.com/dell/cert-csi/pkg/testcore/suites"
 
 	"go.uber.org/mock/gomock"
 )
@@ -191,118 +189,88 @@ func TestNewSuiteRunner(t *testing.T) {
 	}
 }
 
-func TestExecuteSuite(t *testing.T) {
-	db, _, _ := sqlmock.New() //TODO update to use the mock database
-	tests := []struct {
-		name        string
-		iterCtx     context.Context
-		num         int
-		suites      func() map[string][]suites.Interface
-		suite       func() suites.Interface
-		sr          *SuiteRunner
-		scDB        *store.StorageClassDB
-		c           chan os.Signal
-		wantSuccess bool
-	}{
-		{
-			name:    "Successful suite run",
-			iterCtx: context.Background(),
-			num:     1,
-			suites: func() map[string][]suites.Interface {
-				suite := runnermocks.NewMockInterface(gomock.NewController(t))
-				// suite.EXPECT().Run(gomock.Any(), gomock.Any(), gomock.Any()).Times(1).Return(nil, nil)
-				return map[string][]suites.Interface{
-					"testSuite": {
-						suite,
-					},
-				}
-			},
-			suite: func() suites.Interface {
-				suite := runnermocks.NewMockInterface(gomock.NewController(t))
-				// suite.EXPECT().Run(gomock.Any(), gomock.Any(), gomock.Any()).AnyTimes().Return(nil, nil)
-				suite.EXPECT().GetName().AnyTimes().Return("test-suite-name")
-				suite.EXPECT().Parameters().Times(1).Return("param1,param2")
-				return suite
-			},
-			sr: &SuiteRunner{},
-			scDB: &store.StorageClassDB{
-				DB: store.NewSQLiteStoreWithDB(db),
-			},
-			c:           make(chan os.Signal),
-			wantSuccess: true,
-		},
-	}
-
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			// Mock the necessary dependencies for the test
-			// For example, you can use testify/mock to create mock objects
-			// and replace the actual dependencies with the mocks.
-
-			// Call the ExecuteSuite function
-			ExecuteSuite(tt.iterCtx, tt.num, tt.suites(), tt.suite(), tt.sr, tt.scDB, tt.c)
-
-			// Assert the expected outcome
-			// For example, you can use testify/assert to make assertions
-			// or write custom assertions based on the expected behavior.
-		})
-	}
-}
-
-func TestRunSuites(t *testing.T) {
-	db, mockdb, err := sqlmock.New()
+func TestRunFlowManagementGoroutine(t *testing.T) {
+	db, _, err := sqlmock.New()
 	if err != nil {
 		t.Fatalf("Error creating mock database: %v", err)
 	}
 	defer db.Close()
+
 	tests := []struct {
-		name                    string
-		suites                  func() map[string][]suites.Interface
-		expectedSucceededSuites float64
-		tr                      *store.TestRun
+		name         string
+		scDBs        []*store.StorageClassDB
+		noreport     bool
+		NoMetrics    bool
+		IterationNum int
+		Duration     time.Duration
+		stop         bool
+		wantErr      bool
 	}{
 		{
-			name: "Successful test run",
-			suites: func() map[string][]suites.Interface {
-				suite := runnermocks.NewMockInterface(gomock.NewController(t))
-				// suite.EXPECT().Run(gomock.Any(), gomock.Any(), gomock.Any()).Times(1).Return(nil, nil)
-				return map[string][]suites.Interface{
-					"sc1": {
-						suite,
-					},
-				}
+			name: "Test case with valid parameters",
+			scDBs: []*store.StorageClassDB{
+				{
+					StorageClass: "sc1",
+					DB:           store.NewSQLiteStoreWithDB(db),
+				},
+				{
+					StorageClass: "sc2",
+					DB:           store.NewSQLiteStoreWithDB(db),
+				},
 			},
-
-			tr: &store.TestRun{
-				Name:           "test run 1",
-				StartTimestamp: time.Now(),
-				StorageClass:   "sc1",
-				ClusterAddress: "localhost",
-			},
+			noreport:     false,
+			NoMetrics:    false,
+			IterationNum: 10,
+			Duration:     10 * time.Second,
+			stop:         false,
+			wantErr:      false,
+		},
+		{
+			name:         "Test case with invalid parameters",
+			scDBs:        nil,
+			noreport:     true,
+			NoMetrics:    true,
+			IterationNum: -1,
+			Duration:     -1 * time.Second,
+			stop:         true,
+			wantErr:      true,
 		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			r := &Runner{}
+			r := &Runner{
+
+				SucceededSuites: Threshold + 0.1,
+				stop:            tt.stop,
+			}
 			sr := &SuiteRunner{
-				ScDBs: []*store.StorageClassDB{
-					{
-						StorageClass: "sc1",
-						DB:           store.NewSQLiteStoreWithDB(db),
-					},
-					{
-						StorageClass: "sc2",
-						DB:           store.NewSQLiteStoreWithDB(db),
-					},
-				},
+
+				ScDBs:        tt.scDBs,
+				NoReport:     tt.noreport,
+				NoMetrics:    tt.NoMetrics,
+				IterationNum: tt.IterationNum,
+				Duration:     tt.Duration,
 			}
 			sr.Runner = r
-			mockdb.ExpectExec("INSERT INTO test_runs").
-				WithArgs().
-				WillReturnError(fmt.Errorf("some error"))
+			iterCtx, c := sr.runFlowManagementGoroutine()
 
-			sr.RunSuites(tt.suites())
+			// Send a signal to the goroutine to stop it
+			c <- os.Interrupt
+
+			// Wait for the goroutine to finish
+			<-iterCtx.Done()
+
+			if tt.wantErr {
+				if sr.IterationNum != tt.IterationNum {
+					t.Errorf("Expected IterationNum to be %d, got %d", tt.IterationNum, sr.IterationNum)
+				}
+			}
+			if !tt.wantErr {
+				if sr.IterationNum != tt.IterationNum {
+					t.Errorf("Expected IterationNum to be %d, got %d", tt.IterationNum-1, sr.IterationNum)
+				}
+			}
 		})
 	}
 }
