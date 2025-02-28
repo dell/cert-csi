@@ -200,7 +200,7 @@ func TestExecuteSuite(t *testing.T) {
 			num:     1,
 			suites: func() map[string][]suites.Interface {
 				suite := runnermocks.NewMockInterface(gomock.NewController(t))
-				suite.EXPECT().Run(gomock.Any(), gomock.Any(), gomock.Any()).Times(1).Return(nil, nil)
+				// suite.EXPECT().Run(gomock.Any(), gomock.Any(), gomock.Any()).Times(1).Return(nil, nil)
 				return map[string][]suites.Interface{
 					"testSuite": {
 						suite,
@@ -209,7 +209,9 @@ func TestExecuteSuite(t *testing.T) {
 			},
 			suite: func() suites.Interface {
 				suite := runnermocks.NewMockInterface(gomock.NewController(t))
-				suite.EXPECT().Run(gomock.Any(), gomock.Any(), gomock.Any()).Times(1).Return(nil, nil)
+				// suite.EXPECT().Run(gomock.Any(), gomock.Any(), gomock.Any()).AnyTimes().Return(nil, nil)
+				suite.EXPECT().GetName().AnyTimes().Return("test-suite-name")
+				suite.EXPECT().Parameters().Times(1).Return("param1,param2")
 				return suite
 			},
 			sr:          &SuiteRunner{},
