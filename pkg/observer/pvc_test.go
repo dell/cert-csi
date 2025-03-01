@@ -29,6 +29,7 @@ func TestPvcObserver_StartWatching(t *testing.T) {
 			Name: "test-pvc",
 			UID:  "test-uid",
 		},
+		Status: v1.PersistentVolumeClaimStatus{Phase: "Bound"},
 	}
 
 	clientSet := fake.NewSimpleClientset()
@@ -68,6 +69,18 @@ func TestPvcObserver_StartWatching(t *testing.T) {
 
 	fakeWatcher.Add(pvc)
 	fakeWatcher.Modify(pvc)
+
+	pvc = &v1.PersistentVolumeClaim{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:              "test-pvc",
+			UID:               "test-uid",
+			DeletionTimestamp: &metav1.Time{Time: time.Now()},
+		},
+	}
+
+	fakeWatcher.Modify(pvc)
+
+	fakeWatcher.Delete(pvc)
 
 	time.Sleep(100 * time.Millisecond)
 
