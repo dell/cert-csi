@@ -1,0 +1,3 @@
+
+export JUNIT_REPORT_PATH=/root/.cert-csi/reports/junit/report-junit.xml
+export TABULAR_REPORT_PATH=/root/.cert-csi/reports/tabular/report-tabular.html

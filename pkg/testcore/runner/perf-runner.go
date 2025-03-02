@@ -242,8 +242,9 @@ func (sr *SuiteRunner) RunSuites(suites map[string][]suites.Interface) {
 		for _, v := range suites {
 			totalNumberOfSuites += len(v)
 		}
-
+		logrus.Println(totalNumberOfSuites, sr.IterationNum, sr.SucceededSuites)
 		sr.SucceededSuites = sr.SucceededSuites / float64(totalNumberOfSuites*sr.IterationNum)
+		logrus.Println(sr.SucceededSuites)
 		sr.Close()
 	}()
 
@@ -516,7 +517,9 @@ func runHook(startHook, hookName string) error {
 	if startHook == "" {
 		return nil
 	}
+	fmt.Println(startHook)
 	cmdPath, err := filepath.Abs(startHook)
+	fmt.Println(cmdPath)
 	if err != nil {
 		logrus.Error(err)
 		return err

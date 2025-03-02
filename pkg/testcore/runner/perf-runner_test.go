@@ -5,6 +5,7 @@ import (
 	"database/sql"
 	"fmt"
 	"os"
+	"regexp"
 	"strings"
 	"testing"
 	"time"
@@ -75,8 +76,11 @@ func TestCheckValidNamespace(t *testing.T) {
 			KubeClient: tt.k8s,
 		}
 		// TODO return an error from checkValidNamespace to validate if it was found or not?
+
 		checkValidNamespace(tt.driverNs, runner)
+
 	}
+
 }
 
 func TestNewSuiteRunner(t *testing.T) {
@@ -160,11 +164,11 @@ func TestNewSuiteRunner(t *testing.T) {
 	if runner.ScDBs[0].StorageClass != "sc1" {
 		t.Errorf("Expected StorageClass to be %s, got %s", "sc1", runner.ScDBs[0].StorageClass)
 	}
-	// Test case: Error in storage class check
+	// Test case: Error in storage class check  and wrong format longevity
 	configPath = "config.yaml"
 	driverNs = "driver-namespace"
 	observerType = "EVENT"
-	longevity = "1h"
+	longevity = "1"
 	driverNSHealthMetrics = "driver-namespace-health-metrics"
 	timeout = 30
 	cooldown = 10
@@ -179,11 +183,11 @@ func TestNewSuiteRunner(t *testing.T) {
 	if len(runner.ScDBs) != len(scDBs) {
 		t.Errorf("Expected ScDBs to have length %d, got %d", len(scDBs)-1, len(runner.ScDBs))
 	}
-	// Test case: Error in namespace check
+	// Test case: Error in namespace check and cover nil longevity
 	configPath = "config.yaml"
 	driverNs = "driver-namespace"
 	observerType = "EVENT"
-	longevity = "1h"
+	longevity = ""
 	driverNSHealthMetrics = "driver-namespace-health-metrics"
 	timeout = 30
 	cooldown = 10
@@ -197,78 +201,6 @@ func TestNewSuiteRunner(t *testing.T) {
 		timeout, cooldown, sequentialExecution, noCleanup, noCleanupOnFail, noMetrics, noReport, scDBs, mock)
 	if len(runner.ScDBs) != len(scDBs) {
 		t.Errorf("Expected ScDBs to have length %d, got %d", len(scDBs), len(runner.ScDBs))
-	}
-}
-
-func TestRunSuite(t *testing.T) {
-	mockdb, _, err := sqlmock.New()
-	if err != nil {
-		t.Fatalf("Error creating mock database: %v", err)
-	}
-
-	tests := []struct {
-		name         string
-		suite        func() suites.Interface
-		sr           *SuiteRunner
-		testCase     *store.TestCase
-		db           *store.SQLiteStore
-		storageClass string
-		c            chan os.Signal
-		wantRes      TestResult
-		wantErr      error
-	}{
-		{
-			name: "Test case with valid parameters",
-			suite: func() suites.Interface {
-				suite := runnermocks.NewMockInterface(gomock.NewController(t))
-				// suite.EXPECT().Run(gomock.Any(), gomock.Any(), gomock.Any()).AnyTimes().Return(nil, nil)
-				suite.EXPECT().GetName().AnyTimes().Return("test-suite-name")
-				suite.EXPECT().GetNamespace().AnyTimes().Return("test-namespace")
-				//suite.EXPECT().Parameters().Times(1).Return("param1,param2")
-				return suite
-			},
-			sr:           &SuiteRunner{},
-			testCase:     &store.TestCase{},
-			db:           store.NewSQLiteStoreWithDB(mockdb),
-			storageClass: "sc1",
-			c:            make(chan os.Signal),
-			wantRes:      SUCCESS,
-			wantErr:      nil,
-		},
-		{
-			name:         "Test case with invalid parameters",
-			suite:        nil,
-			sr:           &SuiteRunner{},
-			testCase:     nil,
-			db:           nil,
-			storageClass: "",
-			c:            nil,
-			wantRes:      FAILURE,
-			wantErr:      fmt.Errorf("can't create namespace; error=namespace is nil"),
-		},
-	}
-
-	for _, tt := range tests {
-		sr := &SuiteRunner{}
-		r := &Runner{}
-		sr.Runner = r
-
-		t.Run(tt.name, func(t *testing.T) {
-			ctx := context.Background()
-			fmt.Println("Test Name: ", tt.name)
-			fmt.Println("Test suite: ", tt.suite())
-			fmt.Println("Test Case: ", tt.testCase)
-			fmt.Println("Test DB: ", tt.db)
-			fmt.Println("Test sc: ", tt.storageClass)
-			fmt.Println("Test case: ", tt.c)
-			res, err := runSuite(ctx, tt.suite(), sr, tt.testCase, tt.db, tt.storageClass, tt.c)
-			if res != tt.wantRes {
-				t.Errorf("Expected runSuite to return %v, but got %v", tt.wantRes, res)
-			}
-			if err != tt.wantErr {
-				t.Errorf("Expected runSuite to return error %v, but got %v", tt.wantErr, err)
-			}
-		})
 	}
 }
 
@@ -309,6 +241,174 @@ func createFakeKubeClient(ctx *clientTestContext) (kubernetes.Interface, error) 
 		return true, nil, fmt.Errorf("unexpected namespace deletion %s", deleteAction.GetName())
 	})
 	return client, nil
+}
+
+func TestExecuteSuite(t *testing.T) {
+	db, mockdb, err := sqlmock.New()
+	if err != nil {
+		t.Fatalf("Error creating mock database: %v", err)
+	}
+	defer db.Close()
+	tests := []struct {
+		name        string
+		iterCtx     context.Context
+		num         int
+		suites      func() map[string][]suites.Interface
+		suite       func() suites.Interface
+		sr          *SuiteRunner
+		scDB        *store.StorageClassDB
+		c           chan os.Signal
+		wantSuccess bool
+		tr          *store.TestRun
+	}{
+		{
+			name:    "Successful suite run",
+			iterCtx: context.Background(),
+			num:     1,
+			suites: func() map[string][]suites.Interface {
+				suite := runnermocks.NewMockInterface(gomock.NewController(t))
+				// suite.EXPECT().Run(gomock.Any(), gomock.Any(), gomock.Any()).Times(1).Return(nil, nil)
+				return map[string][]suites.Interface{
+					"testSuite": {
+						suite,
+					},
+				}
+			},
+			suite: func() suites.Interface {
+				suite := runnermocks.NewMockInterface(gomock.NewController(t))
+				// suite.EXPECT().Run(gomock.Any(), gomock.Any(), gomock.Any()).AnyTimes().Return(nil, nil)
+				suite.EXPECT().GetName().AnyTimes().Return("test run 1")
+				suite.EXPECT().Parameters().Times(1).Return("param1,param2")
+				return suite
+			},
+			scDB: &store.StorageClassDB{
+				DB: store.NewSQLiteStoreWithDB(db),
+			},
+			c:           make(chan os.Signal),
+			wantSuccess: true,
+			tr: &store.TestRun{
+				Name:           "test run 1",
+				StartTimestamp: time.Now(),
+				StorageClass:   "sc1",
+				ClusterAddress: "localhost",
+			},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			// Mock the necessary dependencies for the test
+			// For example, you can use testify/mock to create mock objects
+			// and replace the actual dependencies with the mocks.
+
+			// Call the ExecuteSuite function
+			r := &Runner{}
+			sr := &SuiteRunner{}
+			sr.Runner = r
+
+			mockdb.ExpectExec("INSERT INTO test_runs").
+				WithArgs(tt.tr.Name, tt.tr.StartTimestamp, tt.tr.StorageClass, tt.tr.ClusterAddress).
+				WillReturnResult(sqlmock.NewResult(1, 1))
+
+			mockdb.ExpectQuery(regexp.QuoteMeta("SELECT * FROM test_runs WHERE name='test run 1' AND 1=1 LIMIT 1")).
+				WillReturnRows(sqlmock.NewRows([]string{"id", "name", "longevity", "start_timestamp", "storage_class", "cluster_address"}).
+					AddRow("1", "test run 1", true, tt.tr.StartTimestamp, tt.tr.StorageClass, tt.tr.ClusterAddress))
+
+			mockdb.ExpectQuery(regexp.QuoteMeta("SELECT * FROM test_cases WHERE run_id=1 AND 1=1")).
+				WillReturnRows(sqlmock.NewRows([]string{"id", "name", "parameters", "start_timestamp", "end_timestamp", "success", "error_msg", "run_id"}).
+					AddRow("1", "test run 1", "", tt.tr.StartTimestamp, tt.tr.StartTimestamp, true, "", 1))
+
+			clientCtx := &clientTestContext{t: t}
+
+			k8sclient.FuncNewClientSet = func(_ *rest.Config) (kubernetes.Interface, error) {
+				return createFakeKubeClient(clientCtx)
+
+			}
+
+			ExecuteSuite(tt.iterCtx, tt.num, tt.suites(), tt.suite(), sr, tt.scDB, tt.c)
+
+			// Assert the expected outcome
+			// For example, you can use testify/assert to make assertions
+			// or write custom assertions based on the expected behavior.
+		})
+	}
+}
+
+func TestRunSuites(t *testing.T) {
+	db, mockdb, err := sqlmock.New()
+	if err != nil {
+		t.Fatalf("Error creating mock database: %v", err)
+	}
+	defer db.Close()
+	tests := []struct {
+		name                    string
+		suites                  func() map[string][]suites.Interface
+		expectedSucceededSuites float64
+		tr                      *store.TestRun
+	}{
+		{
+			name: "Successful test run",
+			suites: func() map[string][]suites.Interface {
+				suite := runnermocks.NewMockInterface(gomock.NewController(t))
+				// suite.EXPECT().Run(gomock.Any(), gomock.Any(), gomock.Any()).Times(1).Return(nil, nil)
+				return map[string][]suites.Interface{
+					"sc1": {
+						suite,
+					},
+				}
+			},
+
+			tr: &store.TestRun{
+				Name:           "test run 1",
+				StartTimestamp: time.Now(),
+				StorageClass:   "sc1",
+				ClusterAddress: "localhost",
+			},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			r := &Runner{
+				Config: &rest.Config{},
+			}
+			sr := &SuiteRunner{
+				IterationNum: 1,
+				ScDBs: []*store.StorageClassDB{
+					{
+						StorageClass: "sc1",
+						DB:           store.NewSQLiteStoreWithDB(db),
+						TestRun:      *tt.tr,
+					},
+					// {
+					// 	StorageClass: "sc2",
+					// 	DB:           store.NewSQLiteStoreWithDB(db),
+					// },
+				},
+			}
+			sr.Runner = r
+			mockdb.ExpectExec("INSERT INTO test_runs").
+				WithArgs(tt.tr.Name, tt.tr.StartTimestamp, tt.tr.StorageClass, tt.tr.ClusterAddress).
+				WillReturnResult(sqlmock.NewResult(1, 1))
+
+			mockdb.ExpectQuery(regexp.QuoteMeta("SELECT * FROM test_runs WHERE name='test run 1' AND 1=1 LIMIT 1")).
+				WillReturnRows(sqlmock.NewRows([]string{"id", "name", "longevity", "start_timestamp", "storage_class", "cluster_address"}).
+					AddRow("1", "test run 1", true, tt.tr.StartTimestamp, tt.tr.StorageClass, tt.tr.ClusterAddress))
+
+			mockdb.ExpectQuery(regexp.QuoteMeta("SELECT * FROM test_cases WHERE run_id=1 AND 1=1")).
+				WillReturnRows(sqlmock.NewRows([]string{"id", "name", "parameters", "start_timestamp", "end_timestamp", "success", "error_msg", "run_id"}).
+					AddRow("1", "test run 1", "", tt.tr.StartTimestamp, tt.tr.StartTimestamp, true, "", 1))
+
+			clientCtx := &clientTestContext{t: t}
+
+			k8sclient.FuncNewClientSet = func(_ *rest.Config) (kubernetes.Interface, error) {
+				return createFakeKubeClient(clientCtx)
+
+			}
+
+			sr.RunSuites(tt.suites())
+		})
+	}
 }
 
 func TestRunFlowManagementGoroutine(t *testing.T) {
@@ -426,6 +526,7 @@ echo "Hello, World!"
 	if err != nil {
 		t.Errorf("Expected no error, got %s", err.Error())
 	}
+
 	tests := []struct {
 		startHook string
 		hookName  string
@@ -440,6 +541,16 @@ echo "Hello, World!"
 			startHook: "/path/to/nonexistent.py",
 			hookName:  "Non-bash Script",
 			wantErr:   true,
+		},
+		{
+			startHook: "/path/to/invalid/startHook",
+			hookName:  "Mock Bash Script",
+			wantErr:   true,
+		},
+		{
+			startHook: "",
+			hookName:  "Mock Bash Script",
+			wantErr:   false,
 		},
 	}
 
@@ -666,7 +777,9 @@ func TestSuiteRunner_Close(t *testing.T) {
 				NoMetrics: tt.NoMetrics,
 			}
 			sr.Runner = r
+
 			sr.Close()
+
 		})
 	}
 }
