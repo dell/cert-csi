@@ -11,6 +11,7 @@ import (
 	"github.com/dell/cert-csi/pkg/k8sclient"
 	"github.com/dell/cert-csi/pkg/k8sclient/resources/pod"
 	"github.com/dell/cert-csi/pkg/k8sclient/resources/statefulset"
+	log "github.com/sirupsen/logrus"
 	v1 "k8s.io/api/apps/v1"
 	autoscalingv1 "k8s.io/api/autoscaling/v1"
 	apierrs "k8s.io/apimachinery/pkg/api/errors"
@@ -184,6 +185,7 @@ spec:
 	defer func(name string) {
 		err := os.Remove(name)
 		if err != nil {
+			log.Error(err)
 		}
 	}(tmpFile.Name())
 
@@ -310,7 +312,7 @@ func (suite *StatefulSetTestSuite) TestDeleteAll_ListFails() {
 
 	// Mock List function to return an error
 	suite.kubeClient.ClientSet.(*fake.Clientset).Fake.PrependReactor("list", "statefulsets",
-		func(action testing.Action) (handled bool, ret runtime.Object, err error) {
+		func(_ testing.Action) (handled bool, ret runtime.Object, err error) {
 			return true, nil, fmt.Errorf("mock list error")
 		})
 
@@ -331,13 +333,13 @@ func (suite *StatefulSetTestSuite) TestDeleteAll_DeleteFails() {
 
 	stsList := &v1.StatefulSetList{Items: []v1.StatefulSet{*sts1}}
 	suite.kubeClient.ClientSet.(*fake.Clientset).Fake.PrependReactor("list", "statefulsets",
-		func(action testing.Action) (handled bool, ret runtime.Object, err error) {
+		func(_ testing.Action) (handled bool, ret runtime.Object, err error) {
 			return true, stsList, nil
 		})
 
 	// Mock Delete function to fail
 	suite.kubeClient.ClientSet.(*fake.Clientset).Fake.PrependReactor("delete", "statefulsets",
-		func(action testing.Action) (handled bool, ret runtime.Object, err error) {
+		func(_ testing.Action) (handled bool, ret runtime.Object, err error) {
 			return true, nil, fmt.Errorf("mock delete error")
 		})
 
@@ -486,12 +488,12 @@ func (suite *StatefulSetTestSuite) TestScaleAPIError() {
 
 			// Add a reactor for "get" action on Scale subresource to simulate GetScale error
 			if tt.getScaleError {
-				fakeClient.Fake.PrependReactor("get", "statefulsets/scale", func(action testing.Action) (bool, runtime.Object, error) {
+				fakeClient.Fake.PrependReactor("get", "statefulsets/scale", func(_ testing.Action) (bool, runtime.Object, error) {
 					return true, nil, fmt.Errorf("failed to get scale")
 				})
 			} else {
 				// Successful GetScale response
-				fakeClient.Fake.PrependReactor("get", "statefulsets/scale", func(action testing.Action) (bool, runtime.Object, error) {
+				fakeClient.Fake.PrependReactor("get", "statefulsets/scale", func(_ testing.Action) (bool, runtime.Object, error) {
 					return true, &autoscalingv1.Scale{
 						ObjectMeta: metav1.ObjectMeta{
 							Name:      "test-sts",
@@ -509,7 +511,7 @@ func (suite *StatefulSetTestSuite) TestScaleAPIError() {
 
 			// Add a reactor for "update" action on Scale subresource to simulate UpdateScale error
 			if tt.updateScaleError {
-				fakeClient.Fake.PrependReactor("update", "statefulsets/scale", func(action testing.Action) (bool, runtime.Object, error) {
+				fakeClient.Fake.PrependReactor("update", "statefulsets/scale", func(_ testing.Action) (bool, runtime.Object, error) {
 					return true, nil, fmt.Errorf("failed to update scale")
 				})
 			} else {
@@ -554,7 +556,7 @@ func (suite *StatefulSetTestSuite) TestScaleContextCancellation() {
 	fakeClient := fake.NewSimpleClientset()
 
 	// Add a reactor for "get" action on Scale subresource
-	fakeClient.Fake.PrependReactor("get", "statefulsets/scale", func(action testing.Action) (bool, runtime.Object, error) {
+	fakeClient.Fake.PrependReactor("get", "statefulsets/scale", func(_ testing.Action) (bool, runtime.Object, error) {
 		return true, &autoscalingv1.Scale{
 			ObjectMeta: metav1.ObjectMeta{
 				Name:      "test-sts",
@@ -730,7 +732,7 @@ func (suite *StatefulSetTestSuite) TestGetPodList() {
 			suite.kubeClient.ClientSet.(*fake.Clientset).Fake.PrependReactor(
 				"list",
 				"pods",
-				func(action testing.Action) (handled bool, ret runtime.Object, err error) {
+				func(_ testing.Action) (handled bool, ret runtime.Object, err error) {
 					return true, tc.mockPodList, tc.mockError
 				},
 			)
@@ -853,13 +855,13 @@ func (suite *StatefulSetTestSuite) TestWaitForRunningAndReady() {
 			suite.NoError(createdSts.GetError())
 
 			if tc.mockPodList != nil || tc.mockListError != nil {
-				suite.kubeClient.ClientSet.(*fake.Clientset).Fake.PrependReactor("list", "pods", func(action testing.Action) (handled bool, ret runtime.Object, err error) {
+				suite.kubeClient.ClientSet.(*fake.Clientset).Fake.PrependReactor("list", "pods", func(_ testing.Action) (handled bool, ret runtime.Object, err error) {
 					return true, tc.mockPodList, tc.mockListError
 				})
 			}
 
 			if tc.mockGetError != nil {
-				suite.kubeClient.ClientSet.(*fake.Clientset).Fake.PrependReactor("get", "statefulsets", func(action testing.Action) (handled bool, ret runtime.Object, err error) {
+				suite.kubeClient.ClientSet.(*fake.Clientset).Fake.PrependReactor("get", "statefulsets", func(_ testing.Action) (handled bool, ret runtime.Object, err error) {
 					return true, nil, tc.mockGetError
 				})
 			}
@@ -897,7 +899,7 @@ func (suite *StatefulSetTestSuite) TestWaitUntilGone() {
 	}{
 		{
 			name: "StatefulSet successfully deleted",
-			mockDeleteReactor: func(action testing.Action) (handled bool, ret runtime.Object, err error) {
+			mockDeleteReactor: func(_ testing.Action) (handled bool, ret runtime.Object, err error) {
 				return true, nil, nil
 			},
 			expectError: false,
@@ -963,10 +965,10 @@ func (suite *StatefulSetTestSuite) TestSync() {
 	}
 	createdSts1 := suite.stsClient.Create(context.Background(), sts)
 	mockPodList1 := createMockPodList(1, true) // Create a mock pod list
-	suite.kubeClient.ClientSet.(*fake.Clientset).Fake.PrependReactor("list", "pods", func(action testing.Action) (handled bool, ret runtime.Object, err error) {
+	suite.kubeClient.ClientSet.(*fake.Clientset).Fake.PrependReactor("list", "pods", func(_ testing.Action) (handled bool, ret runtime.Object, err error) {
 		return true, mockPodList1, nil
 	})
-	suite.kubeClient.ClientSet.(*fake.Clientset).Fake.AddReactor("get", "pods", func(action testing.Action) (handled bool, ret runtime.Object, err error) {
+	suite.kubeClient.ClientSet.(*fake.Clientset).Fake.AddReactor("get", "pods", func(_ testing.Action) (handled bool, ret runtime.Object, err error) {
 		return true, &mockPodList1.Items[0], nil
 	})
 
@@ -990,7 +992,7 @@ func (suite *StatefulSetTestSuite) TestSync() {
 	}}
 	createdSts3 := suite.stsClient.Create(context.Background(), sts3)
 	mockPodList3 := createMockPodList(0, true) // Create a mock pod list (0 pods)
-	suite.kubeClient.ClientSet.(*fake.Clientset).Fake.PrependReactor("list", "pods", func(action testing.Action) (handled bool, ret runtime.Object, err error) {
+	suite.kubeClient.ClientSet.(*fake.Clientset).Fake.PrependReactor("list", "pods", func(_ testing.Action) (handled bool, ret runtime.Object, err error) {
 		return true, mockPodList3, nil
 	})
 

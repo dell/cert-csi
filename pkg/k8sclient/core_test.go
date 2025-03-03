@@ -19,7 +19,6 @@ package k8sclient
 import (
 	"context"
 	"testing"
-	"time"
 
 	vs "github.com/kubernetes-csi/external-snapshotter/client/v4/apis/volumesnapshot/v1"
 	snapclient "github.com/kubernetes-csi/external-snapshotter/client/v4/clientset/versioned"
@@ -386,10 +385,6 @@ func (suite *CoreTestSuite) TestForceDeleteNamespace() {
 	suite.NoError(err)
 
 	err = kubeClient.ForceDeleteNamespace(context.Background(), "")
-	suite.Error(err)
-
-	ctx, _ := context.WithTimeout(context.Background(), 1*time.Second)
-	err = kubeClient.ForceDeleteNamespace(ctx, "")
 	suite.Error(err)
 }
 

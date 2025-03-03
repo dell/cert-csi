@@ -688,7 +688,7 @@ func (suite *PVTestSuite) TestPV_WaitUntilGone() {
 
 		// Simulate error on Get
 		fakeClient := suite.kubeClient.ClientSet.(*fake.Clientset)
-		fakeClient.PrependReactor("get", "persistentvolumes", func(action k8stesting.Action) (handled bool, ret runtime.Object, err error) {
+		fakeClient.PrependReactor("get", "persistentvolumes", func(_ k8stesting.Action) (handled bool, ret runtime.Object, err error) {
 			return true, nil, errors.New("get error")
 		})
 
@@ -717,7 +717,7 @@ func (suite *PVTestSuite) TestPV_WaitUntilGone() {
 
 		// Simulate error on Update
 		fakeClient := suite.kubeClient.ClientSet.(*fake.Clientset)
-		fakeClient.PrependReactor("update", "persistentvolumes", func(action k8stesting.Action) (handled bool, ret runtime.Object, err error) {
+		fakeClient.PrependReactor("update", "persistentvolumes", func(_ k8stesting.Action) (handled bool, ret runtime.Object, err error) {
 			return true, nil, errors.New("update error")
 		})
 

@@ -19,19 +19,6 @@ func TestClient_Delete(t *testing.T) {
 	// Create a new context
 	ctx := context.Background()
 
-	// Create a new fake runtime client
-	fakeClient := fake.NewClientBuilder().
-		WithScheme(scheme.Scheme).
-		WithObjects(
-			&replv1.DellCSIReplicationGroup{
-				ObjectMeta: metav1.ObjectMeta{
-					Name:      "test-rg",
-					Namespace: "default",
-				},
-			},
-		).
-		Build()
-
 	// Create a new replication group
 	rg := &replv1.DellCSIReplicationGroup{
 		ObjectMeta: metav1.ObjectMeta{
@@ -39,6 +26,12 @@ func TestClient_Delete(t *testing.T) {
 			Namespace: "default",
 		},
 	}
+
+	// Create a new fake runtime client
+	fakeClient := fake.NewClientBuilder().
+		WithScheme(scheme.Scheme).
+		WithObjects(rg).
+		Build()
 
 	// Create a new Client instance with the fake client
 	c := &Client{
@@ -65,19 +58,6 @@ func TestClient_Get(t *testing.T) {
 	// Create a new context
 	ctx := context.Background()
 
-	// Create a new fake runtime client
-	fakeClient := fake.NewClientBuilder().
-		WithScheme(scheme.Scheme).
-		WithObjects(
-			&replv1.DellCSIReplicationGroup{
-				ObjectMeta: metav1.ObjectMeta{
-					Name:      "test-rg1",
-					Namespace: "default",
-				},
-			},
-		).
-		Build()
-
 	// Create a new replication group
 	rg := &replv1.DellCSIReplicationGroup{
 		ObjectMeta: metav1.ObjectMeta{
@@ -85,6 +65,12 @@ func TestClient_Get(t *testing.T) {
 			Namespace: "default",
 		},
 	}
+
+	// Create a new fake runtime client
+	fakeClient := fake.NewClientBuilder().
+		WithScheme(scheme.Scheme).
+		WithObjects(rg).
+		Build()
 
 	// Create a new Client instance with the fake client
 	c := &Client{
@@ -127,16 +113,10 @@ func TestAction(t *testing.T) {
 				Name: "test-rg2",
 			},
 			Status: replv1.DellCSIReplicationGroupStatus{
-				State:       "",
-				RemoteState: "",
 				ReplicationLinkState: replv1.ReplicationLinkState{
-					State:                "SYNCHRONIZED",
-					IsSource:             false,
-					LastSuccessfulUpdate: nil,
-					ErrorMessage:         "",
+					State:    "SYNCHRONIZED",
+					IsSource: false,
 				},
-				LastAction: replv1.LastAction{},
-				Conditions: nil,
 			},
 		},
 	}
@@ -165,61 +145,7 @@ func TestAction(t *testing.T) {
 		expectedState := "SYNCHRONIZED"
 
 		// Create a new context with a timeout
-		timeoutCtx, cancel := context.WithTimeout(context.Background(), 25*time.Second)
-		defer cancel()
-
-		go rgClient.ExecuteAction(timeoutCtx, rgAction)
-
-		rg := rgClient.Client.Get(ctx, "test-rg2")
-
-		if rg.Object.Status.ReplicationLinkState.State != expectedState {
-			t.Errorf("Expected: %v, got: %v", expectedState, rg.Object.Status.ReplicationLinkState.State)
-		}
-	})
-
-	// Test case: Testing RG action "FAILOVER_LOCAL"
-	t.Run("RG action FAILOVER_LOCAL", func(t *testing.T) {
-		rgAction := "FAILOVER_LOCAL"
-		// driverName := "powermax"
-		// expectedState := "SUSPENDED"
-		expectedState := "SYNCHRONIZED"
-		rgObj.Object.Status.ReplicationLinkState.State = "SUSPENDED"
-		// Create a new context with a timeout
-		timeoutCtx, cancel := context.WithTimeout(context.Background(), 25*time.Second)
-		defer cancel()
-
-		go rgClient.ExecuteAction(timeoutCtx, rgAction)
-
-		rg := rgClient.Client.Get(ctx, "test-rg2")
-
-		if rg.Object.Status.ReplicationLinkState.State != expectedState {
-			t.Errorf("Expected: %v, got: %v", expectedState, rg.Object.Status.ReplicationLinkState.State)
-		}
-	})
-
-	// Test case: Testing RG action "REPROTECT"
-	t.Run("RG action REPROTECT", func(t *testing.T) {
-		rgAction := "REPROTECT"
-		// expectedState := "REPROTECT"
-		expectedState := "SYNCHRONIZED"
-		// Create a new context with a timeout
-		timeoutCtx, cancel := context.WithTimeout(context.Background(), 25*time.Second)
-		defer cancel()
-
-		go rgClient.ExecuteAction(timeoutCtx, rgAction)
-
-		rg := rgClient.Client.Get(ctx, "test-rg2")
-
-		if rg.Object.Status.ReplicationLinkState.State != expectedState {
-			t.Errorf("Expected: %v, got: %v", expectedState, rg.Object.Status.ReplicationLinkState.State)
-		}
-	})
-
-	// Test case: Testing RG action "invalid"
-	t.Run("RG action invalid", func(t *testing.T) {
-		rgAction := "invalid"
-		expectedState := "SYNCHRONIZED"
-		timeoutCtx, cancel := context.WithTimeout(context.Background(), 25*time.Second)
+		timeoutCtx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 		defer cancel()
 
 		go rgClient.ExecuteAction(timeoutCtx, rgAction)

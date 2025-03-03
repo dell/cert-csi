@@ -44,13 +44,13 @@ func TestCordonUnCordon(t *testing.T) {
 			name:     "cordon node successfully",
 			nodename: "node1",
 			cordon:   true,
-			getFunc: func(ctx context.Context, name string, options metav1.GetOptions) (*v1.Node, error) {
+			getFunc: func(_ context.Context, _ string, _ metav1.GetOptions) (*v1.Node, error) {
 				return &v1.Node{}, nil
 			},
-			patchFunc: func(ctx context.Context, name string, pt types.PatchType, data []byte, options metav1.PatchOptions, subresources ...string) (*v1.Node, error) {
+			patchFunc: func(_ context.Context, _ string, _ types.PatchType, _ []byte, _ metav1.PatchOptions, _ ...string) (*v1.Node, error) {
 				return &v1.Node{}, nil
 			},
-			updateFunc: func(ctx context.Context, node *v1.Node, options metav1.UpdateOptions) (*v1.Node, error) {
+			updateFunc: func(_ context.Context, _ *v1.Node, _ metav1.UpdateOptions) (*v1.Node, error) {
 				return &v1.Node{}, nil
 			},
 		},
@@ -58,13 +58,13 @@ func TestCordonUnCordon(t *testing.T) {
 			name:     "get node error",
 			nodename: "node1",
 			cordon:   true,
-			getFunc: func(ctx context.Context, name string, options metav1.GetOptions) (*v1.Node, error) {
+			getFunc: func(_ context.Context, _ string, _ metav1.GetOptions) (*v1.Node, error) {
 				return nil, errors.New("get node error")
 			},
-			patchFunc: func(ctx context.Context, name string, pt types.PatchType, data []byte, options metav1.PatchOptions, subresources ...string) (*v1.Node, error) {
+			patchFunc: func(_ context.Context, _ string, _ types.PatchType, _ []byte, _ metav1.PatchOptions, _ ...string) (*v1.Node, error) {
 				return &v1.Node{}, nil
 			},
-			updateFunc: func(ctx context.Context, node *v1.Node, options metav1.UpdateOptions) (*v1.Node, error) {
+			updateFunc: func(_ context.Context, _ *v1.Node, _ metav1.UpdateOptions) (*v1.Node, error) {
 				return &v1.Node{}, nil
 			},
 		},
@@ -72,13 +72,13 @@ func TestCordonUnCordon(t *testing.T) {
 			name:     "create two way merge patch error, update successfully",
 			nodename: "node1",
 			cordon:   true,
-			getFunc: func(ctx context.Context, name string, options metav1.GetOptions) (*v1.Node, error) {
+			getFunc: func(_ context.Context, _ string, _ metav1.GetOptions) (*v1.Node, error) {
 				return &v1.Node{}, nil
 			},
-			patchFunc: func(ctx context.Context, name string, pt types.PatchType, data []byte, options metav1.PatchOptions, subresources ...string) (*v1.Node, error) {
+			patchFunc: func(_ context.Context, _ string, _ types.PatchType, _ []byte, _ metav1.PatchOptions, _ ...string) (*v1.Node, error) {
 				return &v1.Node{}, errors.New("create two way merge patch error")
 			},
-			updateFunc: func(ctx context.Context, node *v1.Node, options metav1.UpdateOptions) (*v1.Node, error) {
+			updateFunc: func(_ context.Context, _ *v1.Node, _ metav1.UpdateOptions) (*v1.Node, error) {
 				return &v1.Node{}, nil // Return success here
 			},
 		},
@@ -113,13 +113,13 @@ func TestCordonUnCordon(t *testing.T) {
 func TestNodeCordon(t *testing.T) {
 	client := &Client{
 		Interface: &fakeNodeInterface{
-			getFunc: func(ctx context.Context, name string, options metav1.GetOptions) (*v1.Node, error) {
+			getFunc: func(_ context.Context, _ string, _ metav1.GetOptions) (*v1.Node, error) {
 				return &v1.Node{}, nil
 			},
-			patchFunc: func(ctx context.Context, name string, pt types.PatchType, data []byte, options metav1.PatchOptions, subresources ...string) (*v1.Node, error) {
+			patchFunc: func(_ context.Context, _ string, _ types.PatchType, _ []byte, _ metav1.PatchOptions, _ ...string) (*v1.Node, error) {
 				return &v1.Node{}, nil
 			},
-			updateFunc: func(ctx context.Context, node *v1.Node, options metav1.UpdateOptions) (*v1.Node, error) {
+			updateFunc: func(_ context.Context, _ *v1.Node, _ metav1.UpdateOptions) (*v1.Node, error) {
 				return &v1.Node{}, nil
 			},
 		},
@@ -132,13 +132,13 @@ func TestNodeCordon(t *testing.T) {
 func TestNodeUnCordon(t *testing.T) {
 	client := &Client{
 		Interface: &fakeNodeInterface{
-			getFunc: func(ctx context.Context, name string, options metav1.GetOptions) (*v1.Node, error) {
+			getFunc: func(_ context.Context, _ string, _ metav1.GetOptions) (*v1.Node, error) {
 				return &v1.Node{}, nil
 			},
-			patchFunc: func(ctx context.Context, name string, pt types.PatchType, data []byte, options metav1.PatchOptions, subresources ...string) (*v1.Node, error) {
+			patchFunc: func(_ context.Context, _ string, _ types.PatchType, _ []byte, _ metav1.PatchOptions, _ ...string) (*v1.Node, error) {
 				return &v1.Node{}, nil
 			},
-			updateFunc: func(ctx context.Context, node *v1.Node, options metav1.UpdateOptions) (*v1.Node, error) {
+			updateFunc: func(_ context.Context, _ *v1.Node, _ metav1.UpdateOptions) (*v1.Node, error) {
 				return &v1.Node{}, nil
 			},
 		},

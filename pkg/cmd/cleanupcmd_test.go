@@ -31,7 +31,7 @@ func TestGetCleanupCommand(t *testing.T) {
 				Usage: "include this flag to auto approve cleanup cmd. Could be useful if you are running cert-csi from non-interactive environment",
 			},
 		},
-		Action: func(c *cli.Context) error {
+		Action: func(_ *cli.Context) error {
 			return nil
 		},
 	}

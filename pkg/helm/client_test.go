@@ -220,7 +220,7 @@ func TestInstallChart(t *testing.T) {
 
 	// Test with missing in charts/ directory error
 	missing := []string{}
-	actionCheckDependencies = func(ch *chart.Chart, reqs []*chart.Dependency) error {
+	actionCheckDependencies = func(_ *chart.Chart, _ []*chart.Dependency) error {
 		return errors.Errorf("found in Chart.yaml, but missing in charts/ directory: %s", strings.Join(missing, ", "))
 	}
 	err = client.InstallChart(releaseName, repoName, "velero", values)
