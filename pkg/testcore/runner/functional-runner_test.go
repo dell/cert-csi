@@ -48,63 +48,52 @@ func (suite *FunctionalSuiteRunnerTestSuite) SetupSuite() {
 }
 
 func TestNewFunctionalSuiteRunner(t *testing.T) {
-	/*
-		 	mock_kube := mocks.NewMockKubeClientInterface(gomock.NewController(t))
-			mock_kube.EXPECT().StorageClassExists(gomock.Any(), gomock.Any()).AnyTimes().Return(true, nil)
-			mock_kube.EXPECT().NamespaceExists(gomock.Any(), gomock.Any()).AnyTimes().Return(true, nil)
-			mock := runnermocks.NewMockK8sClientInterface(gomock.NewController(t))
-			mock.EXPECT().GetConfig(gomock.Any()).AnyTimes().Return(&rest.Config{
-				Host: "localhost",
-			}, nil)
-			mock.EXPECT().NewKubeClient(gomock.Any(), gomock.Any()).AnyTimes().Return(mock_kube, nil)
+	mock_kube := mocks.NewMockKubeClientInterface(gomock.NewController(t))
+	mock_kube.EXPECT().StorageClassExists(gomock.Any(), gomock.Any()).AnyTimes().Return(true, nil)
+	mock_kube.EXPECT().NamespaceExists(gomock.Any(), gomock.Any()).AnyTimes().Return(true, nil)
+	mock := runnermocks.NewMockK8sClientInterface(gomock.NewController(t))
+	mock.EXPECT().GetConfig(gomock.Any()).AnyTimes().Return(&rest.Config{
+		Host: "localhost",
+	}, nil)
+	mock.EXPECT().NewKubeClient(gomock.Any(), gomock.Any()).AnyTimes().Return(mock_kube, nil)
 
-			mockKubeClient := &k8sclient.KubeClient{}
-			mockScDB := &store.StorageClassDB{
-				StorageClass: "sc1",
-			}
-			mockConfigPath := "config.yaml"
-			mockNamespace := "namespace"
-			mockTimeout := 30
-			mockNoCleanup := true
-			mockNoCleanupOnFail := true
-			mockNoreport := true
+	mockScDB := &store.StorageClassDB{
+		StorageClass: "sc1",
+	}
+	mockConfigPath := "config.yaml"
+	mockNamespace := "namespace"
+	mockTimeout := 30
+	mockNoCleanup := true
+	mockNoCleanupOnFail := true
+	mockNoreport := true
 
-			//todo: mock generateTestRunDetails
+	result := NewFunctionalSuiteRunner(
+		mockConfigPath,
+		mockNamespace,
+		mockTimeout,
+		mockNoCleanup,
+		mockNoCleanupOnFail,
+		mockNoreport,
+		mockScDB,
+		mock,
+	)
 
-			// Call the function
-			result := NewFunctionalSuiteRunner(
-				mockConfigPath,
-				mockNamespace,
-				mockTimeout,
-				mockNoCleanup,
-				mockNoCleanupOnFail,
-				mockNoreport,
-				mockScDB,
-			)
-
-			// Assert the result
-			if result.Config.Host != mockKubeClient.Config.Host {
-				t.Errorf("Expected Config.Host to be %s, got %s", mockKubeClient.Config.Host, result.Config.Host)
-			}
-			if result.DriverNamespace != mockNamespace {
-				t.Errorf("Expected DriverNamespace to be %s, got %s", mockNamespace, result.DriverNamespace)
-			}
-			if result.KubeClient != mockKubeClient {
-				t.Errorf("Expected KubeClient to be %v, got %v", mockKubeClient, result.KubeClient)
-			}
-			if result.Timeout != mockTimeout {
-				t.Errorf("Expected Timeout to be %d, got %d", mockTimeout, result.Timeout)
-			}
-			if result.NoCleanupOnFail != mockNoCleanupOnFail {
-				t.Errorf("Expected NoCleanupOnFail to be %t, got %t", mockNoCleanupOnFail, result.NoCleanupOnFail)
-			}
-			if result.noreport != mockNoreport {
-				t.Errorf("Expected noreport to be %t, got %t", mockNoreport, result.noreport)
-			}
-			if result.ScDB != mockScDB {
-				t.Errorf("Expected ScDB to be %v, got %v", mockScDB, result.ScDB)
-			}
-	*/
+	// Assert the result
+	if result.DriverNamespace != mockNamespace {
+		t.Errorf("Expected DriverNamespace to be %s, got %s", mockNamespace, result.DriverNamespace)
+	}
+	if result.Timeout != mockTimeout {
+		t.Errorf("Expected Timeout to be %d, got %d", mockTimeout, result.Timeout)
+	}
+	if result.NoCleanupOnFail != mockNoCleanupOnFail {
+		t.Errorf("Expected NoCleanupOnFail to be %t, got %t", mockNoCleanupOnFail, result.NoCleanupOnFail)
+	}
+	if result.noreport != mockNoreport {
+		t.Errorf("Expected noreport to be %t, got %t", mockNoreport, result.noreport)
+	}
+	if result.ScDB != mockScDB {
+		t.Errorf("Expected ScDB to be %v, got %v", mockScDB, result.ScDB)
+	}
 }
 
 func TestRunFunctionalSuites(t *testing.T) {

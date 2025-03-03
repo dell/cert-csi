@@ -43,7 +43,7 @@ type FunctionalSuiteRunner struct {
 
 // NewFunctionalSuiteRunner creates functional suite runner instance
 func NewFunctionalSuiteRunner(configPath, namespace string, timeout int, noCleanup, noCleanupOnFail bool, noreport bool,
-	scDB *store.StorageClassDB,
+	scDB *store.StorageClassDB, k8s K8sClientInterface,
 ) *FunctionalSuiteRunner {
 	const observerType = "event"
 	r := getSuiteRunner(
@@ -54,7 +54,7 @@ func NewFunctionalSuiteRunner(configPath, namespace string, timeout int, noClean
 		noCleanup,
 		noCleanupOnFail,
 		noreport,
-		&K8sClient{},
+		k8s,
 	)
 	generateTestRunDetails(scDB, r.KubeClient, r.Config.Host)
 
