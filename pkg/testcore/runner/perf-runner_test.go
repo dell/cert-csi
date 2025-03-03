@@ -553,7 +553,28 @@ func TestRunSuite(t *testing.T) {
 			wantErr:      nil,
 		},
 		{
-			name: "Test case with invalid parameters",
+			name: "Test case with delete namespace error",
+			suite: func() suites.Interface {
+				suite := runnermocks.NewMockInterface(gomock.NewController(t))
+				// suite.EXPECT().Run(gomock.Any(), gomock.Any(), gomock.Any()).AnyTimes().Return(nil, nil)
+				suite.EXPECT().GetName().AnyTimes().Return("test run 1")
+				suite.EXPECT().GetNamespace().AnyTimes().Return("driver-namespace")
+				suite.EXPECT().GetClients(gomock.Any(), gomock.Any()).AnyTimes().Return(&k8sclient.Clients{}, nil)
+				suite.EXPECT().GetObservers(gomock.Any()).AnyTimes().Return([]observer.Interface{})
+				suite.EXPECT().Run(gomock.Any(), gomock.Any(), gomock.Any()).AnyTimes().Return(nil, nil)
+
+				//suite.EXPECT().Parameters().Times(1).Return("param1,param2")
+				return suite
+			},
+			sr:           &SuiteRunner{},
+			testCase:     &store.TestCase{},
+			db:           nil,
+			storageClass: "sc1",
+			c:            make(chan os.Signal),
+			wantRes:      FAILURE,
+		},
+		{
+			name: "Test case with failed namespace creation",
 			suite: func() suites.Interface {
 				suite := runnermocks.NewMockInterface(gomock.NewController(t))
 				// suite.EXPECT().Run(gomock.Any(), gomock.Any(), gomock.Any()).AnyTimes().Return(nil, nil)
@@ -598,7 +619,8 @@ func TestRunSuite(t *testing.T) {
 					t.Errorf("Expected runSuite to return error %v, but got %v", tt.wantErr, err)
 				}
 
-			} else {
+			}
+			if tt.name == "Test case with failed namespace creation" {
 				sr := &SuiteRunner{}
 				r := &Runner{}
 
@@ -606,6 +628,23 @@ func TestRunSuite(t *testing.T) {
 				newNameSpace := &corev1.Namespace{}
 				newNameSpace.Name = "new-ns"
 				mockKubeClient.EXPECT().CreateNamespaceWithSuffix(gomock.Any(), gomock.Any()).AnyTimes().Return(nil, fmt.Errorf("Mock Error"))
+				mockKubeClient.EXPECT().DeleteNamespace(gomock.Any(), gomock.Any()).AnyTimes().Return(fmt.Errorf("Mock Error"))
+
+				sr.Runner = r
+				sr.Runner.KubeClient = mockKubeClient
+				_, err := runSuite(ctx, tt.suite(), sr, tt.testCase, tt.db, tt.storageClass, tt.c)
+				if err == nil {
+					t.Errorf("Expected runSuite to return error %v, but got %v", tt.wantErr, err)
+				}
+			}
+			if tt.name == "Test case with delete namespace error" {
+				sr := &SuiteRunner{}
+				r := &Runner{}
+
+				mockKubeClient := mocks.NewMockKubeClientInterface(gomock.NewController(t))
+				newNameSpace := &corev1.Namespace{}
+				newNameSpace.Name = "new-ns"
+				mockKubeClient.EXPECT().CreateNamespaceWithSuffix(gomock.Any(), gomock.Any()).AnyTimes().Return(newNameSpace, nil)
 				mockKubeClient.EXPECT().DeleteNamespace(gomock.Any(), gomock.Any()).AnyTimes().Return(fmt.Errorf("Mock Error"))
 
 				sr.Runner = r
