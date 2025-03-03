@@ -140,7 +140,7 @@ func (sr *FunctionalSuiteRunner) RunFunctionalSuites(suites []suites.Interface) 
 	sr.SucceededSuites = sr.SucceededSuites / float64(len(suites))
 }
 
-func runFunctionalSuite(suite suites.Interface, sr *FunctionalSuiteRunner, testCase *store.TestCase, db *store.SQLiteStore, storageClass string) (res TestResult) {
+func runFunctionalSuite(suite suites.Interface, sr *FunctionalSuiteRunner, testCase *store.TestCase, db store.Store, storageClass string) (res TestResult) {
 	iterCtx, cancelIter := context.WithCancel(context.Background())
 	startTime := time.Now()
 	defer func() {

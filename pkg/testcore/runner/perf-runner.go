@@ -398,7 +398,7 @@ func (sr *SuiteRunner) runFlowManagementGoroutine() (context.Context, chan os.Si
 	return iterCtx, c
 }
 
-func runSuite(ctx context.Context, suite suites.Interface, sr *SuiteRunner, testCase *store.TestCase, db *store.SQLiteStore, storageClass string, _ chan os.Signal) (res TestResult, resErr error) {
+func runSuite(ctx context.Context, suite suites.Interface, sr *SuiteRunner, testCase *store.TestCase, db store.Store, storageClass string, _ chan os.Signal) (res TestResult, resErr error) {
 	log := utils.GetLoggerFromContext(ctx)
 
 	startTime := time.Now()

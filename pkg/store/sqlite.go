@@ -31,7 +31,7 @@ import (
 // StorageClassDB represents storage class db
 type StorageClassDB struct {
 	StorageClass string
-	DB           *SQLiteStore
+	DB           Store
 	TestRun      TestRun
 }
 

@@ -15,7 +15,9 @@ import (
 	"github.com/DATA-DOG/go-sqlmock"
 	"github.com/dell/cert-csi/pkg/k8sclient"
 	"github.com/dell/cert-csi/pkg/k8sclient/mocks"
+	"github.com/dell/cert-csi/pkg/observer"
 	"github.com/dell/cert-csi/pkg/store"
+	storemocks "github.com/dell/cert-csi/pkg/store/mocks"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/version"
 	"k8s.io/client-go/discovery/fake"
@@ -244,11 +246,6 @@ func createFakeKubeClient(ctx *clientTestContext) (kubernetes.Interface, error) 
 }
 
 func TestExecuteSuite(t *testing.T) {
-	db, mockdb, err := sqlmock.New()
-	if err != nil {
-		t.Fatalf("Error creating mock database: %v", err)
-	}
-	defer db.Close()
 	tests := []struct {
 		name        string
 		iterCtx     context.Context
@@ -256,7 +253,6 @@ func TestExecuteSuite(t *testing.T) {
 		suites      func() map[string][]suites.Interface
 		suite       func() suites.Interface
 		sr          *SuiteRunner
-		scDB        *store.StorageClassDB
 		c           chan os.Signal
 		wantSuccess bool
 		tr          *store.TestRun
@@ -267,7 +263,7 @@ func TestExecuteSuite(t *testing.T) {
 			num:     1,
 			suites: func() map[string][]suites.Interface {
 				suite := runnermocks.NewMockInterface(gomock.NewController(t))
-				// suite.EXPECT().Run(gomock.Any(), gomock.Any(), gomock.Any()).Times(1).Return(nil, nil)
+				suite.EXPECT().GetNamespace().AnyTimes().Return("test-namespace")
 				return map[string][]suites.Interface{
 					"testSuite": {
 						suite,
@@ -276,13 +272,13 @@ func TestExecuteSuite(t *testing.T) {
 			},
 			suite: func() suites.Interface {
 				suite := runnermocks.NewMockInterface(gomock.NewController(t))
-				// suite.EXPECT().Run(gomock.Any(), gomock.Any(), gomock.Any()).AnyTimes().Return(nil, nil)
+				suite.EXPECT().Run(gomock.Any(), gomock.Any(), gomock.Any()).AnyTimes().Return(nil, nil)
+				suite.EXPECT().GetNamespace().AnyTimes().Return("test-namespace")
 				suite.EXPECT().GetName().AnyTimes().Return("test run 1")
 				suite.EXPECT().Parameters().Times(1).Return("param1,param2")
+				suite.EXPECT().GetClients(gomock.Any(), gomock.Any()).AnyTimes().Return(&k8sclient.Clients{}, nil)
+				suite.EXPECT().GetObservers(gomock.Any()).AnyTimes().Return([]observer.Interface{})
 				return suite
-			},
-			scDB: &store.StorageClassDB{
-				DB: store.NewSQLiteStoreWithDB(db),
 			},
 			c:           make(chan os.Signal),
 			wantSuccess: true,
@@ -297,27 +293,20 @@ func TestExecuteSuite(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			// Mock the necessary dependencies for the test
-			// For example, you can use testify/mock to create mock objects
-			// and replace the actual dependencies with the mocks.
-
-			// Call the ExecuteSuite function
-			r := &Runner{}
+			mockKubeClient := mocks.NewMockKubeClientInterface(gomock.NewController(t))
+			newNameSpace := &corev1.Namespace{}
+			newNameSpace.Name = "new-ns"
+			mockKubeClient.EXPECT().CreateNamespaceWithSuffix(gomock.Any(), "test-namespace").AnyTimes().Return(newNameSpace, nil)
+			mockKubeClient.EXPECT().DeleteNamespace(gomock.Any(), gomock.Any()).AnyTimes().Return(nil)
+			r := &Runner{
+				KubeClient: mockKubeClient,
+			}
 			sr := &SuiteRunner{}
 			sr.Runner = r
 
-			mockdb.ExpectExec("INSERT INTO test_runs").
-				WithArgs(tt.tr.Name, tt.tr.StartTimestamp, tt.tr.StorageClass, tt.tr.ClusterAddress).
-				WillReturnResult(sqlmock.NewResult(1, 1))
-
-			mockdb.ExpectQuery(regexp.QuoteMeta("SELECT * FROM test_runs WHERE name='test run 1' AND 1=1 LIMIT 1")).
-				WillReturnRows(sqlmock.NewRows([]string{"id", "name", "longevity", "start_timestamp", "storage_class", "cluster_address"}).
-					AddRow("1", "test run 1", true, tt.tr.StartTimestamp, tt.tr.StorageClass, tt.tr.ClusterAddress))
-
-			mockdb.ExpectQuery(regexp.QuoteMeta("SELECT * FROM test_cases WHERE run_id=1 AND 1=1")).
-				WillReturnRows(sqlmock.NewRows([]string{"id", "name", "parameters", "start_timestamp", "end_timestamp", "success", "error_msg", "run_id"}).
-					AddRow("1", "test run 1", "", tt.tr.StartTimestamp, tt.tr.StartTimestamp, true, "", 1))
-
+			mockStore := storemocks.NewMockStore(gomock.NewController(t))
+			mockStore.EXPECT().SaveTestCase(gomock.Any()).AnyTimes().Return(nil)
+			mockStore.EXPECT().SuccessfulTestCase(gomock.Any(), gomock.Any()).AnyTimes().Return(nil)
 			clientCtx := &clientTestContext{t: t}
 
 			k8sclient.FuncNewClientSet = func(_ *rest.Config) (kubernetes.Interface, error) {
@@ -325,7 +314,11 @@ func TestExecuteSuite(t *testing.T) {
 
 			}
 
-			ExecuteSuite(tt.iterCtx, tt.num, tt.suites(), tt.suite(), sr, tt.scDB, tt.c)
+			scDBs := &store.StorageClassDB{
+				DB: mockStore,
+			}
+
+			ExecuteSuite(tt.iterCtx, tt.num, tt.suites(), tt.suite(), sr, scDBs, tt.c)
 
 			// Assert the expected outcome
 			// For example, you can use testify/assert to make assertions
