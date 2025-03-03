@@ -110,7 +110,46 @@ func TestPodListObserver_StartWatching(t *testing.T) {
 		nil,
 	)
 
+	pod := &v1.Pod{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:              "test-pod",
+			Namespace:         "test-namespace",
+			DeletionTimestamp: &metav1.Time{Time: time.Now()},
+		},
+		Status: v1.PodStatus{
+			Phase: v1.PodRunning,
+			Conditions: []v1.PodCondition{
+				{
+					Type:   v1.PodReady,
+					Status: v1.ConditionTrue,
+				},
+			},
+		},
+	}
+
+	pod2 := &v1.Pod{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:              "test-pod",
+			Namespace:         "test-namespace",
+			DeletionTimestamp: &metav1.Time{Time: time.Now()},
+		},
+		Status: v1.PodStatus{
+			Phase: v1.PodPhase(v1.PodReady),
+			Conditions: []v1.PodCondition{
+				{
+					Type:   v1.PodScheduled,
+					Status: v1.ConditionTrue,
+				},
+			},
+		},
+	}
+
 	podClient, _ := kubeClient.CreatePodClient("test-namespace")
+
+	podClient.Create(ctx, pod)
+	podClient.Delete(ctx, pod)
+	podClient.Create(ctx, pod)
+	podClient.Update(pod2)
 
 	// Create a mock Runner
 	mockRunner := &Runner{
@@ -123,13 +162,19 @@ func TestPodListObserver_StartWatching(t *testing.T) {
 		},
 		Database: NewSimpleStore(),
 	}
-
-	//WatchTimeout = 10
-	//mockRunner.WatchTimeout = 10
-
 	// Create a PodListObserver instance
 	po := &PodListObserver{}
 	po.MakeChannel()
+	// Check for nil pointer dereferences
+	// if mockRunner == nil {
+	// 	t.Error("mockRunner is nil")
+	// }
+	// if po == nil {
+	// 	t.Error("po is nil")
+	// }
+
+	// Create a context
+	// ctx := context.Background()
 
 	// Add the waitgroup to the Runner
 	mockRunner.WaitGroup.Add(1)
@@ -178,7 +223,6 @@ func TestPodListObserver_StartWatching(t *testing.T) {
 	go po.StartWatching(ctx, mockRunner)
 
 	time.Sleep(100 * time.Millisecond)
-	// mockRunner.WaitGroup.Wait()
 
 	po.StopWatching()
 
@@ -187,7 +231,6 @@ func TestPodListObserver_StartWatching(t *testing.T) {
 	// Assert that the function completed successfully
 	assert.True(t, true)
 }
-
 func TestPodListObserver_StopWatching(t *testing.T) {
 
 	// Create a PodListObserver instance

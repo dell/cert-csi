@@ -32,6 +32,9 @@ func TestPvcListObserver_StartWatching(t *testing.T) {
 		}(),
 	}
 	clientSet := NewFakeClientsetWithRestClient(storageClass)
+
+	// clientSet := fake.NewSimpleClientset()
+
 	clientSet.CoreV1().PersistentVolumeClaims("test-namespace").Create(ctx, &v1.PersistentVolumeClaim{ObjectMeta: metav1.ObjectMeta{Name: "test-pvc", Namespace: "test-namespace"}}, metav1.CreateOptions{})
 	clientSet.StorageV1().StorageClasses().Create(ctx, storageClass, metav1.CreateOptions{})
 
@@ -96,7 +99,36 @@ func TestPvcListObserver_StartWatching(t *testing.T) {
 		nil,
 	)
 
+	pvc := &v1.PersistentVolumeClaim{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:              "test-pvc",
+			Namespace:         "test-namespace",
+			DeletionTimestamp: &metav1.Time{Time: time.Now()},
+		},
+		Status: v1.PersistentVolumeClaimStatus{
+			Phase: v1.ClaimBound,
+		},
+	}
+
+	pvc2 := &v1.PersistentVolumeClaim{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:              "test-pvc",
+			Namespace:         "test-namespace",
+			DeletionTimestamp: &metav1.Time{Time: time.Now()},
+		},
+		Status: v1.PersistentVolumeClaimStatus{
+			Phase: v1.ClaimBound,
+		},
+	}
+
 	pvcClient, _ := kubeClient.CreatePVCClient("test-namespace")
+
+	pvcClient.Create(ctx, pvc)
+
+	pvcClient.Delete(ctx, pvc)
+	pvcClient.Create(ctx, pvc)
+	pvcClient.Update(ctx, pvc2)
+
 	runner := &Runner{
 		Clients: &k8sclient.Clients{
 			PVCClient: pvcClient,
@@ -107,19 +139,114 @@ func TestPvcListObserver_StartWatching(t *testing.T) {
 		WaitGroup: sync.WaitGroup{},
 		Database:  NewSimpleStore(),
 	}
+	// runner.WaitGroup.Add(1)
+
+	po := &PvcListObserver{}
+	po.MakeChannel()
+
+	// fakeWatcher := watch.NewFake()
+	// pvcClient.ClientSet.(*fake.Clientset).PrependWatchReactor("*", func(action test.Action) (handled bool, ret watch.Interface, err error) {
+	// 	if action.GetVerb() == "watch" {
+	// 		// Return the fake watcher
+	// 		return true, fakeWatcher, nil
+	// 	}
+	// 	return false, nil, nil
+	// })
+
+	// pvc := &v1.PersistentVolumeClaim{
+	// 	ObjectMeta: metav1.ObjectMeta{
+	// 		Name:              "test-pvc",
+	// 		Namespace:         "test-namespace",
+	// 		DeletionTimestamp: &metav1.Time{Time: time.Now()},
+	// 	},
+	// 	Status: v1.PersistentVolumeClaimStatus{
+	// 		Phase: v1.ClaimBound,
+	// 		// Conditions: []v1.PodCondition{
+	// 		// 	{
+	// 		// 		Type:   v1.PodReady,
+	// 		// 		Status: v1.ConditionTrue,
+	// 		// 	},
+	// 		// },
+	// 	},
+	// }
+
+	// event := watch.Event{
+	// 	Type: watch.Modified,
+	// 	Object: &v1.PersistentVolumeClaim{
+	// 		ObjectMeta: metav1.ObjectMeta{
+	// 			Name:              "test-pvc",
+	// 			Namespace:         "test-namespace",
+	// 			DeletionTimestamp: &metav1.Time{Time: time.Now()},
+	// 		},
+	// 		Status: v1.PersistentVolumeClaimStatus{
+	// 			Phase: v1.ClaimBound,
+	// 			// Conditions: []v1.PodCondition{
+	// 			// 	{
+	// 			// 		Type:   v1.PodReady,
+	// 			// 		Status: v1.ConditionTrue,
+	// 			// 	},
+	// 			// },
+	// 		},
+	// 	},
+	// }
+	// event3 := watch.Event{
+	// 	Type: watch.Modified,
+	// 	Object: &v1.PersistentVolumeClaim{
+	// 		ObjectMeta: metav1.ObjectMeta{
+	// 			Name:              "test-pvc",
+	// 			Namespace:         "test-namespace",
+	// 			DeletionTimestamp: &metav1.Time{Time: time.Now()},
+	// 		},
+	// 		Status: v1.PersistentVolumeClaimStatus{
+	// 			Phase: v1.ClaimPending,
+	// 			// Conditions: []v1.PodCondition{
+	// 			// 	{
+	// 			// 		Type:   v1.PodScheduled,
+	// 			// 		Status: v1.ConditionTrue,
+	// 			// 	},
+	// 			// },
+	// 		},
+	// 	},
+	// }
+
+	// event := watch.Event{
+	// 	Type:   watch.Modified,
+	// 	Object: pod,
+	// }
+
+	//go po.StartWatching(ctx, runner)
+
+	//fakeWatcher.Modify(event.Object)
+
+	//runner.WaitGroup.Add(1)
+	//fakeWatcher.Add(event.Object)
+	//go po.StartWatching(ctx, runner)
+
+	//po.StopWatching()
+
+	// event2 := watch.Event{
+	// 	Type:   watch.Deleted,
+	// 	Object: pvc,
+	// }
+
+	//go po.StartWatching(ctx, runner)
+	// fakeWatcher.Delete(event2.Object)
+	// runner.WaitGroup.Add(1)
+
+	// w, _ := clientSet.CoreV1().Pods("default").Watch(ctx, metav1.ListOptions{})
+	// wait.Until(func() {
+	// 	<-w.ResultChan()
+	// }, time.Second, ctx.Done())
+
+	// time.Sleep(100 * time.Millisecond)
+
 	runner.WaitGroup.Add(1)
 
-	obs := &PvcListObserver{}
-	obs.MakeChannel()
-
-	go obs.StartWatching(ctx, runner)
-
-	// Set up a reactor to simulate the deletion of PVCs
-	clientSet.Fake.PrependReactor("delete", "persistentvolumeclaims", func(action k8stesting.Action) (bool, runtime.Object, error) {
+	clientSet.Fake.PrependReactor("delete", "pvcs", func(action k8stesting.Action) (bool, runtime.Object, error) {
 		deleteAction := action.(k8stesting.DeleteAction)
 		pvcName := deleteAction.GetName()
 
-		// Simulate the deletion of the PVC
+		// Simulate the deletion of the pod
 		pvc := &v1.PersistentVolumeClaim{
 			ObjectMeta: metav1.ObjectMeta{
 				Name:      pvcName,
@@ -127,16 +254,30 @@ func TestPvcListObserver_StartWatching(t *testing.T) {
 			},
 		}
 
-		// Return the deleted PVC
+		// Return the deleted pod
 		return true, pvc, nil
 	})
 
-	go obs.StartWatching(ctx, runner)
-	time.Sleep(100 * time.Millisecond)
+	go po.StartWatching(ctx, runner)
+	// fakeWatcher.Add(pvc)
 
-	obs.StopWatching()
+	// fakeWatcher.Modify(event.Object)
+	// fakeWatcher.Modify(event3.Object)
+
+	// fakeWatcher.Delete(event2.Object)
+
+	time.Sleep(200 * time.Millisecond)
+	po.StopWatching()
 
 	runner.WaitGroup.Wait()
+
+	// po.StopWatching()
+	// Assert that the function completed successfully
+	// assert.True(t, true)
+
+	// po.StopWatching()
+
+	// runner.WaitGroup.Wait()
 
 	// Assert that the function completed successfully
 	assert.True(t, true)
