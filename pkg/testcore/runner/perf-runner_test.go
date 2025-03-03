@@ -5,7 +5,6 @@ import (
 	"database/sql"
 	"fmt"
 	"os"
-	"regexp"
 	"strings"
 	"testing"
 	"time"
@@ -328,11 +327,6 @@ func TestExecuteSuite(t *testing.T) {
 }
 
 func TestRunSuites(t *testing.T) {
-	db, mockdb, err := sqlmock.New()
-	if err != nil {
-		t.Fatalf("Error creating mock database: %v", err)
-	}
-	defer db.Close()
 	tests := []struct {
 		name                    string
 		suites                  func() map[string][]suites.Interface
@@ -343,7 +337,13 @@ func TestRunSuites(t *testing.T) {
 			name: "Successful test run",
 			suites: func() map[string][]suites.Interface {
 				suite := runnermocks.NewMockInterface(gomock.NewController(t))
-				// suite.EXPECT().Run(gomock.Any(), gomock.Any(), gomock.Any()).Times(1).Return(nil, nil)
+				suite.EXPECT().GetName().AnyTimes().Return("test run 1")
+				suite.EXPECT().Parameters().Times(1).Return("param1,param2")
+				suite.EXPECT().GetNamespace().AnyTimes().Return("test-namespace")
+				suite.EXPECT().GetClients(gomock.Any(), gomock.Any()).AnyTimes().Return(&k8sclient.Clients{}, nil)
+				suite.EXPECT().GetObservers(gomock.Any()).AnyTimes().Return([]observer.Interface{})
+				suite.EXPECT().Run(gomock.Any(), gomock.Any(), gomock.Any()).AnyTimes().Return(nil, nil)
+
 				return map[string][]suites.Interface{
 					"sc1": {
 						suite,
@@ -362,15 +362,48 @@ func TestRunSuites(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+
+			mockKubeClient := mocks.NewMockKubeClientInterface(gomock.NewController(t))
+			newNameSpace := &corev1.Namespace{}
+			newNameSpace.Name = "new-ns"
+			mockKubeClient.EXPECT().CreateNamespaceWithSuffix(gomock.Any(), "test-namespace").AnyTimes().Return(newNameSpace, nil)
+			mockKubeClient.EXPECT().DeleteNamespace(gomock.Any(), gomock.Any()).AnyTimes().Return(nil)
+
 			r := &Runner{
-				Config: &rest.Config{},
+				Config:     &rest.Config{},
+				KubeClient: mockKubeClient,
 			}
+
+			mockStore := storemocks.NewMockStore(gomock.NewController(t))
+			mockStore.EXPECT().SaveTestRun(gomock.Any()).AnyTimes().Return(nil)
+			mockStore.EXPECT().SaveTestCase(gomock.Any()).AnyTimes().Return(nil)
+			mockStore.EXPECT().SuccessfulTestCase(gomock.Any(), gomock.Any()).AnyTimes().Return(nil)
+			mockStore.EXPECT().GetTestRuns(gomock.Any(), gomock.Any(), gomock.Any()).AnyTimes().Return([]store.TestRun{
+				{
+					ID:             1,
+					Name:           "test run 1",
+					StartTimestamp: time.Now(),
+					StorageClass:   "sc1",
+					ClusterAddress: "localhost",
+				},
+			}, nil)
+			mockStore.EXPECT().GetTestCases(gomock.Any(), gomock.Any(), gomock.Any()).AnyTimes().Return([]store.TestCase{
+				{
+					ID:   1,
+					Name: "test case 1",
+				},
+			}, nil)
+			mockStore.EXPECT().GetEntitiesWithEventsByTestCaseAndEntityType(gomock.Any(), gomock.Any()).AnyTimes().Return(nil, nil)
+			mockStore.EXPECT().GetNumberEntities(gomock.Any(), gomock.Any(), gomock.Any()).AnyTimes().Return(nil, nil)
+			mockStore.EXPECT().GetResourceUsage(gomock.Any(), gomock.Any(), gomock.Any()).AnyTimes().Return(nil, nil)
+			mockStore.EXPECT().Close().AnyTimes().Return(nil)
+
 			sr := &SuiteRunner{
 				IterationNum: 1,
 				ScDBs: []*store.StorageClassDB{
 					{
 						StorageClass: "sc1",
-						DB:           store.NewSQLiteStoreWithDB(db),
+						DB:           mockStore,
 						TestRun:      *tt.tr,
 					},
 					// {
@@ -380,17 +413,6 @@ func TestRunSuites(t *testing.T) {
 				},
 			}
 			sr.Runner = r
-			mockdb.ExpectExec("INSERT INTO test_runs").
-				WithArgs(tt.tr.Name, tt.tr.StartTimestamp, tt.tr.StorageClass, tt.tr.ClusterAddress).
-				WillReturnResult(sqlmock.NewResult(1, 1))
-
-			mockdb.ExpectQuery(regexp.QuoteMeta("SELECT * FROM test_runs WHERE name='test run 1' AND 1=1 LIMIT 1")).
-				WillReturnRows(sqlmock.NewRows([]string{"id", "name", "longevity", "start_timestamp", "storage_class", "cluster_address"}).
-					AddRow("1", "test run 1", true, tt.tr.StartTimestamp, tt.tr.StorageClass, tt.tr.ClusterAddress))
-
-			mockdb.ExpectQuery(regexp.QuoteMeta("SELECT * FROM test_cases WHERE run_id=1 AND 1=1")).
-				WillReturnRows(sqlmock.NewRows([]string{"id", "name", "parameters", "start_timestamp", "end_timestamp", "success", "error_msg", "run_id"}).
-					AddRow("1", "test run 1", "", tt.tr.StartTimestamp, tt.tr.StartTimestamp, true, "", 1))
 
 			clientCtx := &clientTestContext{t: t}
 
