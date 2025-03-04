@@ -18,6 +18,7 @@ package cmd
 
 import (
 	"errors"
+	"fmt"
 
 	"github.com/dell/cert-csi/pkg/reporter"
 	"github.com/dell/cert-csi/pkg/store"
@@ -67,8 +68,7 @@ func GetFunctionalReportCommand() cli.Command {
 
 			err := reporter.GenerateFunctionalReport(db, types)
 			if err != nil {
-				log.Errorf("Can't generate reports; error=%v", err)
-				return err
+				return fmt.Errorf("can't generate reports; error=%v", err)
 			}
 			return nil
 		},

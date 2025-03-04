@@ -62,13 +62,6 @@ func TestGetCleanupCommandAction(t *testing.T) {
 	set2.Bool("yes", true, "include this flag to auto approve cleanup cmd. Could be useful if you are running cert-csi from non-interactive environment")
 	invalidConfigContext := cli.NewContext(nil, set2, nil)
 
-	// Invalid timeout context
-	// set3 := flag.NewFlagSet("test2", 0)
-	// set3.String("config", kubeConfig, "config for connecting to kubernetes")
-	// set3.String("timeout", "sdfsdf", "set the timeout value for all of the resources (accepts format like 2h30m15s) default is 30s")
-	// set3.Bool("yes", true, "include this flag to auto approve cleanup cmd. Could be useful if you are running cert-csi from non-interactive environment")
-	// invalidTimeoutContext := cli.NewContext(nil, set3, nil)
-
 	// Valid config context
 	set4 := flag.NewFlagSet("test2", 0)
 	set4.String("config", kubeConfig, "config for connecting to kubernetes")
@@ -94,11 +87,7 @@ func TestGetCleanupCommandAction(t *testing.T) {
 			context:   invalidConfigContext,
 			expectErr: true,
 		},
-		// {
-		// 	name:      "Testing with invalid timeout context",
-		// 	context:   invalidTimeoutContext,
-		// 	expectErr: true,
-		// },
+
 		{
 			name:      "Testing with true bool and valid config context",
 			context:   validContext,
