@@ -23,7 +23,6 @@ import (
 	"github.com/dell/cert-csi/pkg/reporter"
 	"github.com/dell/cert-csi/pkg/store"
 
-	log "github.com/sirupsen/logrus"
 	"github.com/urfave/cli"
 )
 
@@ -61,7 +60,7 @@ func GetFunctionalReportCommand() cli.Command {
 			}
 			// forcing user to give always DB name by overriding global default value
 			if databaseName == "" || databaseName == "default.db" {
-				log.Fatal("Error no database is given please add -db <database_name> to generate report!")
+				return fmt.Errorf("error no database is given please add -db <database_name> to generate report")
 			}
 			db := store.NewSQLiteStore("file:" + databaseName)
 			defer db.Close()
