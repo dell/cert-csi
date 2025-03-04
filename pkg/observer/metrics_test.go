@@ -10,6 +10,7 @@ import (
 	"time"
 
 	"github.com/dell/cert-csi/pkg/k8sclient"
+	"github.com/dell/cert-csi/pkg/k8sclient/resources/metrics"
 	"github.com/dell/cert-csi/pkg/k8sclient/resources/pv"
 	"github.com/dell/cert-csi/pkg/k8sclient/resources/replicationgroup"
 	"github.com/dell/cert-csi/pkg/store"
@@ -19,11 +20,9 @@ import (
 	v1 "k8s.io/api/core/v1"
 	storagev1 "k8s.io/api/storage/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/client-go/rest"
 	restclient "k8s.io/client-go/rest"
 	restfake "k8s.io/client-go/rest/fake"
-	k8stesting "k8s.io/client-go/testing"
 	"k8s.io/client-go/tools/remotecommand"
 	"k8s.io/metrics/pkg/apis/metrics/v1beta1"
 )
@@ -154,103 +153,9 @@ func (m *MockPodMetricses) List(ctx context.Context, opts metav1.ListOptions) (*
 	return args.Get(0).(*v1beta1.PodMetricsList), args.Error(1)
 }
 
-// func TestContainerMetricsObserver_StartWatching(t *testing.T) {
-// 	podClient, _ := kubeClient.CreatePodClient("test-namespace")
-
-// 	tests := []struct {
-// 		name        string
-// 		runner      *Runner
-// 		expectedErr error
-// 	}{
-// 		{
-// 			name: "Test case: Watching container metrics without driver namespace",
-// 			runner: &Runner{
-// 				Clients: &k8sclient.Clients{
-// 					PodClient: podClient,
-// 					//MetricsClient: metricsClient,
-// 				},
-// 				TestCase: &store.TestCase{
-// 					ID: 1,
-// 				},
-// 				WaitGroup: sync.WaitGroup{},
-// 				Database:  NewSimpleStore(),
-// 			},
-// 			expectedErr: nil,
-// 		},
-// 		{
-// 			name: "Test case: Watching container metrics with driver namespace",
-// 			runner: &Runner{
-// 				Clients: &k8sclient.Clients{
-// 					PodClient: podClient,
-// 					//MetricsClient: metrics.NewClient(mockMetricsClient),
-// 				},
-// 				TestCase: &store.TestCase{
-// 					ID: 1,
-// 				},
-// 				WaitGroup:       sync.WaitGroup{},
-// 				DriverNamespace: "test-namespace",
-// 				Database:        NewSimpleStore(),
-// 			},
-// 			expectedErr: nil,
-// 		},
-// 	}
-
-// 	for _, test := range tests {
-// 		t.Run(test.name, func(t *testing.T) {
-// 			ctx := context.Background()
-
-// 			test.runner.WaitGroup.Add(1)
-
-// 			cmo := &ContainerMetricsObserver{}
-// 			cmo.MakeChannel()
-
-// 			go cmo.StartWatching(ctx, test.runner)
-
-// 			time.Sleep(100 * time.Millisecond)
-
-// 			cmo.StopWatching()
-
-// 			test.runner.WaitGroup.Wait()
-
-// 			// Assert that the function completed successfully
-// 			assert.True(t, true)
-// 		})
-// 	}
-// }
-
 func TestContainerMetricsObserver_StartWatching(t *testing.T) {
 
 	ctx := context.Background()
-
-	mockMetricsClient := &MockPodMetricses{}
-
-	// Set up the mock behavior
-	mockMetricsClient.On("List", mock.Anything, mock.Anything).Return(&v1beta1.PodMetricsList{}, nil)
-
-	// Create a metrics client using the mock metrics client
-
-	// metricsClient := metrics.NewClient(mockMetricsClient)
-
-	// Create a fake metrics server
-	// fakeServer := &fakeMetricsServer{
-	// 	podMetrics: []v1beta1.PodMetrics{
-	// 		{
-	// 			ObjectMeta: metav1.ObjectMeta{
-	// 				Name:      "test-pod",
-	// 				Namespace: "test-namespace",
-	// 			},
-	// 			Containers: []v1beta1.ContainerMetrics{
-	// 				{
-	// 					Name: "test-container",
-	// 					Usage: v1.ResourceList{
-	// 						v1.ResourceCPU:    resource.MustParse("100m"),
-	// 						v1.ResourceMemory: resource.MustParse("100Mi"),
-	// 					},
-	// 				},
-	// 			},
-	// 		},
-	// 	},
-	// }
 
 	storageClass := &storagev1.StorageClass{
 		ObjectMeta: metav1.ObjectMeta{Name: "test-storage-class"},
@@ -260,33 +165,6 @@ func TestContainerMetricsObserver_StartWatching(t *testing.T) {
 		}(),
 	}
 	clientSet := NewFakeClientsetWithRestClient(storageClass)
-
-	clientSet.Fake.PrependReactor("create", "pods", func(action k8stesting.Action) (bool, runtime.Object, error) {
-		createAction := action.(k8stesting.CreateAction)
-		pod := createAction.GetObject().(*v1.Pod)
-		// Set pod phase to Running
-		pod.Status.Phase = v1.PodRunning
-		// Simulate the Ready condition
-		pod.Status.Conditions = append(pod.Status.Conditions, v1.PodCondition{
-			Type:   v1.PodReady,
-			Status: v1.ConditionTrue,
-		})
-		return false, nil, nil // Allow normal processing to continue
-	})
-
-	// mockClients := &MockClients{}
-
-	// mc := &mockMetricsClient{
-	// 	Interface: fakeServer,
-	// }
-
-	// Set up the mock behavior for the CreatePodClient method
-	// mockClients.On("CreatePodClient", "test-namespace").Return(
-	// 	&pod.Client{
-	// 		Interface: clientSet.CoreV1().Pods("test-namespace"),
-	// 	},
-	// 	nil,
-	// )
 
 	clientSet.StorageV1().StorageClasses().Create(ctx, storageClass, metav1.CreateOptions{})
 
@@ -300,15 +178,47 @@ func TestContainerMetricsObserver_StartWatching(t *testing.T) {
 	podClient.RemoteExecutor = &FakeHashRemoteExecutor{}
 	metricsClient, _ := kubeClient.CreateMetricsClient("test-namespace")
 
+	// Create a PodMetrics object
+	podMetrics := &v1beta1.PodMetrics{
+		TypeMeta: metav1.TypeMeta{
+			Kind:       "PodMetrics",
+			APIVersion: "metrics.k8s.io/v1beta1",
+		},
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      "pod-metrics-example",
+			Namespace: "default",
+		},
+		Timestamp: metav1.Time{Time: time.Now()},
+		Window:    metav1.Duration{Duration: time.Minute},
+		Containers: []v1beta1.ContainerMetrics{
+			{
+				Name:  "container-1",
+				Usage: v1.ResourceList{},
+			},
+		},
+	}
+
+	// Create a PodMetricsList object
+	podMetricsList := &v1beta1.PodMetricsList{
+		TypeMeta: metav1.TypeMeta{
+			Kind:       "PodMetricsList",
+			APIVersion: "metrics.k8s.io/v1beta1",
+		},
+		ListMeta: metav1.ListMeta{
+			ResourceVersion: "1",
+		},
+		Items: []v1beta1.PodMetrics{
+			*podMetrics,
+		},
+	}
+
 	tests := []struct {
-		name          string
-		isCmoFinished bool
-		runner        *Runner
-		expectedErr   error
+		name        string
+		runner      *Runner
+		metricsList *v1beta1.PodMetricsList
 	}{
 		{
-			name:          "Test case: Watching container metrics without driver namespace",
-			isCmoFinished: false,
+			name: "Test case: Watching container metrics without driver namespace",
 			runner: &Runner{
 				Clients: &k8sclient.Clients{
 					PodClient:     podClient,
@@ -320,11 +230,10 @@ func TestContainerMetricsObserver_StartWatching(t *testing.T) {
 				WaitGroup: sync.WaitGroup{},
 				Database:  NewSimpleStore(),
 			},
-			expectedErr: nil,
+			metricsList: nil,
 		},
 		{
-			name:          "Test case: Watching container metrics with driver namespace and finished cmo",
-			isCmoFinished: true,
+			name: "Test case: Watching container metrics with driver namespace and error getMetricsList",
 			runner: &Runner{
 				Clients: &k8sclient.Clients{
 					PodClient:     podClient,
@@ -337,11 +246,10 @@ func TestContainerMetricsObserver_StartWatching(t *testing.T) {
 				DriverNamespace: "test-namespace",
 				Database:        NewSimpleStore(),
 			},
-			expectedErr: nil,
+			metricsList: nil,
 		},
 		{
-			name:          "Test case: Watching container metrics with driver namespace and unfinished cmo",
-			isCmoFinished: false,
+			name: "Test case: Watching container metrics with driver namespace and metricList",
 			runner: &Runner{
 				Clients: &k8sclient.Clients{
 					PodClient:     podClient,
@@ -354,25 +262,48 @@ func TestContainerMetricsObserver_StartWatching(t *testing.T) {
 				DriverNamespace: "test-namespace",
 				Database:        NewSimpleStore(),
 			},
-			expectedErr: nil,
+			metricsList: podMetricsList,
 		},
 	}
 
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
+			var metricListWg sync.WaitGroup
+
 			ctx := context.Background()
 
 			test.runner.WaitGroup.Add(1)
 
 			cmo := &ContainerMetricsObserver{}
+			defer func() {
+				cmo.Interrupt()
+				cmo.StopWatching()
+			}()
 			cmo.MakeChannel()
-			// Possibly remove this. Might not be best approach
-			// cmo.finished <- test.isCmoFinished
+
+			if test.metricsList != nil {
+				metricListWg.Add(1)
+				originalGetMetricsList := getMetricsList
+				getMetricsList = func(mc *metrics.Client, driverNamespace string, ctx context.Context, opts metav1.ListOptions) (*v1beta1.PodMetricsList, error) {
+					metricListWg.Done()
+
+					return test.metricsList, nil
+				}
+				defer func() {
+					getMetricsList = originalGetMetricsList
+				}()
+			}
 
 			go cmo.StartWatching(ctx, test.runner)
+			if test.metricsList != nil {
+				metricListWg.Wait()
+				go func() {
+					cmo.mutex.Lock()
+					cmo.finished <- true
+					cmo.mutex.Unlock()
+				}()
+			}
 			test.runner.WaitGroup.Wait()
-
-			cmo.StopWatching()
 
 			// Assert that the function completed successfully
 			assert.True(t, true)
