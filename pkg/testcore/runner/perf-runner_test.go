@@ -334,9 +334,7 @@ func TestExecuteSuite(t *testing.T) {
 			mockKubeClient.EXPECT().CreateNamespaceWithSuffix(gomock.Any(), "test-namespace").AnyTimes().Return(newNameSpace, nil)
 			mockKubeClient.EXPECT().DeleteNamespace(gomock.Any(), gomock.Any()).AnyTimes().Return(nil)
 			mockStore := storemocks.NewMockStore(gomock.NewController(t))
-			mockStore.EXPECT().SaveTestCase(gomock.Any()).AnyTimes().Return(nil)
 
-			mockStore.EXPECT().SuccessfulTestCase(gomock.Any(), gomock.Any()).AnyTimes().Return(nil)
 			clientCtx := &clientTestContext{t: t}
 
 			k8sclient.FuncNewClientSet = func(_ *rest.Config) (kubernetes.Interface, error) {
@@ -356,6 +354,10 @@ func TestExecuteSuite(t *testing.T) {
 					CoolDownPeriod: 0,
 				}
 				sr.Runner = r
+				mockStore.EXPECT().SaveTestCase(gomock.Any()).AnyTimes().Return(fmt.Errorf("new error"))
+
+				mockStore.EXPECT().SuccessfulTestCase(gomock.Any(), gomock.Any()).AnyTimes().Return(fmt.Errorf("new error"))
+
 				ExecuteSuite(tt.iterCtx, tt.num, tt.suites(), tt.suite(), sr, scDBs, tt.c)
 
 			} else {
@@ -363,6 +365,10 @@ func TestExecuteSuite(t *testing.T) {
 					CoolDownPeriod: 1,
 				}
 				sr.Runner = r
+				mockStore.EXPECT().SaveTestCase(gomock.Any()).AnyTimes().Return(nil)
+
+				mockStore.EXPECT().SuccessfulTestCase(gomock.Any(), gomock.Any()).AnyTimes().Return(nil)
+
 				ExecuteSuite(tt.iterCtx, tt.num, tt.suites(), tt.suite(), sr, scDBs, tt.c)
 
 			}
