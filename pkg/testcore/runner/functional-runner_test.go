@@ -2,6 +2,7 @@ package runner
 
 import (
 	"context"
+	"fmt"
 	"testing"
 	"time"
 
@@ -122,6 +123,25 @@ func TestRunFunctionalSuites(t *testing.T) {
 				ClusterAddress: "localhost",
 			},
 		},
+		/* {
+			name: "Failed test run -  no namespace",
+			suites: func() []suites.Interface {
+				suite := runnermocks.NewMockInterface(gomock.NewController(t))
+				suite.EXPECT().GetName().AnyTimes().Return("test run 2")
+				suite.EXPECT().GetNamespace().AnyTimes().Return("")
+				suite.EXPECT().GetClients(gomock.Any(), gomock.Any()).AnyTimes().Return(&k8sclient.Clients{}, nil)
+				suite.EXPECT().GetObservers(gomock.Any()).AnyTimes().Return([]observer.Interface{})
+				suite.EXPECT().Run(gomock.Any(), gomock.Any(), gomock.Any()).AnyTimes().Return(nil, nil)
+				return []suites.Interface{suite}
+			},
+
+			tr: &store.TestRun{
+				Name:           "test run 2",
+				StartTimestamp: time.Now(),
+				StorageClass:   "sc1",
+				ClusterAddress: "localhost",
+			},
+		},*/
 	}
 
 	for _, tt := range tests {
@@ -140,10 +160,17 @@ func TestRunFunctionalSuites(t *testing.T) {
 			mockKubeClient := mocks.NewMockKubeClientInterface(gomock.NewController(t))
 			newNameSpace := &corev1.Namespace{}
 			newNameSpace.Name = "new-ns"
-			mockKubeClient.EXPECT().CreateNamespaceWithSuffix(gomock.Any(), "test-namespace").AnyTimes().Return(newNameSpace, nil)
-			mockKubeClient.EXPECT().DeleteNamespace(gomock.Any(), gomock.Any()).AnyTimes().Return(nil)
-			mockRunner.EXPECT().GetName().AnyTimes().Return("test run 1")
-			mockRunner.EXPECT().GetNamespace().AnyTimes().Return("test-namespace")
+			if tt.name == "Failed test run -  no namespace" {
+				mockRunner.EXPECT().GetName().AnyTimes().Return("test run 2")
+				mockRunner.EXPECT().GetNamespace().AnyTimes().Return("")
+				mockKubeClient.EXPECT().CreateNamespaceWithSuffix(gomock.Any(), gomock.Any()).AnyTimes().Return(nil, fmt.Errorf("Mock Error"))
+				mockKubeClient.EXPECT().DeleteNamespace(gomock.Any(), gomock.Any()).AnyTimes().Return(fmt.Errorf("Mock Error"))
+			} else {
+				mockRunner.EXPECT().GetName().AnyTimes().Return("test run 1")
+				mockKubeClient.EXPECT().CreateNamespaceWithSuffix(gomock.Any(), "test-namespace").AnyTimes().Return(newNameSpace, nil)
+				mockKubeClient.EXPECT().DeleteNamespace(gomock.Any(), gomock.Any()).AnyTimes().Return(nil)
+				mockRunner.EXPECT().GetNamespace().AnyTimes().Return("test-namespace")
+			}
 			mockRunner.EXPECT().GetClients(gomock.Any(), gomock.Any()).AnyTimes().Return(&k8sclient.Clients{}, nil)
 			mockRunner.EXPECT().GetObservers(gomock.Any()).AnyTimes().Return([]observer.Interface{})
 			mockStore.EXPECT().SaveTestCase(gomock.Any()).AnyTimes().Return(nil)
@@ -162,6 +189,51 @@ func TestRunFunctionalSuites(t *testing.T) {
 	}
 }
 
+/* func TestRunFunctionalSuite_WithTerminationSignal(t *testing.T) {
+	suite := &runnermocks.MockInterface{}
+	testCase := &store.TestCase{}
+	dbStore := &store.SQLiteStore{}
+	storageClass := "sc1"
+
+	sr := &FunctionalSuiteRunner{
+		Runner: &Runner{
+			Config: &rest.Config{
+				Host: "localhost",
+			},
+		},
+	}
+
+	// Create a new context and a channel to receive the termination signal
+	_, cancel := context.WithCancel(context.Background())
+	sigChan := make(chan os.Signal, 1)
+
+	// Start the goroutine that listens for the termination signal
+	go func() {
+		signal.Notify(sigChan, syscall.SIGTERM)
+		<-sigChan
+		cancel()
+	}()
+
+	res, err := runFunctionalSuite(suite, sr, testCase, dbStore, storageClass)
+
+	if err != nil {
+		t.Errorf("Expected no error, got %v", err)
+	}
+
+	if res != FAILURE {
+		t.Errorf("Expected result to be FAILURE, got %v", res)
+	}
+}
+*/
+/* type StorageClassDBStore struct {
+	*store.StorageClassDB
+} */
+
+/* func (s *StorageClassDBStore) Close() error {
+	// Implement the Close method here
+	return nil
+} */
+
 func (suite *FunctionalSuiteRunnerTestSuite) TestIsStopped() {
 	suite.runner.Stop()
 	assert.True(suite.T(), suite.runner.IsStopped(), "Expected runner to be stopped")
@@ -175,7 +247,7 @@ func (suite *FunctionalSuiteRunnerTestSuite) TestNoCleaning() {
 // todo: fix
 func (suite *FunctionalSuiteRunnerTestSuite) TestShouldClean() {
 	assert.True(suite.T(), suite.runner.ShouldClean(SUCCESS), "Expected ShouldClean to return true for SUCCESS")
-	//assert.False(suite.T(), suite.runner.ShouldClean(FAILURE), "Expected ShouldClean to return false for FAILURE")
+	assert.False(suite.T(), suite.runner.ShouldClean(FAILURE), "Expected ShouldClean to return false for FAILURE")
 }
 
 // MockSuite is a mock implementation of the suites.Interface for testing purposes
