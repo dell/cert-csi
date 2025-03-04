@@ -460,7 +460,13 @@ func TestRunSuites(t *testing.T) {
 			}
 
 			mockStore := storemocks.NewMockStore(gomock.NewController(t))
-			mockStore.EXPECT().SaveTestRun(gomock.Any()).AnyTimes().Return(nil)
+			if tt.name == "Failure test run" {
+				mockStore.EXPECT().SaveTestRun(gomock.Any()).AnyTimes().Return(fmt.Errorf("new error"))
+
+			} else {
+				mockStore.EXPECT().SaveTestRun(gomock.Any()).AnyTimes().Return(nil)
+			}
+			//mockStore.EXPECT().SaveTestRun(gomock.Any()).AnyTimes().Return(nil)
 			mockStore.EXPECT().SaveTestCase(gomock.Any()).AnyTimes().Return(nil)
 			mockStore.EXPECT().SuccessfulTestCase(gomock.Any(), gomock.Any()).AnyTimes().Return(nil)
 			mockStore.EXPECT().GetTestRuns(gomock.Any(), gomock.Any(), gomock.Any()).AnyTimes().Return([]store.TestRun{
