@@ -101,7 +101,7 @@ func TestRunner_Start(t *testing.T) {
 	// }
 
 	// // Call the Start method of the Runner
-	//runner.Start(ctx)
+	// runner.Start(ctx)
 
 	// // Assert that the StartWatching method of the mock observer was called
 	// observer1.AssertExpectations(t)
@@ -143,7 +143,7 @@ func TestRunner_Start(t *testing.T) {
 // TestRunner_Stop tests the Stop method of the Runner
 func TestRunner_Stop(t *testing.T) {
 	// Test case: Stop watching all the runners and delete PVCs
-	//ctx := context.Background()
+	// ctx := context.Background()
 	observer1 := &mockObserver{}
 	observer2 := &mockObserver{}
 	observers := []Interface{observer1, observer2}
@@ -178,7 +178,7 @@ func TestRunner_Stop(t *testing.T) {
 // TestRunner_waitTimeout tests the waitTimeout method of the Runner
 func TestRunner_waitTimeout(t *testing.T) {
 	// Test case: Wait for all of observers to complete
-	//ctx := context.Background()
+	// ctx := context.Background()
 	observer1 := &mockObserver{}
 	observer2 := &mockObserver{}
 	observers := []Interface{observer1, observer2}

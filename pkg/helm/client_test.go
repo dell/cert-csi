@@ -141,7 +141,7 @@ func TestUpdateRepositories(t *testing.T) {
 		Name: "my-repo",
 		URL:  "https://example.com/charts",
 	})
-	err := repoFile.WriteFile(settings.RepositoryConfig, 0644)
+	err := repoFile.WriteFile(settings.RepositoryConfig, 0o644)
 	assert.NoError(t, err)
 
 	// Call the UpdateRepositories function
@@ -220,7 +220,7 @@ func TestInstallChart(t *testing.T) {
 
 	// Test with missing in charts/ directory error
 	missing := []string{}
-	actionCheckDependencies = func(ch *chart.Chart, reqs []*chart.Dependency) error {
+	actionCheckDependencies = func(_ *chart.Chart, _ []*chart.Dependency) error {
 		return errors.Errorf("found in Chart.yaml, but missing in charts/ directory: %s", strings.Join(missing, ", "))
 	}
 	err = client.InstallChart(releaseName, repoName, "velero", values)
@@ -263,7 +263,6 @@ func TestUninstallChart(t *testing.T) {
 	// Call the UninstallChart function
 	err = client.UninstallChart(releaseName)
 	assert.Error(t, err)
-
 }
 
 func TestIsChartInstallable(t *testing.T) {

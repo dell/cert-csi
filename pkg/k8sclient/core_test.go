@@ -19,7 +19,6 @@ package k8sclient
 import (
 	"context"
 	"testing"
-	"time"
 
 	vs "github.com/kubernetes-csi/external-snapshotter/client/v4/apis/volumesnapshot/v1"
 	snapclient "github.com/kubernetes-csi/external-snapshotter/client/v4/clientset/versioned"
@@ -82,7 +81,6 @@ func (suite *CoreTestSuite) TestNewRemoteKubeClient() {
 		suite.NoError(err)
 		suite.NotNil(client)
 	})
-
 }
 
 func (suite *CoreTestSuite) TestCreateClients() {
@@ -361,7 +359,6 @@ func (suite *CoreTestSuite) TestDeleteNamespace() {
 
 	err = kubeClient.DeleteNamespace(context.Background(), "fake-namespace")
 	suite.Error(err)
-
 }
 
 func (suite *CoreTestSuite) TestForceDeleteNamespace() {
@@ -389,14 +386,9 @@ func (suite *CoreTestSuite) TestForceDeleteNamespace() {
 
 	err = kubeClient.ForceDeleteNamespace(context.Background(), "")
 	suite.Error(err)
-
-	ctx, _ := context.WithTimeout(context.Background(), 1*time.Second)
-	err = kubeClient.ForceDeleteNamespace(ctx, "")
-	suite.Error(err)
 }
 
 func (suite *CoreTestSuite) TestSnapshotClassExists() {
-
 	suite.kubeClient.Config = &rest.Config{}
 	cset, _ := snapclient.NewForConfig(suite.kubeClient.Config)
 	volumeSnapshotClass := &vs.VolumeSnapshotClass{

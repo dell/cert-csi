@@ -42,7 +42,7 @@ func TestWaitUntilNoneLeft(t *testing.T) {
 	}{
 		{
 			name: "Success",
-			setup: func(client *fake.Clientset) {
+			setup: func(_ *fake.Clientset) {
 				// Ensure no VolumeAttachments exist
 			},
 			customTimeout: 0,
@@ -52,7 +52,7 @@ func TestWaitUntilNoneLeft(t *testing.T) {
 			name: "Error",
 			setup: func(client *fake.Clientset) {
 				// Simulate an error
-				client.PrependReactor("list", "volumeattachments", func(action clientgotesting.Action) (bool, runtime.Object, error) {
+				client.PrependReactor("list", "volumeattachments", func(_ clientgotesting.Action) (bool, runtime.Object, error) {
 					return true, nil, fmt.Errorf("simulated error")
 				})
 			},
@@ -75,7 +75,7 @@ func TestWaitUntilNoneLeft(t *testing.T) {
 		},
 		{
 			name: "CustomTimeout",
-			setup: func(client *fake.Clientset) {
+			setup: func(_ *fake.Clientset) {
 				// Ensure no VolumeAttachments exist
 			},
 			customTimeout: 5 * time.Second,
@@ -142,7 +142,7 @@ func TestWaitUntilVaGone(t *testing.T) {
 			name: "Error",
 			setup: func(client *fake.Clientset) {
 				// Simulate an error
-				client.PrependReactor("list", "volumeattachments", func(action clientgotesting.Action) (bool, runtime.Object, error) {
+				client.PrependReactor("list", "volumeattachments", func(_ clientgotesting.Action) (bool, runtime.Object, error) {
 					return true, nil, fmt.Errorf("simulated error")
 				})
 			},
@@ -178,7 +178,7 @@ func TestWaitUntilVaGone(t *testing.T) {
 		},
 		{
 			name: "CustomTimeout",
-			setup: func(client *fake.Clientset) {
+			setup: func(_ *fake.Clientset) {
 				// Ensure no VolumeAttachments exist
 			},
 			pvName:        "non-existent-pv",
@@ -252,7 +252,7 @@ func TestDeleteVaBasedOnPVName(t *testing.T) {
 			name: "ListError",
 			setup: func(client *fake.Clientset) {
 				// Simulate an error for the List operation
-				client.PrependReactor("list", "volumeattachments", func(action clientgotesting.Action) (bool, runtime.Object, error) {
+				client.PrependReactor("list", "volumeattachments", func(_ clientgotesting.Action) (bool, runtime.Object, error) {
 					return true, nil, fmt.Errorf("simulated list error")
 				})
 			},
@@ -276,7 +276,7 @@ func TestDeleteVaBasedOnPVName(t *testing.T) {
 				client.StorageV1().VolumeAttachments().Create(context.TODO(), va, v1.CreateOptions{})
 
 				// Simulate an error for the Delete operation
-				client.PrependReactor("delete", "volumeattachments", func(action clientgotesting.Action) (bool, runtime.Object, error) {
+				client.PrependReactor("delete", "volumeattachments", func(_ clientgotesting.Action) (bool, runtime.Object, error) {
 					return true, nil, fmt.Errorf("simulated delete error")
 				})
 			},
@@ -285,7 +285,7 @@ func TestDeleteVaBasedOnPVName(t *testing.T) {
 		},
 		{
 			name: "NotFound",
-			setup: func(client *fake.Clientset) {
+			setup: func(_ *fake.Clientset) {
 				// No setup needed for not found case
 			},
 			pvName:        "non-existent-pv",

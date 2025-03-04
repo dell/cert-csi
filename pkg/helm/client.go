@@ -159,9 +159,11 @@ func (c *Client) UpdateRepositories() error {
 	return nil
 }
 
-var actionNewInstall = action.NewInstall
-var actionCheckDependencies = action.CheckDependencies
-var loaderLoad = loader.Load
+var (
+	actionNewInstall        = action.NewInstall
+	actionCheckDependencies = action.CheckDependencies
+	loaderLoad              = loader.Load
+)
 
 // InstallChart installs chart with provided repository and values map
 func (c *Client) InstallChart(releaseName, repo, chart string, vals map[string]interface{}) error {

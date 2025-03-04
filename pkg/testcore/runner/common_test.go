@@ -67,10 +67,10 @@ func TestGetSuiteRunner(t *testing.T) {
 				tt.k8s(),
 			)
 			assert.NotNil(t, client)
-
 		})
 	}
 }
+
 func TestGenerateTestRunDetails(t *testing.T) {
 	tests := []struct {
 		name                 string
@@ -128,6 +128,7 @@ func TestGenerateTestRunDetails(t *testing.T) {
 		})
 	}
 }
+
 func TestShouldClean(t *testing.T) {
 	tests := []struct {
 		name                string

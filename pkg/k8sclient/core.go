@@ -488,7 +488,7 @@ func (c *KubeClient) DeleteNamespace(ctx context.Context, namespace string) erro
 
 // ForceDeleteNamespace force deletes the namespace and its resources
 func (c *KubeClient) ForceDeleteNamespace(ctx context.Context, namespace string) error {
-	//Try to send delete request one more time, ignore errors
+	// Try to send delete request one more time, ignore errors
 	_ = c.ClientSet.CoreV1().Namespaces().Delete(ctx, namespace, metav1.DeleteOptions{})
 
 	stsclient, err := c.CreateStatefulSetClient(namespace)
