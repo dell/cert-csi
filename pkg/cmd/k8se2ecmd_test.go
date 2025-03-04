@@ -29,7 +29,7 @@ func TestGetK8sEndToEndCommand(t *testing.T) {
 	assert.NotNil(t, e2eCmd.Action)
 }
 
-func TestGetK8sEndToEndCommandAction(t *testing.T) {
+func TestGetK8sEndToEndCommandAction(_ *testing.T) {
 	// Default context
 	set := flag.NewFlagSet("test", 0)
 	set.String("driver-config", "../k8sclient/testdata/config", "path to test driver config file")
@@ -50,12 +50,12 @@ func TestGetK8sEndToEndCommandAction(t *testing.T) {
 	actionFunc(ctx)
 }
 
-func TestGetK8sEndToEndCommandBefore(t *testing.T) {
+func TestGetK8sEndToEndCommandBefore(_ *testing.T) {
 	// Default context
 	set1 := flag.NewFlagSet("test", 0)
 	set1.String("driver-config", "../k8sclient/testdata/config", "path to test driver config file")
 
-	//empty path
+	// empty path
 	set2 := flag.NewFlagSet("test2", 0)
 	set2.String("driver-config", "", "path to test driver config file")
 

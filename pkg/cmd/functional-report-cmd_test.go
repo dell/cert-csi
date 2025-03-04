@@ -20,6 +20,7 @@ import (
 	"flag"
 	"testing"
 
+	"github.com/stretchr/testify/assert"
 	"github.com/urfave/cli"
 )
 
@@ -74,8 +75,8 @@ func TestGetFunctionalReportCommand(t *testing.T) {
 		t.Error("Expected GetFunctionalReportCommand to return a command with a non-nil Action function")
 	}
 }
-func TestGetFunctionalReportCommandAction(t *testing.T) {
 
+func TestGetFunctionalReportCommandAction(t *testing.T) {
 	set := flag.NewFlagSet("test", 0)
 	set.Bool("tabular", true, "specifies if tabular report should be generated")
 	set.Bool("xml", true, "specifies if XML report should be generated")
@@ -92,5 +93,6 @@ func TestGetFunctionalReportCommandAction(t *testing.T) {
 	action := command.Action
 	actionFunc := action.(func(c *cli.Context) error)
 	actionFunc(ctx)
-	actionFunc(ctx2)
+	err := actionFunc(ctx2)
+	assert.Error(t, err)
 }
