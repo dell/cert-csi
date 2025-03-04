@@ -9,7 +9,6 @@ import (
 	"github.com/dell/cert-csi/pkg/k8sclient"
 	"github.com/dell/cert-csi/pkg/store"
 	storagev1 "k8s.io/api/storage/v1"
-	v1 "k8s.io/api/storage/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/rest"
 
@@ -30,6 +29,48 @@ func TestVaListObserver_StartWatching(t *testing.T) {
 	}
 	clientSet := NewFakeClientsetWithRestClient(storageClass)
 
+	va := &storagev1.VolumeAttachment{
+		ObjectMeta: metav1.ObjectMeta{
+			Name: "test-va",
+			UID:  "test-uid",
+		},
+		Spec: storagev1.VolumeAttachmentSpec{
+			Source: storagev1.VolumeAttachmentSource{
+				PersistentVolumeName: func() *string { s := "test-pvc"; return &s }(),
+			},
+		},
+	}
+
+	/*va2 := &storagev1.VolumeAttachment{
+		ObjectMeta: metav1.ObjectMeta{
+			Name: "test-va2",
+		},
+		Spec: storagev1.VolumeAttachmentSpec{
+			Source: storagev1.VolumeAttachmentSource{
+				PersistentVolumeName: func() *string { s := "test-pvc2"; return &s }(),
+			},
+		},
+	}*/
+
+	va3 := &storagev1.VolumeAttachment{
+		ObjectMeta: metav1.ObjectMeta{
+			Name: "test-va3",
+			UID:  "test-uid3",
+		},
+		Spec: storagev1.VolumeAttachmentSpec{
+			Source: storagev1.VolumeAttachmentSource{
+				PersistentVolumeName: func() *string { s := "test-pvc3"; return &s }(),
+			},
+		},
+	}
+
+	clientSet.StorageV1().VolumeAttachments().Create(ctx, va, metav1.CreateOptions{})
+	//clientSet.StorageV1().VolumeAttachments().Create(ctx, va2, metav1.CreateOptions{})
+	clientSet.StorageV1().VolumeAttachments().Delete(ctx, "test-va", metav1.DeleteOptions{})
+	clientSet.StorageV1().VolumeAttachments().Update(ctx, va, metav1.UpdateOptions{})
+	clientSet.StorageV1().VolumeAttachments().Create(ctx, va, metav1.CreateOptions{})
+	clientSet.StorageV1().VolumeAttachments().Create(ctx, va3, metav1.CreateOptions{})
+
 	kubeClient := &k8sclient.KubeClient{
 		ClientSet: clientSet,
 		Config:    &rest.Config{},
@@ -47,12 +88,24 @@ func TestVaListObserver_StartWatching(t *testing.T) {
 		PvcShare:  sync.Map{},
 		Database:  NewSimpleStore(),
 	}
+	runner.PvcShare.Store("test-pvc", &store.Entity{
+		Name: "test-pvc",
+	})
+	/*runner.PvcShare.Store("test-pvc2", &store.Entity{
+		Name: "test-pvc2",
+	})*/
+	runner.PvcShare.Store("test-pvc2", &store.Entity{
+		Name: "test-pvc2",
+	})
 	runner.WaitGroup.Add(1)
 
 	obs := &VaListObserver{}
 	obs.MakeChannel()
 
 	go obs.StartWatching(ctx, runner)
+
+	clientSet.StorageV1().VolumeAttachments().Update(ctx, va, metav1.UpdateOptions{})
+	clientSet.StorageV1().VolumeAttachments().Create(ctx, va, metav1.CreateOptions{})
 
 	time.Sleep(100 * time.Millisecond)
 
@@ -107,9 +160,9 @@ type mockVAClient struct {
 	mock.Mock
 }
 
-func (m *mockVAClient) List(ctx context.Context, opts metav1.ListOptions) (*v1.VolumeAttachmentList, error) {
+func (m *mockVAClient) List(ctx context.Context, opts metav1.ListOptions) (*storagev1.VolumeAttachmentList, error) {
 	args := m.Called(ctx, opts)
-	return args.Get(0).(*v1.VolumeAttachmentList), args.Error(1)
+	return args.Get(0).(*storagev1.VolumeAttachmentList), args.Error(1)
 }
 
 // Mock implementation of Database

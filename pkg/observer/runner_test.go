@@ -9,6 +9,8 @@ import (
 	"github.com/dell/cert-csi/pkg/k8sclient"
 	"github.com/dell/cert-csi/pkg/store"
 
+	"reflect"
+
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 )
@@ -247,4 +249,38 @@ func TestRunner_MakeChannel(t *testing.T) {
 	observer.MakeChannel()
 
 	observer.AssertExpectations(t)
+}
+
+func TestNewObserverRunner(t *testing.T) {
+	// Test case: Create a new Runner instance
+	observers := []Interface{}
+	clients := &k8sclient.Clients{}
+	db := NewSimpleStore()
+	testCase := &store.TestCase{
+		ID: 1,
+	}
+	driverNs := "test-driver-namespace"
+	shouldClean := true
+
+	runner := NewObserverRunner(observers, clients, db, testCase, driverNs, shouldClean)
+
+	// Assert that the Runner instance has the correct values for its fields
+	if !reflect.DeepEqual(runner.Observers, observers) {
+		t.Errorf("Expected Observers to be %v, got %v", observers, runner.Observers)
+	}
+	if runner.Clients != clients {
+		t.Errorf("Expected Clients to be %v, got %v", clients, runner.Clients)
+	}
+	if runner.Database != db {
+		t.Errorf("Expected Database to be %v, got %v", db, runner.Database)
+	}
+	if runner.TestCase != testCase {
+		t.Errorf("Expected TestCase to be %v, got %v", testCase, runner.TestCase)
+	}
+	if runner.DriverNamespace != driverNs {
+		t.Errorf("Expected DriverNamespace to be %v, got %v", driverNs, runner.DriverNamespace)
+	}
+	if runner.ShouldClean != shouldClean {
+		t.Errorf("Expected ShouldClean to be %v, got %v", shouldClean, runner.ShouldClean)
+	}
 }
