@@ -353,7 +353,7 @@ func TestGetPostgresCommand(_ *testing.T) {
 
 func TestGetEphemeralCreationCommandAction(t *testing.T) {
 	// Default context
-
+	kubeConfig, _ := createDummyKubeConfig(t.TempDir(), t)
 	tempFile, err := os.CreateTemp("", "test")
 	if err != nil {
 		t.Fatalf("Could not create temporary file: %v", err)
@@ -368,6 +368,7 @@ func TestGetEphemeralCreationCommandAction(t *testing.T) {
 		t.Fatalf("Could not write to temporary file: %v", err)
 	}
 	set := flag.NewFlagSet("test", 0)
+	set.String("config", kubeConfig, "config for connecting to kubernetes")
 	// set.String("name", "storage", "name of the storage class")
 	set.String("driver", "test-driver", "name of the driver")
 	set.String("fs-type", "ext4", "FS Type for ephemeral inline volume")
@@ -387,6 +388,6 @@ func TestGetEphemeralCreationCommandAction(t *testing.T) {
 	// Call the action function
 	action := command.Action
 	actionFunc := action.(func(c *cli.Context) error)
-	ExecuteSuite = func(_ *runner.FunctionalSuiteRunner, _ []suites.Interface) {}
+	ExecuteFuncSuite = func(_ *runner.FunctionalSuiteRunner, _ []suites.Interface) {}
 	actionFunc(ctx)
 }
