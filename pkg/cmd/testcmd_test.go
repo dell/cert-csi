@@ -233,7 +233,6 @@ func TestGetVolumeHealthMetricsCommandAction(_ *testing.T) {
 	action := command.Action
 	actionFunc := action.(func(c *cli.Context) error)
 	actionFunc(ctx)
-	
 }
 
 func TestGetProvisioningCommandAction(_ *testing.T) {
@@ -265,7 +264,7 @@ func TestGetScalingCommandAction(_ *testing.T) {
 	// Call the action function
 	action := command.Action
 	actionFunc := action.(func(c *cli.Context) error)
-	actionFunc(ctx)	
+	actionFunc(ctx)
 }
 
 func TestGetVolumeIoCommandAction(_ *testing.T) {
@@ -317,7 +316,7 @@ func TestGetVolumeGroupSnapCommandAction(_ *testing.T) {
 	// Call the action function
 	action := command.Action
 	actionFunc := action.(func(c *cli.Context) error)
-	actionFunc(ctx)	
+	actionFunc(ctx)
 }
 
 func TestGetBlockSnapCommandAction(_ *testing.T) {
@@ -388,7 +387,6 @@ func TestGetEphemeralCreationCommandAction(t *testing.T) {
 	// Call the action function
 	action := command.Action
 	actionFunc := action.(func(c *cli.Context) error)
-	ExecuteSuite = func(sr *runner.FunctionalSuiteRunner, s []suites.Interface) {}
+	ExecuteSuite = func(_ *runner.FunctionalSuiteRunner, _ []suites.Interface) {}
 	actionFunc(ctx)
 }
-
