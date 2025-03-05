@@ -53,7 +53,7 @@ func TestVaListObserver_StartWatching(t *testing.T) {
 	attachedVA := &storagev1.VolumeAttachment{
 		Spec: storagev1.VolumeAttachmentSpec{
 			Source: storagev1.VolumeAttachmentSource{
-				PersistentVolumeName: func() *string { s := pvName; return &s }(),
+				PersistentVolumeName: func() *string { s := "test-pv-2"; return &s }(),
 			},
 		},
 		Status: storagev1.VolumeAttachmentStatus{
@@ -63,33 +63,20 @@ func TestVaListObserver_StartWatching(t *testing.T) {
 			Name: "test-volume-attachment-2",
 		},
 	}
-	vaToBeDeleted := &storagev1.VolumeAttachment{
-		Spec: storagev1.VolumeAttachmentSpec{
-			Source: storagev1.VolumeAttachmentSource{
-				PersistentVolumeName: func() *string { s := "vaToBeDeleted"; return &s }(),
-			},
-		},
-		Status: storagev1.VolumeAttachmentStatus{
-			Attached: true,
-		},
-		ObjectMeta: metav1.ObjectMeta{
-			Name: "test-volume-attachment-vaToBeDeleted",
-		},
-	}
 
 	vaClient, _ := kubeClient.CreateVaClient("test-namespace")
 	vaClient.Interface.Create(ctx, deletionVA, metav1.CreateOptions{})
 	vaClient.Interface.Create(ctx, attachedVA, metav1.CreateOptions{})
-	vaClient.Interface.Create(ctx, vaToBeDeleted, metav1.CreateOptions{})
 
 	var pvcShare sync.Map
 	pvcShare.Store(pvName, &store.Entity{})
-	pvcShare.Store("vaToBeDeleted", &store.Entity{})
+	pvcShare.Store("test-pv-2", &store.Entity{})
 
 	tests := []struct {
-		name                string
-		runner              *Runner
-		shouldAddedVABeTrue *bool
+		name                                   string
+		runner                                 *Runner
+		shouldAddedVABeTrue                    *bool
+		shouldHaveUnequalAttachedAndDeletedVAs bool
 	}{
 		{
 			name: "Test case: nil vaClient",
@@ -139,20 +126,21 @@ func TestVaListObserver_StartWatching(t *testing.T) {
 			shouldAddedVABeTrue: func() *bool { b := true; return &b }(),
 		},
 		{
-			name: "Test case: vaClient with mocked addedVA and non-attached VA",
+			name: "Test case: vaClient with mocked addedVA and attached VA and deletion VA and should clean",
 			runner: &Runner{
 				Clients: &k8sclient.Clients{
 					VaClient: vaClient,
 				},
 				Database:    NewSimpleStore(),
 				PvcShare:    pvcShare,
-				ShouldClean: false,
+				ShouldClean: true,
 				TestCase: &store.TestCase{
 					ID: 1,
 				},
 				WaitGroup: sync.WaitGroup{},
 			},
-			shouldAddedVABeTrue: func() *bool { b := true; return &b }(),
+			shouldAddedVABeTrue:                    func() *bool { b := true; return &b }(),
+			shouldHaveUnequalAttachedAndDeletedVAs: true,
 		},
 	}
 
@@ -171,10 +159,13 @@ func TestVaListObserver_StartWatching(t *testing.T) {
 				pollRunCount++
 				// After a couple runs, we test new state by deleting a new VA
 				if pollRunCount == 6 {
-					vaClient.Interface.Delete(ctx, vaToBeDeleted.Name, metav1.DeleteOptions{})
+					vaClient.Interface.Delete(ctx, attachedVA.Name, metav1.DeleteOptions{})
+					if test.shouldHaveUnequalAttachedAndDeletedVAs {
+						vaoFinishedWg.Done()
+					}
 				}
 				// After a couple more runs, we mark as complete
-				if pollRunCount == 12 {
+				if pollRunCount == 10 && !test.shouldHaveUnequalAttachedAndDeletedVAs {
 					vaoFinishedWg.Done()
 				}
 				if test.shouldAddedVABeTrue != nil {
@@ -184,6 +175,7 @@ func TestVaListObserver_StartWatching(t *testing.T) {
 				}
 			}
 			defer func() {
+				vaClient.Interface.Create(ctx, attachedVA, metav1.CreateOptions{})
 				getBoolValueFromMapWithKey = originalGetBoolValueFromMapWithKey
 			}()
 
