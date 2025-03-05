@@ -3,6 +3,7 @@ package runner
 import (
 	"context"
 	"database/sql"
+	"errors"
 	"fmt"
 	"os"
 	"strings"
@@ -399,7 +400,7 @@ func TestExecuteSuite(t *testing.T) {
 					CoolDownPeriod: 1,
 				}
 				sr.Runner = r
-				mockStore.EXPECT().FailedTestCase(gomock.Any(), gomock.Any(), gomock.Any()).AnyTimes().Return(nil)
+				mockStore.EXPECT().FailedTestCase(gomock.Any(), gomock.Any(), gomock.Any()).AnyTimes().Return(fmt.Errorf("new error"))
 				mockStore.EXPECT().SaveTestCase(gomock.Any()).AnyTimes().Return(nil)
 
 				mockStore.EXPECT().SuccessfulTestCase(gomock.Any(), gomock.Any()).AnyTimes().Return(nil)
@@ -570,6 +571,9 @@ func TestRunSuites(t *testing.T) {
 
 		})
 	}
+}
+func mockFunction() error {
+	return errors.New("mock error")
 }
 
 func TestRunSuite(t *testing.T) {
@@ -767,6 +771,28 @@ func TestRunSuite(t *testing.T) {
 			wantRes:      FAILURE,
 			wantErr:      true,
 		},
+		{
+			name: "Test case with error delfunc",
+			suite: func() suites.Interface {
+				suite := runnermocks.NewMockInterface(gomock.NewController(t))
+				// suite.EXPECT().Run(gomock.Any(), gomock.Any(), gomock.Any()).AnyTimes().Return(nil, nil)
+				suite.EXPECT().GetName().AnyTimes().Return("test run 1")
+				suite.EXPECT().GetNamespace().AnyTimes().Return("driver-namespace")
+				suite.EXPECT().GetClients(gomock.Any(), gomock.Any()).AnyTimes().Return(&k8sclient.Clients{}, nil)
+				suite.EXPECT().GetObservers(gomock.Any()).AnyTimes().Return([]observer.Interface{})
+				suite.EXPECT().Run(gomock.Any(), gomock.Any(), gomock.Any()).AnyTimes().Return(mockFunction, nil)
+
+				//suite.EXPECT().Parameters().Times(1).Return("param1,param2")
+				return suite
+			},
+			sr:           &SuiteRunner{},
+			testCase:     &store.TestCase{},
+			db:           store.NewSQLiteStoreWithDB(mockdb),
+			storageClass: "sc1",
+			c:            make(chan os.Signal),
+			wantRes:      FAILURE,
+			wantErr:      true,
+		},
 
 		{
 			name: "Test case with failed observer",
@@ -801,6 +827,24 @@ func TestRunSuite(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			ctx := context.Background()
 			if tt.name == "Test case with valid parameters" {
+				sr := &SuiteRunner{}
+				r := &Runner{}
+
+				mockKubeClient := mocks.NewMockKubeClientInterface(gomock.NewController(t))
+				newNameSpace := &corev1.Namespace{}
+				newNameSpace.Name = "new-ns"
+				mockKubeClient.EXPECT().CreateNamespaceWithSuffix(gomock.Any(), gomock.Any()).AnyTimes().Return(newNameSpace, nil)
+				mockKubeClient.EXPECT().DeleteNamespace(gomock.Any(), gomock.Any()).AnyTimes().Return(nil)
+
+				sr.Runner = r
+				sr.Runner.KubeClient = mockKubeClient
+				res, _ := runSuite(ctx, tt.suite(), sr, tt.testCase, tt.db, tt.storageClass, tt.c)
+				if res != tt.wantRes {
+					t.Errorf("Expected runSuite to return %v, but got %v", tt.wantRes, res)
+				}
+
+			}
+			if tt.name == "Test case with error delfunc" {
 				sr := &SuiteRunner{}
 				r := &Runner{}
 
