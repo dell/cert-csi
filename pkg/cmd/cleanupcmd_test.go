@@ -35,7 +35,7 @@ func TestGetCleanupCommand(t *testing.T) {
 				Usage: "include this flag to auto approve cleanup cmd. Could be useful if you are running cert-csi from non-interactive environment",
 			},
 		},
-		Action: func(c *cli.Context) error {
+		Action: func(_ *cli.Context) error {
 			return nil
 		},
 	}
@@ -108,7 +108,7 @@ func TestGetCleanupCommandAction(t *testing.T) {
 	}
 
 	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
+		t.Run(tt.name, func(_ *testing.T) {
 			// Override the default os.Stdout with our buffer
 			stdout := os.Stdout
 			os.Stdout = os.NewFile(0, "stdout")

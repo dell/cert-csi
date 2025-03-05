@@ -6,6 +6,8 @@ import (
 	"testing"
 
 	"github.com/dell/cert-csi/pkg/k8sclient"
+	"github.com/dell/cert-csi/pkg/testcore/runner"
+	"github.com/dell/cert-csi/pkg/testcore/suites"
 	"github.com/urfave/cli"
 	storagev1 "k8s.io/api/storage/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -82,8 +84,9 @@ func TestGetAction(t *testing.T) {
 
 	set := flag.NewFlagSet("unit-test", flag.ContinueOnError)
 	set.String("cert-config", "./test-certify-config.yaml", "cert config file")
+	set.String("longevity", "30s", "longevity")
 	set.String("config", confPath, "cert config file")
-	set.String("timeout", "1m", "timeout")
+	set.String("timeout", "10s", "timeout")
 	set.String("volumeSnapshotClass", "fake", "volumeSnapshotClass")
 	set.String("observer-type", "event", "observer type")
 	set.String("vgs-volume-label", "fake-label", "vgs volume label")
@@ -91,6 +94,7 @@ func TestGetAction(t *testing.T) {
 	set.String("vgs-name", "fake", "")
 
 	ctx := cli.NewContext(app, set, nil)
+	ExecuteRunSuite = func(_ *runner.SuiteRunner, _ map[string][]suites.Interface) {}
 	err = getAction(ctx)
 	assert.NoError(t, err, "getAction should not return an error")
 }
