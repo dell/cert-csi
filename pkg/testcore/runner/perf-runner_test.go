@@ -592,27 +592,6 @@ func TestRunSuite(t *testing.T) {
 			wantRes:      FAILURE,
 		},
 		{
-			name: "Test case with delete namespace error",
-			suite: func() suites.Interface {
-				suite := runnermocks.NewMockInterface(gomock.NewController(t))
-				// suite.EXPECT().Run(gomock.Any(), gomock.Any(), gomock.Any()).AnyTimes().Return(nil, nil)
-				suite.EXPECT().GetName().AnyTimes().Return("test run 1")
-				suite.EXPECT().GetNamespace().AnyTimes().Return("driver-namespace")
-				suite.EXPECT().GetClients(gomock.Any(), gomock.Any()).AnyTimes().Return(&k8sclient.Clients{}, nil)
-				suite.EXPECT().GetObservers(gomock.Any()).AnyTimes().Return([]observer.Interface{})
-				suite.EXPECT().Run(gomock.Any(), gomock.Any(), gomock.Any()).AnyTimes().Return(nil, nil)
-
-				//suite.EXPECT().Parameters().Times(1).Return("param1,param2")
-				return suite
-			},
-			sr:           &SuiteRunner{},
-			testCase:     &store.TestCase{},
-			db:           nil,
-			storageClass: "sc1",
-			c:            make(chan os.Signal),
-			wantRes:      FAILURE,
-		},
-		{
 			name: "Test case with failed namespace creation",
 			suite: func() suites.Interface {
 				suite := runnermocks.NewMockInterface(gomock.NewController(t))
@@ -632,6 +611,50 @@ func TestRunSuite(t *testing.T) {
 			storageClass: "sc1",
 			c:            make(chan os.Signal),
 			wantRes:      FAILURE,
+		},
+		{
+			name: "Test case with nil starthook",
+			suite: func() suites.Interface {
+				suite := runnermocks.NewMockInterface(gomock.NewController(t))
+				// suite.EXPECT().Run(gomock.Any(), gomock.Any(), gomock.Any()).AnyTimes().Return(nil, nil)
+				suite.EXPECT().GetName().AnyTimes().Return("test run 1")
+				suite.EXPECT().GetNamespace().AnyTimes().Return("driver-namespace")
+				suite.EXPECT().GetClients(gomock.Any(), gomock.Any()).AnyTimes().Return(&k8sclient.Clients{}, nil)
+				suite.EXPECT().GetObservers(gomock.Any()).AnyTimes().Return([]observer.Interface{})
+				suite.EXPECT().Run(gomock.Any(), gomock.Any(), gomock.Any()).AnyTimes().Return(nil, nil)
+
+				//suite.EXPECT().Parameters().Times(1).Return("param1,param2")
+				return suite
+			},
+			sr:           &SuiteRunner{},
+			testCase:     &store.TestCase{},
+			db:           store.NewSQLiteStoreWithDB(mockdb),
+			storageClass: "sc1",
+			c:            make(chan os.Signal),
+			wantRes:      FAILURE,
+			wantErr:      true,
+		},
+		{
+			name: "Test case with nil finishhook",
+			suite: func() suites.Interface {
+				suite := runnermocks.NewMockInterface(gomock.NewController(t))
+				// suite.EXPECT().Run(gomock.Any(), gomock.Any(), gomock.Any()).AnyTimes().Return(nil, nil)
+				suite.EXPECT().GetName().AnyTimes().Return("test run 1")
+				suite.EXPECT().GetNamespace().AnyTimes().Return("driver-namespace")
+				suite.EXPECT().GetClients(gomock.Any(), gomock.Any()).AnyTimes().Return(&k8sclient.Clients{}, nil)
+				suite.EXPECT().GetObservers(gomock.Any()).AnyTimes().Return([]observer.Interface{})
+				suite.EXPECT().Run(gomock.Any(), gomock.Any(), gomock.Any()).AnyTimes().Return(nil, nil)
+
+				//suite.EXPECT().Parameters().Times(1).Return("param1,param2")
+				return suite
+			},
+			sr:           &SuiteRunner{},
+			testCase:     &store.TestCase{},
+			db:           store.NewSQLiteStoreWithDB(mockdb),
+			storageClass: "sc1",
+			c:            make(chan os.Signal),
+			wantRes:      FAILURE,
+			wantErr:      true,
 		},
 
 		{
@@ -726,6 +749,36 @@ func TestRunSuite(t *testing.T) {
 				oldRunnerTimeout = observer.RunnerTimeout
 				observer.RunnerTimeout = 0 * time.Minute
 				defer func() { observer.RunnerTimeout = oldRunnerTimeout }()
+				mockKubeClient := mocks.NewMockKubeClientInterface(gomock.NewController(t))
+				newNameSpace := &corev1.Namespace{}
+				newNameSpace.Name = "new-ns"
+				mockKubeClient.EXPECT().CreateNamespaceWithSuffix(gomock.Any(), gomock.Any()).AnyTimes().Return(newNameSpace, nil)
+				mockKubeClient.EXPECT().DeleteNamespace(gomock.Any(), gomock.Any()).AnyTimes().Return(nil)
+
+				sr.Runner = r
+				sr.Runner.KubeClient = mockKubeClient
+				runSuite(ctx, tt.suite(), sr, tt.testCase, tt.db, tt.storageClass, tt.c)
+			}
+			if tt.name == "Test case with nil starthook" {
+				sr := &SuiteRunner{
+					StartHookPath: "/////////",
+				}
+				r := &Runner{}
+				mockKubeClient := mocks.NewMockKubeClientInterface(gomock.NewController(t))
+				newNameSpace := &corev1.Namespace{}
+				newNameSpace.Name = "new-ns"
+				mockKubeClient.EXPECT().CreateNamespaceWithSuffix(gomock.Any(), gomock.Any()).AnyTimes().Return(newNameSpace, nil)
+				mockKubeClient.EXPECT().DeleteNamespace(gomock.Any(), gomock.Any()).AnyTimes().Return(nil)
+
+				sr.Runner = r
+				sr.Runner.KubeClient = mockKubeClient
+				runSuite(ctx, tt.suite(), sr, tt.testCase, tt.db, tt.storageClass, tt.c)
+			}
+			if tt.name == "Test case with nil finishhook" {
+				sr := &SuiteRunner{
+					FinishHookPath: "/////////",
+				}
+				r := &Runner{}
 				mockKubeClient := mocks.NewMockKubeClientInterface(gomock.NewController(t))
 				newNameSpace := &corev1.Namespace{}
 				newNameSpace.Name = "new-ns"
