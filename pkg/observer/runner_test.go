@@ -2,6 +2,7 @@ package observer
 
 import (
 	"context"
+	"errors"
 	"sync"
 	"testing"
 	"time"
@@ -13,6 +14,10 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
+	v1 "k8s.io/api/core/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/client-go/kubernetes/fake"
+	"k8s.io/client-go/rest"
 )
 
 // Mock implementation of Interface
@@ -178,7 +183,7 @@ func TestRunner_Stop(t *testing.T) {
 }
 
 // TestRunner_waitTimeout tests the waitTimeout method of the Runner
-func TestRunner_waitTimeout(t *testing.T) {
+func TestRunner_WaitTimeout(t *testing.T) {
 	// Test case: Wait for all of observers to complete
 	//ctx := context.Background()
 	observer1 := &mockObserver{}
@@ -283,4 +288,81 @@ func TestNewObserverRunner(t *testing.T) {
 	if runner.ShouldClean != shouldClean {
 		t.Errorf("Expected ShouldClean to be %v, got %v", shouldClean, runner.ShouldClean)
 	}
+}
+
+func TestWaitTimeout(t *testing.T) {
+	// Test case: timeout is reached
+	runner := &Runner{
+		WaitGroup: sync.WaitGroup{},
+	}
+	runner.WaitGroup.Add(10)
+	go func() {
+		time.Sleep(1 * time.Second)
+		runner.WaitGroup.Done()
+	}()
+	if !runner.waitTimeout(500 * time.Millisecond) {
+		t.Errorf("Expected timeout to be reached")
+	}
+}
+
+func TestRunner_Stop_WaitTimeout(t *testing.T) {
+	// Test case: Stop watching all the runners and delete PVCs
+	ctx := context.Background()
+
+	observer1 := &mockObserver{}
+	observer2 := &mockObserver{}
+	observers := []Interface{observer1, observer2}
+
+	db := NewSimpleStore()
+	testCase := &store.TestCase{
+		ID: 1,
+	}
+	driverNs := "driver-namespace"
+	shouldClean := true
+
+	clientSet := fake.NewSimpleClientset()
+
+	// Create a fake PV
+	pv := &v1.PersistentVolume{
+		ObjectMeta: metav1.ObjectMeta{
+			Name: "test-pv",
+		},
+	}
+	clientSet.CoreV1().PersistentVolumes().Create(context.Background(), pv, metav1.CreateOptions{})
+
+	clientSet.CoreV1().PersistentVolumeClaims("test-namespace").Create(ctx, &v1.PersistentVolumeClaim{ObjectMeta: metav1.ObjectMeta{Name: "test-pvc", Namespace: "test-namespace"}}, metav1.CreateOptions{})
+	kubeClient := &k8sclient.KubeClient{
+		ClientSet: clientSet,
+		Config:    &rest.Config{},
+	}
+
+	pvcClient, _ := kubeClient.CreatePVCClient("test-namespace")
+	runner := &Runner{
+		Clients: &k8sclient.Clients{
+			PVCClient: pvcClient,
+		},
+		Observers:       observers,
+		Database:        db,
+		TestCase:        testCase,
+		PvcShare:        sync.Map{},
+		DriverNamespace: driverNs,
+		ShouldClean:     shouldClean,
+	}
+
+	entity := &store.Entity{}
+	runner.PvcShare.Store("test-pv", entity)
+
+	runner.WaitGroup.Add(1)
+
+	observer1.On("StopWatching").Return()
+	observer2.On("StopWatching").Return()
+
+	err := runner.Stop()
+
+	expectedError := errors.New("pvs are in hanging state, something's wrong")
+	if err.Error() != expectedError.Error() {
+		t.Errorf("Expected error: %v, but got: %v", expectedError, err)
+	}
+	observer1.AssertExpectations(t)
+	observer2.AssertExpectations(t)
 }
