@@ -18,6 +18,7 @@ func TestGetTestCommand(t *testing.T) {
 		t.Errorf("expected command name 'test', got '%s'", cmd.Name)
 	}
 }
+
 func TestGetTestImage(t *testing.T) {
 	type args struct {
 		imageConfigPath string
@@ -95,6 +96,7 @@ func TestReadImageConfig(t *testing.T) {
 		assert.NoError(t, err)
 	})
 }
+
 func Test_getTestImage(t *testing.T) {
 	imageConfigPath := "../k8sclient/testdata/empty_imageconfig.yaml"
 	_, err := getTestImage(imageConfigPath)
@@ -115,7 +117,7 @@ func TestGetVolumeCreationCommandAction(t *testing.T) {
 	action := command.Action
 	actionFunc := action.(func(c *cli.Context) error)
 	actionFunc(ctx)
-	//assert.Panics(t, err)
+	// assert.Panics(t, err)
 }
 
 func TestGetVolumeMigrateCommandAction(t *testing.T) {
@@ -133,7 +135,7 @@ func TestGetVolumeMigrateCommandAction(t *testing.T) {
 	action := command.Action
 	actionFunc := action.(func(c *cli.Context) error)
 	actionFunc(ctx)
-	//assert.Panics(t, err)
+	// assert.Panics(t, err)
 }
 
 func TestGetRemoteReplicationProvisioningCommandAction(t *testing.T) {
@@ -168,7 +170,7 @@ func TestGetReplicationCommandAction(t *testing.T) {
 	action := command.Action
 	actionFunc := action.(func(c *cli.Context) error)
 	actionFunc(ctx)
-	//assert.Panics(t, err)
+	// assert.Panics(t, err)
 
 }
 
@@ -185,7 +187,7 @@ func TestGetCloneVolumeCommandAction(t *testing.T) {
 	action := command.Action
 	actionFunc := action.(func(c *cli.Context) error)
 	actionFunc(ctx)
-	//assert.Panics(t, err)
+	// assert.Panics(t, err)
 }
 
 func TestGetMultiAttachVolCommandAction(t *testing.T) {
@@ -202,7 +204,7 @@ func TestGetMultiAttachVolCommandAction(t *testing.T) {
 	action := command.Action
 	actionFunc := action.(func(c *cli.Context) error)
 	actionFunc(ctx)
-	//assert.Panics(t, err)
+	// assert.Panics(t, err)
 }
 
 func TestGetVolumeExpansionCommandAction(t *testing.T) {
@@ -221,7 +223,7 @@ func TestGetVolumeExpansionCommandAction(t *testing.T) {
 	action := command.Action
 	actionFunc := action.(func(c *cli.Context) error)
 	actionFunc(ctx)
-	//assert.Panics(t, err)
+	// assert.Panics(t, err)
 }
 
 func TestGetVolumeHealthMetricsCommandAction(t *testing.T) {
@@ -238,7 +240,7 @@ func TestGetVolumeHealthMetricsCommandAction(t *testing.T) {
 	action := command.Action
 	actionFunc := action.(func(c *cli.Context) error)
 	actionFunc(ctx)
-	//assert.Panics(t, err)
+	// assert.Panics(t, err)
 }
 
 func TestGetProvisioningCommandAction(t *testing.T) {
@@ -254,7 +256,7 @@ func TestGetProvisioningCommandAction(t *testing.T) {
 	action := command.Action
 	actionFunc := action.(func(c *cli.Context) error)
 	actionFunc(ctx)
-	//assert.Panics(t, err)
+	// assert.Panics(t, err)
 }
 
 func TestGetScalingCommandAction(t *testing.T) {
@@ -272,7 +274,7 @@ func TestGetScalingCommandAction(t *testing.T) {
 	action := command.Action
 	actionFunc := action.(func(c *cli.Context) error)
 	actionFunc(ctx)
-	//assert.Panics(t, err)
+	// assert.Panics(t, err)
 }
 
 func TestGetVolumeIoCommandAction(t *testing.T) {
@@ -288,7 +290,7 @@ func TestGetVolumeIoCommandAction(t *testing.T) {
 	action := command.Action
 	actionFunc := action.(func(c *cli.Context) error)
 	actionFunc(ctx)
-	//assert.Panics(t, err)
+	// assert.Panics(t, err)
 }
 
 func TestGetSnapCommandAction(t *testing.T) {
@@ -305,7 +307,7 @@ func TestGetSnapCommandAction(t *testing.T) {
 	action := command.Action
 	actionFunc := action.(func(c *cli.Context) error)
 	actionFunc(ctx)
-	//assert.Panics(t, err)
+	// assert.Panics(t, err)
 }
 
 func TestGetVolumeGroupSnapCommandAction(t *testing.T) {
@@ -327,7 +329,7 @@ func TestGetVolumeGroupSnapCommandAction(t *testing.T) {
 	action := command.Action
 	actionFunc := action.(func(c *cli.Context) error)
 	actionFunc(ctx)
-	//assert.Panics(t, err)
+	// assert.Panics(t, err)
 }
 
 func TestGetBlockSnapCommandAction(t *testing.T) {
@@ -344,7 +346,7 @@ func TestGetBlockSnapCommandAction(t *testing.T) {
 	action := command.Action
 	actionFunc := action.(func(c *cli.Context) error)
 	actionFunc(ctx)
-	//assert.Panics(t, err)
+	// assert.Panics(t, err)
 }
 
 func TestGetPostgresCommand(t *testing.T) {
@@ -361,7 +363,7 @@ func TestGetPostgresCommand(t *testing.T) {
 	action := command.Action
 	actionFunc := action.(func(c *cli.Context) error)
 	actionFunc(ctx)
-	//assert.Panics(t, err)
+	// assert.Panics(t, err)
 }
 
 func TestGetEphemeralCreationCommandAction(t *testing.T) {
@@ -381,7 +383,7 @@ func TestGetEphemeralCreationCommandAction(t *testing.T) {
 		t.Fatalf("Could not write to temporary file: %v", err)
 	}
 	set := flag.NewFlagSet("test", 0)
-	//set.String("name", "storage", "name of the storage class")
+	// set.String("name", "storage", "name of the storage class")
 	set.String("driver", "test-driver", "name of the driver")
 	set.String("fs-type", "ext4", "FS Type for ephemeral inline volume")
 	set.Int("pods", 1, "number of pods to create")
@@ -402,5 +404,5 @@ func TestGetEphemeralCreationCommandAction(t *testing.T) {
 	actionFunc := action.(func(c *cli.Context) error)
 	ExecuteSuite = func(sr *runner.FunctionalSuiteRunner, s []suites.Interface) {}
 	actionFunc(ctx)
-	//assert.Panics(t, err)
+	// assert.Panics(t, err)
 }
