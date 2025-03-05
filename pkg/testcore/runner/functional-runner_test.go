@@ -2,7 +2,6 @@ package runner
 
 import (
 	"context"
-	"fmt"
 	"testing"
 	"time"
 
@@ -123,6 +122,25 @@ func TestRunFunctionalSuites(t *testing.T) {
 				ClusterAddress: "localhost",
 			},
 		},
+		{
+			name: "Obs Error test run",
+			suites: func() []suites.Interface {
+				suite := runnermocks.NewMockInterface(gomock.NewController(t))
+				suite.EXPECT().GetName().AnyTimes().Return("test run - obs error")
+				suite.EXPECT().GetNamespace().AnyTimes().Return("test-namespace")
+				suite.EXPECT().GetClients(gomock.Any(), gomock.Any()).AnyTimes().Return(&k8sclient.Clients{}, nil)
+				suite.EXPECT().GetObservers(gomock.Any()).AnyTimes().Return([]observer.Interface{})
+				suite.EXPECT().Run(gomock.Any(), gomock.Any(), gomock.Any()).AnyTimes().Return(nil, nil)
+				return []suites.Interface{suite}
+			},
+
+			tr: &store.TestRun{
+				Name:           "test run - obs error",
+				StartTimestamp: time.Now(),
+				StorageClass:   "sc1",
+				ClusterAddress: "localhost",
+			},
+		},
 		/* {
 			name: "Failed test run -  no namespace",
 			suites: func() []suites.Interface {
@@ -142,6 +160,34 @@ func TestRunFunctionalSuites(t *testing.T) {
 				ClusterAddress: "localhost",
 			},
 		},*/
+		/* 		{
+			name: "Test run with termination signal",
+			suites: func() []suites.Interface {
+				suite := runnermocks.NewMockInterface(gomock.NewController(t))
+				suite.EXPECT().GetName().AnyTimes().Return("test run with termination signal")
+				suite.EXPECT().GetNamespace().AnyTimes().Return("test-namespace")
+				suite.EXPECT().GetClients(gomock.Any(), gomock.Any()).AnyTimes().Return(&k8sclient.Clients{}, nil)
+				suite.EXPECT().GetObservers(gomock.Any()).AnyTimes().Return([]observer.Interface{})
+				suite.EXPECT().Run(gomock.Any(), gomock.Any(), gomock.Any()).AnyTimes().Return(nil, nil)
+
+				// Set up the termination signal
+				_, cancel := context.WithCancel(context.Background())
+				defer cancel()
+				go func() {
+					time.Sleep(100 * time.Millisecond)
+					cancel()
+				}()
+
+				return []suites.Interface{suite}
+			},
+
+			tr: &store.TestRun{
+				Name:           "test run with termination signal",
+				StartTimestamp: time.Now(),
+				StorageClass:   "sc1",
+				ClusterAddress: "localhost",
+			},
+		}, */
 	}
 
 	for _, tt := range tests {
@@ -160,31 +206,66 @@ func TestRunFunctionalSuites(t *testing.T) {
 			mockKubeClient := mocks.NewMockKubeClientInterface(gomock.NewController(t))
 			newNameSpace := &corev1.Namespace{}
 			newNameSpace.Name = "new-ns"
-			if tt.name == "Failed test run -  no namespace" {
-				mockRunner.EXPECT().GetName().AnyTimes().Return("test run 2")
-				mockRunner.EXPECT().GetNamespace().AnyTimes().Return("")
-				mockKubeClient.EXPECT().CreateNamespaceWithSuffix(gomock.Any(), gomock.Any()).AnyTimes().Return(nil, fmt.Errorf("Mock Error"))
-				mockKubeClient.EXPECT().DeleteNamespace(gomock.Any(), gomock.Any()).AnyTimes().Return(fmt.Errorf("Mock Error"))
-			} else {
+			if tt.name == "Successful test run" {
+				mockRunner.EXPECT().GetClients(gomock.Any(), gomock.Any()).AnyTimes().Return(&k8sclient.Clients{}, nil)
+				mockRunner.EXPECT().GetObservers(gomock.Any()).AnyTimes().Return([]observer.Interface{})
+				mockStore.EXPECT().SaveTestCase(gomock.Any()).AnyTimes().Return(nil)
+				mockStore.EXPECT().SaveTestRun(gomock.Any()).AnyTimes().Return(nil)
+				mockStore.EXPECT().SuccessfulTestCase(gomock.Any(), gomock.Any()).AnyTimes().Return(nil)
+				mockRunner.EXPECT().Run(gomock.Any(), gomock.Any(), gomock.Any()).AnyTimes().Return(nil, nil)
 				mockRunner.EXPECT().GetName().AnyTimes().Return("test run 1")
 				mockKubeClient.EXPECT().CreateNamespaceWithSuffix(gomock.Any(), "test-namespace").AnyTimes().Return(newNameSpace, nil)
 				mockKubeClient.EXPECT().DeleteNamespace(gomock.Any(), gomock.Any()).AnyTimes().Return(nil)
 				mockRunner.EXPECT().GetNamespace().AnyTimes().Return("test-namespace")
-			}
-			mockRunner.EXPECT().GetClients(gomock.Any(), gomock.Any()).AnyTimes().Return(&k8sclient.Clients{}, nil)
-			mockRunner.EXPECT().GetObservers(gomock.Any()).AnyTimes().Return([]observer.Interface{})
-			mockStore.EXPECT().SaveTestCase(gomock.Any()).AnyTimes().Return(nil)
-			mockStore.EXPECT().SaveTestRun(gomock.Any()).AnyTimes().Return(nil)
-			mockStore.EXPECT().SuccessfulTestCase(gomock.Any(), gomock.Any()).AnyTimes().Return(nil)
-			mockRunner.EXPECT().Run(gomock.Any(), gomock.Any(), gomock.Any()).AnyTimes().Return(nil, nil)
+				r := &Runner{
+					Config:     &rest.Config{},
+					KubeClient: mockKubeClient,
+				}
+				fr.Runner = r
 
-			r := &Runner{
-				Config:     &rest.Config{},
-				KubeClient: mockKubeClient,
+				fr.RunFunctionalSuites(tt.suites())
 			}
-			fr.Runner = r
+			/* 			if tt.name == "Failed test run -  no namespace" {
+				mockRunner.EXPECT().GetClients(gomock.Any(), gomock.Any()).AnyTimes().Return(&k8sclient.Clients{}, nil)
+				mockRunner.EXPECT().GetObservers(gomock.Any()).AnyTimes().Return([]observer.Interface{})
+				mockStore.EXPECT().SaveTestCase(gomock.Any()).AnyTimes().Return(nil)
+				mockStore.EXPECT().SaveTestRun(gomock.Any()).AnyTimes().Return(nil)
+				mockStore.EXPECT().SuccessfulTestCase(gomock.Any(), gomock.Any()).AnyTimes().Return(nil)
+				mockRunner.EXPECT().Run(gomock.Any(), gomock.Any(), gomock.Any()).AnyTimes().Return(nil, nil)
+				mockRunner.EXPECT().GetName().AnyTimes().Return("test run 2")
+				mockRunner.EXPECT().GetNamespace().AnyTimes().Return("")
+				mockKubeClient.EXPECT().CreateNamespaceWithSuffix(gomock.Any(), gomock.Any()).AnyTimes().Return(nil, fmt.Errorf("Mock Error"))
+				mockKubeClient.EXPECT().DeleteNamespace(gomock.Any(), gomock.Any()).AnyTimes().Return(fmt.Errorf("Mock Error"))
+				r := &Runner{
+					Config:     &rest.Config{},
+					KubeClient: mockKubeClient,
+				}
+				fr.Runner = r
 
-			fr.RunFunctionalSuites(tt.suites())
+				fr.RunFunctionalSuites(tt.suites())
+			} */
+			if tt.name == "Obs Error test run" {
+				mockRunner.EXPECT().GetClients(gomock.Any(), gomock.Any()).AnyTimes().Return(&k8sclient.Clients{}, nil)
+				mockRunner.EXPECT().GetObservers(gomock.Any()).AnyTimes().Return([]observer.Interface{})
+				mockStore.EXPECT().SaveTestCase(gomock.Any()).AnyTimes().Return(nil)
+				mockStore.EXPECT().SaveTestRun(gomock.Any()).AnyTimes().Return(nil)
+				mockStore.EXPECT().SuccessfulTestCase(gomock.Any(), gomock.Any()).AnyTimes().Return(nil)
+				mockRunner.EXPECT().Run(gomock.Any(), gomock.Any(), gomock.Any()).AnyTimes().Return(nil, nil)
+				oldRunnerTimeout := observer.RunnerTimeout
+				observer.RunnerTimeout = 0 * time.Minute
+				defer func() { observer.RunnerTimeout = oldRunnerTimeout }()
+				mockRunner.EXPECT().GetName().AnyTimes().Return("test run - obs error")
+				mockKubeClient.EXPECT().CreateNamespaceWithSuffix(gomock.Any(), "test-namespace").AnyTimes().Return(newNameSpace, nil)
+				mockKubeClient.EXPECT().DeleteNamespace(gomock.Any(), gomock.Any()).AnyTimes().Return(nil)
+				mockRunner.EXPECT().GetNamespace().AnyTimes().Return("test-namespace")
+				r := &Runner{
+					Config:     &rest.Config{},
+					KubeClient: mockKubeClient,
+				}
+				fr.Runner = r
+
+				fr.RunFunctionalSuites(tt.suites())
+			}
 		})
 	}
 }
@@ -223,8 +304,8 @@ func TestRunFunctionalSuites(t *testing.T) {
 	if res != FAILURE {
 		t.Errorf("Expected result to be FAILURE, got %v", res)
 	}
-}
-*/
+} */
+
 /* type StorageClassDBStore struct {
 	*store.StorageClassDB
 } */
