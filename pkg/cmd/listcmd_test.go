@@ -53,7 +53,7 @@ func TestGetListCommandAction(t *testing.T) {
 	mockStore.EXPECT().GetTestCases(gomock.Any(), gomock.Any(), gomock.Any()).Times(1).Return([]store.TestCase{{Name: "test-case-1"}}, nil)
 	mockStore.EXPECT().Close().Times(1)
 
-	GetDatabase = func(c *cli.Context) store.Store {
+	GetDatabase = func(_ *cli.Context) store.Store {
 		return mockStore
 	}
 
