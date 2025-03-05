@@ -179,47 +179,6 @@ func TestPodListObserver_StartWatching(t *testing.T) {
 	// Add the waitgroup to the Runner
 	mockRunner.WaitGroup.Add(1)
 
-	// Call the StartWatching function
-	go po.StartWatching(ctx, mockRunner)
-
-	// Wait for the StartWatching function to complete
-	//<-po.finished
-
-	// timeout := 10 * time.Second // Set the custom timeout
-	// done := make(chan bool)
-
-	// // Wait for the StartWatching function to complete
-	// go func() {
-	// 	mockRunner.WaitGroup.Wait()
-	// 	done <- true
-	// }()
-	// select {
-	// case <-done:
-	// 	// StartWatching function completed successfully
-	// 	assert.True(t, true)
-	// case <-time.After(timeout):
-	// 	// Test timed out
-	// 	t.Error("Test timed out")
-	// }
-	// time.Sleep(100 * time.Millisecond)
-
-	// Set up a reactor to simulate the deletion of pods
-	clientSet.Fake.PrependReactor("delete", "pods", func(action k8stesting.Action) (bool, runtime.Object, error) {
-		deleteAction := action.(k8stesting.DeleteAction)
-		podName := deleteAction.GetName()
-
-		// Simulate the deletion of the pod
-		pod := &v1.Pod{
-			ObjectMeta: metav1.ObjectMeta{
-				Name:      podName,
-				Namespace: "test-namespace",
-			},
-		}
-
-		// Return the deleted pod
-		return true, pod, nil
-	})
-
 	go po.StartWatching(ctx, mockRunner)
 
 	time.Sleep(100 * time.Millisecond)
