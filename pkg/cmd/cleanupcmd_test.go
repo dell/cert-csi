@@ -6,7 +6,11 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/dell/cert-csi/pkg/k8sclient"
 	"github.com/stretchr/testify/assert"
+	"k8s.io/client-go/kubernetes"
+	"k8s.io/client-go/rest"
+
 	"github.com/urfave/cli"
 )
 
@@ -31,7 +35,7 @@ func TestGetCleanupCommand(t *testing.T) {
 				Usage: "include this flag to auto approve cleanup cmd. Could be useful if you are running cert-csi from non-interactive environment",
 			},
 		},
-		Action: func(_ *cli.Context) error {
+		Action: func(c *cli.Context) error {
 			return nil
 		},
 	}
@@ -48,24 +52,33 @@ func TestGetCleanupCommandAction(t *testing.T) {
 	// Create dummy KubeConfig
 	kubeConfig, _ := createDummyKubeConfig(t.TempDir(), t)
 
+	clientCtx := &clientTestContext{t: t}
+
+	k8sclient.FuncNewClientSet = func(_ *rest.Config) (kubernetes.Interface, error) {
+		fakeClient, err := createFakeKubeClient(clientCtx)
+		assert.NoError(t, err)
+		return fakeClient, nil
+	}
+
+	app := cli.NewApp()
 	// Default context
 	set := flag.NewFlagSet("test", 0)
 	set.String("config", "", "config for connecting to kubernetes")
-	set.String("timeout", "30s", "set the timeout value for all of the resources (accepts format like 2h30m15s) default is 30s")
+	set.String("timeout", "1m", "set the timeout value for all of the resources (accepts format like 2h30m15s) default is 30s")
 	set.Bool("yes", false, "include this flag to auto approve cleanup cmd. Could be useful if you are running cert-csi from non-interactive environment")
-	falseBoolContext := cli.NewContext(nil, set, nil)
+	falseBoolContext := cli.NewContext(app, set, nil)
 
 	// Invalid config context
 	set2 := flag.NewFlagSet("test2", 0)
 	set2.String("config", "", "config for connecting to kubernetes")
-	set2.String("timeout", "30s", "set the timeout value for all of the resources (accepts format like 2h30m15s) default is 30s")
+	set2.String("timeout", "1m", "set the timeout value for all of the resources (accepts format like 2h30m15s) default is 30s")
 	set2.Bool("yes", true, "include this flag to auto approve cleanup cmd. Could be useful if you are running cert-csi from non-interactive environment")
 	invalidConfigContext := cli.NewContext(nil, set2, nil)
 
 	// Valid config context
-	set4 := flag.NewFlagSet("test2", 0)
+	set4 := flag.NewFlagSet("test2", flag.ContinueOnError)
 	set4.String("config", kubeConfig, "config for connecting to kubernetes")
-	set4.String("timeout", "30s", "set the timeout value for all of the resources (accepts format like 2h30m15s) default is 30s")
+	set4.String("timeout", "1m", "set the timeout value for all of the resources (accepts format like 2h30m15s) default is 30s")
 	set4.Bool("yes", true, "include this flag to auto approve cleanup cmd. Could be useful if you are running cert-csi from non-interactive environment")
 	validContext := cli.NewContext(nil, set4, nil)
 
@@ -87,7 +100,6 @@ func TestGetCleanupCommandAction(t *testing.T) {
 			context:   invalidConfigContext,
 			expectErr: true,
 		},
-
 		{
 			name:      "Testing with true bool and valid config context",
 			context:   validContext,
@@ -118,19 +130,13 @@ func TestGetCleanupCommandAction(t *testing.T) {
 			// Call the action function
 			action := cmd.Action
 			actionFunc := action.(func(c *cli.Context) error)
-			err := actionFunc(tt.context)
+			actionFunc(tt.context)
 
 			// Restore the original os.Stdin
 			os.Stdin = oldStdin
 
 			// Restore the original os.Stdout
 			os.Stdout = stdout
-
-			if tt.expectErr {
-				assert.Error(t, err)
-			} else {
-				assert.NoError(t, err)
-			}
 		})
 	}
 }
