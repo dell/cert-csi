@@ -4,8 +4,11 @@ import (
 	"flag"
 	"testing"
 
+	"github.com/dell/cert-csi/pkg/store"
+	"github.com/dell/cert-csi/pkg/store/mocks"
 	"github.com/stretchr/testify/assert"
 	"github.com/urfave/cli"
+	"go.uber.org/mock/gomock"
 )
 
 func TestGetListCommand(t *testing.T) {
@@ -37,7 +40,7 @@ func TestGetTestrunsCmd(t *testing.T) {
 	assert.Equal(t, "list", testrunsCmd.Category)
 }
 
-func TestGetListCommandAction(_ *testing.T) {
+func TestGetListCommandAction(t *testing.T) {
 	// Default context
 	set := flag.NewFlagSet("test", 0)
 	set.Bool("tabular", true, "specifies if tabular report should be generated")
@@ -52,6 +55,16 @@ func TestGetListCommandAction(_ *testing.T) {
 	//store.NewSQLiteStore("file:test1.db?cache=shared&mode=memory").GetTestRuns(store.Conditions{}, "", 0) = func(conditions store.Conditions, orderBy string, limit int) ([]store.TestRun, error) {
 	//	return []store.TestRun{{Name: "test-run-1"}}, nil
 	//}
+
+	mockStore := mocks.NewMockStore(gomock.NewController(t))
+	mockStore.EXPECT().GetTestRuns(gomock.Any(), gomock.Any(), gomock.Any()).Times(1).Return([]store.TestRun{{Name: "test-run-1"}}, nil)
+	mockStore.EXPECT().GetTestCases(gomock.Any(), gomock.Any(), gomock.Any()).Times(1).Return([]store.TestCase{{Name: "test-case-1"}}, nil)
+	mockStore.EXPECT().Close().Times(1)
+
+	GetDatabase = func(c *cli.Context) store.Store {
+		return mockStore
+	}
+
 	command := GetTestrunsCmd()
 	// Call the action function
 	action := command.Action

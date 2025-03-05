@@ -8,8 +8,8 @@ import (
 
 	"github.com/dell/cert-csi/pkg/store"
 	"github.com/dell/cert-csi/pkg/testcore/runner/mocks"
-	"github.com/golang/mock/gomock"
 	"github.com/stretchr/testify/assert"
+	"go.uber.org/mock/gomock"
 )
 
 func TestGetSuiteRunner(t *testing.T) {

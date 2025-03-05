@@ -43,6 +43,10 @@ func GetListCommand() cli.Command {
 	return listCmd
 }
 
+var GetDatabase = func(c *cli.Context) store.Store {
+	return store.NewSQLiteStore("file:" + c.GlobalString("db"))
+}
+
 func GetTestrunsCmd() cli.Command {
 	const padding = 3
 	return cli.Command{
@@ -50,7 +54,7 @@ func GetTestrunsCmd() cli.Command {
 		ShortName: "tr",
 		Category:  "list",
 		Action: func(c *cli.Context) error {
-			db := store.NewSQLiteStore("file:" + c.GlobalString("db"))
+			db := GetDatabase(c)
 			defer db.Close()
 
 			runs, err := db.GetTestRuns(store.Conditions{}, "", 0)
