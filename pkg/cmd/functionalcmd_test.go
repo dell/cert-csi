@@ -12,6 +12,7 @@ import (
 
 	"github.com/dell/cert-csi/pkg/k8sclient"
 	"github.com/dell/cert-csi/pkg/observer"
+	"github.com/dell/cert-csi/pkg/testcore/runner"
 	"github.com/dell/cert-csi/pkg/testcore/suites"
 	"github.com/urfave/cli"
 
