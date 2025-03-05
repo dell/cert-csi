@@ -291,6 +291,38 @@ func TestExecuteSuite(t *testing.T) {
 			},
 		},
 		{
+			name:    "Invalid storage class",
+			iterCtx: context.Background(),
+			num:     1,
+			suites: func() map[string][]suites.Interface {
+				suite := runnermocks.NewMockInterface(gomock.NewController(t))
+				suite.EXPECT().GetNamespace().AnyTimes().Return("test-namespace")
+				return map[string][]suites.Interface{
+					"testSuite": {
+						suite,
+					},
+				}
+			},
+			suite: func() suites.Interface {
+				suite := runnermocks.NewMockInterface(gomock.NewController(t))
+				suite.EXPECT().Run(gomock.Any(), gomock.Any(), gomock.Any()).AnyTimes().Return(nil, fmt.Errorf("wrong stoarge class"))
+				suite.EXPECT().GetNamespace().AnyTimes().Return("test-namespace")
+				suite.EXPECT().GetName().AnyTimes().Return("test run 1")
+				suite.EXPECT().Parameters().Times(1).Return("param1,param2")
+				suite.EXPECT().GetClients(gomock.Any(), gomock.Any()).AnyTimes().Return(&k8sclient.Clients{}, nil)
+				suite.EXPECT().GetObservers(gomock.Any()).AnyTimes().Return([]observer.Interface{})
+				return suite
+			},
+			c:           make(chan os.Signal),
+			wantSuccess: false,
+			tr: &store.TestRun{
+				Name:           "test run 1",
+				StartTimestamp: time.Now(),
+				StorageClass:   "sc1",
+				ClusterAddress: "localhost",
+			},
+		},
+		{
 			name:    "Failure suite run",
 			iterCtx: context.Background(),
 			num:     1,
@@ -358,6 +390,19 @@ func TestExecuteSuite(t *testing.T) {
 				mockStore.EXPECT().SaveTestCase(gomock.Any()).AnyTimes().Return(fmt.Errorf("new error"))
 
 				mockStore.EXPECT().SuccessfulTestCase(gomock.Any(), gomock.Any()).AnyTimes().Return(fmt.Errorf("new error"))
+
+				ExecuteSuite(tt.iterCtx, tt.num, tt.suites(), tt.suite(), sr, scDBs, tt.c)
+
+			}
+			if tt.name == "Invalid storage class" {
+				sr := &SuiteRunner{
+					CoolDownPeriod: 1,
+				}
+				sr.Runner = r
+				mockStore.EXPECT().FailedTestCase(gomock.Any(), gomock.Any(), gomock.Any()).AnyTimes().Return(nil)
+				mockStore.EXPECT().SaveTestCase(gomock.Any()).AnyTimes().Return(nil)
+
+				mockStore.EXPECT().SuccessfulTestCase(gomock.Any(), gomock.Any()).AnyTimes().Return(nil)
 
 				ExecuteSuite(tt.iterCtx, tt.num, tt.suites(), tt.suite(), sr, scDBs, tt.c)
 
