@@ -7,15 +7,12 @@ import (
 	"time"
 
 	"github.com/dell/cert-csi/pkg/k8sclient"
-	"github.com/dell/cert-csi/pkg/k8sclient/resources/pod"
 	"github.com/dell/cert-csi/pkg/store"
 	"github.com/stretchr/testify/assert"
 	v1 "k8s.io/api/core/v1"
 	storagev1 "k8s.io/api/storage/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/client-go/rest"
-	k8stesting "k8s.io/client-go/testing"
 )
 
 func isChanClosed(ch <-chan bool) bool {
@@ -47,68 +44,6 @@ func TestPodListObserver_StartWatching(t *testing.T) {
 		ClientSet: clientSet,
 		Config:    &rest.Config{},
 	}
-	// Set up a reactor to simulate Pods becoming Ready
-	clientSet.Fake.PrependReactor("create", "pods", func(action k8stesting.Action) (bool, runtime.Object, error) {
-		createAction := action.(k8stesting.CreateAction)
-		pod := createAction.GetObject().(*v1.Pod)
-		// Set pod phase to Running
-		pod.Status.Phase = v1.PodRunning
-		// Simulate the Ready condition
-		pod.Status.Conditions = append(pod.Status.Conditions, v1.PodCondition{
-			Type:   v1.PodReady,
-			Status: v1.ConditionTrue,
-		})
-
-		// Simulate the "FileSystemResizeSuccessful" event
-		event := &v1.Event{
-			ObjectMeta: metav1.ObjectMeta{
-				Namespace: pod.Namespace,
-				Name:      "test-event",
-			},
-			InvolvedObject: v1.ObjectReference{
-				Namespace: pod.Namespace,
-				Name:      pod.Name,
-				UID:       pod.UID,
-			},
-			Reason: "FileSystemResizeSuccessful",
-			Type:   v1.EventTypeNormal,
-		}
-		clientSet.Tracker().Add(event)
-
-		return false, nil, nil // Allow normal processing to continue
-	})
-	clientSet.Fake.PrependReactor("get", "pods", func(action k8stesting.Action) (bool, runtime.Object, error) {
-		getAction := action.(k8stesting.GetAction)
-		podName := getAction.GetName()
-		// Create a pod object with the expected name and Ready status
-		pod := &v1.Pod{
-			ObjectMeta: metav1.ObjectMeta{
-				Name:      podName,
-				Namespace: "test-namespace",
-			},
-			Status: v1.PodStatus{
-				Phase: v1.PodRunning,
-				Conditions: []v1.PodCondition{
-					{
-						Type:   v1.PodReady,
-						Status: v1.ConditionTrue,
-					},
-				},
-			},
-		}
-		return true, pod, nil
-	})
-
-	// Create a mock Clients instance
-	mockClients := &MockClients{}
-
-	// Set up the mock behavior for the CreatePodClient method
-	mockClients.On("CreatePodClient", "test-namespace").Return(
-		&pod.Client{
-			Interface: clientSet.CoreV1().Pods("test-namespace"),
-		},
-		nil,
-	)
 
 	pod := &v1.Pod{
 		ObjectMeta: metav1.ObjectMeta{
@@ -117,7 +52,7 @@ func TestPodListObserver_StartWatching(t *testing.T) {
 			DeletionTimestamp: &metav1.Time{Time: time.Now()},
 		},
 		Status: v1.PodStatus{
-			Phase: v1.PodRunning,
+			Phase: v1.PodPhase(v1.PodReady),
 			Conditions: []v1.PodCondition{
 				{
 					Type:   v1.PodReady,
@@ -129,7 +64,7 @@ func TestPodListObserver_StartWatching(t *testing.T) {
 
 	pod2 := &v1.Pod{
 		ObjectMeta: metav1.ObjectMeta{
-			Name:              "test-pod",
+			Name:              "test-pod-2",
 			Namespace:         "test-namespace",
 			DeletionTimestamp: &metav1.Time{Time: time.Now()},
 		},
@@ -137,7 +72,7 @@ func TestPodListObserver_StartWatching(t *testing.T) {
 			Phase: v1.PodPhase(v1.PodReady),
 			Conditions: []v1.PodCondition{
 				{
-					Type:   v1.PodScheduled,
+					Type:   v1.PodReady,
 					Status: v1.ConditionTrue,
 				},
 			},
@@ -147,48 +82,79 @@ func TestPodListObserver_StartWatching(t *testing.T) {
 	podClient, _ := kubeClient.CreatePodClient("test-namespace")
 
 	podClient.Create(ctx, pod)
-	podClient.Delete(ctx, pod)
-	podClient.Create(ctx, pod)
-	podClient.Update(pod2)
+	podClient.Create(ctx, pod2)
 
-	// Create a mock Runner
-	mockRunner := &Runner{
-		WaitGroup: sync.WaitGroup{},
-		Clients: &k8sclient.Clients{
-			PodClient: podClient,
+	tests := []struct {
+		name   string
+		runner *Runner
+	}{
+		{
+			name: "Test case: nil podClient",
+			runner: &Runner{
+				WaitGroup: sync.WaitGroup{},
+				Clients: &k8sclient.Clients{
+					PodClient: nil,
+				},
+				TestCase: &store.TestCase{
+					ID: 1,
+				},
+				Database: NewSimpleStore(),
+			},
 		},
-		TestCase: &store.TestCase{
-			ID: 1,
+		{
+			name: "Test case: podClien with added pods conditional is false",
+			runner: &Runner{
+				WaitGroup: sync.WaitGroup{},
+				Clients: &k8sclient.Clients{
+					PodClient: podClient,
+				},
+				TestCase: &store.TestCase{
+					ID: 1,
+				},
+				Database: NewSimpleStore(),
+			},
 		},
-		Database: NewSimpleStore(),
 	}
-	// Create a PodListObserver instance
-	po := &PodListObserver{}
-	po.MakeChannel()
-	// Check for nil pointer dereferences
-	// if mockRunner == nil {
-	// 	t.Error("mockRunner is nil")
-	// }
-	// if po == nil {
-	// 	t.Error("po is nil")
-	// }
 
-	// Create a context
-	// ctx := context.Background()
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			var wg sync.WaitGroup
 
-	// Add the waitgroup to the Runner
-	mockRunner.WaitGroup.Add(1)
+			// Create a PodListObserver instance
+			po := &PodListObserver{}
+			po.MakeChannel()
 
-	go po.StartWatching(ctx, mockRunner)
+			test.runner.WaitGroup.Add(1)
+			runCount := 0
 
-	time.Sleep(100 * time.Millisecond)
+			originalGetBoolValueFromMapWithKey := getBoolValueFromMapWithKey
+			getBoolValueFromMapWithKey = func(m map[string]bool, key string) bool {
+				runCount++
+				if runCount == 5 {
+					podClient.Delete(ctx, pod)
+				}
+				if runCount == 10 {
+					wg.Done()
+				}
+				return originalGetBoolValueFromMapWithKey(m, key)
+			}
+			defer func() {
+				podClient.Create(ctx, pod)
+				getBoolValueFromMapWithKey = originalGetBoolValueFromMapWithKey
+			}()
 
-	po.StopWatching()
+			go po.StartWatching(ctx, test.runner)
+			if test.runner.Clients.PodClient != nil {
+				wg.Add(1)
+				wg.Wait()
+				po.StopWatching()
+			}
+			test.runner.WaitGroup.Wait()
 
-	mockRunner.WaitGroup.Wait()
-
-	// Assert that the function completed successfully
-	assert.True(t, true)
+			// Assert that the function completed successfully
+			assert.True(t, true)
+		})
+	}
 }
 func TestPodListObserver_StopWatching(t *testing.T) {
 
