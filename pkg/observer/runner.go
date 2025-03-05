@@ -44,6 +44,8 @@ const (
 	EVENT Type = "EVENT"
 )
 
+var RunnerTimeout = 2 * time.Minute
+
 // Runner contains configuration to run the testcases
 type Runner struct {
 	WaitGroup       sync.WaitGroup
@@ -93,7 +95,7 @@ func (runner *Runner) Stop() error {
 	})
 
 	// Wait for all of observers to complete
-	if runner.waitTimeout(2 * time.Minute) {
+	if runner.waitTimeout(RunnerTimeout) {
 		// If we are here, then some of observers haven't received ending events
 		// Check if any volumeattachments remain
 		mismatch := false

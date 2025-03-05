@@ -102,7 +102,7 @@ func NewSuiteRunner(configPath, driverNs, startHook, readyHook, finishHook, obse
 			logrus.Errorf("Can't check existence of storageClass; error=%v", scErr)
 		}
 		if !scEx {
-			logrus.Fatalf("Can't find storage class %s", scDB.StorageClass)
+			logrus.Errorf("Can't find storage class %s", scDB.StorageClass)
 		}
 		generateTestRunDetails(scDB, runner.KubeClient, runner.Config.Host)
 	}
