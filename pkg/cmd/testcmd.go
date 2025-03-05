@@ -31,6 +31,10 @@ import (
 	"github.com/urfave/cli"
 )
 
+var ExecuteSuite = func(sr *runner.FunctionalSuiteRunner, s []suites.Interface) {
+	sr.RunFunctionalSuites(s)
+}
+
 // GetTestCommand returns a `test` command with all prepared sub-commands
 func GetTestCommand() cli.Command {
 	globalFlags := []cli.Flag{
@@ -1086,7 +1090,7 @@ func getEphemeralCreationCommand(globalFlags []cli.Flag) cli.Command {
 			}
 
 			sr := createFunctionalSuiteRunner(c, c.Bool("no-cleanup"), c.Bool("no-cleanup-on-fail"))
-			sr.RunFunctionalSuites(s)
+			ExecuteSuite(sr, s)
 
 			return nil
 		},

@@ -235,6 +235,16 @@ func TestGetFunctionalTestCommand(t *testing.T) {
 	//}
 }
 
+func TestGetFunctionalTestCommandAction(t *testing.T) {
+	// Default context
+	ctx := &cli.Context{}
+	command := GetFunctionalTestCommand()
+	// Call the action function
+	action := command.Subcommands[0].Action
+	actionFunc := action.(func(c *cli.Context) error)
+	actionFunc(ctx)
+}
+
 // Add more test cases for other functions in functionalcmd.go
 func TestReadEphemeralConfig(t *testing.T) {
 	// Test case for an empty filename
