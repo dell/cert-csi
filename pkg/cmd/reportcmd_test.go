@@ -1,7 +1,10 @@
 package cmd
 
 import (
+<<<<<<< HEAD
 	"flag"
+=======
+>>>>>>> 4fd111769aa282546f68e2884c31dc2b2c79def3
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -12,6 +15,7 @@ func TestGetReportCommand(t *testing.T) {
 	// Test that the function returns a cli.Command
 	reportCmd := GetReportCommand()
 	assert.IsType(t, cli.Command{}, reportCmd)
+<<<<<<< HEAD
 	// Test that the command has the correct name
 	assert.Equal(t, "report", reportCmd.Name)
 	// Test that the command has the correct usage
@@ -20,6 +24,21 @@ func TestGetReportCommand(t *testing.T) {
 	assert.Equal(t, "main", reportCmd.Category)
 	// Test that the command has the correct flags
 	assert.Len(t, reportCmd.Flags, 6)
+=======
+
+	// Test that the command has the correct name
+	assert.Equal(t, "report", reportCmd.Name)
+
+	// Test that the command has the correct usage
+	assert.Equal(t, "generate report from test run name", reportCmd.Usage)
+
+	// Test that the command has the correct category
+	assert.Equal(t, "main", reportCmd.Category)
+
+	// Test that the command has the correct flags
+	assert.Len(t, reportCmd.Flags, 6)
+
+>>>>>>> 4fd111769aa282546f68e2884c31dc2b2c79def3
 	assert.Contains(t, reportCmd.Flags, cli.StringFlag{
 		Name:  "reportPath, path",
 		Usage: "path to folder where reports will be created (if not specified `~/.cert-csi/` will be used)",
@@ -40,9 +59,17 @@ func TestGetReportCommand(t *testing.T) {
 		Name:  "xml",
 		Usage: "specifies if qTest xml report should be generated",
 	})
+<<<<<<< HEAD
 	// Test that the command has the correct action function
 	assert.NotNil(t, reportCmd.Action)
 }
+=======
+
+	// Test that the command has the correct action function
+	assert.NotNil(t, reportCmd.Action)
+}
+
+>>>>>>> 4fd111769aa282546f68e2884c31dc2b2c79def3
 func Test_parseTestRun(t *testing.T) {
 	tests := []struct {
 		name     string
@@ -71,6 +98,7 @@ func Test_parseTestRun(t *testing.T) {
 		})
 	}
 }
+<<<<<<< HEAD
 
 func TestGetReportCommandAction(t *testing.T) {
 	// Default context
@@ -108,3 +136,5 @@ func TestGetReportCommandAction(t *testing.T) {
 	actionFunc := action.(func(c *cli.Context) error)
 	actionFunc(ctx)
 }
+=======
+>>>>>>> 4fd111769aa282546f68e2884c31dc2b2c79def3

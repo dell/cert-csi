@@ -70,12 +70,12 @@ func (s *SimpleStore) NumberEntities() []*store.NumberEntities {
 	return s.entities
 }
 
-func (s *SimpleStore) SaveTestRun(tr *store.TestRun) error {
+func (s *SimpleStore) SaveTestRun(_ *store.TestRun) error {
 	// Implement the method here
 	return nil
 }
 
-func (s *SimpleStore) GetTestRuns(whereConditions store.Conditions, orderBy string, limit int) ([]store.TestRun, error) {
+func (s *SimpleStore) GetTestRuns(_ store.Conditions, _ string, _ int) ([]store.TestRun, error) {
 	// Implement the method here
 	return nil, nil
 }
@@ -86,7 +86,7 @@ func NewSimpleStore() *SimpleStore {
 	return &SimpleStore{}
 }
 
-func TestEntityNumberObserver_StartWatching(t *testing.T) {
+func TestEntityNumberObserver_StartWatching(_ *testing.T) {
 	// Create a context
 	ctx := context.Background()
 
@@ -229,7 +229,7 @@ func (f *FakeDatabase) Close() error {
 type FakePVC struct{}
 
 // List is a mock implementation of the List method
-func (f *FakePVC) List(ctx context.Context, opts metav1.ListOptions) (*v1.PersistentVolumeClaimList, error) {
+func (f *FakePVC) List(_ context.Context, _ metav1.ListOptions) (*v1.PersistentVolumeClaimList, error) {
 	return &v1.PersistentVolumeClaimList{}, nil
 }
 
@@ -237,6 +237,6 @@ func (f *FakePVC) List(ctx context.Context, opts metav1.ListOptions) (*v1.Persis
 type FakePod struct{}
 
 // List is a mock implementation of the List method
-func (f *FakePod) List(ctx context.Context, opts metav1.ListOptions) (*v1.PodList, error) {
+func (f *FakePod) List(_ context.Context, _ metav1.ListOptions) (*v1.PodList, error) {
 	return &v1.PodList{}, nil
 }

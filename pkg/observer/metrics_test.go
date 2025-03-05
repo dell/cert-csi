@@ -59,7 +59,7 @@ type MockRunner struct {
 }
 
 // Start is a mock implementation of the Start method of the Runner interface
-func (m *MockRunner) Start(ctx context.Context) error {
+func (m *MockRunner) Start(_ context.Context) error {
 	return nil
 }
 
@@ -79,7 +79,7 @@ func (m *MockRunner) MakeChannel() {
 }
 
 // waitTimeout is a mock implementation of the waitTimeout method of the Runner interface
-func (m *MockRunner) waitTimeout(timeout time.Duration) bool {
+func (m *MockRunner) waitTimeout(_ time.Duration) bool {
 	return false
 }
 
@@ -177,7 +177,7 @@ func NewMockRunner(*gomock.Controller) *MockRunner {
 // 	cmo.StartWatching(context.Background(), runner)
 // }
 
-func TestContainerMetricsObserver_StopWatching(t *testing.T) {
+func TestContainerMetricsObserver_StopWatching(_ *testing.T) {
 	cmo := &ContainerMetricsObserver{}
 
 	// Test case when Interrupted is false

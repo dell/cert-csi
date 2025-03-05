@@ -1,7 +1,10 @@
 package cmd
 
 import (
+<<<<<<< HEAD
 	"flag"
+=======
+>>>>>>> 4fd111769aa282546f68e2884c31dc2b2c79def3
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -12,22 +15,40 @@ func TestGetListCommand(t *testing.T) {
 	// Test that the function returns a cli.Command
 	listCmd := GetListCommand()
 	assert.IsType(t, cli.Command{}, listCmd)
+<<<<<<< HEAD
 	// Test that the command has the correct name
 	assert.Equal(t, "list", listCmd.Name)
 	// Test that the command has the correct usage
 	assert.Equal(t, "lists different data", listCmd.Usage)
 	// Test that the command has the correct category
 	assert.Equal(t, "main", listCmd.Category)
+=======
+
+	// Test that the command has the correct name
+	assert.Equal(t, "list", listCmd.Name)
+
+	// Test that the command has the correct usage
+	assert.Equal(t, "lists different data", listCmd.Usage)
+
+	// Test that the command has the correct category
+	assert.Equal(t, "main", listCmd.Category)
+
+>>>>>>> 4fd111769aa282546f68e2884c31dc2b2c79def3
 	// Test that the command has the correct subcommand
 	assert.Len(t, listCmd.Subcommands, 1)
 	assert.Equal(t, "test-runs", listCmd.Subcommands[0].Name)
 	assert.Equal(t, "tr", listCmd.Subcommands[0].ShortName)
 	assert.Equal(t, "list", listCmd.Subcommands[0].Category)
 }
+<<<<<<< HEAD
+=======
+
+>>>>>>> 4fd111769aa282546f68e2884c31dc2b2c79def3
 func TestGetTestrunsCmd(t *testing.T) {
 	// Test that the function returns a cli.Command
 	testrunsCmd := GetTestrunsCmd()
 	assert.IsType(t, cli.Command{}, testrunsCmd)
+<<<<<<< HEAD
 	// Test that the command has the correct name
 	assert.Equal(t, "test-runs", testrunsCmd.Name)
 	// Test that the command has the correct short name
@@ -57,4 +78,15 @@ func TestGetListCommandAction(t *testing.T) {
 	action := command.Action
 	actionFunc := action.(func(c *cli.Context) error)
 	actionFunc(ctx)
+=======
+
+	// Test that the command has the correct name
+	assert.Equal(t, "test-runs", testrunsCmd.Name)
+
+	// Test that the command has the correct short name
+	assert.Equal(t, "tr", testrunsCmd.ShortName)
+
+	// Test that the command has the correct category
+	assert.Equal(t, "list", testrunsCmd.Category)
+>>>>>>> 4fd111769aa282546f68e2884c31dc2b2c79def3
 }

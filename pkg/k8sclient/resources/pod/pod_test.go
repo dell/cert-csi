@@ -89,7 +89,7 @@ func NewFakeClientsetWithRestClient(objs ...runtime.Object) *FakeExtendedClients
 
 type FakeRemoteExecutor struct{}
 
-func (f *FakeRemoteExecutor) Execute(method string, url *url.URL, config *restclient.Config, stdin io.Reader, stdout, stderr io.Writer, tty bool, terminalSizeQueue remotecommand.TerminalSizeQueue) error {
+func (f *FakeRemoteExecutor) Execute(_ string, _ *url.URL, _ *restclient.Config, _ io.Reader, _, _ io.Writer, _ bool, _ remotecommand.TerminalSizeQueue) error {
 	return nil
 }
 
@@ -97,7 +97,7 @@ type FakeCommandExecutor struct {
 	isOCP bool
 }
 
-func (f *FakeCommandExecutor) Execute(name string, arg ...string) ([]byte, error) {
+func (f *FakeCommandExecutor) Execute(_ string, _ ...string) ([]byte, error) {
 	output := ""
 	if f.isOCP {
 		output = "Cluster version is 4.8.12"
