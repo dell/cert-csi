@@ -36,10 +36,6 @@ type PvcListObserver struct {
 	finished chan bool
 }
 
-var getBoolValueFromMapWithKey = func(m map[string]bool, key string) bool {
-	return m[key]
-}
-
 var getPvcsList = func(ctx context.Context, client *pvc.Client, opts metav1.ListOptions) (*v1.PersistentVolumeClaimList, error) {
 	return client.Interface.List(ctx, metav1.ListOptions{})
 }
