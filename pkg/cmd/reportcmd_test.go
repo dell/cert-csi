@@ -73,7 +73,7 @@ func Test_parseTestRun(t *testing.T) {
 	}
 }
 
-func TestGetReportCommandAction(t *testing.T) {
+func TestGetReportCommandAction(_ *testing.T) {
 	// Default context
 	set := flag.NewFlagSet("test", 0)
 	set.Bool("tabular", true, "specifies if tabular report should be generated")

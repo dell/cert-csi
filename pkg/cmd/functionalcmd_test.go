@@ -221,7 +221,7 @@ func TestGetFunctionalTestCommand(t *testing.T) {
 	assert.Equal(t, "snapshot", command.Subcommands[7].Name)
 }
 
-func TestGetFunctionalTestCommandAction(t *testing.T) {
+func TestGetFunctionalTestCommandAction(_ *testing.T) {
 	// Default context
 	ctx := &cli.Context{}
 	command := GetFunctionalTestCommand()
@@ -279,8 +279,7 @@ key2=value2
 	}
 }
 
-
-func TestGetVolumeDeletionCommandAction(t *testing.T) {
+func TestGetVolumeDeletionCommandAction(_ *testing.T) {
 	// Default context
 	set := flag.NewFlagSet("test", 0)
 	set.String("timeout", "10s", "specifies timeout for volume deletion")
@@ -297,11 +296,11 @@ func TestGetVolumeDeletionCommandAction(t *testing.T) {
 	// Call the action function
 	action := command.Action
 	actionFunc := action.(func(c *cli.Context) error)
-	ExecuteSuite = func(sr *runner.FunctionalSuiteRunner, s []suites.Interface) {}
+	ExecuteSuite = func(_ *runner.FunctionalSuiteRunner, _ []suites.Interface) {}
 	actionFunc(ctx)
 }
 
-func TestGetPodDeletionCommandAction(t *testing.T) {
+func TestGetPodDeletionCommandAction(_ *testing.T) {
 	// Default context
 	set := flag.NewFlagSet("test", 0)
 	set.String("timeout", "10s", "specifies timeout for volume deletion")
@@ -318,11 +317,11 @@ func TestGetPodDeletionCommandAction(t *testing.T) {
 	// Call the action function
 	action := command.Action
 	actionFunc := action.(func(c *cli.Context) error)
-	ExecuteSuite = func(sr *runner.FunctionalSuiteRunner, s []suites.Interface) {}
+	ExecuteSuite = func(_ *runner.FunctionalSuiteRunner, _ []suites.Interface) {}
 	actionFunc(ctx)
 }
 
-func TestGetCloneVolumeDeletionCommandAction(t *testing.T) {
+func TestGetCloneVolumeDeletionCommandAction(_ *testing.T) {
 	// Default context
 	set := flag.NewFlagSet("test", 0)
 	set.String("timeout", "10s", "specifies timeout for volume deletion")
@@ -340,11 +339,11 @@ func TestGetCloneVolumeDeletionCommandAction(t *testing.T) {
 	// Call the action function
 	action := command.Action
 	actionFunc := action.(func(c *cli.Context) error)
-	ExecuteSuite = func(sr *runner.FunctionalSuiteRunner, s []suites.Interface) {}
+	ExecuteSuite = func(_ *runner.FunctionalSuiteRunner, _ []suites.Interface) {}
 	actionFunc(ctx)
 }
 
-func TestGetFunctionalSnapDeletionCommandAction(t *testing.T) {
+func TestGetFunctionalSnapDeletionCommandAction(_ *testing.T) {
 	// Default context
 	set := flag.NewFlagSet("test", 0)
 	set.String("timeout", "10s", "specifies timeout for volume deletion")
@@ -361,11 +360,11 @@ func TestGetFunctionalSnapDeletionCommandAction(t *testing.T) {
 	// Call the action function
 	action := command.Action
 	actionFunc := action.(func(c *cli.Context) error)
-	ExecuteSuite = func(sr *runner.FunctionalSuiteRunner, s []suites.Interface) {}
+	ExecuteSuite = func(_ *runner.FunctionalSuiteRunner, _ []suites.Interface) {}
 	actionFunc(ctx)
 }
 
-func TestGetFunctionalVolumeCreateCommandAction(t *testing.T) {
+func TestGetFunctionalVolumeCreateCommandAction(_ *testing.T) {
 	// Default context
 	set := flag.NewFlagSet("test", 0)
 	set.String("timeout", "10s", "specifies timeout for volume deletion")
@@ -385,11 +384,11 @@ func TestGetFunctionalVolumeCreateCommandAction(t *testing.T) {
 	// Call the action function
 	action := command.Action
 	actionFunc := action.(func(c *cli.Context) error)
-	ExecuteSuite = func(sr *runner.FunctionalSuiteRunner, s []suites.Interface) {}
+	ExecuteSuite = func(_ *runner.FunctionalSuiteRunner, _ []suites.Interface) {}
 	actionFunc(ctx)
 }
 
-func TestGetFunctionalCloneVolumeCommandAction(t *testing.T) {
+func TestGetFunctionalCloneVolumeCommandAction(_ *testing.T) {
 	// Default context
 	set := flag.NewFlagSet("test", 0)
 	set.String("timeout", "10s", "specifies timeout for volume deletion")
@@ -410,11 +409,11 @@ func TestGetFunctionalCloneVolumeCommandAction(t *testing.T) {
 	// Call the action function
 	action := command.Action
 	actionFunc := action.(func(c *cli.Context) error)
-	ExecuteSuite = func(sr *runner.FunctionalSuiteRunner, s []suites.Interface) {}
+	ExecuteSuite = func(_ *runner.FunctionalSuiteRunner, _ []suites.Interface) {}
 	actionFunc(ctx)
 }
 
-func TestGetFunctionalProvisioningCommandAction(t *testing.T) {
+func TestGetFunctionalProvisioningCommandAction(_ *testing.T) {
 	// Default context
 	set := flag.NewFlagSet("test", 0)
 	set.String("timeout", "10s", "specifies timeout for volume deletion")
@@ -436,11 +435,11 @@ func TestGetFunctionalProvisioningCommandAction(t *testing.T) {
 	// Call the action function
 	action := command.Action
 	actionFunc := action.(func(c *cli.Context) error)
-	ExecuteSuite = func(sr *runner.FunctionalSuiteRunner, s []suites.Interface) {}
+	ExecuteSuite = func(_ *runner.FunctionalSuiteRunner, _ []suites.Interface) {}
 	actionFunc(ctx)
 }
 
-func TestGetFunctionalSnapCreationCommandAction(t *testing.T) {
+func TestGetFunctionalSnapCreationCommandAction(_ *testing.T) {
 	// Default context
 	set := flag.NewFlagSet("test", 0)
 	set.String("timeout", "10s", "specifies timeout for volume deletion")
@@ -462,11 +461,11 @@ func TestGetFunctionalSnapCreationCommandAction(t *testing.T) {
 	// Call the action function
 	action := command.Action
 	actionFunc := action.(func(c *cli.Context) error)
-	ExecuteSuite = func(sr *runner.FunctionalSuiteRunner, s []suites.Interface) {}
+	ExecuteSuite = func(_ *runner.FunctionalSuiteRunner, _ []suites.Interface) {}
 	actionFunc(ctx)
 }
 
-func TestGetFunctionalMultiAttachVolCommandAction(t *testing.T) {
+func TestGetFunctionalMultiAttachVolCommandAction(_ *testing.T) {
 	// Default context
 	set := flag.NewFlagSet("test", 0)
 	set.String("timeout", "10s", "specifies timeout for volume deletion")
@@ -485,11 +484,11 @@ func TestGetFunctionalMultiAttachVolCommandAction(t *testing.T) {
 	// Call the action function
 	action := command.Action
 	actionFunc := action.(func(c *cli.Context) error)
-	ExecuteSuite = func(sr *runner.FunctionalSuiteRunner, s []suites.Interface) {}
+	ExecuteSuite = func(_ *runner.FunctionalSuiteRunner, _ []suites.Interface) {}
 	actionFunc(ctx)
 }
 
-func TestGetFunctionalEphemeralCreationCommandAction(t *testing.T) {
+func TestGetFunctionalEphemeralCreationCommandAction(_ *testing.T) {
 	// Default context
 	set := flag.NewFlagSet("test", 0)
 	set.String("timeout", "10s", "specifies timeout for volume deletion")
@@ -511,11 +510,11 @@ func TestGetFunctionalEphemeralCreationCommandAction(t *testing.T) {
 	// Call the action function
 	action := command.Action
 	actionFunc := action.(func(c *cli.Context) error)
-	ExecuteSuite = func(sr *runner.FunctionalSuiteRunner, s []suites.Interface) {}
+	ExecuteSuite = func(_ *runner.FunctionalSuiteRunner, _ []suites.Interface) {}
 	actionFunc(ctx)
 }
 
-func TestGetNodeDrainCommandAction(t *testing.T) {
+func TestGetNodeDrainCommandAction(_ *testing.T) {
 	// Default context
 	set := flag.NewFlagSet("test", 0)
 	set.String("timeout", "10s", "specifies timeout for volume deletion")
@@ -533,11 +532,11 @@ func TestGetNodeDrainCommandAction(t *testing.T) {
 	// Call the action function
 	action := command.Action
 	actionFunc := action.(func(c *cli.Context) error)
-	ExecuteSuite = func(sr *runner.FunctionalSuiteRunner, s []suites.Interface) {}
+	ExecuteSuite = func(_ *runner.FunctionalSuiteRunner, _ []suites.Interface) {}
 	actionFunc(ctx)
 }
 
-func TestGetNodeUnCordonCommandAction(t *testing.T) {
+func TestGetNodeUnCordonCommandAction(_ *testing.T) {
 	// Default context
 	set := flag.NewFlagSet("test", 0)
 	set.String("timeout", "10s", "specifies timeout for volume deletion")
@@ -553,11 +552,11 @@ func TestGetNodeUnCordonCommandAction(t *testing.T) {
 	// Call the action function
 	action := command.Action
 	actionFunc := action.(func(c *cli.Context) error)
-	ExecuteSuite = func(sr *runner.FunctionalSuiteRunner, s []suites.Interface) {}
+	ExecuteSuite = func(_ *runner.FunctionalSuiteRunner, _ []suites.Interface) {}
 	actionFunc(ctx)
 }
 
-func TestGetCapacityTrackingCommandAction(t *testing.T) {
+func TestGetCapacityTrackingCommandAction(_ *testing.T) {
 	// Default context
 	set := flag.NewFlagSet("test", 0)
 	set.String("timeout", "10s", "specifies timeout for volume deletion")
@@ -576,6 +575,6 @@ func TestGetCapacityTrackingCommandAction(t *testing.T) {
 	// Call the action function
 	action := command.Action
 	actionFunc := action.(func(c *cli.Context) error)
-	ExecuteSuite = func(sr *runner.FunctionalSuiteRunner, s []suites.Interface) {}
+	ExecuteSuite = func(_ *runner.FunctionalSuiteRunner, _ []suites.Interface) {}
 	actionFunc(ctx)
 }

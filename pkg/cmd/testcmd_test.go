@@ -103,7 +103,7 @@ func Test_getTestImage(t *testing.T) {
 	assert.NoError(t, err)
 }
 
-func TestGetVolumeCreationCommandAction(t *testing.T) {
+func TestGetVolumeCreationCommandAction(_ *testing.T) {
 	// Default context
 	set := flag.NewFlagSet("test", 0)
 	set.Int("number", 5, "number of volumes to create")
@@ -117,10 +117,9 @@ func TestGetVolumeCreationCommandAction(t *testing.T) {
 	action := command.Action
 	actionFunc := action.(func(c *cli.Context) error)
 	actionFunc(ctx)
-	// assert.Panics(t, err)
 }
 
-func TestGetVolumeMigrateCommandAction(t *testing.T) {
+func TestGetVolumeMigrateCommandAction(_ *testing.T) {
 	// Default context
 	set := flag.NewFlagSet("test", 0)
 	set.String("target-sc", "test-sc", "target storage class")
@@ -135,10 +134,9 @@ func TestGetVolumeMigrateCommandAction(t *testing.T) {
 	action := command.Action
 	actionFunc := action.(func(c *cli.Context) error)
 	actionFunc(ctx)
-	// assert.Panics(t, err)
 }
 
-func TestGetRemoteReplicationProvisioningCommandAction(t *testing.T) {
+func TestGetRemoteReplicationProvisioningCommandAction(_ *testing.T) {
 	// Default context
 	set := flag.NewFlagSet("test", 0)
 	set.String("remote-config-path", "../k8sclient/testdata/config.yaml", "Config file path for remote cluster")
@@ -155,7 +153,7 @@ func TestGetRemoteReplicationProvisioningCommandAction(t *testing.T) {
 	actionFunc(ctx)
 }
 
-func TestGetReplicationCommandAction(t *testing.T) {
+func TestGetReplicationCommandAction(_ *testing.T) {
 	// Default context
 	set := flag.NewFlagSet("test", 0)
 	set.Int("volumeNumber", 5, "number of volumes to replicate")
@@ -170,11 +168,9 @@ func TestGetReplicationCommandAction(t *testing.T) {
 	action := command.Action
 	actionFunc := action.(func(c *cli.Context) error)
 	actionFunc(ctx)
-	// assert.Panics(t, err)
-
 }
 
-func TestGetCloneVolumeCommandAction(t *testing.T) {
+func TestGetCloneVolumeCommandAction(_ *testing.T) {
 	// Default context
 	set := flag.NewFlagSet("test", 0)
 	set.Int("volumeNumber", 5, "number of volumes to clone")
@@ -187,10 +183,9 @@ func TestGetCloneVolumeCommandAction(t *testing.T) {
 	action := command.Action
 	actionFunc := action.(func(c *cli.Context) error)
 	actionFunc(ctx)
-	// assert.Panics(t, err)
 }
 
-func TestGetMultiAttachVolCommandAction(t *testing.T) {
+func TestGetMultiAttachVolCommandAction(_ *testing.T) {
 	// Default context
 	set := flag.NewFlagSet("test", 0)
 	set.Bool("block", true, "specifies if block volume should be created")
@@ -204,10 +199,9 @@ func TestGetMultiAttachVolCommandAction(t *testing.T) {
 	action := command.Action
 	actionFunc := action.(func(c *cli.Context) error)
 	actionFunc(ctx)
-	// assert.Panics(t, err)
 }
 
-func TestGetVolumeExpansionCommandAction(t *testing.T) {
+func TestGetVolumeExpansionCommandAction(_ *testing.T) {
 	// Default context
 	set := flag.NewFlagSet("test", 0)
 	set.Int("volumeNumber", 5, "number of volumes to clone")
@@ -223,10 +217,9 @@ func TestGetVolumeExpansionCommandAction(t *testing.T) {
 	action := command.Action
 	actionFunc := action.(func(c *cli.Context) error)
 	actionFunc(ctx)
-	// assert.Panics(t, err)
 }
 
-func TestGetVolumeHealthMetricsCommandAction(t *testing.T) {
+func TestGetVolumeHealthMetricsCommandAction(_ *testing.T) {
 	// Default context
 	set := flag.NewFlagSet("test", 0)
 	set.Int("volumeNumber", 5, "number of volumes to clone")
@@ -240,10 +233,10 @@ func TestGetVolumeHealthMetricsCommandAction(t *testing.T) {
 	action := command.Action
 	actionFunc := action.(func(c *cli.Context) error)
 	actionFunc(ctx)
-	// assert.Panics(t, err)
+	
 }
 
-func TestGetProvisioningCommandAction(t *testing.T) {
+func TestGetProvisioningCommandAction(_ *testing.T) {
 	// Default context
 	set := flag.NewFlagSet("test", 0)
 	set.Int("volumeNumber", 5, "number of volumes to clone")
@@ -256,10 +249,9 @@ func TestGetProvisioningCommandAction(t *testing.T) {
 	action := command.Action
 	actionFunc := action.(func(c *cli.Context) error)
 	actionFunc(ctx)
-	// assert.Panics(t, err)
 }
 
-func TestGetScalingCommandAction(t *testing.T) {
+func TestGetScalingCommandAction(_ *testing.T) {
 	// Default context
 	set := flag.NewFlagSet("test", 0)
 	set.Int("replicas", 5, "number of statefulset replicas")
@@ -273,11 +265,10 @@ func TestGetScalingCommandAction(t *testing.T) {
 	// Call the action function
 	action := command.Action
 	actionFunc := action.(func(c *cli.Context) error)
-	actionFunc(ctx)
-	// assert.Panics(t, err)
+	actionFunc(ctx)	
 }
 
-func TestGetVolumeIoCommandAction(t *testing.T) {
+func TestGetVolumeIoCommandAction(_ *testing.T) {
 	// Default context
 	set := flag.NewFlagSet("test", 0)
 	set.Int("chainNumber", 5, "number of parallel chains")
@@ -290,10 +281,9 @@ func TestGetVolumeIoCommandAction(t *testing.T) {
 	action := command.Action
 	actionFunc := action.(func(c *cli.Context) error)
 	actionFunc(ctx)
-	// assert.Panics(t, err)
 }
 
-func TestGetSnapCommandAction(t *testing.T) {
+func TestGetSnapCommandAction(_ *testing.T) {
 	// Default context
 	set := flag.NewFlagSet("test", 0)
 	set.Int("snapshotAmopunt", 3, "define the amount of snapshots to create")
@@ -307,10 +297,9 @@ func TestGetSnapCommandAction(t *testing.T) {
 	action := command.Action
 	actionFunc := action.(func(c *cli.Context) error)
 	actionFunc(ctx)
-	// assert.Panics(t, err)
 }
 
-func TestGetVolumeGroupSnapCommandAction(t *testing.T) {
+func TestGetVolumeGroupSnapCommandAction(_ *testing.T) {
 	// Default context
 	set := flag.NewFlagSet("test", 0)
 	set.String("volumeSnapshotClass", "test-vsc", "volumeSnapshotClass to be used")
@@ -328,11 +317,10 @@ func TestGetVolumeGroupSnapCommandAction(t *testing.T) {
 	// Call the action function
 	action := command.Action
 	actionFunc := action.(func(c *cli.Context) error)
-	actionFunc(ctx)
-	// assert.Panics(t, err)
+	actionFunc(ctx)	
 }
 
-func TestGetBlockSnapCommandAction(t *testing.T) {
+func TestGetBlockSnapCommandAction(_ *testing.T) {
 	// Default context
 	set := flag.NewFlagSet("test", 0)
 	set.String("volumeSnapshotClass", "test-vsc", "volumeSnapshotClass to be used")
@@ -346,10 +334,9 @@ func TestGetBlockSnapCommandAction(t *testing.T) {
 	action := command.Action
 	actionFunc := action.(func(c *cli.Context) error)
 	actionFunc(ctx)
-	// assert.Panics(t, err)
 }
 
-func TestGetPostgresCommand(t *testing.T) {
+func TestGetPostgresCommand(_ *testing.T) {
 	// Default context
 	set := flag.NewFlagSet("test", 0)
 	set.Bool("replication", true, "set to `true` if you want to enable replication")
@@ -363,7 +350,6 @@ func TestGetPostgresCommand(t *testing.T) {
 	action := command.Action
 	actionFunc := action.(func(c *cli.Context) error)
 	actionFunc(ctx)
-	// assert.Panics(t, err)
 }
 
 func TestGetEphemeralCreationCommandAction(t *testing.T) {
@@ -404,5 +390,5 @@ func TestGetEphemeralCreationCommandAction(t *testing.T) {
 	actionFunc := action.(func(c *cli.Context) error)
 	ExecuteSuite = func(sr *runner.FunctionalSuiteRunner, s []suites.Interface) {}
 	actionFunc(ctx)
-	// assert.Panics(t, err)
 }
+

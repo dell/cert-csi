@@ -37,7 +37,7 @@ func TestGetTestrunsCmd(t *testing.T) {
 	assert.Equal(t, "list", testrunsCmd.Category)
 }
 
-func TestGetListCommandAction(t *testing.T) {
+func TestGetListCommandAction(_ *testing.T) {
 	// Default context
 	set := flag.NewFlagSet("test", 0)
 	set.Bool("tabular", true, "specifies if tabular report should be generated")
