@@ -45,16 +45,8 @@ func TestGetListCommandAction(t *testing.T) {
 	set := flag.NewFlagSet("test", 0)
 	set.Bool("tabular", true, "specifies if tabular report should be generated")
 	set.Bool("xml", true, "specifies if XML report should be generated")
-	// ss := store.NewSQLiteStore()
 	set.String("db", "test1.db?cache=shared&mode=memory", "database name")
-	// set.Func()
 	ctx := cli.NewContext(nil, set, nil)
-
-	// store := &SimpleStore{}
-
-	//store.NewSQLiteStore("file:test1.db?cache=shared&mode=memory").GetTestRuns(store.Conditions{}, "", 0) = func(conditions store.Conditions, orderBy string, limit int) ([]store.TestRun, error) {
-	//	return []store.TestRun{{Name: "test-run-1"}}, nil
-	//}
 
 	mockStore := mocks.NewMockStore(gomock.NewController(t))
 	mockStore.EXPECT().GetTestRuns(gomock.Any(), gomock.Any(), gomock.Any()).Times(1).Return([]store.TestRun{{Name: "test-run-1"}}, nil)
@@ -68,6 +60,6 @@ func TestGetListCommandAction(t *testing.T) {
 	command := GetTestrunsCmd()
 	// Call the action function
 	action := command.Action
-	actionFunc := action.(func(c *cli.Context) error)
+	actionFunc := action.(func(_ *cli.Context) error)
 	actionFunc(ctx)
 }

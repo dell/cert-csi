@@ -369,7 +369,6 @@ func TestGetEphemeralCreationCommandAction(t *testing.T) {
 	}
 	set := flag.NewFlagSet("test", 0)
 	set.String("config", kubeConfig, "config for connecting to kubernetes")
-	// set.String("name", "storage", "name of the storage class")
 	set.String("driver", "test-driver", "name of the driver")
 	set.String("fs-type", "ext4", "FS Type for ephemeral inline volume")
 	set.Int("pods", 1, "number of pods to create")

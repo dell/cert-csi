@@ -78,10 +78,8 @@ func TestGetReportCommandAction(_ *testing.T) {
 	set := flag.NewFlagSet("test", 0)
 	set.Bool("tabular", true, "specifies if tabular report should be generated")
 	set.Bool("xml", true, "specifies if XML report should be generated")
-	// set.String("db", "file:test1.db?cache=shared&mode=memory", "database name")
-	// set.Func()
+
 	var testRunNames *cli.StringSlice
-	// mockTestRunNames := &cli.StringSlice{"file:test1.db?cache=shared&mode=memory"}
 	testRunNamesFlag := cli.StringSliceFlag{
 		Name:     "test-run-1",
 		Usage:    "test run names from which reports will be generated (file.db:testrun)",
@@ -97,11 +95,6 @@ func TestGetReportCommandAction(_ *testing.T) {
 
 	ctx := cli.NewContext(nil, set, nil)
 
-	// store := &SimpleStore{}
-
-	//store.NewSQLiteStore("file:test1.db?cache=shared&mode=memory").GetTestRuns(store.Conditions{}, "", 0) = func(conditions store.Conditions, orderBy string, limit int) ([]store.TestRun, error) {
-	//	return []store.TestRun{{Name: "test-run-1"}}, nil
-	//}
 	command := GetReportCommand()
 
 	// Call the action function
