@@ -593,6 +593,27 @@ func TestRunSuite(t *testing.T) {
 			wantErr:      false,
 		},
 		{
+			name: "Test case with wrong storage class",
+			suite: func() suites.Interface {
+				suite := runnermocks.NewMockInterface(gomock.NewController(t))
+				suite.EXPECT().Run(gomock.Any(), gomock.Any(), gomock.Any()).AnyTimes().Return(nil, fmt.Errorf("wrong stoarge class"))
+				suite.EXPECT().GetName().AnyTimes().Return("test run 1")
+				suite.EXPECT().GetNamespace().AnyTimes().Return("driver-namespace")
+				suite.EXPECT().GetClients(gomock.Any(), gomock.Any()).AnyTimes().Return(&k8sclient.Clients{}, nil)
+				suite.EXPECT().GetObservers(gomock.Any()).AnyTimes().Return([]observer.Interface{})
+
+				//suite.EXPECT().Parameters().Times(1).Return("param1,param2")
+				return suite
+			},
+			sr:           &SuiteRunner{},
+			testCase:     &store.TestCase{},
+			db:           store.NewSQLiteStoreWithDB(mockdb),
+			storageClass: "sc1",
+			c:            make(chan os.Signal),
+			wantRes:      SUCCESS,
+			wantErr:      false,
+		},
+		{
 			name: "Test case with delete namespace error",
 			suite: func() suites.Interface {
 				suite := runnermocks.NewMockInterface(gomock.NewController(t))
@@ -850,6 +871,20 @@ func TestRunSuite(t *testing.T) {
 				runSuite(ctx, tt.suite(), sr, tt.testCase, tt.db, tt.storageClass, tt.c)
 			}
 			if tt.name == "Test case with error namespace" {
+				sr := &SuiteRunner{}
+
+				mockKubeClient := mocks.NewMockKubeClientInterface(gomock.NewController(t))
+				r := &Runner{}
+				newNameSpace := &corev1.Namespace{}
+				newNameSpace.Name = "new-ns"
+				mockKubeClient.EXPECT().CreateNamespaceWithSuffix(gomock.Any(), gomock.Any()).AnyTimes().Return(newNameSpace, nil)
+				mockKubeClient.EXPECT().DeleteNamespace(gomock.Any(), gomock.Any()).AnyTimes().Return(nil)
+
+				sr.Runner = r
+				sr.Runner.KubeClient = mockKubeClient
+				runSuite(ctx, tt.suite(), sr, tt.testCase, tt.db, tt.storageClass, tt.c)
+			}
+			if tt.name == "Test case with wrong storage class" {
 				sr := &SuiteRunner{}
 
 				mockKubeClient := mocks.NewMockKubeClientInterface(gomock.NewController(t))
