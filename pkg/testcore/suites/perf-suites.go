@@ -1056,7 +1056,6 @@ func (vis *VolumeIoSuite) Run(ctx context.Context, storageClass string, clients 
 
 		pvc := pvcClient.Create(ctx, volTmpl)
 		if pvc.HasError() {
-			fmt.Printf("Error deleting pvc: %v\n", err)
 			return delFunc, pvc.GetError()
 		}
 
