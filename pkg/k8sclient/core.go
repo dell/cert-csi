@@ -134,7 +134,7 @@ func newRealClientSet(config *rest.Config) (kubernetes.Interface, error) {
 }
 
 // NewKubeClient is a KubeClient constructor, that creates new instance of KubeClient from provided config
-func NewKubeClient(config *rest.Config, timeout int) (KubeClientInterface, error) {
+func NewKubeClient(config *rest.Config, timeout int) (*KubeClient, error) {
 	logrus.Debugf("Creating new KubeClient")
 	if config == nil {
 		return nil, fmt.Errorf("config can't be nil")
@@ -432,6 +432,9 @@ func (c *KubeClient) CreateNamespace(ctx context.Context, namespace string) (*v1
 
 // CreateNamespaceWithSuffix creates new namespace with provided name and appends random suffix
 func (c *KubeClient) CreateNamespaceWithSuffix(ctx context.Context, namespace string) (*v1.Namespace, error) {
+	if namespace == "" {
+		return nil, fmt.Errorf("namespace can't be empty")
+	}
 	suffix := RandomSuffix()
 	ns, err := c.CreateNamespace(ctx, namespace+"-"+suffix)
 	if err != nil {
@@ -452,52 +455,44 @@ func (c *KubeClient) DeleteNamespace(ctx context.Context, namespace string) erro
 		timeout = time.Duration(c.Timeout()) * time.Second
 	}
 
-	pollErr := wait.PollImmediate(NamespacePoll, timeout,
-		func() (bool, error) {
-			select {
-			case <-ctx.Done():
-				log.Infof("Namespace deletion interrupted")
-				return true, fmt.Errorf("stopped waiting to delete ns")
-			default:
-				break
-			}
-
-			nsExists, err := c.ClientSet.CoreV1().Namespaces().Get(ctx, namespace, metav1.GetOptions{})
-			if nsExists == nil {
-				if apierrs.IsNotFound(err) {
-					vaClient, err := c.CreateVaClient(namespace)
-					if err != nil {
-						return false, err
-					}
-
-					pvClient, err := c.CreatePVClient()
-					if err != nil {
-						return false, err
-					}
-
-					if err := pvClient.DeleteAllPV(ctx, namespace, vaClient); err != nil {
-						log.Errorf("Failed to delete some PVs: %v", err)
-					}
-
-					return true, nil
-				}
-
-				return false, fmt.Errorf("failed to delete namespace: %v", err)
-			}
-
-			return false, nil
-		})
-
-	if pollErr != nil {
+	pollErr := wait.PollImmediate(NamespacePoll, timeout, func() (bool, error) {
 		select {
 		case <-ctx.Done():
-			return pollErr
+			return true, fmt.Errorf("namespace deletion interrupted, stopped waiting to delete namespace")
 		default:
-			log.Errorf("Failed to delete namespace: %v", pollErr)
-			err := c.ForceDeleteNamespace(ctx, namespace)
-			if err != nil {
-				return err
+			// Continue to check namespace status
+		}
+
+		nsExists, err := c.ClientSet.CoreV1().Namespaces().Get(ctx, namespace, metav1.GetOptions{})
+		if nsExists == nil {
+			if apierrs.IsNotFound(err) {
+				vaClient, err := c.CreateVaClient(namespace)
+				if err != nil {
+					return false, err
+				}
+
+				pvClient, err := c.CreatePVClient()
+				if err != nil {
+					return false, err
+				}
+
+				if err := pvClient.DeleteAllPV(ctx, namespace, vaClient); err != nil {
+					log.Errorf("Failed to delete some PVs: %v", err)
+				}
+
+				return true, nil
 			}
+
+			return false, fmt.Errorf("failed to delete namespace: %v", err)
+		}
+
+		return false, nil
+	})
+
+	if pollErr != nil {
+		log.Errorf("Failed to delete namespace: %v", pollErr)
+		if err := c.ForceDeleteNamespace(ctx, namespace); err != nil {
+			return err
 		}
 	}
 
