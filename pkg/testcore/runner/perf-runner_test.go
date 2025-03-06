@@ -84,18 +84,17 @@ func TestCheckValidNamespace(t *testing.T) {
 		checkValidNamespace(tt.driverNs, runner)
 
 	}
-
 }
 
 func TestNewSuiteRunner(t *testing.T) {
-	mock_kube := mocks.NewMockKubeClientInterface(gomock.NewController(t))
-	mock_kube.EXPECT().StorageClassExists(gomock.Any(), gomock.Any()).AnyTimes().Return(true, nil)
-	mock_kube.EXPECT().NamespaceExists(gomock.Any(), gomock.Any()).AnyTimes().Return(true, nil)
+	mockKube := mocks.NewMockKubeClientInterface(gomock.NewController(t))
+	mockKube.EXPECT().StorageClassExists(gomock.Any(), gomock.Any()).AnyTimes().Return(true, nil)
+	mockKube.EXPECT().NamespaceExists(gomock.Any(), gomock.Any()).AnyTimes().Return(true, nil)
 	mock := runnermocks.NewMockK8sClientInterface(gomock.NewController(t))
 	mock.EXPECT().GetConfig(gomock.Any()).AnyTimes().Return(&rest.Config{
 		Host: "localhost",
 	}, nil)
-	mock.EXPECT().NewKubeClient(gomock.Any(), gomock.Any()).AnyTimes().Return(mock_kube, nil)
+	mock.EXPECT().NewKubeClient(gomock.Any(), gomock.Any()).AnyTimes().Return(mockKube, nil)
 
 	// Test case: Successful creation
 	configPath := "config.yaml"
@@ -373,7 +372,6 @@ func TestExecuteSuite(t *testing.T) {
 
 			k8sclient.FuncNewClientSet = func(_ *rest.Config) (kubernetes.Interface, error) {
 				return createFakeKubeClient(clientCtx)
-
 			}
 
 			scDBs := &store.StorageClassDB{
@@ -500,7 +498,6 @@ func TestRunSuites(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-
 			mockKubeClient := mocks.NewMockKubeClientInterface(gomock.NewController(t))
 			newNameSpace := &corev1.Namespace{}
 			newNameSpace.Name = "new-ns"
@@ -515,11 +512,10 @@ func TestRunSuites(t *testing.T) {
 			mockStore := storemocks.NewMockStore(gomock.NewController(t))
 			if tt.name == "Failure test run" {
 				mockStore.EXPECT().SaveTestRun(gomock.Any()).AnyTimes().Return(fmt.Errorf("new error"))
-
 			} else {
 				mockStore.EXPECT().SaveTestRun(gomock.Any()).AnyTimes().Return(nil)
 			}
-			//mockStore.EXPECT().SaveTestRun(gomock.Any()).AnyTimes().Return(nil)
+			// mockStore.EXPECT().SaveTestRun(gomock.Any()).AnyTimes().Return(nil)
 			mockStore.EXPECT().SaveTestCase(gomock.Any()).AnyTimes().Return(nil)
 			mockStore.EXPECT().SuccessfulTestCase(gomock.Any(), gomock.Any()).AnyTimes().Return(nil)
 			mockStore.EXPECT().GetTestRuns(gomock.Any(), gomock.Any(), gomock.Any()).AnyTimes().Return([]store.TestRun{
@@ -564,14 +560,13 @@ func TestRunSuites(t *testing.T) {
 
 			k8sclient.FuncNewClientSet = func(_ *rest.Config) (kubernetes.Interface, error) {
 				return createFakeKubeClient(clientCtx)
-
 			}
 
 			sr.RunSuites(tt.suites())
-
 		})
 	}
 }
+
 func mockFunction() error {
 	return errors.New("mock error")
 }
@@ -583,7 +578,7 @@ func TestRunSuite(t *testing.T) {
 	}
 	client := fakeClient.NewSimpleClientset()
 
-	client.Fake.PrependReactor("*", "*", func(action clienttesting.Action) (handled bool, ret runtime.Object, err error) {
+	client.Fake.PrependReactor("*", "*", func(_ clienttesting.Action) (handled bool, ret runtime.Object, err error) {
 		return true, nil, fmt.Errorf("error listing volumes")
 	})
 	tests := []struct {
@@ -608,7 +603,7 @@ func TestRunSuite(t *testing.T) {
 				suite.EXPECT().GetObservers(gomock.Any()).AnyTimes().Return([]observer.Interface{})
 				suite.EXPECT().Run(gomock.Any(), gomock.Any(), gomock.Any()).AnyTimes().Return(nil, nil)
 
-				//suite.EXPECT().Parameters().Times(1).Return("param1,param2")
+				// suite.EXPECT().Parameters().Times(1).Return("param1,param2")
 				return suite
 			},
 			sr:           &SuiteRunner{},
@@ -630,7 +625,7 @@ func TestRunSuite(t *testing.T) {
 				suite.EXPECT().GetObservers(gomock.Any()).AnyTimes().Return([]observer.Interface{})
 				suite.EXPECT().Run(gomock.Any(), gomock.Any(), gomock.Any()).AnyTimes().Return(nil, nil)
 
-				//suite.EXPECT().Parameters().Times(1).Return("param1,param2")
+				// suite.EXPECT().Parameters().Times(1).Return("param1,param2")
 				return suite
 			},
 			sr:           &SuiteRunner{},
@@ -651,7 +646,7 @@ func TestRunSuite(t *testing.T) {
 				suite.EXPECT().GetClients(gomock.Any(), gomock.Any()).AnyTimes().Return(&k8sclient.Clients{}, nil)
 				suite.EXPECT().GetObservers(gomock.Any()).AnyTimes().Return([]observer.Interface{})
 
-				//suite.EXPECT().Parameters().Times(1).Return("param1,param2")
+				// suite.EXPECT().Parameters().Times(1).Return("param1,param2")
 				return suite
 			},
 			sr:           &SuiteRunner{},
@@ -673,7 +668,7 @@ func TestRunSuite(t *testing.T) {
 				suite.EXPECT().GetObservers(gomock.Any()).AnyTimes().Return([]observer.Interface{})
 				suite.EXPECT().Run(gomock.Any(), gomock.Any(), gomock.Any()).AnyTimes().Return(nil, nil)
 
-				//suite.EXPECT().Parameters().Times(1).Return("param1,param2")
+				// suite.EXPECT().Parameters().Times(1).Return("param1,param2")
 				return suite
 			},
 			sr:           &SuiteRunner{},
@@ -690,11 +685,11 @@ func TestRunSuite(t *testing.T) {
 				// suite.EXPECT().Run(gomock.Any(), gomock.Any(), gomock.Any()).AnyTimes().Return(nil, nil)
 				suite.EXPECT().GetName().AnyTimes().Return("test run 1")
 				suite.EXPECT().GetNamespace().AnyTimes().Return("driver-namespace")
-				//suite.EXPECT().GetClients(gomock.Any(), gomock.Any()).AnyTimes().Return(nil, fmt.Errorf("Mock Error"))
+				// suite.EXPECT().GetClients(gomock.Any(), gomock.Any()).AnyTimes().Return(nil, fmt.Errorf("Mock Error"))
 				suite.EXPECT().GetObservers(gomock.Any()).AnyTimes().Return([]observer.Interface{})
 				suite.EXPECT().Run(gomock.Any(), gomock.Any(), gomock.Any()).AnyTimes().Return(nil, nil)
 
-				//suite.EXPECT().Parameters().Times(1).Return("param1,param2")
+				// suite.EXPECT().Parameters().Times(1).Return("param1,param2")
 				return suite
 			},
 			sr:           &SuiteRunner{},
@@ -715,7 +710,7 @@ func TestRunSuite(t *testing.T) {
 				suite.EXPECT().GetObservers(gomock.Any()).AnyTimes().Return([]observer.Interface{})
 				suite.EXPECT().Run(gomock.Any(), gomock.Any(), gomock.Any()).AnyTimes().Return(nil, nil)
 
-				//suite.EXPECT().Parameters().Times(1).Return("param1,param2")
+				// suite.EXPECT().Parameters().Times(1).Return("param1,param2")
 				return suite
 			},
 			sr:           &SuiteRunner{},
@@ -737,7 +732,7 @@ func TestRunSuite(t *testing.T) {
 				suite.EXPECT().GetObservers(gomock.Any()).AnyTimes().Return([]observer.Interface{})
 				suite.EXPECT().Run(gomock.Any(), gomock.Any(), gomock.Any()).AnyTimes().Return(nil, nil)
 
-				//suite.EXPECT().Parameters().Times(1).Return("param1,param2")
+				// suite.EXPECT().Parameters().Times(1).Return("param1,param2")
 				return suite
 			},
 			sr:           &SuiteRunner{},
@@ -760,7 +755,7 @@ func TestRunSuite(t *testing.T) {
 				suite.EXPECT().GetObservers(gomock.Any()).AnyTimes().Return([]observer.Interface{})
 				suite.EXPECT().Run(gomock.Any(), gomock.Any(), gomock.Any()).AnyTimes().Return(nil, nil)
 
-				//suite.EXPECT().Parameters().Times(1).Return("param1,param2")
+				// suite.EXPECT().Parameters().Times(1).Return("param1,param2")
 				return suite
 			},
 			sr:           &SuiteRunner{},
@@ -782,7 +777,7 @@ func TestRunSuite(t *testing.T) {
 				suite.EXPECT().GetObservers(gomock.Any()).AnyTimes().Return([]observer.Interface{})
 				suite.EXPECT().Run(gomock.Any(), gomock.Any(), gomock.Any()).AnyTimes().Return(mockFunction, nil)
 
-				//suite.EXPECT().Parameters().Times(1).Return("param1,param2")
+				// suite.EXPECT().Parameters().Times(1).Return("param1,param2")
 				return suite
 			},
 			sr:           &SuiteRunner{},
@@ -801,7 +796,7 @@ func TestRunSuite(t *testing.T) {
 				// suite.EXPECT().Run(gomock.Any(), gomock.Any(), gomock.Any()).AnyTimes().Return(nil, nil)
 				suite.EXPECT().GetName().AnyTimes().Return("test run 1")
 				suite.EXPECT().GetNamespace().AnyTimes().Return("driver-namespace")
-				//suite.EXPECT().GetClients(gomock.Any(), gomock.Any()).AnyTimes().Return(nil, fmt.Errorf("Mock Error"))
+				// suite.EXPECT().GetClients(gomock.Any(), gomock.Any()).AnyTimes().Return(nil, fmt.Errorf("Mock Error"))
 				suite.EXPECT().GetClients(gomock.Any(), gomock.Any()).AnyTimes().Return(&k8sclient.Clients{
 					PVCClient: &pvc.Client{
 						ClientSet: client,
@@ -810,7 +805,7 @@ func TestRunSuite(t *testing.T) {
 				suite.EXPECT().GetObservers(gomock.Any()).AnyTimes().Return([]observer.Interface{})
 				suite.EXPECT().Run(gomock.Any(), gomock.Any(), gomock.Any()).AnyTimes().Return(nil, nil)
 
-				//suite.EXPECT().Parameters().Times(1).Return("param1,param2")
+				// suite.EXPECT().Parameters().Times(1).Return("param1,param2")
 				return suite
 			},
 			sr:           &SuiteRunner{},
@@ -823,7 +818,6 @@ func TestRunSuite(t *testing.T) {
 		},
 	}
 	for _, tt := range tests {
-
 		t.Run(tt.name, func(t *testing.T) {
 			ctx := context.Background()
 			if tt.name == "Test case with valid parameters" {
@@ -987,7 +981,6 @@ func TestRunSuite(t *testing.T) {
 				sr.Runner.KubeClient = mockKubeClient
 				runSuite(ctx, tt.suite(), sr, tt.testCase, tt.db, tt.storageClass, tt.c)
 			}
-
 		})
 	}
 }
@@ -1043,12 +1036,10 @@ func TestRunFlowManagementGoroutine(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			r := &Runner{
-
 				SucceededSuites: Threshold + 0.1,
 				stop:            tt.stop,
 			}
 			sr := &SuiteRunner{
-
 				ScDBs:        tt.scDBs,
 				NoReport:     tt.noreport,
 				NoMetrics:    tt.NoMetrics,
@@ -1102,7 +1093,7 @@ echo "Hello, World!"
 	// Test case: Run the mock bash script
 	startHook := script.Name()
 	hookName := "Mock Bash Script"
-	_ = os.Chmod(startHook, 0755)
+	_ = os.Chmod(startHook, 0o755)
 	err = runHook(startHook, hookName)
 	if err != nil {
 		t.Errorf("Expected no error, got %s", err.Error())
@@ -1229,6 +1220,7 @@ func TestNoCleaning(t *testing.T) {
 		})
 	}
 }
+
 func TestIsStopped(t *testing.T) {
 	tests := []struct {
 		name        string
@@ -1261,6 +1253,7 @@ func TestIsStopped(t *testing.T) {
 		})
 	}
 }
+
 func TestSuiteRunner_Stop(t *testing.T) {
 	r := &Runner{
 		stop: true,
@@ -1281,6 +1274,7 @@ func TestSuiteRunner_Stop(t *testing.T) {
 		t.Errorf("Expected stop to be true, but got false")
 	}
 }
+
 func TestSuiteRunner_Close(t *testing.T) {
 	db, _, err := sqlmock.New()
 	if err != nil {
@@ -1348,7 +1342,7 @@ func TestSuiteRunner_Close(t *testing.T) {
 	}
 
 	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
+		t.Run(tt.name, func(_ *testing.T) {
 			r := &Runner{
 				SucceededSuites: Threshold + 0.1,
 			}
@@ -1360,7 +1354,6 @@ func TestSuiteRunner_Close(t *testing.T) {
 			sr.Runner = r
 
 			sr.Close()
-
 		})
 	}
 }

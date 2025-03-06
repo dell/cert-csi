@@ -53,14 +53,14 @@ func (suite *FunctionalSuiteRunnerTestSuite) SetupSuite() {
 }
 
 func TestNewFunctionalSuiteRunner(t *testing.T) {
-	mock_kube := mocks.NewMockKubeClientInterface(gomock.NewController(t))
-	mock_kube.EXPECT().StorageClassExists(gomock.Any(), gomock.Any()).AnyTimes().Return(true, nil)
-	mock_kube.EXPECT().NamespaceExists(gomock.Any(), gomock.Any()).AnyTimes().Return(true, nil)
+	mockKube := mocks.NewMockKubeClientInterface(gomock.NewController(t))
+	mockKube.EXPECT().StorageClassExists(gomock.Any(), gomock.Any()).AnyTimes().Return(true, nil)
+	mockKube.EXPECT().NamespaceExists(gomock.Any(), gomock.Any()).AnyTimes().Return(true, nil)
 	mock := runnermocks.NewMockK8sClientInterface(gomock.NewController(t))
 	mock.EXPECT().GetConfig(gomock.Any()).AnyTimes().Return(&rest.Config{
 		Host: "localhost",
 	}, nil)
-	mock.EXPECT().NewKubeClient(gomock.Any(), gomock.Any()).AnyTimes().Return(mock_kube, nil)
+	mock.EXPECT().NewKubeClient(gomock.Any(), gomock.Any()).AnyTimes().Return(mockKube, nil)
 
 	mockScDB := &store.StorageClassDB{
 		StorageClass: "sc1",
@@ -103,7 +103,7 @@ func TestNewFunctionalSuiteRunner(t *testing.T) {
 
 func TestRunFunctionalSuites(t *testing.T) {
 	client := fakeClient.NewSimpleClientset()
-	client.Fake.PrependReactor("*", "*", func(action clienttesting.Action) (handled bool, ret runtime.Object, err error) {
+	client.Fake.PrependReactor("*", "*", func(_ clienttesting.Action) (handled bool, ret runtime.Object, err error) {
 		return true, nil, fmt.Errorf("error listing volumes")
 	})
 
