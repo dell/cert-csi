@@ -432,6 +432,9 @@ func (c *KubeClient) CreateNamespace(ctx context.Context, namespace string) (*v1
 
 // CreateNamespaceWithSuffix creates new namespace with provided name and appends random suffix
 func (c *KubeClient) CreateNamespaceWithSuffix(ctx context.Context, namespace string) (*v1.Namespace, error) {
+	if namespace == "" {
+		return nil, fmt.Errorf("namespace can't be empty")
+	}
 	suffix := RandomSuffix()
 	ns, err := c.CreateNamespace(ctx, namespace+"-"+suffix)
 	if err != nil {
