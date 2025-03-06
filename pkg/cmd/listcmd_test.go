@@ -4,8 +4,8 @@ import (
 	"flag"
 	"testing"
 
-	"github.com/dell/cert-csi/pkg/testmocks"
 	"github.com/dell/cert-csi/pkg/store"
+	"github.com/dell/cert-csi/pkg/testmocks"
 	"github.com/stretchr/testify/assert"
 	"github.com/urfave/cli"
 	"go.uber.org/mock/gomock"

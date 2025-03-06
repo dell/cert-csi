@@ -11,10 +11,10 @@ import (
 
 	"github.com/dell/cert-csi/pkg/k8sclient"
 	"github.com/dell/cert-csi/pkg/k8sclient/resources/pvc"
-	"github.com/dell/cert-csi/pkg/testmocks"
 	"github.com/dell/cert-csi/pkg/observer"
 	"github.com/dell/cert-csi/pkg/store"
 	"github.com/dell/cert-csi/pkg/testcore/suites"
+	"github.com/dell/cert-csi/pkg/testmocks"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/suite"

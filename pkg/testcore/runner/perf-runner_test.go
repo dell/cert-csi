@@ -18,6 +18,7 @@ import (
 	"github.com/dell/cert-csi/pkg/testmocks"
 	"github.com/dell/cert-csi/pkg/observer"
 	"github.com/dell/cert-csi/pkg/store"
+	"github.com/dell/cert-csi/pkg/testmocks"
 	"github.com/stretchr/testify/assert"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/version"
