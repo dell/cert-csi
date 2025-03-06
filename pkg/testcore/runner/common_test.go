@@ -6,8 +6,8 @@ import (
 	"testing"
 	"time"
 
+	"github.com/dell/cert-csi/pkg/mocks"
 	"github.com/dell/cert-csi/pkg/store"
-	"github.com/dell/cert-csi/pkg/testcore/runner/mocks"
 	"github.com/stretchr/testify/assert"
 	"go.uber.org/mock/gomock"
 )

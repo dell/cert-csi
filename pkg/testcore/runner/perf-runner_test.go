@@ -14,11 +14,10 @@ import (
 
 	"github.com/DATA-DOG/go-sqlmock"
 	"github.com/dell/cert-csi/pkg/k8sclient"
-	"github.com/dell/cert-csi/pkg/k8sclient/mocks"
 	"github.com/dell/cert-csi/pkg/k8sclient/resources/pvc"
+	"github.com/dell/cert-csi/pkg/mocks"
 	"github.com/dell/cert-csi/pkg/observer"
 	"github.com/dell/cert-csi/pkg/store"
-	storemocks "github.com/dell/cert-csi/pkg/store/mocks"
 	"github.com/stretchr/testify/assert"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/version"
@@ -27,7 +26,6 @@ import (
 	fakeClient "k8s.io/client-go/kubernetes/fake"
 	"k8s.io/client-go/rest"
 
-	runnermocks "github.com/dell/cert-csi/pkg/testcore/runner/mocks"
 	"github.com/dell/cert-csi/pkg/testcore/suites"
 	clienttesting "k8s.io/client-go/testing"
 
@@ -90,7 +88,7 @@ func TestNewSuiteRunner(t *testing.T) {
 	mockKube := mocks.NewMockKubeClientInterface(gomock.NewController(t))
 	mockKube.EXPECT().StorageClassExists(gomock.Any(), gomock.Any()).AnyTimes().Return(true, nil)
 	mockKube.EXPECT().NamespaceExists(gomock.Any(), gomock.Any()).AnyTimes().Return(true, nil)
-	mock := runnermocks.NewMockK8sClientInterface(gomock.NewController(t))
+	mock := mocks.NewMockK8sClientInterface(gomock.NewController(t))
 	mock.EXPECT().GetConfig(gomock.Any()).AnyTimes().Return(&rest.Config{
 		Host: "localhost",
 	}, nil)
@@ -263,7 +261,7 @@ func TestExecuteSuite(t *testing.T) {
 			iterCtx: context.Background(),
 			num:     1,
 			suites: func() map[string][]suites.Interface {
-				suite := runnermocks.NewMockInterface(gomock.NewController(t))
+				suite := mocks.NewMockInterface(gomock.NewController(t))
 				suite.EXPECT().GetNamespace().AnyTimes().Return("test-namespace")
 				return map[string][]suites.Interface{
 					"testSuite": {
@@ -272,7 +270,7 @@ func TestExecuteSuite(t *testing.T) {
 				}
 			},
 			suite: func() suites.Interface {
-				suite := runnermocks.NewMockInterface(gomock.NewController(t))
+				suite := mocks.NewMockInterface(gomock.NewController(t))
 				suite.EXPECT().Run(gomock.Any(), gomock.Any(), gomock.Any()).AnyTimes().Return(nil, nil)
 				suite.EXPECT().GetNamespace().AnyTimes().Return("test-namespace")
 				suite.EXPECT().GetName().AnyTimes().Return("test run 1")
@@ -295,7 +293,7 @@ func TestExecuteSuite(t *testing.T) {
 			iterCtx: context.Background(),
 			num:     1,
 			suites: func() map[string][]suites.Interface {
-				suite := runnermocks.NewMockInterface(gomock.NewController(t))
+				suite := mocks.NewMockInterface(gomock.NewController(t))
 				suite.EXPECT().GetNamespace().AnyTimes().Return("test-namespace")
 				return map[string][]suites.Interface{
 					"testSuite": {
@@ -304,7 +302,7 @@ func TestExecuteSuite(t *testing.T) {
 				}
 			},
 			suite: func() suites.Interface {
-				suite := runnermocks.NewMockInterface(gomock.NewController(t))
+				suite := mocks.NewMockInterface(gomock.NewController(t))
 				suite.EXPECT().Run(gomock.Any(), gomock.Any(), gomock.Any()).AnyTimes().Return(nil, fmt.Errorf("wrong stoarge class"))
 				suite.EXPECT().GetNamespace().AnyTimes().Return("test-namespace")
 				suite.EXPECT().GetName().AnyTimes().Return("test run 1")
@@ -327,7 +325,7 @@ func TestExecuteSuite(t *testing.T) {
 			iterCtx: context.Background(),
 			num:     1,
 			suites: func() map[string][]suites.Interface {
-				suite := runnermocks.NewMockInterface(gomock.NewController(t))
+				suite := mocks.NewMockInterface(gomock.NewController(t))
 				suite.EXPECT().GetNamespace().AnyTimes().Return("test-namespace")
 				return map[string][]suites.Interface{
 					"testSuite": {
@@ -339,7 +337,7 @@ func TestExecuteSuite(t *testing.T) {
 				}
 			},
 			suite: func() suites.Interface {
-				suite := runnermocks.NewMockInterface(gomock.NewController(t))
+				suite := mocks.NewMockInterface(gomock.NewController(t))
 				suite.EXPECT().Run(gomock.Any(), gomock.Any(), gomock.Any()).AnyTimes().Return(nil, nil)
 				suite.EXPECT().GetNamespace().AnyTimes().Return("test-namespace")
 				suite.EXPECT().GetName().AnyTimes().Return("test run 1")
@@ -366,7 +364,7 @@ func TestExecuteSuite(t *testing.T) {
 			newNameSpace.Name = "new-ns"
 			mockKubeClient.EXPECT().CreateNamespaceWithSuffix(gomock.Any(), "test-namespace").AnyTimes().Return(newNameSpace, nil)
 			mockKubeClient.EXPECT().DeleteNamespace(gomock.Any(), gomock.Any()).AnyTimes().Return(nil)
-			mockStore := storemocks.NewMockStore(gomock.NewController(t))
+			mockStore := mocks.NewMockStore(gomock.NewController(t))
 
 			clientCtx := &clientTestContext{t: t}
 
@@ -442,7 +440,7 @@ func TestRunSuites(t *testing.T) {
 		{
 			name: "Successful test run",
 			suites: func() map[string][]suites.Interface {
-				suite := runnermocks.NewMockInterface(gomock.NewController(t))
+				suite := mocks.NewMockInterface(gomock.NewController(t))
 				suite.EXPECT().GetName().AnyTimes().Return("test run 1")
 				suite.EXPECT().Parameters().Times(1).Return("param1,param2")
 				suite.EXPECT().GetNamespace().AnyTimes().Return("test-namespace")
@@ -470,7 +468,7 @@ func TestRunSuites(t *testing.T) {
 		{
 			name: "Failure test run",
 			suites: func() map[string][]suites.Interface {
-				suite := runnermocks.NewMockInterface(gomock.NewController(t))
+				suite := mocks.NewMockInterface(gomock.NewController(t))
 				suite.EXPECT().GetName().AnyTimes().Return("test run 1")
 				suite.EXPECT().Parameters().Times(1).Return("param1,param2")
 				suite.EXPECT().GetNamespace().AnyTimes().Return("test-namespace")
@@ -509,7 +507,7 @@ func TestRunSuites(t *testing.T) {
 				KubeClient: mockKubeClient,
 			}
 
-			mockStore := storemocks.NewMockStore(gomock.NewController(t))
+			mockStore := mocks.NewMockStore(gomock.NewController(t))
 			if tt.name == "Failure test run" {
 				mockStore.EXPECT().SaveTestRun(gomock.Any()).AnyTimes().Return(fmt.Errorf("new error"))
 			} else {
@@ -594,7 +592,7 @@ func TestRunSuite(t *testing.T) {
 		{
 			name: "Test case with valid parameters",
 			suite: func() suites.Interface {
-				suite := runnermocks.NewMockInterface(gomock.NewController(t))
+				suite := mocks.NewMockInterface(gomock.NewController(t))
 				suite.EXPECT().GetName().AnyTimes().Return("test run 1")
 				suite.EXPECT().GetNamespace().AnyTimes().Return("driver-namespace")
 				suite.EXPECT().GetClients(gomock.Any(), gomock.Any()).AnyTimes().Return(&k8sclient.Clients{}, nil)
@@ -614,7 +612,7 @@ func TestRunSuite(t *testing.T) {
 		{
 			name: "Test case with error namespace",
 			suite: func() suites.Interface {
-				suite := runnermocks.NewMockInterface(gomock.NewController(t))
+				suite := mocks.NewMockInterface(gomock.NewController(t))
 				// suite.EXPECT().Run(gomock.Any(), gomock.Any(), gomock.Any()).AnyTimes().Return(nil, nil)
 				suite.EXPECT().GetName().AnyTimes().Return("test run 1")
 				suite.EXPECT().GetNamespace().AnyTimes().Return("driver-namespace")
@@ -636,7 +634,7 @@ func TestRunSuite(t *testing.T) {
 		{
 			name: "Test case with wrong storage class",
 			suite: func() suites.Interface {
-				suite := runnermocks.NewMockInterface(gomock.NewController(t))
+				suite := mocks.NewMockInterface(gomock.NewController(t))
 				suite.EXPECT().Run(gomock.Any(), gomock.Any(), gomock.Any()).AnyTimes().Return(nil, fmt.Errorf("wrong stoarge class"))
 				suite.EXPECT().GetName().AnyTimes().Return("test run 1")
 				suite.EXPECT().GetNamespace().AnyTimes().Return("driver-namespace")
@@ -656,7 +654,7 @@ func TestRunSuite(t *testing.T) {
 		{
 			name: "Test case with delete namespace error",
 			suite: func() suites.Interface {
-				suite := runnermocks.NewMockInterface(gomock.NewController(t))
+				suite := mocks.NewMockInterface(gomock.NewController(t))
 				suite.EXPECT().GetName().AnyTimes().Return("test run 1")
 				suite.EXPECT().GetNamespace().AnyTimes().Return("driver-namespace")
 				suite.EXPECT().GetClients(gomock.Any(), gomock.Any()).AnyTimes().Return(&k8sclient.Clients{}, nil)
@@ -675,7 +673,7 @@ func TestRunSuite(t *testing.T) {
 		{
 			name: "Test case with failed namespace creation",
 			suite: func() suites.Interface {
-				suite := runnermocks.NewMockInterface(gomock.NewController(t))
+				suite := mocks.NewMockInterface(gomock.NewController(t))
 				suite.EXPECT().GetName().AnyTimes().Return("test run 1")
 				suite.EXPECT().GetNamespace().AnyTimes().Return("driver-namespace")
 				suite.EXPECT().GetObservers(gomock.Any()).AnyTimes().Return([]observer.Interface{})
@@ -693,7 +691,7 @@ func TestRunSuite(t *testing.T) {
 		{
 			name: "Test case with invalid starthook",
 			suite: func() suites.Interface {
-				suite := runnermocks.NewMockInterface(gomock.NewController(t))
+				suite := mocks.NewMockInterface(gomock.NewController(t))
 				suite.EXPECT().GetName().AnyTimes().Return("test run 1")
 				suite.EXPECT().GetNamespace().AnyTimes().Return("driver-namespace")
 				suite.EXPECT().GetClients(gomock.Any(), gomock.Any()).AnyTimes().Return(&k8sclient.Clients{}, nil)
@@ -713,7 +711,7 @@ func TestRunSuite(t *testing.T) {
 		{
 			name: "Test case with invalid finishhook",
 			suite: func() suites.Interface {
-				suite := runnermocks.NewMockInterface(gomock.NewController(t))
+				suite := mocks.NewMockInterface(gomock.NewController(t))
 				suite.EXPECT().GetName().AnyTimes().Return("test run 1")
 				suite.EXPECT().GetNamespace().AnyTimes().Return("driver-namespace")
 				suite.EXPECT().GetClients(gomock.Any(), gomock.Any()).AnyTimes().Return(&k8sclient.Clients{}, nil)
@@ -734,7 +732,7 @@ func TestRunSuite(t *testing.T) {
 		{
 			name: "Test case with invalid readyhook",
 			suite: func() suites.Interface {
-				suite := runnermocks.NewMockInterface(gomock.NewController(t))
+				suite := mocks.NewMockInterface(gomock.NewController(t))
 				suite.EXPECT().GetName().AnyTimes().Return("test run 1")
 				suite.EXPECT().GetNamespace().AnyTimes().Return("driver-namespace")
 				suite.EXPECT().GetClients(gomock.Any(), gomock.Any()).AnyTimes().Return(&k8sclient.Clients{}, nil)
@@ -754,7 +752,7 @@ func TestRunSuite(t *testing.T) {
 		{
 			name: "Test case with error delfunc",
 			suite: func() suites.Interface {
-				suite := runnermocks.NewMockInterface(gomock.NewController(t))
+				suite := mocks.NewMockInterface(gomock.NewController(t))
 				suite.EXPECT().GetName().AnyTimes().Return("test run 1")
 				suite.EXPECT().GetNamespace().AnyTimes().Return("driver-namespace")
 				suite.EXPECT().GetClients(gomock.Any(), gomock.Any()).AnyTimes().Return(&k8sclient.Clients{}, nil)
@@ -775,7 +773,7 @@ func TestRunSuite(t *testing.T) {
 		{
 			name: "Test case with failed observer",
 			suite: func() suites.Interface {
-				suite := runnermocks.NewMockInterface(gomock.NewController(t))
+				suite := mocks.NewMockInterface(gomock.NewController(t))
 				suite.EXPECT().GetName().AnyTimes().Return("test run 1")
 				suite.EXPECT().GetNamespace().AnyTimes().Return("driver-namespace")
 				suite.EXPECT().GetClients(gomock.Any(), gomock.Any()).AnyTimes().Return(&k8sclient.Clients{
