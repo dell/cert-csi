@@ -11,7 +11,7 @@ import (
 
 	"github.com/dell/cert-csi/pkg/k8sclient"
 	"github.com/dell/cert-csi/pkg/k8sclient/resources/pvc"
-	"github.com/dell/cert-csi/pkg/mocks"
+	"github.com/dell/cert-csi/pkg/testmocks"
 	"github.com/dell/cert-csi/pkg/observer"
 	"github.com/dell/cert-csi/pkg/store"
 	"github.com/dell/cert-csi/pkg/testcore/suites"
