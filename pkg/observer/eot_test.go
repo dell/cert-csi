@@ -38,11 +38,10 @@ func NewFakeClientsetWithRestClient(objs ...runtime.Object) *FakeExtendedClients
 }
 
 type (
-	// EntityTypeEnum specifies type of entity
 	EntityTypeEnum string
-	// EventTypeEnum specifies type of event
-	EventTypeEnum string
+	EventTypeEnum  string
 )
+
 type Event struct {
 	ID        int64
 	Name      string
@@ -77,20 +76,16 @@ func (s *SimpleStore) NumberEntities() []*store.NumberEntities {
 }
 
 func (s *SimpleStore) SaveTestRun(tr *store.TestRun) error {
-	// Implement the method here
 	return nil
 }
 
 func (s *SimpleStore) GetTestRuns(whereConditions store.Conditions, orderBy string, limit int) ([]store.TestRun, error) {
-	// Implement the method here
 	return nil, nil
 }
 
 func (s *SimpleStore) SaveResourceUsage(resUsages []*store.ResourceUsage) error {
 	return nil
 }
-
-// Implement other methods as needed
 
 func NewSimpleStore() *SimpleStore {
 	return &SimpleStore{}
@@ -207,7 +202,7 @@ func TestCheckPodsandPvcs(t *testing.T) {
 }
 
 func TestEntityNumberObserver_StartWatching(t *testing.T) {
-	// Create a context
+
 	ctx := context.Background()
 
 	storageClass := &storagev1.StorageClass{
@@ -240,21 +235,13 @@ func TestEntityNumberObserver_StartWatching(t *testing.T) {
 	}
 	runner.WaitGroup.Add(1)
 
-	// Create an EntityNumberObserver instance
 	eno := &EntityNumberObserver{}
 	eno.MakeChannel()
 
-	// Start watching entities
 	go eno.StartWatching(ctx, runner)
 
-	// Wait for the StartWatching function to complete
 	time.Sleep(1 * time.Second)
 
-	// Assert that the number of entities is correct
-	// assert.Equal(t, 1, len((*SimpleStore).NumberEntities(runner.Database)))
-
-	// // Assert that the Timestamp is not zero
-	// assert.NotZero(t, SimpleStore.NumberEntities[0].Timestamp)
 	eno.StopWatching()
 
 	runner.WaitGroup.Wait()
@@ -296,18 +283,16 @@ func (f *FakePod) List(ctx context.Context, opts metav1.ListOptions) (*v1.PodLis
 }
 
 func TestEntityNumberObserver_checkPvcs_PvcClientIsNil(t *testing.T) {
-	// Create an EntityNumberObserver
+
 	eno := &EntityNumberObserver{}
 
-	// Call the checkPvcs method
 	_, err := eno.checkPvcs(nil, nil)
 
-	// Assert that the error is nil
 	assert.Nil(t, err)
 }
 
 func TestEntityNumberObserver_checkPvcs_PvcListErr(t *testing.T) {
-	// Create a context
+
 	ctx := context.Background()
 
 	storageClass := &storagev1.StorageClass{
@@ -329,7 +314,6 @@ func TestEntityNumberObserver_checkPvcs_PvcListErr(t *testing.T) {
 	pvcClient, _ := kubeClient.CreatePVCClient("test-namespace")
 	podClient, _ := kubeClient.CreatePodClient("test-namespace")
 
-	// Create a Runner instance
 	runner := &Runner{
 		Clients: &k8sclient.Clients{
 			PVCClient: pvcClient,
@@ -343,95 +327,26 @@ func TestEntityNumberObserver_checkPvcs_PvcListErr(t *testing.T) {
 	}
 	runner.WaitGroup.Add(1)
 
-	// Create an EntityNumberObserver instance
 	eno := &EntityNumberObserver{}
-	/*ctx := context.Background()
 
-	storageClass := &storagev1.StorageClass{
-		ObjectMeta: metav1.ObjectMeta{Name: "test-storage-class"},
-		VolumeBindingMode: func() *storagev1.VolumeBindingMode {
-			mode := storagev1.VolumeBindingWaitForFirstConsumer
-			return &mode
-		}(),
-	}
-	clientSet := NewFakeClientsetWithRestClient(storageClass)
-	clientSet.CoreV1().PersistentVolumeClaims("test-namespace").Create(ctx, &v1.PersistentVolumeClaim{ObjectMeta: metav1.ObjectMeta{Name: "test-pvc", Namespace: "test-namespace"}, Status: v1.PersistentVolumeClaimStatus{Phase: v1.ClaimPending}}, metav1.CreateOptions{})
-	kubeClient := &k8sclient.KubeClient{
-		ClientSet: clientSet,
-		Config:    &rest.Config{},
-	}
-	// Create a mock PVC client
-	pvcClient, _ := kubeClient.CreatePVCClient("test-namespace")
-
-	// Create a mock Runner
-	//runner := &Runner{}
-
-	// Create a mock store
-	//store := NewSimpleStore()
-
-	runner := &Runner{
-		Clients: &k8sclient.Clients{
-			PVCClient: pvcClient,
-			//PodClient: podClient,
-		},
-		TestCase: &store.TestCase{
-			ID: 1,
-		},
-		WaitGroup: sync.WaitGroup{},
-		Database:  &SimpleStore{},
-	}
-	runner.WaitGroup.Add(1)*/
-
-	// Create an EntityNumberObserver instance
-	//eno := &EntityNumberObserver{}
-	//eno.MakeChannel()
-
-	// Start watching entities
-	//go eno.StartWatching(ctx, runner)
-
-	//eno := &EntityNumberObserver{
-	//Runner: runner,
-	//Store:  store,
-	//}
 	mockInfo := &store.NumberEntities{}
-	// Call the checkPvcs method
+
 	_, err := eno.checkPvcs(pvcClient, mockInfo)
-	// Create an EntityNumberObserver
-	//eno := &EntityNumberObserver{
-	//Runner: runner,
-	//Store:  store,
-	//}
 
-	// Create a mock PVC list
-	//pvcList := &v1.PersistentVolumeClaimList{}
-
-	// Create a mock PVC client
-	/*pvcClient.Interface = &MockPVCInterface{
-		ListFunc: func(ctx context.Context, opts metav1.ListOptions) (*v1.PersistentVolumeClaimList, error) {
-			return pvcList, fmt.Errorf("mock error")
-		},
-	}*/
-
-	// Call the checkPvcs method
-	//_, err := eno.checkPvcs(pvcClient, nil)
-
-	// Assert that the error is nil
 	assert.Nil(t, err)
 }
 
 func TestEntityNumberObserver_checkPvcs_PodClientIsNil(t *testing.T) {
-	// Create an EntityNumberObserver
+
 	eno := &EntityNumberObserver{}
 
-	// Call the checkPvcs method
 	_, err := eno.checkPods(nil, nil)
 
-	// Assert that the error is nil
 	assert.Nil(t, err)
 }
 
 func TestEntityNumberObserver_checkPods_PodListErr(t *testing.T) {
-	// Create a context
+
 	ctx := context.Background()
 
 	storageClass := &storagev1.StorageClass{
@@ -453,7 +368,6 @@ func TestEntityNumberObserver_checkPods_PodListErr(t *testing.T) {
 	pvcClient, _ := kubeClient.CreatePVCClient("test-namespace")
 	podClient, _ := kubeClient.CreatePodClient("test-namespace")
 
-	// Create a Runner instance
 	runner := &Runner{
 		Clients: &k8sclient.Clients{
 			PVCClient: pvcClient,
@@ -467,78 +381,11 @@ func TestEntityNumberObserver_checkPods_PodListErr(t *testing.T) {
 	}
 	runner.WaitGroup.Add(1)
 
-	// Create an EntityNumberObserver instance
 	eno := &EntityNumberObserver{}
-	/*ctx := context.Background()
 
-	storageClass := &storagev1.StorageClass{
-		ObjectMeta: metav1.ObjectMeta{Name: "test-storage-class"},
-		VolumeBindingMode: func() *storagev1.VolumeBindingMode {
-			mode := storagev1.VolumeBindingWaitForFirstConsumer
-			return &mode
-		}(),
-	}
-	clientSet := NewFakeClientsetWithRestClient(storageClass)
-	clientSet.CoreV1().PersistentVolumeClaims("test-namespace").Create(ctx, &v1.PersistentVolumeClaim{ObjectMeta: metav1.ObjectMeta{Name: "test-pvc", Namespace: "test-namespace"}, Status: v1.PersistentVolumeClaimStatus{Phase: v1.ClaimPending}}, metav1.CreateOptions{})
-	kubeClient := &k8sclient.KubeClient{
-		ClientSet: clientSet,
-		Config:    &rest.Config{},
-	}
-	// Create a mock PVC client
-	pvcClient, _ := kubeClient.CreatePVCClient("test-namespace")
-
-	// Create a mock Runner
-	//runner := &Runner{}
-
-	// Create a mock store
-	//store := NewSimpleStore()
-
-	runner := &Runner{
-		Clients: &k8sclient.Clients{
-			PVCClient: pvcClient,
-			//PodClient: podClient,
-		},
-		TestCase: &store.TestCase{
-			ID: 1,
-		},
-		WaitGroup: sync.WaitGroup{},
-		Database:  &SimpleStore{},
-	}
-	runner.WaitGroup.Add(1)*/
-
-	// Create an EntityNumberObserver instance
-	//eno := &EntityNumberObserver{}
-	//eno.MakeChannel()
-
-	// Start watching entities
-	//go eno.StartWatching(ctx, runner)
-
-	//eno := &EntityNumberObserver{
-	//Runner: runner,
-	//Store:  store,
-	//}
 	mockInfo := &store.NumberEntities{}
-	// Call the checkPvcs method
+
 	_, err := eno.checkPods(podClient, mockInfo)
-	// Create an EntityNumberObserver
-	//eno := &EntityNumberObserver{
-	//Runner: runner,
-	//Store:  store,
-	//}
 
-	// Create a mock PVC list
-	//pvcList := &v1.PersistentVolumeClaimList{}
-
-	// Create a mock PVC client
-	/*pvcClient.Interface = &MockPVCInterface{
-		ListFunc: func(ctx context.Context, opts metav1.ListOptions) (*v1.PersistentVolumeClaimList, error) {
-			return pvcList, fmt.Errorf("mock error")
-		},
-	}*/
-
-	// Call the checkPvcs method
-	//_, err := eno.checkPvcs(pvcClient, nil)
-
-	// Assert that the error is nil
 	assert.Nil(t, err)
 }

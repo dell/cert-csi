@@ -22,40 +22,22 @@ import (
 )
 
 func TestVaObserver_StartWatching(t *testing.T) {
-	// Test case: Watching volume attachments
+
 	ctx := context.Background()
 
-	// Create a mock PVC
-	/*pvc := &v1.PersistentVolumeClaim{
-		ObjectMeta: metav1.ObjectMeta{
-			Name: "test-pvc",
-			UID:  "test-uid",
-		},
-		//Status: v1.PersistentVolumeClaimStatus{Phase: "Bound"},
-	}*/
 	va := &storagev1.VolumeAttachment{
 		ObjectMeta: metav1.ObjectMeta{
 			Name: "test-va",
 		},
 		Spec: storagev1.VolumeAttachmentSpec{
-			// Set the desired properties of the VolumeAttachment
 			Source: storagev1.VolumeAttachmentSource{
 				PersistentVolumeName: func() *string { s := "test-pvc"; return &s }(),
 			},
 		},
 		Status: storagev1.VolumeAttachmentStatus{Attached: true},
 	}
-	//pvc.ObjectMeta = va.ObjectMeta
-	clientSet := fake.NewSimpleClientset()
 
-	/*storageClass := &storagev1.StorageClass{
-		ObjectMeta: metav1.ObjectMeta{Name: "test-storage-class"},
-		VolumeBindingMode: func() *storagev1.VolumeBindingMode {
-			mode := storagev1.VolumeBindingWaitForFirstConsumer
-			return &mode
-		}(),
-	}
-	clientSet := NewFakeClientsetWithRestClient(storageClass)*/
+	clientSet := fake.NewSimpleClientset()
 
 	kubeClient := &k8sclient.KubeClient{
 		ClientSet: clientSet,
@@ -104,7 +86,6 @@ func TestVaObserver_StartWatching(t *testing.T) {
 			DeletionTimestamp: &metav1.Time{Time: time.Now()},
 		},
 		Spec: storagev1.VolumeAttachmentSpec{
-			// Set the desired properties of the VolumeAttachment
 			Source: storagev1.VolumeAttachmentSource{
 				PersistentVolumeName: func() *string { s := "test-pvc"; return &s }(),
 			},
@@ -127,7 +108,7 @@ func TestVaObserver_StartWatching(t *testing.T) {
 }
 
 func TestVaObserver_StopWatching(t *testing.T) {
-	// Test case: Stopping watching volume attachments
+
 	obs := &VaObserver{}
 
 	obs.finished = make(chan bool)
@@ -136,18 +117,15 @@ func TestVaObserver_StopWatching(t *testing.T) {
 
 	select {
 	case <-obs.finished:
-		// Channel received a value
-		// Make assertions here
 		assert.True(t, true)
 
 	case <-time.After(1 * time.Second):
-		// Timeout waiting for channel to receive a value
 		t.Error("Timeout waiting for channel to receive a value")
 	}
 }
 
 func TestVaObserver_GetName(t *testing.T) {
-	// Test case: Getting name of VA observer
+
 	obs := &VaObserver{}
 
 	name := obs.GetName()
@@ -156,7 +134,7 @@ func TestVaObserver_GetName(t *testing.T) {
 }
 
 func TestVaObserver_MakeChannel(t *testing.T) {
-	// Test case: Creating a new channel
+
 	obs := &VaObserver{}
 
 	obs.MakeChannel()
@@ -165,40 +143,22 @@ func TestVaObserver_MakeChannel(t *testing.T) {
 }
 
 func TestVaObserver_StartWatching_ShouldExit(t *testing.T) {
-	// Test case: Watching volume attachments
+
 	ctx := context.Background()
 
-	// Create a mock PVC
-	/*pvc := &v1.PersistentVolumeClaim{
-		ObjectMeta: metav1.ObjectMeta{
-			Name: "test-pvc",
-			UID:  "test-uid",
-		},
-		//Status: v1.PersistentVolumeClaimStatus{Phase: "Bound"},
-	}*/
 	va := &storagev1.VolumeAttachment{
 		ObjectMeta: metav1.ObjectMeta{
 			Name: "test-va",
 		},
 		Spec: storagev1.VolumeAttachmentSpec{
-			// Set the desired properties of the VolumeAttachment
 			Source: storagev1.VolumeAttachmentSource{
 				PersistentVolumeName: func() *string { s := "test-pvc"; return &s }(),
 			},
 		},
 		Status: storagev1.VolumeAttachmentStatus{Attached: true},
 	}
-	//pvc.ObjectMeta = va.ObjectMeta
-	clientSet := fake.NewSimpleClientset()
 
-	/*storageClass := &storagev1.StorageClass{
-		ObjectMeta: metav1.ObjectMeta{Name: "test-storage-class"},
-		VolumeBindingMode: func() *storagev1.VolumeBindingMode {
-			mode := storagev1.VolumeBindingWaitForFirstConsumer
-			return &mode
-		}(),
-	}
-	clientSet := NewFakeClientsetWithRestClient(storageClass)*/
+	clientSet := fake.NewSimpleClientset()
 
 	kubeClient := &k8sclient.KubeClient{
 		ClientSet: clientSet,
@@ -248,7 +208,6 @@ func TestVaObserver_StartWatching_ShouldExit(t *testing.T) {
 			DeletionTimestamp: &metav1.Time{Time: time.Now()},
 		},
 		Spec: storagev1.VolumeAttachmentSpec{
-			// Set the desired properties of the VolumeAttachment
 			Source: storagev1.VolumeAttachmentSource{
 				PersistentVolumeName: func() *string { s := "test-pvc"; return &s }(),
 			},
@@ -257,8 +216,6 @@ func TestVaObserver_StartWatching_ShouldExit(t *testing.T) {
 	}
 
 	fakeWatcher.Modify(va)
-
-	//fakeWatcher.Delete(va)
 
 	time.Sleep(100 * time.Millisecond)
 
@@ -273,47 +230,16 @@ func TestVaObserver_StartWatching_ShouldExit(t *testing.T) {
 }
 
 func TestVaObserver_StartWatching_ClientIsNil(t *testing.T) {
-	// Test case: Watching volume attachments
 	ctx := context.Background()
 
-	// Create a mock PVC
-	/*pvc := &v1.PersistentVolumeClaim{
-		ObjectMeta: metav1.ObjectMeta{
-			Name: "test-pvc",
-			UID:  "test-uid",
-		},
-		//Status: v1.PersistentVolumeClaimStatus{Phase: "Bound"},
-	}*/
-	/*va := &storagev1.VolumeAttachment{
-		ObjectMeta: metav1.ObjectMeta{
-			Name: "test-va",
-		},
-		Spec: storagev1.VolumeAttachmentSpec{
-			// Set the desired properties of the VolumeAttachment
-			Source: storagev1.VolumeAttachmentSource{
-				PersistentVolumeName: func() *string { s := "test-pvc"; return &s }(),
-			},
-		},
-		Status: storagev1.VolumeAttachmentStatus{Attached: true},
-	}*/
-	//pvc.ObjectMeta = va.ObjectMeta
 	clientSet := fake.NewSimpleClientset()
-
-	/*storageClass := &storagev1.StorageClass{
-		ObjectMeta: metav1.ObjectMeta{Name: "test-storage-class"},
-		VolumeBindingMode: func() *storagev1.VolumeBindingMode {
-			mode := storagev1.VolumeBindingWaitForFirstConsumer
-			return &mode
-		}(),
-	}
-	clientSet := NewFakeClientsetWithRestClient(storageClass)*/
 
 	kubeClient := &k8sclient.KubeClient{
 		ClientSet: clientSet,
 		Config:    &rest.Config{},
 	}
 	pvcClient, _ := kubeClient.CreatePVCClient("test-namespace")
-	//vaClient, _ := kubeClient.CreateVaClient("test-namespace")
+
 	runner := &Runner{
 		Clients: &k8sclient.Clients{
 			VaClient: nil,
@@ -345,31 +271,8 @@ func TestVaObserver_StartWatching_ClientIsNil(t *testing.T) {
 	obs.MakeChannel()
 
 	go obs.StartWatching(ctx, runner)
-	/*fakeWatcher.Add(va)
-
-	fakeWatcher.Modify(va)
-
-	va = &storagev1.VolumeAttachment{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:              "test-va",
-			DeletionTimestamp: &metav1.Time{Time: time.Now()},
-		},
-		Spec: storagev1.VolumeAttachmentSpec{
-			// Set the desired properties of the VolumeAttachment
-			Source: storagev1.VolumeAttachmentSource{
-				PersistentVolumeName: func() *string { s := "test-pvc"; return &s }(),
-			},
-		},
-		Status: storagev1.VolumeAttachmentStatus{Attached: true},
-	}
-
-	fakeWatcher.Modify(va)
-
-	fakeWatcher.Delete(va)*/
 
 	time.Sleep(100 * time.Millisecond)
-
-	//obs.StopWatching()
 
 	runner.WaitGroup.Wait()
 
@@ -378,40 +281,10 @@ func TestVaObserver_StartWatching_ClientIsNil(t *testing.T) {
 }
 
 func TestVaObserver_StartWatching_WatchError(t *testing.T) {
-	// Test case: Watching volume attachments
+
 	ctx := context.Background()
 
-	// Create a mock PVC
-	/*pvc := &v1.PersistentVolumeClaim{
-		ObjectMeta: metav1.ObjectMeta{
-			Name: "test-pvc",
-			UID:  "test-uid",
-		},
-		//Status: v1.PersistentVolumeClaimStatus{Phase: "Bound"},
-	}*/
-	/*va := &storagev1.VolumeAttachment{
-		ObjectMeta: metav1.ObjectMeta{
-			Name: "test-va",
-		},
-		Spec: storagev1.VolumeAttachmentSpec{
-			// Set the desired properties of the VolumeAttachment
-			Source: storagev1.VolumeAttachmentSource{
-				PersistentVolumeName: func() *string { s := "test-pvc"; return &s }(),
-			},
-		},
-		Status: storagev1.VolumeAttachmentStatus{Attached: true},
-	}*/
-	//pvc.ObjectMeta = va.ObjectMeta
 	clientSet := fake.NewSimpleClientset()
-
-	/*storageClass := &storagev1.StorageClass{
-		ObjectMeta: metav1.ObjectMeta{Name: "test-storage-class"},
-		VolumeBindingMode: func() *storagev1.VolumeBindingMode {
-			mode := storagev1.VolumeBindingWaitForFirstConsumer
-			return &mode
-		}(),
-	}
-	clientSet := NewFakeClientsetWithRestClient(storageClass)*/
 
 	kubeClient := &k8sclient.KubeClient{
 		ClientSet: clientSet,
@@ -444,31 +317,8 @@ func TestVaObserver_StartWatching_WatchError(t *testing.T) {
 	obs.MakeChannel()
 
 	go obs.StartWatching(ctx, runner)
-	/*fakeWatcher.Add(va)
-
-	fakeWatcher.Modify(va)
-
-	va = &storagev1.VolumeAttachment{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:              "test-va",
-			DeletionTimestamp: &metav1.Time{Time: time.Now()},
-		},
-		Spec: storagev1.VolumeAttachmentSpec{
-			// Set the desired properties of the VolumeAttachment
-			Source: storagev1.VolumeAttachmentSource{
-				PersistentVolumeName: func() *string { s := "test-pvc"; return &s }(),
-			},
-		},
-		Status: storagev1.VolumeAttachmentStatus{Attached: true},
-	}
-
-	fakeWatcher.Modify(va)
-
-	fakeWatcher.Delete(va)*/
 
 	time.Sleep(100 * time.Millisecond)
-
-	//obs.StopWatching()
 
 	runner.WaitGroup.Wait()
 
@@ -477,40 +327,10 @@ func TestVaObserver_StartWatching_WatchError(t *testing.T) {
 }
 
 func TestVaObserver_StartWatching_DataObjectIsNil(t *testing.T) {
-	// Test case: Watching volume attachments
+
 	ctx := context.Background()
 
-	// Create a mock PVC
-	/*pvc := &v1.PersistentVolumeClaim{
-		ObjectMeta: metav1.ObjectMeta{
-			Name: "test-pvc",
-			UID:  "test-uid",
-		},
-		//Status: v1.PersistentVolumeClaimStatus{Phase: "Bound"},
-	}*/
-	/*va := &storagev1.VolumeAttachment{
-		ObjectMeta: metav1.ObjectMeta{
-			Name: "test-va",
-		},
-		Spec: storagev1.VolumeAttachmentSpec{
-			// Set the desired properties of the VolumeAttachment
-			Source: storagev1.VolumeAttachmentSource{
-				PersistentVolumeName: func() *string { s := "test-pvc"; return &s }(),
-			},
-		},
-		Status: storagev1.VolumeAttachmentStatus{Attached: true},
-	}*/
-	//pvc.ObjectMeta = va.ObjectMeta
 	clientSet := fake.NewSimpleClientset()
-
-	/*storageClass := &storagev1.StorageClass{
-		ObjectMeta: metav1.ObjectMeta{Name: "test-storage-class"},
-		VolumeBindingMode: func() *storagev1.VolumeBindingMode {
-			mode := storagev1.VolumeBindingWaitForFirstConsumer
-			return &mode
-		}(),
-	}
-	clientSet := NewFakeClientsetWithRestClient(storageClass)*/
 
 	kubeClient := &k8sclient.KubeClient{
 		ClientSet: clientSet,
@@ -551,26 +371,6 @@ func TestVaObserver_StartWatching_DataObjectIsNil(t *testing.T) {
 	go obs.StartWatching(ctx, runner)
 	fakeWatcher.Add(nil)
 
-	/*fakeWatcher.Modify(va)
-
-	va = &storagev1.VolumeAttachment{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:              "test-va",
-			DeletionTimestamp: &metav1.Time{Time: time.Now()},
-		},
-		Spec: storagev1.VolumeAttachmentSpec{
-			// Set the desired properties of the VolumeAttachment
-			Source: storagev1.VolumeAttachmentSource{
-				PersistentVolumeName: func() *string { s := "test-pvc"; return &s }(),
-			},
-		},
-		Status: storagev1.VolumeAttachmentStatus{Attached: true},
-	}
-
-	fakeWatcher.Modify(va)
-
-	fakeWatcher.Delete(va)*/
-
 	time.Sleep(100 * time.Millisecond)
 
 	obs.StopWatching()
@@ -582,7 +382,7 @@ func TestVaObserver_StartWatching_DataObjectIsNil(t *testing.T) {
 }
 
 func TestVaObserver_StartWatching_UnexpectedType(t *testing.T) {
-	// Test case: Watching volume attachments
+
 	ctx := context.Background()
 
 	// Create a mock PVC
@@ -591,31 +391,9 @@ func TestVaObserver_StartWatching_UnexpectedType(t *testing.T) {
 			Name: "test-pvc",
 			UID:  "test-uid",
 		},
-		//Status: v1.PersistentVolumeClaimStatus{Phase: "Bound"},
 	}
-	/*va := &storagev1.VolumeAttachment{
-		ObjectMeta: metav1.ObjectMeta{
-			Name: "test-va",
-		},
-		Spec: storagev1.VolumeAttachmentSpec{
-			// Set the desired properties of the VolumeAttachment
-			Source: storagev1.VolumeAttachmentSource{
-				PersistentVolumeName: func() *string { s := "test-pvc"; return &s }(),
-			},
-		},
-		Status: storagev1.VolumeAttachmentStatus{Attached: true},
-	}*/
-	//pvc.ObjectMeta = va.ObjectMeta
-	clientSet := fake.NewSimpleClientset()
 
-	/*storageClass := &storagev1.StorageClass{
-		ObjectMeta: metav1.ObjectMeta{Name: "test-storage-class"},
-		VolumeBindingMode: func() *storagev1.VolumeBindingMode {
-			mode := storagev1.VolumeBindingWaitForFirstConsumer
-			return &mode
-		}(),
-	}
-	clientSet := NewFakeClientsetWithRestClient(storageClass)*/
+	clientSet := fake.NewSimpleClientset()
 
 	kubeClient := &k8sclient.KubeClient{
 		ClientSet: clientSet,
@@ -656,26 +434,6 @@ func TestVaObserver_StartWatching_UnexpectedType(t *testing.T) {
 	go obs.StartWatching(ctx, runner)
 	fakeWatcher.Add(pvc)
 
-	/*fakeWatcher.Modify(va)
-
-	va = &storagev1.VolumeAttachment{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:              "test-va",
-			DeletionTimestamp: &metav1.Time{Time: time.Now()},
-		},
-		Spec: storagev1.VolumeAttachmentSpec{
-			// Set the desired properties of the VolumeAttachment
-			Source: storagev1.VolumeAttachmentSource{
-				PersistentVolumeName: func() *string { s := "test-pvc"; return &s }(),
-			},
-		},
-		Status: storagev1.VolumeAttachmentStatus{Attached: true},
-	}
-
-	fakeWatcher.Modify(va)
-
-	fakeWatcher.Delete(va)*/
-
 	time.Sleep(100 * time.Millisecond)
 
 	obs.StopWatching()
@@ -687,40 +445,22 @@ func TestVaObserver_StartWatching_UnexpectedType(t *testing.T) {
 }
 
 func TestVaObserver_StartWatching_PvcShare(t *testing.T) {
-	// Test case: Watching volume attachments
+
 	ctx := context.Background()
 
-	// Create a mock PVC
-	/*pvc := &v1.PersistentVolumeClaim{
-		ObjectMeta: metav1.ObjectMeta{
-			Name: "test-pvc",
-			UID:  "test-uid",
-		},
-		//Status: v1.PersistentVolumeClaimStatus{Phase: "Bound"},
-	}*/
 	va := &storagev1.VolumeAttachment{
 		ObjectMeta: metav1.ObjectMeta{
 			Name: "test-va",
 		},
 		Spec: storagev1.VolumeAttachmentSpec{
-			// Set the desired properties of the VolumeAttachment
 			Source: storagev1.VolumeAttachmentSource{
 				PersistentVolumeName: func() *string { s := "test-pvc"; return &s }(),
 			},
 		},
 		Status: storagev1.VolumeAttachmentStatus{Attached: true},
 	}
-	//pvc.ObjectMeta = va.ObjectMeta
-	clientSet := fake.NewSimpleClientset()
 
-	/*storageClass := &storagev1.StorageClass{
-		ObjectMeta: metav1.ObjectMeta{Name: "test-storage-class"},
-		VolumeBindingMode: func() *storagev1.VolumeBindingMode {
-			mode := storagev1.VolumeBindingWaitForFirstConsumer
-			return &mode
-		}(),
-	}
-	clientSet := NewFakeClientsetWithRestClient(storageClass)*/
+	clientSet := fake.NewSimpleClientset()
 
 	kubeClient := &k8sclient.KubeClient{
 		ClientSet: clientSet,
@@ -739,8 +479,6 @@ func TestVaObserver_StartWatching_PvcShare(t *testing.T) {
 		PvcShare:  sync.Map{},
 		Database:  NewSimpleStore(),
 	}
-	//entity := &store.Entity{}
-	//runner.PvcShare.Store("test-pvc", entity)
 
 	runner.WaitGroup.Add(1)
 
@@ -762,26 +500,6 @@ func TestVaObserver_StartWatching_PvcShare(t *testing.T) {
 
 	fakeWatcher.Add(va)
 
-	/*fakeWatcher.Modify(va)
-
-	va = &storagev1.VolumeAttachment{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:              "test-va",
-			DeletionTimestamp: &metav1.Time{Time: time.Now()},
-		},
-		Spec: storagev1.VolumeAttachmentSpec{
-			// Set the desired properties of the VolumeAttachment
-			Source: storagev1.VolumeAttachmentSource{
-				PersistentVolumeName: func() *string { s := "test-pvc"; return &s }(),
-			},
-		},
-		Status: storagev1.VolumeAttachmentStatus{Attached: true},
-	}
-
-	fakeWatcher.Modify(va)
-
-	fakeWatcher.Delete(va)*/
-
 	time.Sleep(100 * time.Millisecond)
 
 	obs.StopWatching()
@@ -793,40 +511,21 @@ func TestVaObserver_StartWatching_PvcShare(t *testing.T) {
 }
 
 func TestVaObserver_StartWatching_WatchModified(t *testing.T) {
-	// Test case: Watching volume attachments
+
 	ctx := context.Background()
 
-	// Create a mock PVC
-	/*pvc := &v1.PersistentVolumeClaim{
-		ObjectMeta: metav1.ObjectMeta{
-			Name: "test-pvc",
-			UID:  "test-uid",
-		},
-		//Status: v1.PersistentVolumeClaimStatus{Phase: "Bound"},
-	}*/
 	va := &storagev1.VolumeAttachment{
 		ObjectMeta: metav1.ObjectMeta{
 			Name: "test-va",
 		},
 		Spec: storagev1.VolumeAttachmentSpec{
-			// Set the desired properties of the VolumeAttachment
 			Source: storagev1.VolumeAttachmentSource{
 				PersistentVolumeName: func() *string { s := "test-pvc"; return &s }(),
 			},
 		},
-		//Status: storagev1.VolumeAttachmentStatus{Attached: true},
 	}
-	//pvc.ObjectMeta = va.ObjectMeta
-	clientSet := fake.NewSimpleClientset()
 
-	/*storageClass := &storagev1.StorageClass{
-		ObjectMeta: metav1.ObjectMeta{Name: "test-storage-class"},
-		VolumeBindingMode: func() *storagev1.VolumeBindingMode {
-			mode := storagev1.VolumeBindingWaitForFirstConsumer
-			return &mode
-		}(),
-	}
-	clientSet := NewFakeClientsetWithRestClient(storageClass)*/
+	clientSet := fake.NewSimpleClientset()
 
 	kubeClient := &k8sclient.KubeClient{
 		ClientSet: clientSet,
@@ -867,26 +566,6 @@ func TestVaObserver_StartWatching_WatchModified(t *testing.T) {
 	go obs.StartWatching(ctx, runner)
 
 	fakeWatcher.Modify(va)
-
-	/*fakeWatcher.Modify(va)
-
-	va = &storagev1.VolumeAttachment{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:              "test-va",
-			DeletionTimestamp: &metav1.Time{Time: time.Now()},
-		},
-		Spec: storagev1.VolumeAttachmentSpec{
-			// Set the desired properties of the VolumeAttachment
-			Source: storagev1.VolumeAttachmentSource{
-				PersistentVolumeName: func() *string { s := "test-pvc"; return &s }(),
-			},
-		},
-		Status: storagev1.VolumeAttachmentStatus{Attached: true},
-	}
-
-	fakeWatcher.Modify(va)
-
-	fakeWatcher.Delete(va)*/
 
 	time.Sleep(100 * time.Millisecond)
 
