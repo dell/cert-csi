@@ -25,7 +25,7 @@ func isChanClosed(ch <-chan bool) bool {
 }
 
 func TestPodListObserver_StartWatching(t *testing.T) {
-	// Create a context
+
 	ctx := context.Background()
 
 	storageClass := &storagev1.StorageClass{
@@ -102,7 +102,7 @@ func TestPodListObserver_StartWatching(t *testing.T) {
 			},
 		},
 		{
-			name: "Test case: podClien with added pods conditional is false",
+			name: "Test case: podClient with added pods conditional is false",
 			runner: &Runner{
 				WaitGroup: sync.WaitGroup{},
 				Clients: &k8sclient.Clients{
@@ -120,7 +120,6 @@ func TestPodListObserver_StartWatching(t *testing.T) {
 		t.Run(test.name, func(t *testing.T) {
 			var wg sync.WaitGroup
 
-			// Create a PodListObserver instance
 			po := &PodListObserver{}
 			po.MakeChannel()
 
@@ -158,45 +157,35 @@ func TestPodListObserver_StartWatching(t *testing.T) {
 }
 func TestPodListObserver_StopWatching(t *testing.T) {
 
-	// Create a PodListObserver instance
 	po := &PodListObserver{}
 
-	// Create a channel
 	po.finished = make(chan bool)
 
-	// Start the StopWatching function in a goroutine
 	go po.StopWatching()
 
 	select {
 	case <-po.finished:
-		// Channel received a value
-		// Make assertions here
 		assert.True(t, true)
 
 	case <-time.After(1 * time.Second):
-		// Timeout waiting for channel to receive a value
 		t.Error("Timeout waiting for channel to receive a value")
 	}
 }
 
 func TestPodListObserver_GetName(t *testing.T) {
-	// Create a PodListObserver instance
+
 	po := &PodListObserver{}
 
-	// Call the GetName function
 	name := po.GetName()
 
-	// Assert that the function returned the correct value
 	assert.Equal(t, "Pod Observer", name)
 }
 
 func TestPodListObserver_MakeChannel(t *testing.T) {
-	// Create a PodListObserver instance
+
 	po := &PodListObserver{}
 
-	// Call the MakeChannel function
 	po.MakeChannel()
 
-	// Assert that the function completed successfully
 	assert.NotNil(t, po.finished)
 }

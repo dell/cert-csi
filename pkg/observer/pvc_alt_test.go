@@ -138,7 +138,7 @@ func TestPvcListObserver_StartWatching(t *testing.T) {
 }
 
 func TestPvcListObserver_StopWatching(t *testing.T) {
-	// Test case: Stopping watching PVCs
+
 	obs := &PvcListObserver{}
 
 	obs.finished = make(chan bool)
@@ -147,8 +147,6 @@ func TestPvcListObserver_StopWatching(t *testing.T) {
 
 	select {
 	case <-obs.finished:
-		// Channel received a value
-		// Make assertions here
 		assert.True(t, true)
 
 	case <-time.After(1 * time.Second):
@@ -158,7 +156,7 @@ func TestPvcListObserver_StopWatching(t *testing.T) {
 }
 
 func TestPvcListObserver_GetName(t *testing.T) {
-	// Test case: Getting name of PVC list observer
+
 	obs := &PvcListObserver{}
 
 	name := obs.GetName()
@@ -167,7 +165,7 @@ func TestPvcListObserver_GetName(t *testing.T) {
 }
 
 func TestPvcListObserver_MakeChannel(t *testing.T) {
-	// Test case: Creating a new channel
+
 	obs := &PvcListObserver{}
 
 	obs.MakeChannel()
@@ -184,21 +182,6 @@ func (m *mockPVCClient) List(ctx context.Context, opts metav1.ListOptions) (*v1.
 	args := m.Called(ctx, opts)
 	return args.Get(0).(*v1.PersistentVolumeClaimList), args.Error(1)
 }
-
-// Mock implementation of Database
-// type mockDatabase struct {
-// 	mock.Mock
-// }
-
-// func (m *mockDatabase) SaveEntities(entities []*store.Entity) error {
-// 	args := m.Called(entities)
-// 	return args.Error(0)
-// }
-
-// func (m *mockDatabase) SaveEvents(events []*store.Event) error {
-// 	args := m.Called(events)
-// 	return args.Error(0)
-// }
 
 // Mock implementation of PVC
 type mockPVC struct {
