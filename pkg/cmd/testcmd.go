@@ -35,6 +35,10 @@ var ExecuteFuncSuite = func(sr *runner.FunctionalSuiteRunner, s []suites.Interfa
 	sr.RunFunctionalSuites(s)
 }
 
+var ExecuteRunCmdSuite = func(sr *runner.SuiteRunner, s map[string][]suites.Interface) {
+	sr.RunSuites(s)
+}
+
 // GetTestCommand returns a `test` command with all prepared sub-commands
 func GetTestCommand() cli.Command {
 	globalFlags := []cli.Flag{
@@ -186,6 +190,7 @@ func createSuiteRunner(c *cli.Context, s []suites.Interface) (*runner.SuiteRunne
 		c.Bool("no-metrics"),
 		c.Bool("no-reports"),
 		scDBs,
+		&runner.K8sClient{},
 	), ss
 }
 
@@ -269,7 +274,7 @@ func getVolumeCreationCommand(globalFlags []cli.Flag) cli.Command {
 			}
 
 			sr, ss := createSuiteRunner(c, s)
-			sr.RunSuites(ss)
+			ExecuteRunCmdSuite(sr, ss)
 
 			return nil
 		},
@@ -323,7 +328,7 @@ func getVolumeMigrateCommand(globalFlags []cli.Flag) cli.Command {
 			}
 
 			sr, ss := createSuiteRunner(c, s)
-			sr.RunSuites(ss)
+			ExecuteRunCmdSuite(sr, ss)
 
 			return nil
 		},
@@ -378,7 +383,7 @@ func getRemoteReplicationProvisioningCommand(globalFlags []cli.Flag) cli.Command
 			}
 
 			sr, ss := createSuiteRunner(c, s)
-			sr.RunSuites(ss)
+			ExecuteRunCmdSuite(sr, ss)
 
 			return nil
 		},
@@ -431,7 +436,7 @@ func getReplicationCommand(globalFlags []cli.Flag) cli.Command {
 			}
 
 			sr, ss := createSuiteRunner(c, s)
-			sr.RunSuites(ss)
+			ExecuteRunCmdSuite(sr, ss)
 			return nil
 		},
 	}
@@ -471,7 +476,7 @@ func getCloneVolumeCommand(globalFlags []cli.Flag) cli.Command {
 			}
 
 			sr, ss := createSuiteRunner(c, s)
-			sr.RunSuites(ss)
+			ExecuteRunCmdSuite(sr, ss)
 
 			return nil
 		},
@@ -519,7 +524,7 @@ func getMultiAttachVolCommand(globalFlags []cli.Flag) cli.Command {
 			}
 
 			sr, ss := createSuiteRunner(c, s)
-			sr.RunSuites(ss)
+			ExecuteRunCmdSuite(sr, ss)
 
 			return nil
 		},
@@ -582,7 +587,7 @@ func getVolumeExpansionCommand(globalFlags []cli.Flag) cli.Command {
 			}
 
 			sr, ss := createSuiteRunner(c, s)
-			sr.RunSuites(ss)
+			ExecuteRunCmdSuite(sr, ss)
 
 			return nil
 		},
@@ -632,7 +637,7 @@ func getVolumeHealthMetricsCommand(globalFlags []cli.Flag) cli.Command {
 			}
 
 			sr, ss := createSuiteRunner(c, s)
-			sr.RunSuites(ss)
+			ExecuteRunCmdSuite(sr, ss)
 
 			return nil
 		},
@@ -674,7 +679,7 @@ func getProvisioningCommand(globalFlags []cli.Flag) cli.Command {
 			}
 
 			sr, ss := createSuiteRunner(c, s)
-			sr.RunSuites(ss)
+			ExecuteRunCmdSuite(sr, ss)
 
 			return nil
 		},
@@ -731,7 +736,7 @@ func getScalingCommand(globalFlags []cli.Flag) cli.Command {
 			}
 
 			sr, ss := createSuiteRunner(c, s)
-			sr.RunSuites(ss)
+			ExecuteRunCmdSuite(sr, ss)
 
 			return nil
 		},
@@ -774,7 +779,7 @@ func getVolumeIoCommand(globalFlags []cli.Flag) cli.Command {
 			}
 
 			sr, ss := createSuiteRunner(c, s)
-			sr.RunSuites(ss)
+			ExecuteRunCmdSuite(sr, ss)
 
 			return nil
 		},
@@ -824,7 +829,7 @@ func getSnapCommand(globalFlags []cli.Flag) cli.Command {
 			}
 
 			sr, ss := createSuiteRunner(c, s)
-			sr.RunSuites(ss)
+			ExecuteRunCmdSuite(sr, ss)
 
 			return nil
 		},
@@ -903,7 +908,7 @@ func getVolumeGroupSnapCommand(globalFlags []cli.Flag) cli.Command {
 			}
 
 			sr, ss := createSuiteRunner(c, s)
-			sr.RunSuites(ss)
+			ExecuteRunCmdSuite(sr, ss)
 
 			return nil
 		},
@@ -952,7 +957,7 @@ func getBlockSnapCommand(globalFlags []cli.Flag) cli.Command {
 			}
 
 			sr, ss := createSuiteRunner(c, s)
-			sr.RunSuites(ss)
+			ExecuteRunCmdSuite(sr, ss)
 
 			return nil
 		},
@@ -1009,7 +1014,7 @@ func getPostgresCommand(globalFlags []cli.Flag) cli.Command {
 			}
 
 			sr, ss := createSuiteRunner(c, s)
-			sr.RunSuites(ss)
+			ExecuteRunCmdSuite(sr, ss)
 
 			return nil
 		},

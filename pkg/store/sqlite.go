@@ -28,7 +28,7 @@ import (
 // StorageClassDB represents storage class db
 type StorageClassDB struct {
 	StorageClass string
-	DB           *SQLiteStore
+	DB           Store
 	TestRun      TestRun
 }
 
@@ -697,4 +697,8 @@ func (ss *SQLiteStore) Close() error {
 		return err
 	}
 	return nil
+}
+
+func NewSQLiteStoreWithDB(db *sql.DB) *SQLiteStore {
+	return &SQLiteStore{db: db}
 }

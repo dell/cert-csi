@@ -34,7 +34,7 @@ import (
 type Runner struct {
 	Config          *rest.Config
 	DriverNamespace string
-	KubeClient      *k8sclient.KubeClient
+	KubeClient      k8sclient.KubeClientInterface
 	Timeout         int
 	NoCleanupOnFail bool
 	SucceededSuites float64
@@ -54,7 +54,7 @@ type Runner struct {
 //go:generate mockgen -destination=mocks/k8sclient.go -package=mocks github.com/dell/cert-csi/pkg/testcore/runner K8sClientInterface
 type K8sClientInterface interface {
 	GetConfig(string) (*rest.Config, error)
-	NewKubeClient(config *rest.Config, timeout int) (*k8sclient.KubeClient, error)
+	NewKubeClient(config *rest.Config, timeout int) (k8sclient.KubeClientInterface, error)
 }
 
 type K8sClient struct{}
@@ -63,7 +63,7 @@ func (k *K8sClient) GetConfig(configPath string) (*rest.Config, error) {
 	return k8sclient.GetConfig(configPath)
 }
 
-func (k *K8sClient) NewKubeClient(config *rest.Config, timeout int) (*k8sclient.KubeClient, error) {
+func (k *K8sClient) NewKubeClient(config *rest.Config, timeout int) (k8sclient.KubeClientInterface, error) {
 	return k8sclient.NewKubeClient(config, timeout)
 }
 
@@ -71,7 +71,7 @@ func getSuiteRunner(configPath, driverNs, observerType string, timeout int, noCl
 	t := strings.ToUpper(observerType)
 	correctType := (t == string(observer.EVENT)) || (t == string(observer.LIST))
 	if !correctType {
-		log.Errorf("Incorrect observer type")
+		log.Fatal("Incorrect observer type")
 	}
 
 	obsType := observer.Type(t)
@@ -101,7 +101,7 @@ func getSuiteRunner(configPath, driverNs, observerType string, timeout int, noCl
 	}
 }
 
-func generateTestRunDetails(scDB *store.StorageClassDB, _ *k8sclient.KubeClient, host string) {
+func generateTestRunDetails(scDB *store.StorageClassDB, _ k8sclient.KubeClientInterface, host string) {
 	scDB.TestRun = store.TestRun{
 		Name:           "test-run-" + k8sclient.RandomSuffix(),
 		StartTimestamp: time.Now(),

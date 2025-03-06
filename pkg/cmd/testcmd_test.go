@@ -43,45 +43,6 @@ func TestGetTestImage(t *testing.T) {
 	}
 }
 
-/*
-	func Test_readImageConfig(t *testing.T) {
-		//type args struct {
-		//	configFilePath string
-		//}
-		tests := []struct {
-			name        string
-			configFile  string
-			expected    testcore.Images
-			expectedErr error
-		}{
-			// TODO: Add test cases.
-			{
-				name:       "Valid config file",
-				configFile: "../k8sclient/testdata/config.yaml",
-				expected: testcore.Images{
-					Images: []testcore.Image{
-						{
-							Test:     "test-image-1",
-							Postgres: "postgres-image-1",
-						},
-					},
-				},
-				expectedErr: nil,
-			},
-		}
-		for _, tt := range tests {
-			t.Run(tt.name, func(t *testing.T) {
-				got, err := readImageConfig(tt.configFile)
-				if !reflect.DeepEqual(got, tt.expected) {
-					t.Errorf("readImageConfig() = %v, want %v", got, tt.expected)
-				}
-				if !reflect.DeepEqual(got, tt.expectedErr) {
-					t.Errorf("readImageConfig() = %v, want %v", err, tt.expectedErr)
-				}
-			})
-		}
-	}
-*/
 func TestReadImageConfig(t *testing.T) {
 	// Test case: Valid config file path
 	t.Run("No config file path", func(t *testing.T) {
@@ -103,160 +64,199 @@ func Test_getTestImage(t *testing.T) {
 	assert.NoError(t, err)
 }
 
-func TestGetVolumeCreationCommandAction(_ *testing.T) {
+func TestGetVolumeCreationCommandAction(t *testing.T) {
 	// Default context
+	kubeConfig, _ := createDummyKubeConfig(t.TempDir(), t)
 	set := flag.NewFlagSet("test", 0)
 	set.Int("number", 5, "number of volumes to create")
 	set.String("size", "3Gi", "volume size to be created")
+	set.String("config", kubeConfig, "config for connecting to kubernetes")
 	set.String("access-mode", "ReadWriteOnce", "volume access mode")
 	set.String("timeout", "10s", "volume creation timeout")
 	set.String("cooldown", "10s", "volume creation cooldown")
+	set.String("observer-type", "event", "observer type")
 	ctx := cli.NewContext(nil, set, nil)
 	command := getVolumeCreationCommand([]cli.Flag{})
 	// Call the action function
 	action := command.Action
 	actionFunc := action.(func(c *cli.Context) error)
+	ExecuteRunCmdSuite = func(_ *runner.SuiteRunner, _ map[string][]suites.Interface) {}
 	actionFunc(ctx)
 }
 
-func TestGetVolumeMigrateCommandAction(_ *testing.T) {
+func TestGetVolumeMigrateCommandAction(t *testing.T) {
 	// Default context
+	kubeConfig, _ := createDummyKubeConfig(t.TempDir(), t)
 	set := flag.NewFlagSet("test", 0)
 	set.String("target-sc", "test-sc", "target storage class")
 	set.Int("volumeNumber", 5, "number of volumes to migrate")
 	set.Int("podNumber", 5, "number of pods to create")
+	set.String("config", kubeConfig, "config for connecting to kubernetes")
 	set.String("short", "flag", "provide this flag if you want short version of the test without deleting old sts and creating new sts")
 	set.String("timeout", "10s", "volume creation timeout")
 	set.String("cooldown", "10s", "volume creation cooldown")
+	set.String("observer-type", "event", "observer type")
 	ctx := cli.NewContext(nil, set, nil)
 	command := getVolumeMigrateCommand([]cli.Flag{})
 	// Call the action function
 	action := command.Action
 	actionFunc := action.(func(c *cli.Context) error)
+	ExecuteRunCmdSuite = func(_ *runner.SuiteRunner, _ map[string][]suites.Interface) {}
 	actionFunc(ctx)
 }
 
-func TestGetRemoteReplicationProvisioningCommandAction(_ *testing.T) {
+func TestGetRemoteReplicationProvisioningCommandAction(t *testing.T) {
 	// Default context
+	kubeConfig, _ := createDummyKubeConfig(t.TempDir(), t)
 	set := flag.NewFlagSet("test", 0)
 	set.String("remote-config-path", "../k8sclient/testdata/config.yaml", "Config file path for remote cluster")
 	set.Int("volumeNumber", 5, "number of volumes to replicate")
 	set.Bool("no-failover", false, "set to `true` if you don't want to execute failover/reprotect actions")
+	set.String("config", kubeConfig, "config for connecting to kubernetes")
 	set.String("volumeSize", "3Gi", "volume size to be created")
 	set.String("timeout", "10s", "volume creation timeout")
 	set.String("cooldown", "10s", "volume creation cooldown")
+	set.String("observer-type", "event", "observer type")
 	ctx := cli.NewContext(nil, set, nil)
 	command := getRemoteReplicationProvisioningCommand([]cli.Flag{})
 	// Call the action function
 	action := command.Action
 	actionFunc := action.(func(c *cli.Context) error)
+	ExecuteRunCmdSuite = func(_ *runner.SuiteRunner, _ map[string][]suites.Interface) {}
 	actionFunc(ctx)
 }
 
-func TestGetReplicationCommandAction(_ *testing.T) {
+func TestGetReplicationCommandAction(t *testing.T) {
 	// Default context
+	kubeConfig, _ := createDummyKubeConfig(t.TempDir(), t)
 	set := flag.NewFlagSet("test", 0)
 	set.Int("volumeNumber", 5, "number of volumes to replicate")
 	set.Int("podNumber", 5, "number of pods to create")
 	set.String("volumeSnapshotClass", "test-vsc", "volumeSnapshotClass to be used")
+	set.String("config", kubeConfig, "config for connecting to kubernetes")
 	set.String("volumeSize", "3Gi", "volume size to be created")
 	set.String("timeout", "10s", "volume creation timeout")
 	set.String("cooldown", "10s", "volume creation cooldown")
+	set.String("observer-type", "event", "observer type")
 	ctx := cli.NewContext(nil, set, nil)
 	command := getReplicationCommand([]cli.Flag{})
 	// Call the action function
 	action := command.Action
 	actionFunc := action.(func(c *cli.Context) error)
+	ExecuteRunCmdSuite = func(_ *runner.SuiteRunner, _ map[string][]suites.Interface) {}
 	actionFunc(ctx)
 }
 
-func TestGetCloneVolumeCommandAction(_ *testing.T) {
+func TestGetCloneVolumeCommandAction(t *testing.T) {
 	// Default context
+	kubeConfig, _ := createDummyKubeConfig(t.TempDir(), t)
 	set := flag.NewFlagSet("test", 0)
 	set.Int("volumeNumber", 5, "number of volumes to clone")
 	set.Int("podNumber", 5, "number of pods to create")
 	set.String("timeout", "10s", "volume creation timeout")
+	set.String("config", kubeConfig, "config for connecting to kubernetes")
 	set.String("cooldown", "10s", "volume creation cooldown")
+	set.String("observer-type", "event", "observer type")
 	ctx := cli.NewContext(nil, set, nil)
 	command := getCloneVolumeCommand([]cli.Flag{})
 	// Call the action function
 	action := command.Action
 	actionFunc := action.(func(c *cli.Context) error)
+	ExecuteRunCmdSuite = func(_ *runner.SuiteRunner, _ map[string][]suites.Interface) {}
 	actionFunc(ctx)
 }
 
-func TestGetMultiAttachVolCommandAction(_ *testing.T) {
+func TestGetMultiAttachVolCommandAction(t *testing.T) {
 	// Default context
+	kubeConfig, _ := createDummyKubeConfig(t.TempDir(), t)
 	set := flag.NewFlagSet("test", 0)
 	set.Bool("block", true, "specifies if block volume should be created")
 	set.Int("podNumber", 5, "number of pods to create")
 	set.String("access-mode", "ReadWriteOnce", "volume access mode")
+	set.String("config", kubeConfig, "config for connecting to kubernetes")
 	set.String("timeout", "10s", "volume creation timeout")
 	set.String("cooldown", "10s", "volume creation cooldown")
+	set.String("observer-type", "event", "observer type")
 	ctx := cli.NewContext(nil, set, nil)
 	command := getMultiAttachVolCommand([]cli.Flag{})
 	// Call the action function
 	action := command.Action
 	actionFunc := action.(func(c *cli.Context) error)
+	ExecuteRunCmdSuite = func(_ *runner.SuiteRunner, _ map[string][]suites.Interface) {}
 	actionFunc(ctx)
 }
 
-func TestGetVolumeExpansionCommandAction(_ *testing.T) {
+func TestGetVolumeExpansionCommandAction(t *testing.T) {
 	// Default context
+	kubeConfig, _ := createDummyKubeConfig(t.TempDir(), t)
 	set := flag.NewFlagSet("test", 0)
 	set.Int("volumeNumber", 5, "number of volumes to clone")
 	set.Int("podNumber", 5, "number of pods to create")
 	set.Bool("block", true, "specifies if block volume should be created")
 	set.String("initialSize", "3Gi", "Initial size of the volumes to be created")
 	set.String("expandedSize", "5Gi", "Expanded size of the volumes to be created")
+	set.String("config", kubeConfig, "config for connecting to kubernetes")
 	set.String("timeout", "10s", "volume creation timeout")
 	set.String("cooldown", "10s", "volume creation cooldown")
+	set.String("observer-type", "event", "observer type")
 	ctx := cli.NewContext(nil, set, nil)
 	command := getVolumeExpansionCommand([]cli.Flag{})
 	// Call the action function
 	action := command.Action
 	actionFunc := action.(func(c *cli.Context) error)
+	ExecuteRunCmdSuite = func(_ *runner.SuiteRunner, _ map[string][]suites.Interface) {}
 	actionFunc(ctx)
 }
 
-func TestGetVolumeHealthMetricsCommandAction(_ *testing.T) {
+func TestGetVolumeHealthMetricsCommandAction(t *testing.T) {
 	// Default context
+	kubeConfig, _ := createDummyKubeConfig(t.TempDir(), t)
 	set := flag.NewFlagSet("test", 0)
 	set.Int("volumeNumber", 5, "number of volumes to clone")
 	set.Int("podNumber", 5, "number of pods to create")
 	set.String("volumeSize", "3Gi", "volume size to be created")
+	set.String("config", kubeConfig, "config for connecting to kubernetes")
 	set.String("timeout", "10s", "volume creation timeout")
 	set.String("cooldown", "10s", "volume creation cooldown")
+	set.String("observer-type", "event", "observer type")
 	ctx := cli.NewContext(nil, set, nil)
 	command := getVolumeHealthMetricsCommand([]cli.Flag{})
 	// Call the action function
 	action := command.Action
 	actionFunc := action.(func(c *cli.Context) error)
+	ExecuteRunCmdSuite = func(_ *runner.SuiteRunner, _ map[string][]suites.Interface) {}
 	actionFunc(ctx)
 }
 
-func TestGetProvisioningCommandAction(_ *testing.T) {
+func TestGetProvisioningCommandAction(t *testing.T) {
 	// Default context
+	kubeConfig, _ := createDummyKubeConfig(t.TempDir(), t)
 	set := flag.NewFlagSet("test", 0)
 	set.Int("volumeNumber", 5, "number of volumes to clone")
 	set.Int("podNumber", 5, "number of pods to create")
 	set.String("timeout", "10s", "volume creation timeout")
 	set.String("cooldown", "10s", "volume creation cooldown")
+	set.String("config", kubeConfig, "config for connecting to kubernetes")
+	set.String("observer-type", "event", "observer type")
 	ctx := cli.NewContext(nil, set, nil)
 	command := getProvisioningCommand([]cli.Flag{})
 	// Call the action function
 	action := command.Action
 	actionFunc := action.(func(c *cli.Context) error)
+	ExecuteRunCmdSuite = func(_ *runner.SuiteRunner, _ map[string][]suites.Interface) {}
 	actionFunc(ctx)
 }
 
-func TestGetScalingCommandAction(_ *testing.T) {
+func TestGetScalingCommandAction(t *testing.T) {
 	// Default context
+	kubeConfig, _ := createDummyKubeConfig(t.TempDir(), t)
 	set := flag.NewFlagSet("test", 0)
 	set.Int("replicas", 5, "number of statefulset replicas")
 	set.Int("podNumber", 5, "number of volume to attach to each replica")
 	set.Bool("gradual", true, "set to `true` if you want gradual scaling")
 	set.String("podPolicy", "Parallel", "change pod policy of the statefulset")
+	set.String("config", kubeConfig, "config for connecting to kubernetes")
+	set.String("observer-type", "event", "observer type")
 	set.String("timeout", "10s", "volume creation timeout")
 	set.String("cooldown", "10s", "volume creation cooldown")
 	ctx := cli.NewContext(nil, set, nil)
@@ -264,42 +264,52 @@ func TestGetScalingCommandAction(_ *testing.T) {
 	// Call the action function
 	action := command.Action
 	actionFunc := action.(func(c *cli.Context) error)
+	ExecuteRunCmdSuite = func(_ *runner.SuiteRunner, _ map[string][]suites.Interface) {}
 	actionFunc(ctx)
 }
 
-func TestGetVolumeIoCommandAction(_ *testing.T) {
+func TestGetVolumeIoCommandAction(t *testing.T) {
 	// Default context
+	kubeConfig, _ := createDummyKubeConfig(t.TempDir(), t)
 	set := flag.NewFlagSet("test", 0)
 	set.Int("chainNumber", 5, "number of parallel chains")
 	set.Int("chainLength", 5, "")
 	set.String("timeout", "10s", "volume creation timeout")
 	set.String("cooldown", "10s", "length of a chain (number of pods to be created)")
+	set.String("config", kubeConfig, "config for connecting to kubernetes")
+	set.String("observer-type", "event", "observer type")
 	ctx := cli.NewContext(nil, set, nil)
 	command := getVolumeIoCommand([]cli.Flag{})
 	// Call the action function
 	action := command.Action
 	actionFunc := action.(func(c *cli.Context) error)
+	ExecuteRunCmdSuite = func(_ *runner.SuiteRunner, _ map[string][]suites.Interface) {}
 	actionFunc(ctx)
 }
 
-func TestGetSnapCommandAction(_ *testing.T) {
+func TestGetSnapCommandAction(t *testing.T) {
 	// Default context
+	kubeConfig, _ := createDummyKubeConfig(t.TempDir(), t)
 	set := flag.NewFlagSet("test", 0)
 	set.Int("snapshotAmopunt", 3, "define the amount of snapshots to create")
 	set.String("volumeSnapshotClass", "test-vsc", "volumeSnapshotClass to be used")
 	set.String("size", "3Gi", "volume size to be created")
 	set.String("timeout", "10s", "volume creation timeout")
 	set.String("cooldown", "10s", "volume creation cooldown")
+	set.String("config", kubeConfig, "config for connecting to kubernetes")
+	set.String("observer-type", "event", "observer type")
 	ctx := cli.NewContext(nil, set, nil)
 	command := getSnapCommand([]cli.Flag{})
 	// Call the action function
 	action := command.Action
 	actionFunc := action.(func(c *cli.Context) error)
+	ExecuteRunCmdSuite = func(_ *runner.SuiteRunner, _ map[string][]suites.Interface) {}
 	actionFunc(ctx)
 }
 
-func TestGetVolumeGroupSnapCommandAction(_ *testing.T) {
+func TestGetVolumeGroupSnapCommandAction(t *testing.T) {
 	// Default context
+	kubeConfig, _ := createDummyKubeConfig(t.TempDir(), t)
 	set := flag.NewFlagSet("test", 0)
 	set.String("volumeSnapshotClass", "test-vsc", "volumeSnapshotClass to be used")
 	set.String("volumeSize", "3Gi", "volume size to be created")
@@ -309,45 +319,56 @@ func TestGetVolumeGroupSnapCommandAction(_ *testing.T) {
 	set.String("reclaimPolicy", "Retain", "reclaim policy of the volume group/snapshot")
 	set.String("accessMode", "ReadWriteOnce", "access mode of the volume group/snapshot")
 	set.Int("volumeNumber", 5, "number of volume to create for the group")
+	set.String("config", kubeConfig, "config for connecting to kubernetes")
 	set.String("timeout", "10s", "volume creation timeout")
 	set.String("cooldown", "10s", "volume creation cooldown")
+	set.String("observer-type", "event", "observer type")
 	ctx := cli.NewContext(nil, set, nil)
 	command := getVolumeGroupSnapCommand([]cli.Flag{})
 	// Call the action function
 	action := command.Action
 	actionFunc := action.(func(c *cli.Context) error)
+	ExecuteRunCmdSuite = func(_ *runner.SuiteRunner, _ map[string][]suites.Interface) {}
 	actionFunc(ctx)
 }
 
-func TestGetBlockSnapCommandAction(_ *testing.T) {
+func TestGetBlockSnapCommandAction(t *testing.T) {
 	// Default context
+	kubeConfig, _ := createDummyKubeConfig(t.TempDir(), t)
 	set := flag.NewFlagSet("test", 0)
 	set.String("volumeSnapshotClass", "test-vsc", "volumeSnapshotClass to be used")
 	set.String("size", "3Gi", "volume size to be created")
 	set.String("access-mode", "ReadWriteOnce", "volume access mode")
 	set.String("timeout", "10s", "volume creation timeout")
 	set.String("cooldown", "10s", "volume creation cooldown")
+	set.String("config", kubeConfig, "config for connecting to kubernetes")
+	set.String("observer-type", "event", "observer type")
 	ctx := cli.NewContext(nil, set, nil)
 	command := getBlockSnapCommand([]cli.Flag{})
 	// Call the action function
 	action := command.Action
 	actionFunc := action.(func(c *cli.Context) error)
+	ExecuteRunCmdSuite = func(_ *runner.SuiteRunner, _ map[string][]suites.Interface) {}
 	actionFunc(ctx)
 }
 
-func TestGetPostgresCommand(_ *testing.T) {
+func TestGetPostgresCommand(t *testing.T) {
 	// Default context
+	kubeConfig, _ := createDummyKubeConfig(t.TempDir(), t)
 	set := flag.NewFlagSet("test", 0)
 	set.Bool("replication", true, "set to `true` if you want to enable replication")
 	set.String("size", "3Gi", "volume size to be created")
 	set.Int("slave-replicas", 2, "number of slave replicas")
 	set.String("timeout", "10s", "volume creation timeout")
 	set.String("cooldown", "10s", "volume creation cooldown")
+	set.String("config", kubeConfig, "config for connecting to kubernetes")
+	set.String("observer-type", "event", "observer type")
 	ctx := cli.NewContext(nil, set, nil)
 	command := getPostgresCommand([]cli.Flag{})
 	// Call the action function
 	action := command.Action
 	actionFunc := action.(func(c *cli.Context) error)
+	ExecuteRunCmdSuite = func(_ *runner.SuiteRunner, _ map[string][]suites.Interface) {}
 	actionFunc(ctx)
 }
 

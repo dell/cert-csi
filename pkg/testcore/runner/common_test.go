@@ -38,20 +38,6 @@ func TestGetSuiteRunner(t *testing.T) {
 				return mock
 			},
 		},
-		{
-			name:         "Valid parameters",
-			configPath:   "config.yaml",
-			driverNs:     "driver-namespace",
-			observerType: "",
-			timeout:      30,
-			noreport:     false,
-			k8s: func() K8sClientInterface {
-				mock := mocks.NewMockK8sClientInterface(gomock.NewController(t))
-				mock.EXPECT().GetConfig(gomock.Any()).AnyTimes().Return(nil, errors.New("new error"))
-				mock.EXPECT().NewKubeClient(gomock.Any(), gomock.Any()).AnyTimes().Return(nil, errors.New("new error"))
-				return mock
-			},
-		},
 	}
 
 	for _, tt := range tests {

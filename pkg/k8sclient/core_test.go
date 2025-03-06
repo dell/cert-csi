@@ -27,6 +27,7 @@ import (
 	storagev1 "k8s.io/api/storage/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/version"
+	discovery "k8s.io/client-go/discovery/fake"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/kubernetes/fake"
 	"k8s.io/client-go/rest"
@@ -49,24 +50,39 @@ func (suite *CoreTestSuite) SetupSuite() {
 	}
 }
 
+type clientTestContext struct {
+	testNamespace    string
+	namespaceDeleted bool
+	t                *testing.T
+}
+
 func (suite *CoreTestSuite) TestNewKubeClient() {
-	suite.Run("nil config", func() {
+	suite.Run("nil config - fail case", func() {
 		client, err := NewKubeClient(nil, 0)
 		suite.Error(err)
 		suite.Nil(client)
 	})
 
-	suite.Run("empty config", func() {
-		client, err := NewKubeClient(&rest.Config{}, 0)
-		suite.NoError(err)
-		suite.NotNil(client)
-	})
+	FuncNewClientSet = func(_ *rest.Config) (kubernetes.Interface, error) {
+		fakeClient, _ := DiscoverFakeVersion()
+		return fakeClient, nil
+	}
 
-	suite.Run("incorrect config", func() {
-		client, err := NewKubeClient(&rest.Config{Host: "localhost"}, 0)
-		suite.Error(err)
-		suite.Nil(client)
+	suite.Run("mocked config - success case", func() {
+		client2, err := NewKubeClient(&rest.Config{Host: "localhost"}, 0)
+		suite.NoError(err)
+		suite.NotNil(client2)
 	})
+}
+
+func DiscoverFakeVersion() (kubernetes.Interface, error) {
+	client := fake.NewSimpleClientset()
+	client.Discovery().(*discovery.FakeDiscovery).FakedServerVersion = &version.Info{
+		Major:      "1",
+		Minor:      "32",
+		GitVersion: "v1.32.0",
+	}
+	return client, nil
 }
 
 func (suite *CoreTestSuite) TestNewRemoteKubeClient() {

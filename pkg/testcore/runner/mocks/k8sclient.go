@@ -57,10 +57,10 @@ func (mr *MockK8sClientInterfaceMockRecorder) GetConfig(arg0 any) *gomock.Call {
 }
 
 // NewKubeClient mocks base method.
-func (m *MockK8sClientInterface) NewKubeClient(config *rest.Config, timeout int) (*k8sclient.KubeClient, error) {
+func (m *MockK8sClientInterface) NewKubeClient(config *rest.Config, timeout int) (k8sclient.KubeClientInterface, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "NewKubeClient", config, timeout)
-	ret0, _ := ret[0].(*k8sclient.KubeClient)
+	ret0, _ := ret[0].(k8sclient.KubeClientInterface)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }

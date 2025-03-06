@@ -171,7 +171,7 @@ func validateCustomName(name string, volumes int) bool {
 }
 
 // GetClients creates and returns pvc and metrics clients
-func (*VolumeCreationSuite) GetClients(namespace string, client *k8sclient.KubeClient) (*k8sclient.Clients, error) {
+func (*VolumeCreationSuite) GetClients(namespace string, client k8sclient.KubeClientInterface) (*k8sclient.Clients, error) {
 	pvcClient, pvcErr := client.CreatePVCClient(namespace)
 	if pvcErr != nil {
 		return nil, pvcErr
@@ -292,7 +292,7 @@ func (*ProvisioningSuite) GetObservers(obsType observer.Type) []observer.Interfa
 }
 
 // GetClients returns pvc, pod, va, metrics clients
-func (*ProvisioningSuite) GetClients(namespace string, client *k8sclient.KubeClient) (*k8sclient.Clients, error) {
+func (*ProvisioningSuite) GetClients(namespace string, client k8sclient.KubeClientInterface) (*k8sclient.Clients, error) {
 	pvcClient, pvcErr := client.CreatePVCClient(namespace)
 	if pvcErr != nil {
 		return nil, pvcErr
@@ -378,7 +378,7 @@ func (rrps *RemoteReplicationProvisioningSuite) Run(ctx context.Context, storage
 		remotePVCObject  v1.PersistentVolumeClaim
 		remotePVClient   *pv.Client
 		remoteRGClient   *replicationgroup.Client
-		remoteKubeClient *k8sclient.KubeClient
+		remoteKubeClient k8sclient.KubeClientInterface
 	)
 
 	isSingle := false
@@ -807,7 +807,7 @@ func (*RemoteReplicationProvisioningSuite) GetObservers(obsType observer.Type) [
 }
 
 // GetClients creates and returns pvc, pod, pv, va, metrics, sc, rg clients
-func (*RemoteReplicationProvisioningSuite) GetClients(namespace string, client *k8sclient.KubeClient) (*k8sclient.Clients, error) {
+func (*RemoteReplicationProvisioningSuite) GetClients(namespace string, client k8sclient.KubeClientInterface) (*k8sclient.Clients, error) {
 	pvcClient, pvcErr := client.CreatePVCClient(namespace)
 	if pvcErr != nil {
 		return nil, pvcErr
@@ -964,7 +964,7 @@ func (ss *ScalingSuite) GetObservers(obsType observer.Type) []observer.Interface
 }
 
 // GetClients creates and returns pvc, pod, va, statefulset, metrics clients
-func (ss *ScalingSuite) GetClients(namespace string, client *k8sclient.KubeClient) (*k8sclient.Clients, error) {
+func (ss *ScalingSuite) GetClients(namespace string, client k8sclient.KubeClientInterface) (*k8sclient.Clients, error) {
 	pvcClient, pvcErr := client.CreatePVCClient(namespace)
 	if pvcErr != nil {
 		return nil, pvcErr
@@ -1131,7 +1131,7 @@ func (*VolumeIoSuite) GetObservers(obsType observer.Type) []observer.Interface {
 }
 
 // GetClients returns pvc, pod, va, metrics clients
-func (*VolumeIoSuite) GetClients(namespace string, client *k8sclient.KubeClient) (*k8sclient.Clients, error) {
+func (*VolumeIoSuite) GetClients(namespace string, client k8sclient.KubeClientInterface) (*k8sclient.Clients, error) {
 	pvcClient, pvcErr := client.CreatePVCClient(namespace)
 	if pvcErr != nil {
 		return nil, pvcErr
@@ -1269,7 +1269,7 @@ func (*VolumeGroupSnapSuite) GetObservers(obsType observer.Type) []observer.Inte
 }
 
 // GetClients creates and returns pvc, pod, va, vgs clients
-func (vgs *VolumeGroupSnapSuite) GetClients(namespace string, client *k8sclient.KubeClient) (*k8sclient.Clients, error) {
+func (vgs *VolumeGroupSnapSuite) GetClients(namespace string, client k8sclient.KubeClientInterface) (*k8sclient.Clients, error) {
 	if ok, err := client.SnapshotClassExists(vgs.SnapClass); !ok {
 		return nil, fmt.Errorf("snapshotclass class doesn't exist; error = %v", err)
 	}
@@ -1538,7 +1538,7 @@ func (*SnapSuite) GetObservers(obsType observer.Type) []observer.Interface {
 }
 
 // GetClients creates and returns pvc, pod, va, metrics, snapsnot clients
-func (ss *SnapSuite) GetClients(namespace string, client *k8sclient.KubeClient) (*k8sclient.Clients, error) {
+func (ss *SnapSuite) GetClients(namespace string, client k8sclient.KubeClientInterface) (*k8sclient.Clients, error) {
 	if ok, err := client.SnapshotClassExists(ss.SnapClass); !ok {
 		return nil, fmt.Errorf("snapshotclass class doesn't exist; error = %v", err)
 	}
@@ -1794,7 +1794,7 @@ func (rs *ReplicationSuite) GetObservers(obsType observer.Type) []observer.Inter
 }
 
 // GetClients creates and returns pvc, pod, va, metrics, snapshot clients
-func (rs *ReplicationSuite) GetClients(namespace string, client *k8sclient.KubeClient) (*k8sclient.Clients, error) {
+func (rs *ReplicationSuite) GetClients(namespace string, client k8sclient.KubeClientInterface) (*k8sclient.Clients, error) {
 	if ok, err := client.SnapshotClassExists(rs.SnapClass); !ok {
 		return nil, fmt.Errorf("snasphot class doesn't exist; error = %v", err)
 	}
@@ -2115,7 +2115,7 @@ func (*VolumeExpansionSuite) GetObservers(obsType observer.Type) []observer.Inte
 }
 
 // GetClients creates and returns pvc, pod, va, metrics clients
-func (*VolumeExpansionSuite) GetClients(namespace string, client *k8sclient.KubeClient) (*k8sclient.Clients, error) {
+func (*VolumeExpansionSuite) GetClients(namespace string, client k8sclient.KubeClientInterface) (*k8sclient.Clients, error) {
 	pvcClient, pvcErr := client.CreatePVCClient(namespace)
 	if pvcErr != nil {
 		return nil, pvcErr
@@ -2327,7 +2327,7 @@ func (*VolumeHealthMetricsSuite) GetObservers(obsType observer.Type) []observer.
 }
 
 // GetClients creates and returns pvc, pod, pv, va, metrics clients
-func (*VolumeHealthMetricsSuite) GetClients(namespace string, client *k8sclient.KubeClient) (*k8sclient.Clients, error) {
+func (*VolumeHealthMetricsSuite) GetClients(namespace string, client k8sclient.KubeClientInterface) (*k8sclient.Clients, error) {
 	pvcClient, pvcErr := client.CreatePVCClient(namespace)
 	if pvcErr != nil {
 		return nil, pvcErr
@@ -2504,7 +2504,7 @@ func (cs *CloneVolumeSuite) GetObservers(obsType observer.Type) []observer.Inter
 }
 
 // GetClients creates and returns pvc, pod, va, metrics clients
-func (cs *CloneVolumeSuite) GetClients(namespace string, client *k8sclient.KubeClient) (*k8sclient.Clients, error) {
+func (cs *CloneVolumeSuite) GetClients(namespace string, client k8sclient.KubeClientInterface) (*k8sclient.Clients, error) {
 	pvcClient, pvcErr := client.CreatePVCClient(namespace)
 	if pvcErr != nil {
 		return nil, pvcErr
@@ -2761,7 +2761,7 @@ func (mas *MultiAttachSuite) GetObservers(obsType observer.Type) []observer.Inte
 }
 
 // GetClients creates and returns pvc, pod, va, metrics (and node) clients
-func (mas *MultiAttachSuite) GetClients(namespace string, client *k8sclient.KubeClient) (*k8sclient.Clients, error) {
+func (mas *MultiAttachSuite) GetClients(namespace string, client k8sclient.KubeClientInterface) (*k8sclient.Clients, error) {
 	pvcClient, pvcErr := client.CreatePVCClient(namespace)
 	if pvcErr != nil {
 		return nil, pvcErr
@@ -2784,7 +2784,7 @@ func (mas *MultiAttachSuite) GetClients(namespace string, client *k8sclient.Kube
 
 	var nodeClient *node.Client
 	var ncErr error
-	if client.Minor >= 19 {
+	if client.GetMinor() >= 19 {
 		// TopologySpreadConstraints supported from k8s version 1.19
 		nodeClient, ncErr = client.CreateNodeClient()
 		if ncErr != nil {
@@ -3018,7 +3018,7 @@ func (*BlockSnapSuite) GetObservers(obsType observer.Type) []observer.Interface 
 }
 
 // GetClients creates and returns pvc, pod, va, metrics, snapshot clients
-func (bss *BlockSnapSuite) GetClients(namespace string, client *k8sclient.KubeClient) (*k8sclient.Clients, error) {
+func (bss *BlockSnapSuite) GetClients(namespace string, client k8sclient.KubeClientInterface) (*k8sclient.Clients, error) {
 	if ok, err := client.SnapshotClassExists(bss.SnapClass); !ok {
 		return nil, fmt.Errorf("snapshotclass class doesn't exist; error = %v", err)
 	}
@@ -3076,7 +3076,7 @@ func (bss *BlockSnapSuite) Parameters() string {
 }
 
 // GetSnapshotClient returns snapshot client
-func GetSnapshotClient(namespace string, client *k8sclient.KubeClient) (*snapv1client.SnapshotClient, error) {
+func GetSnapshotClient(namespace string, client k8sclient.KubeClientInterface) (*snapv1client.SnapshotClient, error) {
 	gaClient, snErr := client.CreateSnapshotGAClient(namespace)
 	if snErr != nil {
 		return nil, snErr
@@ -3316,7 +3316,7 @@ func (*VolumeMigrateSuite) GetObservers(obsType observer.Type) []observer.Interf
 }
 
 // GetClients creates and returns pvc, pv, sc, pod, statefulset, va, metrics clients
-func (vms *VolumeMigrateSuite) GetClients(namespace string, client *k8sclient.KubeClient) (*k8sclient.Clients, error) {
+func (vms *VolumeMigrateSuite) GetClients(namespace string, client k8sclient.KubeClientInterface) (*k8sclient.Clients, error) {
 	if ok, err := client.StorageClassExists(context.Background(), vms.TargetSC); !ok {
 		return nil, fmt.Errorf("target storage class doesn't exist; error = %v", err)
 	}

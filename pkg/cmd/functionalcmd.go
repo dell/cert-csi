@@ -147,6 +147,7 @@ func createFunctionalSuiteRunner(c *cli.Context, noCleanup, noCleanupOnFail bool
 		noCleanupOnFail,
 		c.Bool("no-reports"),
 		scDB,
+		&runner.K8sClient{},
 	)
 }
 

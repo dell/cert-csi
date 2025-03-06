@@ -44,7 +44,7 @@ func (m *MockCleanupTestSuite) GetObservers(_ observer.Type) []observer.Interfac
 	return nil
 }
 
-func (m *MockCleanupTestSuite) GetClients(_ string, _ *k8sclient.KubeClient) (*k8sclient.Clients, error) {
+func (m *MockCleanupTestSuite) GetClients(_ string, _ k8sclient.KubeClientInterface) (*k8sclient.Clients, error) {
 	return nil, nil
 }
 
