@@ -13,7 +13,7 @@
  * limitations under the License.
  *
  */
-package v1beta1_test
+package volumesnapshot_test
 
 import (
 	"context"
@@ -21,9 +21,9 @@ import (
 	t1 "testing"
 
 	"github.com/dell/cert-csi/pkg/k8sclient"
-	snapv1 "github.com/dell/cert-csi/pkg/k8sclient/resources/volumesnapshot/v1beta1"
-	v1 "github.com/kubernetes-csi/external-snapshotter/client/v4/apis/volumesnapshot/v1beta1"
-	snapshotv1 "github.com/kubernetes-csi/external-snapshotter/client/v4/clientset/versioned/typed/volumesnapshot/v1beta1"
+	snapv1 "github.com/dell/cert-csi/pkg/k8sclient/resources/volumesnapshot"
+	v1 "github.com/kubernetes-csi/external-snapshotter/client/v4/apis/volumesnapshot/v1"
+	snapshotv1 "github.com/kubernetes-csi/external-snapshotter/client/v4/clientset/versioned/typed/volumesnapshot/v1"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/suite"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -237,6 +237,7 @@ func (suite *SnapshotClientTestSuite) TestWaitUntilGone_UpdateError() {
 func boolPtr(b bool) *bool {
 	return &b
 }
+
 func (suite *SnapshotClientTestSuite) TestCreate_Success() {
 	ctx := context.TODO()
 	snapshot := &v1.VolumeSnapshot{
@@ -309,6 +310,7 @@ func (suite *SnapshotClientTestSuite) TestDelete_Error() {
 	assert.Equal(suite.T(), snapshot, result.Object)
 	assert.True(suite.T(), result.Deleted)
 }
+
 func (suite *SnapshotClientTestSuite) TestWaitForRunning_Success() {
 	ctx := context.TODO()
 	snapshot := &v1.VolumeSnapshot{

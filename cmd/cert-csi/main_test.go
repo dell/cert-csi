@@ -1,10 +1,11 @@
 package main
 
 import (
-	log "github.com/sirupsen/logrus"
-	"github.com/urfave/cli"
 	"os"
 	"testing"
+
+	log "github.com/sirupsen/logrus"
+	"github.com/urfave/cli"
 )
 
 func TestBefore(t *testing.T) {
@@ -52,7 +53,7 @@ func TestStartApp(t *testing.T) {
 	}
 	main()
 
-	t.Run("quiet mode", func(t *testing.T) {
+	t.Run("quiet mode", func(_ *testing.T) {
 		// mock args for testing
 		if len(os.Args) >= 1 {
 			os.Args = []string{"app", "--quiet"}

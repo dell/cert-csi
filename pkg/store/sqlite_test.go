@@ -85,7 +85,6 @@ func TestCreateTables(t *testing.T) {
 	if err != nil {
 		t.Logf("SQLiteStore.createTables() error = %v", err)
 	}
-
 }
 
 func TestSaveTestRun(t *testing.T) {
@@ -136,7 +135,6 @@ func TestSaveTestRun(t *testing.T) {
 				mock.ExpectExec("INSERT INTO test_runs").
 					WithArgs(tt.tr.Name, tt.tr.StartTimestamp, tt.tr.StorageClass, tt.tr.ClusterAddress).
 					WillReturnResult(sqlmock.NewResult(1, 1))
-
 			}
 			err := ss.SaveTestRun(tt.tr)
 			if (err != nil) != tt.wantErr {
@@ -145,6 +143,7 @@ func TestSaveTestRun(t *testing.T) {
 		})
 	}
 }
+
 func TestGetTestRuns(t *testing.T) {
 	ss := NewSQLiteStore("file:test1.db?cache=shared&mode=memory")
 	tests := []struct {
@@ -190,7 +189,6 @@ func TestGetTestRuns(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-
 			_, err := ss.GetTestRuns(tt.where, tt.orderBy, tt.limit)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("SQLiteStore.GetTestRuns() error = %v, wantErr %v", err, tt.wantErr)
@@ -199,6 +197,7 @@ func TestGetTestRuns(t *testing.T) {
 		})
 	}
 }
+
 func TestSaveEvents(t *testing.T) {
 	db, mock, err := sqlmock.New()
 	if err != nil {
@@ -215,7 +214,6 @@ func TestSaveEvents(t *testing.T) {
 		events  []*Event
 		wantErr bool
 	}{
-
 		{
 			name: "save with error",
 			events: []*Event{
@@ -489,6 +487,7 @@ func TestSaveNumberEntities(t *testing.T) {
 		t.Logf("Mocked Error: %v", err)
 	}
 }
+
 func TestSaveResourceUsage(t *testing.T) {
 	// Create a mock database
 	db, mock, err := sqlmock.New()
@@ -603,6 +602,7 @@ func TestCreateEntitiesRelation(t *testing.T) {
 		fmt.Println(err)
 	}
 }
+
 func TestGetEntityRelations(t *testing.T) {
 	// Create a mock database
 	db, mock, err := sqlmock.New()
@@ -638,12 +638,10 @@ func TestGetEntityRelations(t *testing.T) {
 
 	// Call the GetEntityRelations function
 	_, err = ss.GetEntityRelations(expectedEntities[0])
-
 	// Check for any errors
 	if err != nil {
 		fmt.Println("Mocked Error")
 	}
-
 }
 
 func TestClose(t *testing.T) {

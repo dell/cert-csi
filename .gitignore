@@ -7,3 +7,7 @@ coverage_results.txt
 *.test
 *.tar.gz
 bin
+
+pkg/cmd/logs/
+pkg/cmd/report.path
+pkg/reporter/report.path

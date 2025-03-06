@@ -521,22 +521,6 @@ func (suite *TestCSIStorageCapacitySuite) TestWatchUntilUpdated_ContextCancelled
 		},
 	}
 
-	// Add mock watcher to the fake client
-	suite.kubeClient.ClientSet.(*fake.Clientset).PrependWatchReactor("csistoragecapacities", func(_ testing.Action) (bool, watch.Interface, error) {
-		w := watch.NewFake()
-		go func() {
-			time.Sleep(3 * time.Second)
-			w.Modify(&storagev1.CSIStorageCapacity{
-				ObjectMeta: metav1.ObjectMeta{
-					Name:            "capacity1",
-					ResourceVersion: "2",
-				},
-				Capacity: resource.NewQuantity(100, resource.BinarySI),
-			})
-		}()
-		return true, w, nil
-	})
-
 	client := &csistoragecapacity.Client{
 		Interface: suite.kubeClient.ClientSet.StorageV1().CSIStorageCapacities("default"),
 	}

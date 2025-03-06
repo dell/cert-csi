@@ -33,6 +33,10 @@ import (
 	"github.com/urfave/cli"
 )
 
+var ExecuteSuite = func(sr *runner.FunctionalSuiteRunner, s []suites.Interface) {
+	sr.RunFunctionalSuites(s)
+}
+
 // GetFunctionalTestCommand returns a `functional-test` command with all prepared sub-commands
 func GetFunctionalTestCommand() cli.Command {
 	globalFlags := []cli.Flag{
@@ -168,7 +172,6 @@ func getVolumeDeletionCommand(globalFlags []cli.Flag) cli.Command {
 			globalFlags...,
 		),
 		Action: func(c *cli.Context) error {
-			sr := createFunctionalSuiteRunner(c, true, true)
 			pvcName := c.String("pvc-name")
 			pvcNamespace := c.String("pvc-namespace")
 			desc := c.String("description")
@@ -181,7 +184,8 @@ func getVolumeDeletionCommand(globalFlags []cli.Flag) cli.Command {
 					},
 				},
 			}
-			sr.RunFunctionalSuites(s)
+			sr := createFunctionalSuiteRunner(c, true, true)
+			ExecuteSuite(sr, s)
 			return nil
 		},
 	}
@@ -208,7 +212,6 @@ func getPodDeletionCommand(globalFlags []cli.Flag) cli.Command {
 			globalFlags...,
 		),
 		Action: func(c *cli.Context) error {
-			sr := createFunctionalSuiteRunner(c, true, true)
 			podName := c.String("pod-name")
 			podNamespace := c.String("pod-namespace")
 			desc := c.String("description")
@@ -221,7 +224,8 @@ func getPodDeletionCommand(globalFlags []cli.Flag) cli.Command {
 					},
 				},
 			}
-			sr.RunFunctionalSuites(s)
+			sr := createFunctionalSuiteRunner(c, true, true)
+			ExecuteSuite(sr, s)
 			return nil
 		},
 	}
@@ -253,7 +257,6 @@ func getCloneVolumeDeletionCommand(globalFlags []cli.Flag) cli.Command {
 			globalFlags...,
 		),
 		Action: func(c *cli.Context) error {
-			sr := createFunctionalSuiteRunner(c, true, true)
 			volName := c.String("clone-volume-name")
 			podName := c.String("clone-pod-name")
 			namespace := c.String("resource-namespace")
@@ -269,7 +272,8 @@ func getCloneVolumeDeletionCommand(globalFlags []cli.Flag) cli.Command {
 					PodName: podName,
 				},
 			}
-			sr.RunFunctionalSuites(s)
+			sr := createFunctionalSuiteRunner(c, true, true)
+			ExecuteSuite(sr, s)
 			return nil
 		},
 	}
@@ -296,7 +300,6 @@ func getFunctionalSnapDeletionCommand(globalFlags []cli.Flag) cli.Command {
 			globalFlags...,
 		),
 		Action: func(c *cli.Context) error {
-			sr := createFunctionalSuiteRunner(c, true, true)
 			snapName := c.String("volume-snapshot-name")
 			namespace := c.String("resource-namespace")
 			desc := c.String("description")
@@ -310,7 +313,8 @@ func getFunctionalSnapDeletionCommand(globalFlags []cli.Flag) cli.Command {
 					},
 				},
 			}
-			sr.RunFunctionalSuites(s)
+			sr := createFunctionalSuiteRunner(c, true, true)
+			ExecuteSuite(sr, s)
 			return nil
 		},
 	}
@@ -370,7 +374,7 @@ func getFunctionalVolumeCreateCommand(globalFlags []cli.Flag) cli.Command {
 				},
 			}
 			sr := createFunctionalSuiteRunner(c, true, true)
-			sr.RunFunctionalSuites(s)
+			ExecuteSuite(sr, s)
 
 			return nil
 		},
@@ -436,7 +440,7 @@ func getFunctionalCloneVolumeCommand(globalFlags []cli.Flag) cli.Command {
 			}
 
 			sr := createFunctionalSuiteRunner(c, true, true)
-			sr.RunFunctionalSuites(s)
+			ExecuteSuite(sr, s)
 
 			return nil
 		},
@@ -508,7 +512,7 @@ func getFunctionalProvisioningCommand(globalFlags []cli.Flag) cli.Command {
 			}
 
 			sr := createFunctionalSuiteRunner(c, true, true)
-			sr.RunFunctionalSuites(s)
+			ExecuteSuite(sr, s)
 
 			return nil
 		},
@@ -582,7 +586,7 @@ func getFunctionalSnapCreationCommand(globalFlags []cli.Flag) cli.Command {
 			}
 
 			sr := createFunctionalSuiteRunner(c, true, true)
-			sr.RunFunctionalSuites(s)
+			ExecuteSuite(sr, s)
 
 			return nil
 		},
@@ -638,7 +642,7 @@ func getFunctionalMultiAttachVolCommand(globalFlags []cli.Flag) cli.Command {
 			}
 
 			sr := createFunctionalSuiteRunner(c, true, true)
-			sr.RunFunctionalSuites(s)
+			ExecuteSuite(sr, s)
 
 			return nil
 		},
@@ -717,7 +721,7 @@ func getFunctionalEphemeralCreationCommand(globalFlags []cli.Flag) cli.Command {
 			}
 
 			sr := createFunctionalSuiteRunner(c, c.Bool("no-cleanup"), c.Bool("no-cleanup-on-fail"))
-			sr.RunFunctionalSuites(s)
+			ExecuteSuite(sr, s)
 
 			return nil
 		},
@@ -791,7 +795,6 @@ func getNodeDrainCommand(globalFlags []cli.Flag) cli.Command {
 			globalFlags...,
 		),
 		Action: func(c *cli.Context) error {
-			sr := createFunctionalSuiteRunner(c, true, true)
 			nodeName := c.String("node-name")
 			nodeNamespace := c.String("node-namespace")
 			gracePeriodSeconds := c.Int("grace-period-seconds")
@@ -805,7 +808,8 @@ func getNodeDrainCommand(globalFlags []cli.Flag) cli.Command {
 					GracePeriodSeconds: gracePeriodSeconds,
 				},
 			}
-			sr.RunFunctionalSuites(s)
+			sr := createFunctionalSuiteRunner(c, true, true)
+			ExecuteSuite(sr, s)
 			return nil
 		},
 	}
@@ -827,7 +831,6 @@ func getNodeUnCordonCommand(globalFlags []cli.Flag) cli.Command {
 			globalFlags...,
 		),
 		Action: func(c *cli.Context) error {
-			sr := createFunctionalSuiteRunner(c, true, true)
 			nodeName := c.String("node-name")
 			desc := c.String("description")
 
@@ -837,7 +840,8 @@ func getNodeUnCordonCommand(globalFlags []cli.Flag) cli.Command {
 					Description: desc,
 				},
 			}
-			sr.RunFunctionalSuites(s)
+			sr := createFunctionalSuiteRunner(c, true, true)
+			ExecuteSuite(sr, s)
 			return nil
 		},
 	}
@@ -893,7 +897,7 @@ func getCapacityTrackingCommand(globalFlags []cli.Flag) cli.Command {
 			}
 
 			sr := createFunctionalSuiteRunner(c, true, true)
-			sr.RunFunctionalSuites(s)
+			ExecuteSuite(sr, s)
 
 			return nil
 		},

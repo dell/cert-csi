@@ -17,7 +17,10 @@
 package pod_test
 
 import (
+	"bytes"
 	"context"
+	"io"
+	"net/url"
 	"testing"
 	"time"
 
@@ -31,8 +34,13 @@ import (
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/apimachinery/pkg/util/wait"
+	kfake "k8s.io/client-go/kubernetes/fake"
+	typedcorev1 "k8s.io/client-go/kubernetes/typed/core/v1"
 	"k8s.io/client-go/rest"
+	restclient "k8s.io/client-go/rest"
+	restfake "k8s.io/client-go/rest/fake"
 	clientgotesting "k8s.io/client-go/testing"
+	"k8s.io/client-go/tools/remotecommand"
 
 	discoveryFake "k8s.io/client-go/discovery/fake"
 	"k8s.io/client-go/kubernetes/fake"
@@ -55,6 +63,49 @@ func (suite *PodTestSuite) SetupSuite() {
 	suite.kubeClient.SetTimeout(1)
 }
 
+type FakeExtendedCoreV1 struct {
+	typedcorev1.CoreV1Interface
+	restClient rest.Interface
+}
+
+func (c *FakeExtendedCoreV1) RESTClient() rest.Interface {
+	if c.restClient == nil {
+		c.restClient = &restfake.RESTClient{}
+	}
+	return c.restClient
+}
+
+type FakeExtendedClientset struct {
+	*kfake.Clientset
+}
+
+func (f *FakeExtendedClientset) CoreV1() typedcorev1.CoreV1Interface {
+	return &FakeExtendedCoreV1{f.Clientset.CoreV1(), nil}
+}
+
+func NewFakeClientsetWithRestClient(objs ...runtime.Object) *FakeExtendedClientset {
+	return &FakeExtendedClientset{kfake.NewSimpleClientset(objs...)}
+}
+
+type FakeRemoteExecutor struct{}
+
+func (f *FakeRemoteExecutor) Execute(_ string, _ *url.URL, _ *restclient.Config, _ io.Reader, _, _ io.Writer, _ bool, _ remotecommand.TerminalSizeQueue) error {
+	return nil
+}
+
+type FakeCommandExecutor struct {
+	isOCP bool
+}
+
+func (f *FakeCommandExecutor) Execute(_ string, _ ...string) ([]byte, error) {
+	output := ""
+	if f.isOCP {
+		output = "Cluster version is 4.8.12"
+	}
+
+	return []byte(output), nil
+}
+
 func (suite *PodTestSuite) TestMakePod() {
 	podconf := &pod.Config{
 		Name:           "test-pod",
@@ -69,6 +120,7 @@ func (suite *PodTestSuite) TestMakePod() {
 	}
 
 	podClient, err := suite.kubeClient.CreatePodClient("test-namespace")
+	podClient.LocalExecutor = &FakeCommandExecutor{}
 	suite.NoError(err)
 	podTmpl := podClient.MakePod(podconf)
 	suite.NoError(err)
@@ -91,6 +143,21 @@ func (suite *PodTestSuite) TestMakePod() {
 func (suite *PodTestSuite) TestMakePod_default() {
 	podconf := &pod.Config{}
 	podClient, err := suite.kubeClient.CreatePodClient("test-namespace")
+	podClient.LocalExecutor = &FakeCommandExecutor{}
+	suite.NoError(err)
+	podTmpl := podClient.MakePod(podconf)
+	suite.NoError(err)
+	suite.Equal("test-namespace", podTmpl.Namespace)
+	suite.Equal(podconf.ContainerImage, "quay.io/centos/centos:latest")
+	suite.Equal(podconf.Command, []string{"/bin/bash"})
+}
+
+func (suite *PodTestSuite) TestMakePod_OCP() {
+	podconf := &pod.Config{}
+	podClient, err := suite.kubeClient.CreatePodClient("test-namespace")
+	podClient.LocalExecutor = &FakeCommandExecutor{
+		isOCP: true,
+	}
 	suite.NoError(err)
 	podTmpl := podClient.MakePod(podconf)
 	suite.NoError(err)
@@ -200,6 +267,7 @@ func (suite *PodTestSuite) TestDelete() {
 	}
 
 	client, err := suite.kubeClient.CreatePodClient("test-namespace")
+	client.LocalExecutor = &FakeCommandExecutor{}
 	suite.NoError(err)
 
 	podTmpl := client.MakePod(podconf)
@@ -403,6 +471,25 @@ func (suite *PodTestSuite) TestWaitForRunning() {
 
 func (suite *PodTestSuite) TestMakeEphemeralPod() {
 	podClient, err := suite.kubeClient.CreatePodClient("test-namespace")
+	podClient.LocalExecutor = &FakeCommandExecutor{}
+	suite.NoError(err)
+
+	podconf := &pod.Config{
+		Name: "test-pod",
+	}
+	podClient.MakeEphemeralPod(podconf)
+
+	suite.Equal(podconf.NamePrefix, "pod-")
+	suite.Equal(podconf.MountPath, "/data")
+	suite.Equal(podconf.ContainerName, "test-container")
+	suite.Equal(podconf.ContainerImage, "quay.io/centos/centos:latest")
+}
+
+func (suite *PodTestSuite) TestMakeEphemeralPod_WithOCP() {
+	podClient, err := suite.kubeClient.CreatePodClient("test-namespace")
+	podClient.LocalExecutor = &FakeCommandExecutor{
+		isOCP: true,
+	}
 	suite.NoError(err)
 
 	podconf := &pod.Config{
@@ -473,6 +560,7 @@ func (suite *PodTestSuite) TestDeleteOrEvictPods() {
 
 func (suite *PodTestSuite) TestEvictPod() {
 	podClient, err := suite.kubeClient.CreatePodClient("test-namespace")
+	podClient.LocalExecutor = &FakeCommandExecutor{}
 	suite.NoError(err)
 
 	pod1 := podClient.MakeEphemeralPod(&pod.Config{
@@ -636,6 +724,7 @@ func TestGetPodConditionFromList(t *testing.T) {
 
 func (suite *PodTestSuite) TestEvictPods() {
 	podClient, err := suite.kubeClient.CreatePodClient("test-namespace")
+	podClient.LocalExecutor = &FakeCommandExecutor{}
 	suite.NoError(err)
 
 	podList := &corev1.PodList{
@@ -654,9 +743,6 @@ func (suite *PodTestSuite) TestEvictPods() {
 }
 
 func TestCheckEvictionSupport(t *testing.T) {
-	clientSet := fake.NewSimpleClientset()
-	discoveryClient := clientSet.Discovery().(*discoveryFake.FakeDiscovery)
-
 	tests := []struct {
 		name                 string
 		serverGroups         []metav1.APIGroup
@@ -702,10 +788,36 @@ func TestCheckEvictionSupport(t *testing.T) {
 			expectedGroupVersion: "",
 			expectedError:        nil,
 		},
+		{
+			name: "Policy group found",
+			serverGroups: []metav1.APIGroup{
+				{
+					Name: "policy",
+					PreferredVersion: metav1.GroupVersionForDiscovery{
+						GroupVersion: "v1",
+					},
+				},
+			},
+			serverResources: []*metav1.APIResourceList{
+				{
+					GroupVersion: "v1",
+					APIResources: []metav1.APIResource{
+						{
+							Name: "pods/eviction",
+							Kind: "Eviction",
+						},
+					},
+				},
+			},
+			expectedGroupVersion: "",
+			expectedError:        nil,
+		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+			clientSet := fake.NewSimpleClientset()
+			discoveryClient := clientSet.Discovery().(*discoveryFake.FakeDiscovery)
 			discoveryClient.Resources = tt.serverResources
 			// Simulate the server groups response
 			discoveryClient.Fake.Resources = tt.serverResources
@@ -731,48 +843,56 @@ func TestCheckEvictionSupport(t *testing.T) {
 	}
 }
 
-// func (suite *PodTestSuite) TestExec() {
-// 	podClient, err := suite.kubeClient.CreatePodClient("test-namespace")
-// 	suite.NoError(err)
+func (suite *PodTestSuite) TestExec() {
+	suite.kubeClient.ClientSet = NewFakeClientsetWithRestClient()
+	podClient, err := suite.kubeClient.CreatePodClient("test-namespace")
+	podClient.RemoteExecutor = &FakeRemoteExecutor{}
+	suite.NoError(err)
+	suite.NotNil(podClient)
 
-// 	podClient.Config = &rest.Config{
-// 		Host:        "https://localhost:6443",
-// 		BearerToken: "test-token",
-// 	}
+	mockConfig := &rest.Config{
+		Host:        "https://localhost:6443",
+		BearerToken: "test-token",
+	}
 
-// 	if podClient == nil {
-// 		suite.T().Fatal("podClient is nil")
-// 	}
-// 	if podClient.Config == nil {
-// 		suite.T().Fatal("Config is nil")
-// 	}
+	podClient.Config = mockConfig
 
-// 	pod := &corev1.Pod{
-// 		ObjectMeta: metav1.ObjectMeta{
-// 			Name:      "test-pod",
-// 			Namespace: "default",
-// 		},
-// 		Spec: corev1.PodSpec{
-// 			Containers: []corev1.Container{
-// 				{Name: "test-container"},
-// 			},
-// 		},
-// 	}
+	if podClient == nil {
+		suite.T().Fatal("podClient is nil")
+	}
+	if podClient.Config == nil {
+		suite.T().Fatal("Config is nil")
+	}
 
-// 	command := []string{"echo", "hello"}
-// 	stdout := &bytes.Buffer{}
-// 	stderr := &bytes.Buffer{}
+	pod := &corev1.Pod{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      "test-pod",
+			Namespace: "default",
+		},
+		Spec: corev1.PodSpec{
+			Containers: []corev1.Container{
+				{Name: "test-container"},
+			},
+		},
+	}
 
-// 	suite.Run("podclient exec QuietMode=false", func() {
-// 		err = podClient.Exec(context.Background(), pod, command, stdout, stderr, false)
-// 		suite.NoError(err)
-// 	})
+	command := []string{"echo", "hello"}
+	stdout := &bytes.Buffer{}
+	stderr := &bytes.Buffer{}
 
-// 	suite.Run("podclient exec QuietMode=true", func() {
-// 		err = podClient.Exec(context.Background(), pod, command, stdout, stderr, true)
-// 		suite.NoError(err)
-// 	})
-// }
+	suite.Run("podclient exec QuietMode=false", func() {
+		err = podClient.Exec(context.Background(), pod, command, stdout, stderr, false)
+		suite.NoError(err)
+	})
+
+	suite.Run("podclient exec QuietMode=true", func() {
+		err = podClient.Exec(context.Background(), pod, command, stdout, stderr, true)
+		suite.NoError(err)
+	})
+
+	// resetting global clientset to simple clientset for future tests
+	suite.kubeClient.ClientSet = fake.NewSimpleClientset()
+}
 
 func (suite *PodTestSuite) TestWaitUntilGone() {
 	client := fake.NewSimpleClientset()

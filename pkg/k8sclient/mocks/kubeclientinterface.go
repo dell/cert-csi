@@ -24,8 +24,7 @@ import (
 	statefulset "github.com/dell/cert-csi/pkg/k8sclient/resources/statefulset"
 	va "github.com/dell/cert-csi/pkg/k8sclient/resources/va"
 	volumegroupsnapshot "github.com/dell/cert-csi/pkg/k8sclient/resources/volumegroupsnapshot"
-	v1 "github.com/dell/cert-csi/pkg/k8sclient/resources/volumesnapshot/v1"
-	v1beta1 "github.com/dell/cert-csi/pkg/k8sclient/resources/volumesnapshot/v1beta1"
+	v1 "github.com/dell/cert-csi/pkg/k8sclient/resources/volumesnapshot"
 	gomock "go.uber.org/mock/gomock"
 	v10 "k8s.io/api/core/v1"
 	kubernetes "k8s.io/client-go/kubernetes"
@@ -203,21 +202,6 @@ func (m *MockKubeClientInterface) CreateSCClient() (*sc.Client, error) {
 func (mr *MockKubeClientInterfaceMockRecorder) CreateSCClient() *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CreateSCClient", reflect.TypeOf((*MockKubeClientInterface)(nil).CreateSCClient))
-}
-
-// CreateSnapshotBetaClient mocks base method.
-func (m *MockKubeClientInterface) CreateSnapshotBetaClient(namespace string) (*v1beta1.SnapshotClient, error) {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "CreateSnapshotBetaClient", namespace)
-	ret0, _ := ret[0].(*v1beta1.SnapshotClient)
-	ret1, _ := ret[1].(error)
-	return ret0, ret1
-}
-
-// CreateSnapshotBetaClient indicates an expected call of CreateSnapshotBetaClient.
-func (mr *MockKubeClientInterfaceMockRecorder) CreateSnapshotBetaClient(namespace any) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CreateSnapshotBetaClient", reflect.TypeOf((*MockKubeClientInterface)(nil).CreateSnapshotBetaClient), namespace)
 }
 
 // CreateSnapshotGAClient mocks base method.

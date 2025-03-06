@@ -1,6 +1,6 @@
 /*
  *
- * Copyright © 2022-2023 Dell Inc. or its subsidiaries. All Rights Reserved.
+ * Copyright © 2022-2025 Dell Inc. or its subsidiaries. All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -37,10 +37,8 @@ import (
 	"github.com/dell/cert-csi/pkg/k8sclient/resources/statefulset"
 	"github.com/dell/cert-csi/pkg/k8sclient/resources/va"
 	"github.com/dell/cert-csi/pkg/k8sclient/resources/volumegroupsnapshot"
-	snapv1 "github.com/dell/cert-csi/pkg/k8sclient/resources/volumesnapshot/v1"
-	snapbeta "github.com/dell/cert-csi/pkg/k8sclient/resources/volumesnapshot/v1beta1"
-	contentv1 "github.com/dell/cert-csi/pkg/k8sclient/resources/volumesnapshotcontent/v1"
-	contentbeta "github.com/dell/cert-csi/pkg/k8sclient/resources/volumesnapshotcontent/v1beta1"
+	snapv1 "github.com/dell/cert-csi/pkg/k8sclient/resources/volumesnapshot"
+	contentv1 "github.com/dell/cert-csi/pkg/k8sclient/resources/volumesnapshotcontent"
 	"github.com/dell/cert-csi/pkg/utils"
 
 	vgsAlpha "github.com/dell/csi-volumegroup-snapshotter/api/v1"
@@ -91,7 +89,6 @@ type KubeClientInterface interface {
 	CreateRGClient() (*rg.Client, error)
 	CreateCSISCClient(namespace string) (*csistoragecapacity.Client, error)
 	CreateSnapshotGAClient(namespace string) (*snapv1.SnapshotClient, error)
-	CreateSnapshotBetaClient(namespace string) (*snapbeta.SnapshotClient, error)
 	SnapshotClassExists(snapClass string) (bool, error)
 	CreateVGSClient() (*volumegroupsnapshot.Client, error)
 	CreatePVClient() (*pv.Client, error)
@@ -119,7 +116,6 @@ type Clients struct {
 	VaClient               *va.Client
 	MetricsClient          *metrics.Client
 	SnapClientGA           *snapv1.SnapshotClient
-	SnapClientBeta         *snapbeta.SnapshotClient
 	PersistentVolumeClient *pv.Client
 	NodeClient             *node.Client
 	SCClient               *sc.Client
@@ -208,6 +204,9 @@ func (c *KubeClient) GetClientSet() kubernetes.Interface {
 
 // CreateStatefulSetClient creates a new instance of StatefulSetClient in supplied namespace
 func (c *KubeClient) CreateStatefulSetClient(namespace string) (*statefulset.Client, error) {
+	if namespace == "" {
+		return nil, fmt.Errorf("namespace cannot be empty")
+	}
 	stsclient := &statefulset.Client{
 		Interface: c.ClientSet.AppsV1().StatefulSets(namespace),
 		ClientSet: c.ClientSet,
@@ -220,6 +219,9 @@ func (c *KubeClient) CreateStatefulSetClient(namespace string) (*statefulset.Cli
 
 // CreatePVCClient creates a new instance of Client in supplied namespace
 func (c *KubeClient) CreatePVCClient(namespace string) (*pvc.Client, error) {
+	if namespace == "" {
+		return nil, fmt.Errorf("namespace cannot be empty")
+	}
 	pvcc := &pvc.Client{
 		Interface: c.ClientSet.CoreV1().PersistentVolumeClaims(namespace),
 		ClientSet: c.ClientSet,
@@ -263,6 +265,9 @@ func (c *KubeClient) CreateNodeClient() (*node.Client, error) {
 
 // CreatePodClient creates a new instance of Pod client
 func (c *KubeClient) CreatePodClient(namespace string) (*pod.Client, error) {
+	if namespace == "" {
+		return nil, fmt.Errorf("namespace cannot be empty")
+	}
 	podc := &pod.Client{
 		Interface: c.ClientSet.CoreV1().Pods(namespace),
 		ClientSet: c.ClientSet,
@@ -276,6 +281,9 @@ func (c *KubeClient) CreatePodClient(namespace string) (*pod.Client, error) {
 
 // CreateVaClient creates a new instance of volume attachment client
 func (c *KubeClient) CreateVaClient(namespace string) (*va.Client, error) {
+	if namespace == "" {
+		return nil, fmt.Errorf("namespace cannot be empty")
+	}
 	vac := &va.Client{
 		Interface: c.ClientSet.StorageV1().VolumeAttachments(),
 		Namespace: namespace,
@@ -287,6 +295,9 @@ func (c *KubeClient) CreateVaClient(namespace string) (*va.Client, error) {
 
 // CreateMetricsClient creates a new instance of metrics client
 func (c *KubeClient) CreateMetricsClient(namespace string) (*metrics.Client, error) {
+	if namespace == "" {
+		return nil, fmt.Errorf("namespace cannot be empty")
+	}
 	cset, err := metricsclientset.NewForConfig(c.Config)
 	if err != nil {
 		return nil, err
@@ -348,6 +359,9 @@ func (c *KubeClient) CreateVGSClient() (*volumegroupsnapshot.Client, error) {
 
 // CreateSnapshotGAClient creates a new instance of snapshot client
 func (c *KubeClient) CreateSnapshotGAClient(namespace string) (*snapv1.SnapshotClient, error) {
+	if namespace == "" {
+		return nil, fmt.Errorf("namespace cannot be empty")
+	}
 	cset, err := snapclient.NewForConfig(c.Config)
 	if err != nil {
 		return nil, err
@@ -360,23 +374,6 @@ func (c *KubeClient) CreateSnapshotGAClient(namespace string) (*snapv1.SnapshotC
 	}
 
 	logrus.Debugf("Created Alpha Snapshot client in %s namespace", namespace)
-	return sc, nil
-}
-
-// CreateSnapshotBetaClient creates a new instance of beta snapshot client
-func (c *KubeClient) CreateSnapshotBetaClient(namespace string) (*snapbeta.SnapshotClient, error) {
-	cset, err := snapclient.NewForConfig(c.Config)
-	if err != nil {
-		return nil, err
-	}
-
-	sc := &snapbeta.SnapshotClient{
-		Interface: cset.SnapshotV1beta1().VolumeSnapshots(namespace),
-		Namespace: namespace,
-		Timeout:   c.timeout,
-	}
-
-	logrus.Debugf("Created Beta Snapshot client in %s namespace", namespace)
 	return sc, nil
 }
 
@@ -395,23 +392,11 @@ func (c *KubeClient) CreateSnapshotContentGAClient() (*contentv1.SnapshotContent
 	return sc, nil
 }
 
-// CreateSnapshotContentBetaClient creates a new instance of beta snapshot contents client
-func (c *KubeClient) CreateSnapshotContentBetaClient() (*contentbeta.SnapshotContentClient, error) {
-	cset, err := snapclient.NewForConfig(c.Config)
-	if err != nil {
-		return nil, err
-	}
-	sc := &contentbeta.SnapshotContentClient{
-		Interface: cset.SnapshotV1beta1().VolumeSnapshotContents(),
-		Timeout:   c.timeout,
-	}
-
-	logrus.Debugf("Created Beta Snapshot Content client")
-	return sc, nil
-}
-
 // CreateCSISCClient creates a new instance of CSI Storage capacity client
 func (c *KubeClient) CreateCSISCClient(namespace string) (*csistoragecapacity.Client, error) {
+	if namespace == "" {
+		return nil, fmt.Errorf("namespace cannot be empty")
+	}
 	csiscClient := &csistoragecapacity.Client{
 		Interface: c.ClientSet.StorageV1().CSIStorageCapacities(namespace),
 		Namespace: namespace,
@@ -477,27 +462,29 @@ func (c *KubeClient) DeleteNamespace(ctx context.Context, namespace string) erro
 				break
 			}
 
-			if _, err := c.ClientSet.CoreV1().Namespaces().Get(ctx, namespace, metav1.GetOptions{}); err != nil {
+			nsExists, err := c.ClientSet.CoreV1().Namespaces().Get(ctx, namespace, metav1.GetOptions{})
+			if nsExists == nil {
 				if apierrs.IsNotFound(err) {
-					// c.CreateVaClient()
 					vaClient, err := c.CreateVaClient(namespace)
 					if err != nil {
 						return false, err
 					}
-					// in case if somehow some PVs are left even after namespace got deleted, try to clean them.
+
 					pvClient, err := c.CreatePVClient()
 					if err != nil {
 						return false, err
 					}
-					err = pvClient.DeleteAllPV(ctx, namespace, vaClient)
-					if err != nil {
-						log.Errorf("Failed to delete some PVs")
+
+					if err := pvClient.DeleteAllPV(ctx, namespace, vaClient); err != nil {
+						log.Errorf("Failed to delete some PVs: %v", err)
 					}
+
 					return true, nil
 				}
-				log.Errorf("Error while waiting for namespace to be terminated: %v", err)
-				return false, err
+
+				return false, fmt.Errorf("failed to delete namespace: %v", err)
 			}
+
 			return false, nil
 		})
 
@@ -529,7 +516,7 @@ func (c *KubeClient) ForceDeleteNamespace(ctx context.Context, namespace string)
 		return err
 	}
 	err = stsclient.DeleteAll(ctx)
-	if err != nil {
+	if err != nil && !apierrs.IsNotFound(err) {
 		return err
 	}
 	logrus.Debugf("All StatefulSets are gone")
@@ -539,60 +526,37 @@ func (c *KubeClient) ForceDeleteNamespace(ctx context.Context, namespace string)
 		return err
 	}
 	err = podClient.DeleteAll(ctx)
-	if err != nil {
+	if err != nil && !apierrs.IsNotFound(err) {
 		return err
 	}
 	logrus.Debugf("All Pods are gone")
 
-	if c.Minor >= 17 {
-		logrus.Debug("Beta here")
-		k8sbeta, err := c.CreateSnapshotBetaClient(namespace)
-		if err != nil {
-			return err
-		}
-		err = k8sbeta.DeleteAll(ctx)
-		// it is possible that few resources are not found so better to check it before returning error
-		if err != nil && !apierrs.IsNotFound(err) {
-			return err
-		}
-		logrus.Debugf("All VSs are gone")
-		sncont, err := c.CreateSnapshotContentBetaClient()
-		if err != nil {
-			return err
-		}
-		err = sncont.DeleteAll(ctx)
-		if err != nil && !apierrs.IsNotFound(err) {
-			return err
-		}
-		logrus.Debugf("All VSConts are gone")
-	} else {
-		logrus.Debug("Alpha here")
-		k8salpha, err := c.CreateSnapshotGAClient(namespace)
-		if err != nil {
-			return err
-		}
-		err = k8salpha.DeleteAll(ctx)
-		if err != nil {
-			return err
-		}
-		logrus.Debugf("All VS's are gone")
-		sncont, err := c.CreateSnapshotContentGAClient()
-		if err != nil {
-			return err
-		}
-		err = sncont.DeleteAll(ctx)
-		if err != nil && !apierrs.IsNotFound(err) {
-			return err
-		}
-		logrus.Debugf("All VSConts are gone")
+	k8salpha, err := c.CreateSnapshotGAClient(namespace)
+	if err != nil {
+		return err
 	}
+	sncont, err := c.CreateSnapshotContentGAClient()
+	if err != nil {
+		return err
+	}
+	err = k8salpha.DeleteAll(ctx)
+	if err != nil && !apierrs.IsNotFound(err) {
+		logrus.Errorf("Failed to delete all snapshots: %v", err)
+	}
+	logrus.Debugf("All VS's are gone")
+
+	err = sncont.DeleteAll(ctx)
+	if err != nil && !apierrs.IsNotFound(err) {
+		logrus.Errorf("Failed to delete all snapshot contents: %v", err)
+	}
+	logrus.Debugf("All VSConts are gone")
 
 	pvcClient, err := c.CreatePVCClient(namespace)
 	if err != nil {
 		return err
 	}
 	err = pvcClient.DeleteAll(ctx)
-	if err != nil {
+	if err != nil && !apierrs.IsNotFound(err) {
 		return err
 	}
 	logrus.Debugf("All PVCs are gone")
@@ -606,7 +570,7 @@ func (c *KubeClient) ForceDeleteNamespace(ctx context.Context, namespace string)
 		return err
 	}
 	err = pvClient.DeleteAllPV(ctx, namespace, vaClient)
-	if err != nil {
+	if err != nil && !apierrs.IsNotFound(err) {
 		return err
 	}
 	logrus.Debugf("All PVs are gone")
@@ -615,16 +579,16 @@ func (c *KubeClient) ForceDeleteNamespace(ctx context.Context, namespace string)
 
 // SnapshotClassExists checks whether snapshot class exists
 func (c *KubeClient) SnapshotClassExists(snapClass string) (bool, error) {
+	if snapClass == "" {
+		return false, fmt.Errorf("snapshot class not specified")
+	}
 	cset, err := snapclient.NewForConfig(c.Config)
 	if err != nil {
 		return false, err
 	}
-	_, err = cset.SnapshotV1beta1().VolumeSnapshotClasses().Get(context.Background(), snapClass, metav1.GetOptions{})
+	_, err = cset.SnapshotV1().VolumeSnapshotClasses().Get(context.Background(), snapClass, metav1.GetOptions{})
 	if err != nil {
-		_, err = cset.SnapshotV1().VolumeSnapshotClasses().Get(context.Background(), snapClass, metav1.GetOptions{})
-		if err != nil {
-			return false, err
-		}
+		return false, err
 	}
 
 	return true, nil
@@ -632,6 +596,9 @@ func (c *KubeClient) SnapshotClassExists(snapClass string) (bool, error) {
 
 // StorageClassExists checks whether a storage class exists
 func (c *KubeClient) StorageClassExists(ctx context.Context, storageClass string) (bool, error) {
+	if storageClass == "" {
+		return false, fmt.Errorf("storage class not specified")
+	}
 	var scExists bool
 	storageClasses, err := c.ClientSet.StorageV1().StorageClasses().List(ctx, metav1.ListOptions{})
 	if err != nil {
@@ -644,6 +611,9 @@ func (c *KubeClient) StorageClassExists(ctx context.Context, storageClass string
 			break
 		}
 	}
+	if !scExists {
+		return scExists, fmt.Errorf("storage class %s does not exist", storageClass)
+	}
 
 	return scExists, err
 }
@@ -651,16 +621,14 @@ func (c *KubeClient) StorageClassExists(ctx context.Context, storageClass string
 // NamespaceExists checks whether a namespace exists
 func (c *KubeClient) NamespaceExists(ctx context.Context, namespace string) (bool, error) {
 	var nsExists bool
-	nsList, err := c.ClientSet.CoreV1().Namespaces().List(ctx, metav1.ListOptions{})
-	if err != nil {
-		return false, err
-	}
-
+	nsList, _ := c.ClientSet.CoreV1().Namespaces().List(ctx, metav1.ListOptions{})
 	for _, ns := range nsList.Items {
 		if ns.Name == namespace {
 			nsExists = true
-			break
 		}
+	}
+	if !nsExists {
+		return nsExists, fmt.Errorf("namespace %s does not exist", namespace)
 	}
 
 	return nsExists, nil
@@ -698,8 +666,9 @@ func GetConfig(configPath string) (*rest.Config, error) {
 
 // GetConfigFromFile creates *rest.Config object from provided config path
 func GetConfigFromFile(kubeconfig string) (*rest.Config, error) {
+	home := homedir.HomeDir()
 	if kubeconfig == "" {
-		if home := homedir.HomeDir(); home != "" {
+		if home != "" {
 			kubeconfig = filepath.Join(home, ".kube", "config")
 		} else {
 			return nil, fmt.Errorf("can not find config file in home directory, please explicitly specify it using flags")

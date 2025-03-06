@@ -1,6 +1,6 @@
 /*
  *
- * Copyright © 2022-2023 Dell Inc. or its subsidiaries. All Rights Reserved.
+ * Copyright © 2022-2025 Dell Inc. or its subsidiaries. All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -47,12 +47,10 @@ import (
 	"k8s.io/apimachinery/pkg/util/wait"
 	"k8s.io/kubernetes/pkg/kubelet/events"
 
-	snapv1client "github.com/dell/cert-csi/pkg/k8sclient/resources/volumesnapshot/v1"
-	snapbetaclient "github.com/dell/cert-csi/pkg/k8sclient/resources/volumesnapshot/v1beta1"
+	snapv1client "github.com/dell/cert-csi/pkg/k8sclient/resources/volumesnapshot"
 
 	"github.com/fatih/color"
 	snapv1 "github.com/kubernetes-csi/external-snapshotter/client/v4/apis/volumesnapshot/v1"
-	snapbeta "github.com/kubernetes-csi/external-snapshotter/client/v4/apis/volumesnapshot/v1beta1"
 	"github.com/sirupsen/logrus"
 	"golang.org/x/sync/errgroup"
 	v1 "k8s.io/api/core/v1"
@@ -1439,10 +1437,10 @@ func (ss *SnapSuite) Run(ctx context.Context, storageClass string, clients *k8sc
 		snapPrefix = ss.CustomSnapName
 	}
 
-	var snaps []volumesnapshot.Interface
+	var snaps []*volumesnapshot.Snapshot
 	log.Infof("Creating %d snapshots", ss.SnapAmount)
 	for i := 0; i < ss.SnapAmount; i++ {
-		var createSnap volumesnapshot.Interface
+		var createSnap *volumesnapshot.Snapshot
 		// Create Interface from PVC using gotPvc name
 		if clients.SnapClientGA != nil {
 			name := snapPrefix + strconv.Itoa(i)
@@ -1472,36 +1470,8 @@ func (ss *SnapSuite) Run(ctx context.Context, storageClass string, clients *k8sc
 			if err != nil {
 				return delFunc, err
 			}
-		} else if clients.SnapClientBeta != nil {
-			name := snapPrefix + strconv.Itoa(i)
-			if i == 0 {
-				name = snapPrefix
-			}
-			createSnap = clients.SnapClientBeta.Create(ctx,
-				&snapbeta.VolumeSnapshot{
-					ObjectMeta: metav1.ObjectMeta{
-						Name:         name,
-						GenerateName: "",
-						Namespace:    gotPvc.Namespace,
-					},
-					Spec: snapbeta.VolumeSnapshotSpec{
-						Source: snapbeta.VolumeSnapshotSource{
-							PersistentVolumeClaimName: &gotPvc.Name,
-						},
-						VolumeSnapshotClassName: &ss.SnapClass,
-					},
-				})
-			if createSnap.HasError() {
-				return delFunc, createSnap.GetError()
-			}
-
-			// Wait for snapshot to be created
-			err := createSnap.WaitForRunning(ctx)
-			if err != nil {
-				return delFunc, err
-			}
 		} else {
-			return delFunc, fmt.Errorf("can't get alpha or beta snapshot client")
+			return delFunc, fmt.Errorf("can't get v1 snapshot client")
 		}
 		snaps = append(snaps, createSnap)
 	}
@@ -1529,7 +1499,6 @@ func (ss *SnapSuite) Run(ctx context.Context, storageClass string, clients *k8sc
 	}
 
 	// Create Pod, and attach PVC from snapshot
-
 	podRestored := testcore.IoWritePodConfig(pvcFromSnapNameList, pvcRestored.Object.Name+"-pod", ss.Image)
 	podTmplRestored := podClient.MakePod(podRestored)
 
@@ -1594,7 +1563,7 @@ func (ss *SnapSuite) GetClients(namespace string, client k8sclient.KubeClientInt
 		return nil, mcErr
 	}
 
-	snapGA, snapBeta, snErr := GetSnapshotClient(namespace, client)
+	snapGA, snErr := GetSnapshotClient(namespace, client)
 	if snErr != nil {
 		return nil, snErr
 	}
@@ -1605,7 +1574,6 @@ func (ss *SnapSuite) GetClients(namespace string, client k8sclient.KubeClientInt
 		StatefulSetClient: nil,
 		MetricsClient:     metricsClient,
 		SnapClientGA:      snapGA,
-		SnapClientBeta:    snapBeta,
 	}, nil
 }
 
@@ -1758,39 +1726,8 @@ func (rs *ReplicationSuite) Run(ctx context.Context, storageClass string, client
 				return delFunc, snapReadyError
 			}
 		}
-	} else if clients.SnapClientBeta != nil {
-		for _, pvc := range allPvcNames {
-			gotPvc, err := pvcClient.Interface.Get(ctx, pvc, metav1.GetOptions{})
-			if err != nil {
-				return delFunc, err
-			}
-			snapName := fmt.Sprintf("snap-%s", gotPvc.Name)
-			snapNameList = append(snapNameList, snapName)
-			createSnap := clients.SnapClientBeta.Create(ctx,
-				&snapbeta.VolumeSnapshot{
-					ObjectMeta: metav1.ObjectMeta{
-						Name:         snapName,
-						GenerateName: "",
-						Namespace:    gotPvc.Namespace,
-					},
-					Spec: snapbeta.VolumeSnapshotSpec{
-						Source: snapbeta.VolumeSnapshotSource{
-							PersistentVolumeClaimName: &gotPvc.Name,
-						},
-						VolumeSnapshotClassName: &rs.SnapClass,
-					},
-				})
-			if createSnap.HasError() {
-				return delFunc, createSnap.GetError()
-			}
-		}
-		// Wait for snapshot to be created
-		snapReadyError := clients.SnapClientBeta.WaitForAllToBeReady(ctx)
-		if snapReadyError != nil {
-			return delFunc, snapReadyError
-		}
 	} else {
-		return delFunc, fmt.Errorf("can't get alpha or beta snapshot client")
+		return delFunc, fmt.Errorf("can't get v1 snapshot client")
 	}
 
 	log.Info("Creating new pods with replicated volumes mounted on them")
@@ -1882,7 +1819,7 @@ func (rs *ReplicationSuite) GetClients(namespace string, client k8sclient.KubeCl
 		return nil, mcErr
 	}
 
-	snapGA, snapBeta, snErr := GetSnapshotClient(namespace, client)
+	snapGA, snErr := GetSnapshotClient(namespace, client)
 	if snErr != nil {
 		return nil, snErr
 	}
@@ -1899,7 +1836,6 @@ func (rs *ReplicationSuite) GetClients(namespace string, client k8sclient.KubeCl
 		StatefulSetClient: nil,
 		MetricsClient:     metricsClient,
 		SnapClientGA:      snapGA,
-		SnapClientBeta:    snapBeta,
 		RgClient:          rgClient,
 	}, nil
 }
@@ -2595,7 +2531,6 @@ func (cs *CloneVolumeSuite) GetClients(namespace string, client k8sclient.KubeCl
 		StatefulSetClient: nil,
 		MetricsClient:     metricsClient,
 		SnapClientGA:      nil,
-		SnapClientBeta:    nil,
 	}, nil
 }
 
@@ -2863,7 +2798,6 @@ func (mas *MultiAttachSuite) GetClients(namespace string, client k8sclient.KubeC
 		StatefulSetClient: nil,
 		MetricsClient:     metricsClient,
 		SnapClientGA:      nil,
-		SnapClientBeta:    nil,
 		NodeClient:        nodeClient,
 	}, nil
 }
@@ -2962,7 +2896,7 @@ func (bss *BlockSnapSuite) Run(ctx context.Context, storageClass string, clients
 		return delFunc, err
 	}
 
-	var createSnap volumesnapshot.Interface
+	var createSnap *volumesnapshot.Snapshot
 	// Create Interface from PVC using gotPvc name
 	if clients.SnapClientGA != nil {
 		createSnap = clients.SnapClientGA.Create(ctx,
@@ -2988,32 +2922,8 @@ func (bss *BlockSnapSuite) Run(ctx context.Context, storageClass string, clients
 		if err != nil {
 			return delFunc, err
 		}
-	} else if clients.SnapClientBeta != nil {
-		createSnap = clients.SnapClientBeta.Create(ctx,
-			&snapbeta.VolumeSnapshot{
-				ObjectMeta: metav1.ObjectMeta{
-					Name:         "snap0",
-					GenerateName: "",
-					Namespace:    gotPvc.Namespace,
-				},
-				Spec: snapbeta.VolumeSnapshotSpec{
-					Source: snapbeta.VolumeSnapshotSource{
-						PersistentVolumeClaimName: &gotPvc.Name,
-					},
-					VolumeSnapshotClassName: &bss.SnapClass,
-				},
-			})
-		if createSnap.HasError() {
-			return delFunc, createSnap.GetError()
-		}
-
-		// Wait for snapshot to be created
-		err := createSnap.WaitForRunning(ctx)
-		if err != nil {
-			return delFunc, err
-		}
 	} else {
-		return delFunc, fmt.Errorf("can't get alpha or beta snapshot client")
+		return delFunc, fmt.Errorf("can't get v1 snapshot client")
 	}
 
 	// Create second PVC from snapshot
@@ -3133,7 +3043,7 @@ func (bss *BlockSnapSuite) GetClients(namespace string, client k8sclient.KubeCli
 		return nil, mcErr
 	}
 
-	snapGA, snapBeta, snErr := GetSnapshotClient(namespace, client)
+	snapGA, snErr := GetSnapshotClient(namespace, client)
 	if snErr != nil {
 		return nil, snErr
 	}
@@ -3144,7 +3054,6 @@ func (bss *BlockSnapSuite) GetClients(namespace string, client k8sclient.KubeCli
 		StatefulSetClient: nil,
 		MetricsClient:     metricsClient,
 		SnapClientGA:      snapGA,
-		SnapClientBeta:    snapBeta,
 	}, nil
 }
 
@@ -3167,17 +3076,16 @@ func (bss *BlockSnapSuite) Parameters() string {
 }
 
 // GetSnapshotClient returns snapshot client
-func GetSnapshotClient(namespace string, client k8sclient.KubeClientInterface) (*snapv1client.SnapshotClient, *snapbetaclient.SnapshotClient, error) {
+func GetSnapshotClient(namespace string, client k8sclient.KubeClientInterface) (*snapv1client.SnapshotClient, error) {
 	gaClient, snErr := client.CreateSnapshotGAClient(namespace)
-	_, err := gaClient.Interface.List(context.Background(), metav1.ListOptions{})
-	if err != nil || snErr != nil {
-		betaClient, snErr := client.CreateSnapshotBetaClient(namespace)
-		if snErr != nil {
-			return nil, nil, snErr
-		}
-		return nil, betaClient, nil
+	if snErr != nil {
+		return nil, snErr
 	}
-	return gaClient, nil, nil
+	_, err := gaClient.Interface.List(context.Background(), metav1.ListOptions{})
+	if err != nil {
+		return nil, err
+	}
+	return gaClient, nil
 }
 
 // VolumeMigrateSuite is used to manage volume migrate test suite

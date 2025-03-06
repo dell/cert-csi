@@ -35,6 +35,10 @@ import (
 	"k8s.io/apimachinery/pkg/api/resource"
 )
 
+var ExecuteRunSuite = func(sr *runner.SuiteRunner, ss map[string][]suites.Interface) {
+	sr.RunSuites(ss)
+}
+
 // CertConfig contains StorageClasses
 type CertConfig struct {
 	StorageClasses []Entry `yaml:"storageClasses"`
@@ -420,6 +424,6 @@ func getAction(c *cli.Context) error {
 		&runner.K8sClient{},
 	)
 
-	sr.RunSuites(ss)
+	ExecuteRunSuite(sr, ss)
 	return nil
 }

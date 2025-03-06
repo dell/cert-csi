@@ -36,21 +36,25 @@ func GetListCommand() cli.Command {
 		Usage:    "lists different data",
 		Category: "main",
 		Subcommands: []cli.Command{
-			getTestrunsCmd(),
+			GetTestrunsCmd(),
 		},
 	}
 
 	return listCmd
 }
 
-func getTestrunsCmd() cli.Command {
+var GetDatabase = func(c *cli.Context) store.Store {
+	return store.NewSQLiteStore("file:" + c.GlobalString("db"))
+}
+
+func GetTestrunsCmd() cli.Command {
 	const padding = 3
 	return cli.Command{
 		Name:      "test-runs",
 		ShortName: "tr",
 		Category:  "list",
 		Action: func(c *cli.Context) error {
-			db := store.NewSQLiteStore("file:" + c.GlobalString("db"))
+			db := GetDatabase(c)
 			defer db.Close()
 
 			runs, err := db.GetTestRuns(store.Conditions{}, "", 0)

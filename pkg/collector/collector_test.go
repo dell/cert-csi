@@ -222,7 +222,6 @@ func (suite *CollectorTestSuit) SetupSuite() {
 		},
 	}
 	_ = suite.db.SaveEvents(events)
-
 }
 
 func (suite *CollectorTestSuit) TearDownSuite() {

@@ -1,6 +1,6 @@
 /*
  *
- * Copyright © 2022-2023 Dell Inc. or its subsidiaries. All Rights Reserved.
+ * Copyright © 2022-2025 Dell Inc. or its subsidiaries. All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -21,7 +21,6 @@ import (
 	"testing"
 
 	vs "github.com/kubernetes-csi/external-snapshotter/client/v4/apis/volumesnapshot/v1"
-	snapv1 "github.com/kubernetes-csi/external-snapshotter/client/v4/apis/volumesnapshot/v1beta1"
 	snapclient "github.com/kubernetes-csi/external-snapshotter/client/v4/clientset/versioned"
 	"github.com/stretchr/testify/suite"
 	v1 "k8s.io/api/core/v1"
@@ -95,6 +94,12 @@ func (suite *CoreTestSuite) TestCreateClients() {
 		suite.Equal(namespace, pvcClient.Namespace)
 	})
 
+	suite.Run("pvc client error case", func() {
+		podClient, err := suite.kubeClient.CreatePVCClient("")
+		suite.Error(err)
+		suite.Nil(podClient)
+	})
+
 	suite.Run("sc client", func() {
 		scClient, err := suite.kubeClient.CreateSCClient()
 		suite.NoError(err)
@@ -108,11 +113,23 @@ func (suite *CoreTestSuite) TestCreateClients() {
 		suite.Equal(namespace, podClient.Namespace)
 	})
 
+	suite.Run("pod client error case", func() {
+		podClient, err := suite.kubeClient.CreatePodClient("")
+		suite.Error(err)
+		suite.Nil(podClient)
+	})
+
 	suite.Run("va client", func() {
 		vaClient, err := suite.kubeClient.CreateVaClient(namespace)
 		suite.NoError(err)
 		suite.NotNil(vaClient)
 		suite.Equal(namespace, vaClient.Namespace)
+	})
+
+	suite.Run("va client error case", func() {
+		vaClient, err := suite.kubeClient.CreateVaClient("")
+		suite.Error(err)
+		suite.Nil(vaClient)
 	})
 
 	suite.Run("sts client", func() {
@@ -122,7 +139,13 @@ func (suite *CoreTestSuite) TestCreateClients() {
 		suite.Equal(namespace, stsClient.Namespace)
 	})
 
-	suite.Run("m client", func() {
+	suite.Run("sts client error case", func() {
+		mClient, err := suite.kubeClient.CreateStatefulSetClient("")
+		suite.Error(err)
+		suite.Nil(mClient)
+	})
+
+	suite.Run("m client error case", func() {
 		mClient, err := suite.kubeClient.CreateMetricsClient("")
 		suite.Error(err)
 		suite.Nil(mClient)
@@ -147,20 +170,14 @@ func (suite *CoreTestSuite) TestCreateClients() {
 		suite.NotNil(client)
 	})
 
-	suite.Run("snapshot beta client", func() {
-		client, err := suite.kubeClient.CreateSnapshotBetaClient(namespace)
-		suite.NoError(err)
-		suite.NotNil(client)
+	suite.Run("snapshot GA client error case", func() {
+		mClient, err := suite.kubeClient.CreateSnapshotGAClient("")
+		suite.Error(err)
+		suite.Nil(mClient)
 	})
 
 	suite.Run("snapshot content ga client", func() {
 		client, err := suite.kubeClient.CreateSnapshotContentGAClient()
-		suite.NoError(err)
-		suite.NotNil(client)
-	})
-
-	suite.Run("snapshot content beta client", func() {
-		client, err := suite.kubeClient.CreateSnapshotContentBetaClient()
 		suite.NoError(err)
 		suite.NotNil(client)
 	})
@@ -171,6 +188,12 @@ func (suite *CoreTestSuite) TestCreateClients() {
 		suite.NotNil(client)
 	})
 
+	suite.Run("csi client error case", func() {
+		mClient, err := suite.kubeClient.CreateCSISCClient("")
+		suite.Error(err)
+		suite.Nil(mClient)
+	})
+
 	suite.kubeClient.Config.QPS = 1
 	suite.kubeClient.Config.Burst = 0
 	suite.Run("snapshot GA client", func() {
@@ -178,18 +201,8 @@ func (suite *CoreTestSuite) TestCreateClients() {
 		suite.Error(err)
 	})
 
-	suite.Run("snapshot beta client", func() {
-		_, err := suite.kubeClient.CreateSnapshotBetaClient(namespace)
-		suite.Error(err)
-	})
-
 	suite.Run("snapshot content ga client", func() {
 		_, err := suite.kubeClient.CreateSnapshotContentGAClient()
-		suite.Error(err)
-	})
-
-	suite.Run("snapshot content beta client", func() {
-		_, err := suite.kubeClient.CreateSnapshotContentBetaClient()
 		suite.Error(err)
 	})
 
@@ -346,7 +359,6 @@ func (suite *CoreTestSuite) TestDeleteNamespace() {
 
 	err = kubeClient.DeleteNamespace(context.Background(), "fake-namespace")
 	suite.Error(err)
-
 }
 
 func (suite *CoreTestSuite) TestForceDeleteNamespace() {
@@ -377,20 +389,13 @@ func (suite *CoreTestSuite) TestForceDeleteNamespace() {
 }
 
 func (suite *CoreTestSuite) TestSnapshotClassExists() {
-
 	suite.kubeClient.Config = &rest.Config{}
 	cset, _ := snapclient.NewForConfig(suite.kubeClient.Config)
-	volumeSnapshotClassBeta := &snapv1.VolumeSnapshotClass{
-		ObjectMeta: metav1.ObjectMeta{
-			Name: "test-snapshot-class",
-		},
-	}
 	volumeSnapshotClass := &vs.VolumeSnapshotClass{
 		ObjectMeta: metav1.ObjectMeta{
 			Name: "test-snapshot-class",
 		},
 	}
-	cset.SnapshotV1beta1().VolumeSnapshotClasses().Create(context.Background(), volumeSnapshotClassBeta, metav1.CreateOptions{})
 	cset.SnapshotV1().VolumeSnapshotClasses().Create(context.Background(), volumeSnapshotClass, metav1.CreateOptions{})
 
 	exists, err := suite.kubeClient.SnapshotClassExists("test-snapshot-class")
@@ -399,6 +404,10 @@ func (suite *CoreTestSuite) TestSnapshotClassExists() {
 
 	// Test case: Snapshot class doesn't exist
 	exists, err = suite.kubeClient.SnapshotClassExists("non-existent-snapshot-class")
+	suite.Error(err)
+	suite.False(exists)
+
+	exists, err = suite.kubeClient.SnapshotClassExists("")
 	suite.Error(err)
 	suite.False(exists)
 }
@@ -413,6 +422,9 @@ func (suite *CoreTestSuite) TestStorageExists() {
 	exists, err := suite.kubeClient.StorageClassExists(context.Background(), storageClass.Name)
 	suite.NoError(err)
 	suite.Equal(true, exists)
+	exists, err = suite.kubeClient.StorageClassExists(context.Background(), "")
+	suite.Error(err)
+	suite.Equal(false, exists)
 }
 
 func (suite *CoreTestSuite) TestNamespaceExists() {
@@ -427,7 +439,7 @@ func (suite *CoreTestSuite) TestNamespaceExists() {
 
 	name := "test-namespace"
 	exists, err := kubeClient.NamespaceExists(context.Background(), name)
-	suite.NoError(err)
+	suite.Error(err)
 	suite.Equal(false, exists)
 
 	_, err = kubeClient.CreateNamespace(context.Background(), name)
@@ -436,6 +448,10 @@ func (suite *CoreTestSuite) TestNamespaceExists() {
 	exists, err = kubeClient.NamespaceExists(context.Background(), name)
 	suite.NoError(err)
 	suite.Equal(true, exists)
+
+	exists, err = kubeClient.NamespaceExists(context.Background(), "namespace-does-not-exist")
+	suite.Error(err)
+	suite.Equal(false, exists)
 }
 
 func (suite *CoreTestSuite) TestSetTimeout() {
@@ -467,7 +483,7 @@ func (suite *CoreTestSuite) TestGetConfig() {
 	suite.Nil(errConf)
 
 	_, err = GetConfig("")
-	suite.NoError(err)
+	suite.Error(err)
 }
 
 func TestCoreTestSuite(t *testing.T) {
