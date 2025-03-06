@@ -33,6 +33,10 @@ type VaListObserver struct {
 	finished chan bool
 }
 
+var getBoolValueFromMapWithKey = func(m map[string]bool, key string) bool {
+	return m[key]
+}
+
 // StartWatching starts watching a volume attachment and related events
 func (vao *VaListObserver) StartWatching(ctx context.Context, runner *Runner) {
 	defer runner.WaitGroup.Done()
@@ -91,7 +95,7 @@ func (vao *VaListObserver) StartWatching(ctx context.Context, runner *Runner) {
 			// case watch.Added event
 			currentState[*va.Spec.Source.PersistentVolumeName] = true
 
-			if !addedVAs[va.Name] {
+			if !getBoolValueFromMapWithKey(addedVAs, va.Name) {
 				events = append(events, &store.Event{
 					Name:      "event-va-added-" + k8sclient.RandomSuffix(),
 					TcID:      runner.TestCase.ID,
