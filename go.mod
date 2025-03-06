@@ -9,7 +9,6 @@ require (
 	github.com/dell/csm-replication v1.9.0
 	github.com/fatih/color v1.17.0
 	github.com/gofrs/flock v0.8.1
-	github.com/golang/mock v1.6.0
 	github.com/kubernetes-csi/external-snapshotter/client/v4 v4.2.0
 	github.com/mattn/go-sqlite3 v1.14.22
 	github.com/pkg/errors v0.9.1

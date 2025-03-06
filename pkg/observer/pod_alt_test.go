@@ -7,7 +7,9 @@ import (
 	"time"
 
 	"github.com/dell/cert-csi/pkg/k8sclient"
+	"github.com/dell/cert-csi/pkg/store"
 	"github.com/stretchr/testify/assert"
+	v1 "k8s.io/api/core/v1"
 	storagev1 "k8s.io/api/storage/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/rest"
@@ -23,6 +25,8 @@ func isChanClosed(ch <-chan bool) bool {
 }
 
 func TestPodListObserver_StartWatching(t *testing.T) {
+	ctx := context.Background()
+
 	storageClass := &storagev1.StorageClass{
 		ObjectMeta: metav1.ObjectMeta{Name: "test-storage-class"},
 		VolumeBindingMode: func() *storagev1.VolumeBindingMode {
@@ -32,114 +36,153 @@ func TestPodListObserver_StartWatching(t *testing.T) {
 	}
 	clientSet := NewFakeClientsetWithRestClient(storageClass)
 
+	clientSet.CoreV1().Pods("test-namespace").Create(ctx, &v1.Pod{ObjectMeta: metav1.ObjectMeta{Name: "test-pod", Namespace: "test-namespace"}}, metav1.CreateOptions{})
+	clientSet.StorageV1().StorageClasses().Create(ctx, storageClass, metav1.CreateOptions{})
+
 	kubeClient := &k8sclient.KubeClient{
 		ClientSet: clientSet,
 		Config:    &rest.Config{},
 	}
 
-	podClient, _ := kubeClient.CreatePodClient("test-namespace")
-
-	// Create a mock Runner
-	mockRunner := &Runner{
-		WaitGroup: sync.WaitGroup{},
-		Clients: &k8sclient.Clients{
-			PodClient: podClient,
+	pod := &v1.Pod{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:              "test-pod",
+			Namespace:         "test-namespace",
+			DeletionTimestamp: &metav1.Time{Time: time.Now()},
 		},
-		Database: NewSimpleStore(),
+		Status: v1.PodStatus{
+			Phase: v1.PodPhase(v1.PodReady),
+			Conditions: []v1.PodCondition{
+				{
+					Type:   v1.PodReady,
+					Status: v1.ConditionTrue,
+				},
+			},
+		},
 	}
 
-	// WatchTimeout = 10
-	// mockRunner.WatchTimeout = 10
+	pod2 := &v1.Pod{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:              "test-pod-2",
+			Namespace:         "test-namespace",
+			DeletionTimestamp: &metav1.Time{Time: time.Now()},
+		},
+		Status: v1.PodStatus{
+			Phase: v1.PodPhase(v1.PodReady),
+			Conditions: []v1.PodCondition{
+				{
+					Type:   v1.PodReady,
+					Status: v1.ConditionTrue,
+				},
+			},
+		},
+	}
 
-	// Create a PodListObserver instance
-	po := &PodListObserver{}
-	po.MakeChannel()
-	// Check for nil pointer dereferences
-	// if mockRunner == nil {
-	// 	t.Error("mockRunner is nil")
-	// }
-	// if po == nil {
-	// 	t.Error("po is nil")
-	// }
+	podClient, _ := kubeClient.CreatePodClient("test-namespace")
 
-	// Create a context
-	ctx := context.Background()
+	podClient.Create(ctx, pod)
+	podClient.Create(ctx, pod2)
 
-	// Add the waitgroup to the Runner
-	mockRunner.WaitGroup.Add(1)
+	tests := []struct {
+		name   string
+		runner *Runner
+	}{
+		{
+			name: "Test case: nil podClient",
+			runner: &Runner{
+				WaitGroup: sync.WaitGroup{},
+				Clients: &k8sclient.Clients{
+					PodClient: nil,
+				},
+				TestCase: &store.TestCase{
+					ID: 1,
+				},
+				Database: NewSimpleStore(),
+			},
+		},
+		{
+			name: "Test case: podClient with added pods conditional is false",
+			runner: &Runner{
+				WaitGroup: sync.WaitGroup{},
+				Clients: &k8sclient.Clients{
+					PodClient: podClient,
+				},
+				TestCase: &store.TestCase{
+					ID: 1,
+				},
+				Database: NewSimpleStore(),
+			},
+		},
+	}
 
-	// Call the StartWatching function
-	go po.StartWatching(ctx, mockRunner)
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			var wg sync.WaitGroup
 
-	// Wait for the StartWatching function to complete
-	//<-po.finished
+			po := &PodListObserver{}
+			po.MakeChannel()
 
-	// timeout := 10 * time.Second // Set the custom timeout
-	// done := make(chan bool)
+			test.runner.WaitGroup.Add(1)
+			runCount := 0
 
-	// // Wait for the StartWatching function to complete
-	// go func() {
-	// 	mockRunner.WaitGroup.Wait()
-	// 	done <- true
-	// }()
-	// select {
-	// case <-done:
-	// 	// StartWatching function completed successfully
-	// 	assert.True(t, true)
-	// case <-time.After(timeout):
-	// 	// Test timed out
-	// 	t.Error("Test timed out")
-	// }
-	time.Sleep(100 * time.Millisecond)
+			originalGetBoolValueFromMapWithKey := getBoolValueFromMapWithKey
+			getBoolValueFromMapWithKey = func(m map[string]bool, key string) bool {
+				runCount++
+				if runCount == 5 {
+					podClient.Delete(ctx, pod)
+				}
+				if runCount == 10 {
+					wg.Done()
+				}
+				return originalGetBoolValueFromMapWithKey(m, key)
+			}
+			defer func() {
+				podClient.Create(ctx, pod)
+				getBoolValueFromMapWithKey = originalGetBoolValueFromMapWithKey
+			}()
 
-	po.StopWatching()
+			go po.StartWatching(ctx, test.runner)
+			if test.runner.Clients.PodClient != nil {
+				wg.Add(1)
+				wg.Wait()
+				po.StopWatching()
+			}
+			test.runner.WaitGroup.Wait()
 
-	mockRunner.WaitGroup.Wait()
-
-	// Assert that the function completed successfully
-	assert.True(t, true)
+			// Assert that the function completed successfully
+			assert.True(t, true)
+		})
+	}
 }
 
 func TestPodListObserver_StopWatching(t *testing.T) {
-	// Create a PodListObserver instance
 	po := &PodListObserver{}
 
-	// Create a channel
 	po.finished = make(chan bool)
 
-	// Start the StopWatching function in a goroutine
 	go po.StopWatching()
 
 	select {
 	case <-po.finished:
-		// Channel received a value
-		// Make assertions here
 		assert.True(t, true)
 
 	case <-time.After(1 * time.Second):
-		// Timeout waiting for channel to receive a value
 		t.Error("Timeout waiting for channel to receive a value")
 	}
 }
 
 func TestPodListObserver_GetName(t *testing.T) {
-	// Create a PodListObserver instance
 	po := &PodListObserver{}
 
-	// Call the GetName function
 	name := po.GetName()
 
-	// Assert that the function returned the correct value
 	assert.Equal(t, "Pod Observer", name)
 }
 
 func TestPodListObserver_MakeChannel(t *testing.T) {
-	// Create a PodListObserver instance
 	po := &PodListObserver{}
 
-	// Call the MakeChannel function
 	po.MakeChannel()
 
-	// Assert that the function completed successfully
 	assert.NotNil(t, po.finished)
 }

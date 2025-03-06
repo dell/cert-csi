@@ -79,7 +79,7 @@ func (po *PodListObserver) StartWatching(ctx context.Context, runner *Runner) {
 			// case watch.Added event
 			currentState[pod.Name] = true
 
-			if !addedPods[pod.Name] {
+			if !getBoolValueFromMapWithKey(addedPods, pod.Name) {
 				entity := &store.Entity{
 					Name:   pod.Name,
 					K8sUID: string(pod.UID),

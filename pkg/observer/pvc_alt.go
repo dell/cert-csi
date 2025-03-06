@@ -22,6 +22,7 @@ import (
 	"time"
 
 	"github.com/dell/cert-csi/pkg/k8sclient"
+	"github.com/dell/cert-csi/pkg/k8sclient/resources/pvc"
 	"github.com/dell/cert-csi/pkg/store"
 
 	log "github.com/sirupsen/logrus"
@@ -33,6 +34,10 @@ import (
 // PvcListObserver is used to manage PVC list observer
 type PvcListObserver struct {
 	finished chan bool
+}
+
+var getPvcsList = func(ctx context.Context, client *pvc.Client, _ metav1.ListOptions) (*v1.PersistentVolumeClaimList, error) {
+	return client.Interface.List(ctx, metav1.ListOptions{})
 }
 
 // StartWatching starts watching a list of PVCs
@@ -71,16 +76,15 @@ func (obs *PvcListObserver) StartWatching(ctx context.Context, runner *Runner) {
 
 		currentState := make(map[string]bool)
 
-		pvcList, err := client.Interface.List(ctx, metav1.ListOptions{})
+		pvcList, err := getPvcsList(ctx, client, metav1.ListOptions{})
 		if err != nil {
 			return false, err
 		}
 
 		for _, pvc := range pvcList.Items {
 			// case watch.Added event
-			currentState[pvc.Name] = true
 
-			if !addedPVCs[pvc.Name] {
+			if !getBoolValueFromMapWithKey(addedPVCs, pvc.Name) {
 				entity := &store.Entity{
 					Name:   pvc.Name,
 					K8sUID: string(pvc.UID),

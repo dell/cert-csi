@@ -7,187 +7,181 @@ import (
 	"time"
 
 	"github.com/dell/cert-csi/pkg/k8sclient"
+	"github.com/dell/cert-csi/pkg/k8sclient/resources/metrics"
 	"github.com/dell/cert-csi/pkg/store"
-	"github.com/golang/mock/gomock"
 	"github.com/stretchr/testify/assert"
+	v1 "k8s.io/api/core/v1"
+	storagev1 "k8s.io/api/storage/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/client-go/rest"
+	"k8s.io/metrics/pkg/apis/metrics/v1beta1"
 )
 
-// type MockRunner struct {
-// 	WaitGroup       sync.WaitGroup
-// 	Observers       []Interface
-// 	Clients         *k8sclient.Clients
-// 	Database        store.Store
-// 	TestCase        *store.TestCase
-// 	PvcShare        sync.Map
-// 	DriverNamespace string
-// 	ShouldClean     bool
-// }
+func TestContainerMetricsObserver_StartWatching(t *testing.T) {
+	ctx := context.Background()
 
-// func (runner *MockRunner) Start(ctx context.Context) error {
-// 	return nil
-// }
+	storageClass := &storagev1.StorageClass{
+		ObjectMeta: metav1.ObjectMeta{Name: "test-storage-class"},
+		VolumeBindingMode: func() *storagev1.VolumeBindingMode {
+			mode := storagev1.VolumeBindingWaitForFirstConsumer
+			return &mode
+		}(),
+	}
+	clientSet := NewFakeClientsetWithRestClient(storageClass)
 
-// func (runner *MockRunner) Stop() error {
-// 	return nil
-// }
+	clientSet.StorageV1().StorageClasses().Create(ctx, storageClass, metav1.CreateOptions{})
 
-// func (runner *MockRunner) GetName() string {
-// 	return "MockRunner"
-// }
+	kubeClient := &k8sclient.KubeClient{
+		ClientSet: clientSet,
+		Config:    &rest.Config{},
+	}
+	kubeClient.SetTimeout(3000)
 
-// func (runner *MockRunner) MakeChannel() {
-// 	// do nothing
-// }
+	podClient, _ := kubeClient.CreatePodClient("test-namespace")
+	metricsClient, _ := kubeClient.CreateMetricsClient("test-namespace")
 
-// func (runner *MockRunner) waitTimeout(timeout time.Duration) bool {
-// 	return false
-// }
+	// Create a PodMetrics object
+	podMetrics := &v1beta1.PodMetrics{
+		TypeMeta: metav1.TypeMeta{
+			Kind:       "PodMetrics",
+			APIVersion: "metrics.k8s.io/v1beta1",
+		},
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      "pod-metrics-example",
+			Namespace: "default",
+		},
+		Timestamp: metav1.Time{Time: time.Now()},
+		Window:    metav1.Duration{Duration: time.Minute},
+		Containers: []v1beta1.ContainerMetrics{
+			{
+				Name:  "container-1",
+				Usage: v1.ResourceList{},
+			},
+		},
+	}
 
-// func NewMockRunner() *MockRunner {
-// 	return &MockRunner{}
-// }
+	// Create a PodMetricsList object
+	podMetricsList := &v1beta1.PodMetricsList{
+		TypeMeta: metav1.TypeMeta{
+			Kind:       "PodMetricsList",
+			APIVersion: "metrics.k8s.io/v1beta1",
+		},
+		ListMeta: metav1.ListMeta{
+			ResourceVersion: "1",
+		},
+		Items: []v1beta1.PodMetrics{
+			*podMetrics,
+		},
+	}
 
-type MockRunner struct {
-	WaitGroup       sync.WaitGroup
-	Observers       []Interface
-	Clients         *k8sclient.Clients
-	Database        store.Store
-	TestCase        *store.TestCase
-	PvcShare        sync.Map
-	DriverNamespace string
-	ShouldClean     bool
-}
+	tests := []struct {
+		name        string
+		runner      *Runner
+		metricsList *v1beta1.PodMetricsList
+	}{
+		{
+			name: "Test case: Watching container metrics without driver namespace",
+			runner: &Runner{
+				Clients: &k8sclient.Clients{
+					PodClient:     podClient,
+					MetricsClient: metricsClient,
+				},
+				TestCase: &store.TestCase{
+					ID: 1,
+				},
+				WaitGroup: sync.WaitGroup{},
+				Database:  NewSimpleStore(),
+			},
+			metricsList: nil,
+		},
+		{
+			name: "Test case: Watching container metrics with driver namespace and error getMetricsList",
+			runner: &Runner{
+				Clients: &k8sclient.Clients{
+					PodClient:     podClient,
+					MetricsClient: metricsClient,
+				},
+				TestCase: &store.TestCase{
+					ID: 1,
+				},
+				WaitGroup:       sync.WaitGroup{},
+				DriverNamespace: "test-namespace",
+				Database:        NewSimpleStore(),
+			},
+			metricsList: nil,
+		},
+		{
+			name: "Test case: Watching container metrics with driver namespace and metricList",
+			runner: &Runner{
+				Clients: &k8sclient.Clients{
+					PodClient:     podClient,
+					MetricsClient: metricsClient,
+				},
+				TestCase: &store.TestCase{
+					ID: 1,
+				},
+				WaitGroup:       sync.WaitGroup{},
+				DriverNamespace: "test-namespace",
+				Database:        NewSimpleStore(),
+			},
+			metricsList: podMetricsList,
+		},
+	}
 
-// Start is a mock implementation of the Start method of the Runner interface
-func (m *MockRunner) Start(_ context.Context) error {
-	return nil
-}
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			var metricListWg sync.WaitGroup
 
-// Stop is a mock implementation of the Stop method of the Runner interface
-func (m *MockRunner) Stop() error {
-	return nil
-}
+			ctx := context.Background()
 
-// GetName is a mock implementation of the GetName method of the Runner interface
-func (m *MockRunner) GetName() string {
-	return "MockRunner"
-}
+			test.runner.WaitGroup.Add(1)
 
-// MakeChannel is a mock implementation of the MakeChannel method of the Runner interface
-func (m *MockRunner) MakeChannel() {
-	// do nothing
-}
+			cmo := &ContainerMetricsObserver{}
+			defer func() {
+				cmo.Interrupt()
+				cmo.StopWatching()
+			}()
+			cmo.MakeChannel()
 
-// waitTimeout is a mock implementation of the waitTimeout method of the Runner interface
-func (m *MockRunner) waitTimeout(_ time.Duration) bool {
-	return false
-}
+			if test.metricsList != nil {
+				metricListWg.Add(1)
+				originalGetMetricsList := getMetricsList
+				getMetricsList = func(_ *metrics.Client, _ string, _ context.Context, _ metav1.ListOptions) (*v1beta1.PodMetricsList, error) {
+					metricListWg.Done()
 
-func NewMockRunner(*gomock.Controller) *MockRunner {
-	return &MockRunner{
-		Observers:       []Interface{&ContainerMetricsObserver{}},
-		Clients:         &k8sclient.Clients{},
-		Database:        NewSimpleStore(),
-		TestCase:        &store.TestCase{},
-		PvcShare:        sync.Map{},
-		DriverNamespace: "driver-namespace",
-		ShouldClean:     true,
+					return test.metricsList, nil
+				}
+				defer func() {
+					getMetricsList = originalGetMetricsList
+				}()
+			}
+
+			go cmo.StartWatching(ctx, test.runner)
+			if test.metricsList != nil {
+				metricListWg.Wait()
+				go func() {
+					cmo.mutex.Lock()
+					cmo.finished <- true
+					cmo.mutex.Unlock()
+				}()
+			}
+			test.runner.WaitGroup.Wait()
+
+			// Assert that the function completed successfully
+			assert.True(t, true)
+		})
 	}
 }
-
-// func NewMockMetricsClient(*gomock.Controller) *MockMetricsClient {
-// 	return &MockMetricsClient{}
-// }
-
-// func TestContainerMetricsObserver_StartWatching(t *testing.T) {
-// 	ctrl := gomock.NewController(t)
-// 	defer ctrl.Finish()
-
-// 	mockRunner := NewMockRunner(ctrl)
-// 	mockMetricsClient := NewMockMetricsClient(ctrl)
-
-// 	storageClass := &storagev1.StorageClass{
-// 		ObjectMeta: metav1.ObjectMeta{Name: "test-storage-class"},
-// 		VolumeBindingMode: func() *storagev1.VolumeBindingMode {
-// 			mode := storagev1.VolumeBindingWaitForFirstConsumer
-// 			return &mode
-// 		}(),
-// 	}
-// 	clientSet := NewFakeClientsetWithRestClient(storageClass)
-
-// 	kubeClient := &k8sclient.KubeClient{
-// 		ClientSet: clientSet,
-// 		Config:    &rest.Config{},
-// 	}
-
-// 	metricsClient, _ := kubeClient.CreateMetricsClient("test-namespace")
-
-// 	// Set the fields of the MockRunner
-// 	mockRunner.Observers = []Interface{&ContainerMetricsObserver{}}
-// 	mockRunner.Clients = &k8sclient.Clients{}
-// 	mockRunner.Database = NewSimpleStore()
-// 	mockRunner.TestCase = &store.TestCase{}
-// 	mockRunner.PvcShare = sync.Map{}
-// 	mockRunner.DriverNamespace = "driver-namespace"
-// 	mockRunner.ShouldClean = true
-
-// 	runner := &Runner{
-// 		WaitGroup:       mockRunner.WaitGroup,
-// 		Observers:       mockRunner.Observers,
-// 		Clients:         mockRunner.Clients,
-// 		Database:        mockRunner.Database,
-// 		TestCase:        mockRunner.TestCase,
-// 		PvcShare:        mockRunner.PvcShare,
-// 		DriverNamespace: mockRunner.DriverNamespace,
-// 		ShouldClean:     mockRunner.ShouldClean,
-// 	}
-
-// 	// Set the return values for the mockRunner functions
-// 	mockRunner.On("GetDatabase").Return(nil).AnyTimes()
-// 	mockRunner.On("GetTestCase").Return(nil).AnyTimes()
-// 	// mockRunner.EXPECT().GetDatabase().Return(nil).AnyTimes()
-// 	// mockRunner.EXPECT().GetTestCase().Return(nil).AnyTimes()
-
-// 	// Test case when driver namespace is empty
-// 	mockRunner.EXPECT().GetDriverNamespace().Return("").Times(1)
-
-// 	cmo := &ContainerMetricsObserver{}
-// 	cmo.StartWatching(context.Background(), runner)
-
-// 	// Test case when driver namespace is not empty
-// 	mockRunner.EXPECT().GetDriverNamespace().Return("driver-namespace").Times(1)
-// 	mockRunner.EXPECT().GetMetricsClient().Return(metricsClient).Times(1)
-// 	mockMetricsClient.EXPECT().Timeout.Return(0).Times(1)
-
-// 	var wg sync.WaitGroup
-// 	wg.Add(1)
-// 	mockRunner.EXPECT().GetWaitGroup().Return(&wg).Times(1)
-
-// 	mockMetricsClient.EXPECT().Interface.MetricsV1beta1().PodMetricses("driver-namespace").List(gomock.Any(), gomock.Any()).Return(nil, nil).Times(1)
-
-// 	cmo.StartWatching(context.Background(), runner)
-
-// 	// Test case when there is an error in polling
-// 	mockRunner.EXPECT().GetDriverNamespace().Return("driver-namespace").Times(1)
-// 	mockRunner.EXPECT().GetMetricsClient().Return(mockMetricsClient).Times(1)
-// 	metricsClient.EXPECT().Timeout.Return(0).Times(1)
-
-// 	mockMetricsClient.EXPECT().Interface.MetricsV1beta1().PodMetricses("driver-namespace").List(gomock.Any(), gomock.Any()).Return(nil, assert.AnError).Times(1)
-
-// 	cmo.StartWatching(context.Background(), runner)
-// }
 
 func TestContainerMetricsObserver_StopWatching(_ *testing.T) {
 	cmo := &ContainerMetricsObserver{}
 
-	// Test case when Interrupted is false
 	cmo.finished = make(chan bool)
 	go func() {
 		cmo.StopWatching()
 	}()
 	time.Sleep(1 * time.Second)
 
-	// Test case when Interrupted is true
 	cmo.Interrupt()
 	cmo.StopWatching()
 }

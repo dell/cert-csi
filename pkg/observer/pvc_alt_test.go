@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"github.com/dell/cert-csi/pkg/k8sclient"
+	k8sclientV1 "github.com/dell/cert-csi/pkg/k8sclient/resources/pvc"
 	"github.com/dell/cert-csi/pkg/store"
 
 	"github.com/stretchr/testify/assert"
@@ -18,7 +19,6 @@ import (
 )
 
 func TestPvcListObserver_StartWatching(t *testing.T) {
-	// Test case: Watching PVCs
 	ctx := context.Background()
 
 	storageClass := &storagev1.StorageClass{
@@ -28,7 +28,10 @@ func TestPvcListObserver_StartWatching(t *testing.T) {
 			return &mode
 		}(),
 	}
+
 	clientSet := NewFakeClientsetWithRestClient(storageClass)
+
+	clientSet.StorageV1().StorageClasses().Create(ctx, storageClass, metav1.CreateOptions{})
 
 	kubeClient := &k8sclient.KubeClient{
 		ClientSet: clientSet,
@@ -36,35 +39,104 @@ func TestPvcListObserver_StartWatching(t *testing.T) {
 	}
 
 	pvcClient, _ := kubeClient.CreatePVCClient("test-namespace")
-	runner := &Runner{
-		Clients: &k8sclient.Clients{
-			PVCClient: pvcClient,
+
+	pvcsList := &v1.PersistentVolumeClaimList{
+		Items: []v1.PersistentVolumeClaim{
+			{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:              "test-pvc",
+					Namespace:         "test-namespace",
+					DeletionTimestamp: &metav1.Time{Time: time.Now()},
+				},
+				Status: v1.PersistentVolumeClaimStatus{
+					Phase: v1.ClaimBound,
+				},
+			},
+			{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:              "test-pvc",
+					Namespace:         "test-namespace",
+					DeletionTimestamp: &metav1.Time{Time: time.Now()},
+				},
+				Status: v1.PersistentVolumeClaimStatus{
+					Phase: v1.ClaimBound,
+				},
+			},
+			{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:              "test-pvc",
+					Namespace:         "test-namespace",
+					DeletionTimestamp: &metav1.Time{Time: time.Now()},
+				},
+				Status: v1.PersistentVolumeClaimStatus{
+					Phase: v1.ClaimBound,
+				},
+			},
 		},
-		TestCase: &store.TestCase{
-			ID: 1,
-		},
-		WaitGroup: sync.WaitGroup{},
-		Database:  NewSimpleStore(),
 	}
-	runner.WaitGroup.Add(1)
 
-	obs := &PvcListObserver{}
-	obs.MakeChannel()
+	tests := []struct {
+		name    string
+		runner  *Runner
+		pvcList *v1.PersistentVolumeClaimList
+	}{
+		{
+			name: "Test case: Watching container pvc with driver namespace and metricList",
+			runner: &Runner{
+				Clients: &k8sclient.Clients{
+					PVCClient: pvcClient,
+				},
+				TestCase: &store.TestCase{
+					ID: 1,
+				},
+				WaitGroup:       sync.WaitGroup{},
+				DriverNamespace: "test-namespace",
+				Database:        NewSimpleStore(),
+			},
+			pvcList: pvcsList,
+		},
+	}
 
-	go obs.StartWatching(ctx, runner)
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			var pvcListWg sync.WaitGroup
 
-	time.Sleep(100 * time.Millisecond)
+			ctx := context.Background()
 
-	obs.StopWatching()
+			test.runner.WaitGroup.Add(1)
 
-	runner.WaitGroup.Wait()
+			po := &PvcListObserver{}
+			po.MakeChannel()
 
-	// Assert that the function completed successfully
-	assert.True(t, true)
+			if test.pvcList != nil {
+				pvcListWg.Add(1)
+				originalGetPvcsList := getPvcsList
+				getPvcsList = func(_ context.Context, _ *k8sclientV1.Client, _ metav1.ListOptions) (*v1.PersistentVolumeClaimList, error) {
+					pvcListWg.Done()
+
+					return test.pvcList, nil
+				}
+				defer func() {
+					getPvcsList = originalGetPvcsList
+				}()
+			}
+
+			go po.StartWatching(ctx, test.runner)
+			if test.pvcList != nil {
+				pvcListWg.Wait()
+				go func() {
+					po.finished <- true
+				}()
+			}
+			po.StopWatching()
+			test.runner.WaitGroup.Wait()
+
+			assert.True(t, true)
+		})
+	}
 }
 
 func TestPvcListObserver_StopWatching(t *testing.T) {
-	// Test case: Stopping watching PVCs
 	obs := &PvcListObserver{}
 
 	obs.finished = make(chan bool)
@@ -73,8 +145,6 @@ func TestPvcListObserver_StopWatching(t *testing.T) {
 
 	select {
 	case <-obs.finished:
-		// Channel received a value
-		// Make assertions here
 		assert.True(t, true)
 
 	case <-time.After(1 * time.Second):
@@ -84,7 +154,6 @@ func TestPvcListObserver_StopWatching(t *testing.T) {
 }
 
 func TestPvcListObserver_GetName(t *testing.T) {
-	// Test case: Getting name of PVC list observer
 	obs := &PvcListObserver{}
 
 	name := obs.GetName()
@@ -93,7 +162,6 @@ func TestPvcListObserver_GetName(t *testing.T) {
 }
 
 func TestPvcListObserver_MakeChannel(t *testing.T) {
-	// Test case: Creating a new channel
 	obs := &PvcListObserver{}
 
 	obs.MakeChannel()
@@ -110,21 +178,6 @@ func (m *mockPVCClient) List(ctx context.Context, opts metav1.ListOptions) (*v1.
 	args := m.Called(ctx, opts)
 	return args.Get(0).(*v1.PersistentVolumeClaimList), args.Error(1)
 }
-
-// Mock implementation of Database
-// type mockDatabase struct {
-// 	mock.Mock
-// }
-
-// func (m *mockDatabase) SaveEntities(entities []*store.Entity) error {
-// 	args := m.Called(entities)
-// 	return args.Error(0)
-// }
-
-// func (m *mockDatabase) SaveEvents(events []*store.Event) error {
-// 	args := m.Called(events)
-// 	return args.Error(0)
-// }
 
 // Mock implementation of PVC
 type mockPVC struct {
