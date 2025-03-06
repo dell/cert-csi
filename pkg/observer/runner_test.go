@@ -3,14 +3,13 @@ package observer
 import (
 	"context"
 	"errors"
+	"reflect"
 	"sync"
 	"testing"
 	"time"
 
 	"github.com/dell/cert-csi/pkg/k8sclient"
 	"github.com/dell/cert-csi/pkg/store"
-
-	"reflect"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"

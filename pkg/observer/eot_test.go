@@ -92,7 +92,6 @@ func NewSimpleStore() *SimpleStore {
 }
 
 func TestCheckPodsandPvcs(t *testing.T) {
-
 	ctx := context.Background()
 
 	storageClass := &storagev1.StorageClass{
@@ -202,7 +201,6 @@ func TestCheckPodsandPvcs(t *testing.T) {
 }
 
 func TestEntityNumberObserver_StartWatching(t *testing.T) {
-
 	ctx := context.Background()
 
 	storageClass := &storagev1.StorageClass{
@@ -283,7 +281,6 @@ func (f *FakePod) List(ctx context.Context, opts metav1.ListOptions) (*v1.PodLis
 }
 
 func TestEntityNumberObserver_checkPvcs_PvcClientIsNil(t *testing.T) {
-
 	eno := &EntityNumberObserver{}
 
 	_, err := eno.checkPvcs(nil, nil)
@@ -292,7 +289,6 @@ func TestEntityNumberObserver_checkPvcs_PvcClientIsNil(t *testing.T) {
 }
 
 func TestEntityNumberObserver_checkPvcs_PvcListErr(t *testing.T) {
-
 	ctx := context.Background()
 
 	storageClass := &storagev1.StorageClass{
@@ -337,7 +333,6 @@ func TestEntityNumberObserver_checkPvcs_PvcListErr(t *testing.T) {
 }
 
 func TestEntityNumberObserver_checkPvcs_PodClientIsNil(t *testing.T) {
-
 	eno := &EntityNumberObserver{}
 
 	_, err := eno.checkPods(nil, nil)
@@ -346,7 +341,6 @@ func TestEntityNumberObserver_checkPvcs_PodClientIsNil(t *testing.T) {
 }
 
 func TestEntityNumberObserver_checkPods_PodListErr(t *testing.T) {
-
 	ctx := context.Background()
 
 	storageClass := &storagev1.StorageClass{

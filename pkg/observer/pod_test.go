@@ -20,7 +20,6 @@ import (
 )
 
 func TestPodObserver_StartWatching(t *testing.T) {
-
 	ctx := context.Background()
 
 	storageClass := &storagev1.StorageClass{
@@ -146,7 +145,6 @@ func TestPodObserver_StartWatching(t *testing.T) {
 }
 
 func TestPodObserver_StopWatching(t *testing.T) {
-
 	po := &PodObserver{}
 
 	po.finished = make(chan bool)
@@ -163,7 +161,6 @@ func TestPodObserver_StopWatching(t *testing.T) {
 }
 
 func TestPodObserver_GetName(t *testing.T) {
-
 	po := &PodObserver{}
 
 	name := po.GetName()
@@ -172,7 +169,6 @@ func TestPodObserver_GetName(t *testing.T) {
 }
 
 func TestPodObserver_MakeChannel(t *testing.T) {
-
 	po := &PodObserver{}
 
 	po.MakeChannel()

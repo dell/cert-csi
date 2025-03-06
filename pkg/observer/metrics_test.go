@@ -18,7 +18,6 @@ import (
 )
 
 func TestContainerMetricsObserver_StartWatching(t *testing.T) {
-
 	ctx := context.Background()
 
 	storageClass := &storagev1.StorageClass{

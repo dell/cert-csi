@@ -25,7 +25,6 @@ func isChanClosed(ch <-chan bool) bool {
 }
 
 func TestPodListObserver_StartWatching(t *testing.T) {
-
 	ctx := context.Background()
 
 	storageClass := &storagev1.StorageClass{
@@ -155,8 +154,8 @@ func TestPodListObserver_StartWatching(t *testing.T) {
 		})
 	}
 }
-func TestPodListObserver_StopWatching(t *testing.T) {
 
+func TestPodListObserver_StopWatching(t *testing.T) {
 	po := &PodListObserver{}
 
 	po.finished = make(chan bool)
@@ -173,7 +172,6 @@ func TestPodListObserver_StopWatching(t *testing.T) {
 }
 
 func TestPodListObserver_GetName(t *testing.T) {
-
 	po := &PodListObserver{}
 
 	name := po.GetName()
@@ -182,7 +180,6 @@ func TestPodListObserver_GetName(t *testing.T) {
 }
 
 func TestPodListObserver_MakeChannel(t *testing.T) {
-
 	po := &PodListObserver{}
 
 	po.MakeChannel()

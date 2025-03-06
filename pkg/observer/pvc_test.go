@@ -2,6 +2,7 @@ package observer
 
 import (
 	"context"
+	"fmt"
 	"sync"
 	"testing"
 	"time"
@@ -10,8 +11,6 @@ import (
 	"github.com/dell/cert-csi/pkg/store"
 
 	"github.com/stretchr/testify/assert"
-
-	"fmt"
 
 	v1 "k8s.io/api/core/v1"
 	storagev1 "k8s.io/api/storage/v1"
@@ -201,7 +200,7 @@ func TestPvcObserver_StartWatching_WatchError(t *testing.T) {
 
 	time.Sleep(100 * time.Millisecond)
 
-	//obs.StopWatching()
+	// obs.StopWatching()
 
 	runner.WaitGroup.Wait()
 

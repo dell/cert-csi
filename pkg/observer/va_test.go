@@ -2,6 +2,7 @@ package observer
 
 import (
 	"context"
+	"fmt"
 	"sync"
 	"testing"
 	"time"
@@ -15,14 +16,11 @@ import (
 	"k8s.io/client-go/kubernetes/fake"
 	"k8s.io/client-go/rest"
 
-	"fmt"
-
 	"github.com/stretchr/testify/assert"
 	test "k8s.io/client-go/testing"
 )
 
 func TestVaObserver_StartWatching(t *testing.T) {
-
 	ctx := context.Background()
 
 	va := &storagev1.VolumeAttachment{
@@ -108,7 +106,6 @@ func TestVaObserver_StartWatching(t *testing.T) {
 }
 
 func TestVaObserver_StopWatching(t *testing.T) {
-
 	obs := &VaObserver{}
 
 	obs.finished = make(chan bool)
@@ -125,7 +122,6 @@ func TestVaObserver_StopWatching(t *testing.T) {
 }
 
 func TestVaObserver_GetName(t *testing.T) {
-
 	obs := &VaObserver{}
 
 	name := obs.GetName()
@@ -134,7 +130,6 @@ func TestVaObserver_GetName(t *testing.T) {
 }
 
 func TestVaObserver_MakeChannel(t *testing.T) {
-
 	obs := &VaObserver{}
 
 	obs.MakeChannel()
@@ -143,7 +138,6 @@ func TestVaObserver_MakeChannel(t *testing.T) {
 }
 
 func TestVaObserver_StartWatching_ShouldExit(t *testing.T) {
-
 	ctx := context.Background()
 
 	va := &storagev1.VolumeAttachment{
@@ -281,7 +275,6 @@ func TestVaObserver_StartWatching_ClientIsNil(t *testing.T) {
 }
 
 func TestVaObserver_StartWatching_WatchError(t *testing.T) {
-
 	ctx := context.Background()
 
 	clientSet := fake.NewSimpleClientset()
@@ -327,7 +320,6 @@ func TestVaObserver_StartWatching_WatchError(t *testing.T) {
 }
 
 func TestVaObserver_StartWatching_DataObjectIsNil(t *testing.T) {
-
 	ctx := context.Background()
 
 	clientSet := fake.NewSimpleClientset()
@@ -382,7 +374,6 @@ func TestVaObserver_StartWatching_DataObjectIsNil(t *testing.T) {
 }
 
 func TestVaObserver_StartWatching_UnexpectedType(t *testing.T) {
-
 	ctx := context.Background()
 
 	// Create a mock PVC
@@ -445,7 +436,6 @@ func TestVaObserver_StartWatching_UnexpectedType(t *testing.T) {
 }
 
 func TestVaObserver_StartWatching_PvcShare(t *testing.T) {
-
 	ctx := context.Background()
 
 	va := &storagev1.VolumeAttachment{
@@ -511,7 +501,6 @@ func TestVaObserver_StartWatching_PvcShare(t *testing.T) {
 }
 
 func TestVaObserver_StartWatching_WatchModified(t *testing.T) {
-
 	ctx := context.Background()
 
 	va := &storagev1.VolumeAttachment{

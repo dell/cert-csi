@@ -137,7 +137,6 @@ func TestPvcListObserver_StartWatching(t *testing.T) {
 }
 
 func TestPvcListObserver_StopWatching(t *testing.T) {
-
 	obs := &PvcListObserver{}
 
 	obs.finished = make(chan bool)
