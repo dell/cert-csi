@@ -66,10 +66,6 @@ func TestVaListObserver_StartWatching(t *testing.T) {
 	vaClient.Interface.Create(ctx, deletionVA, metav1.CreateOptions{})
 	vaClient.Interface.Create(ctx, attachedVA, metav1.CreateOptions{})
 
-	var pvcShare sync.Map
-	pvcShare.Store(pvName, &store.Entity{})
-	pvcShare.Store("test-pv-2", &store.Entity{})
-
 	tests := []struct {
 		name                                   string
 		runner                                 *Runner
@@ -83,7 +79,7 @@ func TestVaListObserver_StartWatching(t *testing.T) {
 					VaClient: nil,
 				},
 				Database: NewSimpleStore(),
-				PvcShare: pvcShare,
+				PvcShare: sync.Map{},
 				TestCase: &store.TestCase{
 					ID: 1,
 				},
@@ -98,7 +94,7 @@ func TestVaListObserver_StartWatching(t *testing.T) {
 					VaClient: vaClient,
 				},
 				Database:    NewSimpleStore(),
-				PvcShare:    pvcShare,
+				PvcShare:    sync.Map{},
 				ShouldClean: false,
 				TestCase: &store.TestCase{
 					ID: 1,
@@ -114,7 +110,7 @@ func TestVaListObserver_StartWatching(t *testing.T) {
 					VaClient: vaClient,
 				},
 				Database:    NewSimpleStore(),
-				PvcShare:    pvcShare,
+				PvcShare:    sync.Map{},
 				ShouldClean: false,
 				TestCase: &store.TestCase{
 					ID: 1,
@@ -130,7 +126,7 @@ func TestVaListObserver_StartWatching(t *testing.T) {
 					VaClient: vaClient,
 				},
 				Database:    NewSimpleStore(),
-				PvcShare:    pvcShare,
+				PvcShare:    sync.Map{},
 				ShouldClean: true,
 				TestCase: &store.TestCase{
 					ID: 1,
@@ -144,6 +140,9 @@ func TestVaListObserver_StartWatching(t *testing.T) {
 
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
+			test.runner.PvcShare.Store(pvName, &store.Entity{})
+			test.runner.PvcShare.Store("test-pv-2", &store.Entity{})
+
 			var vaoFinishedWg sync.WaitGroup
 			test.runner.WaitGroup.Add(1)
 
