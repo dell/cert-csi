@@ -1,5 +1,0 @@
-
-export JUNIT_REPORT_PATH=/root/.cert-csi/reports/junit/report-junit.xml
-export TABULAR_REPORT_PATH=/root/.cert-csi/reports/tabular/report-tabular.html
-export HTML_REPORT_PATH=/root/.cert-csi/reports/test-run-22f049ea/report-test-run-22f049ea.html
-export TXT_REPORT_PATH=/root/.cert-csi/reports/test-run-22f049ea/report-test-run-22f049ea.txt
