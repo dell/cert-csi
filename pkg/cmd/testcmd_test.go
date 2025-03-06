@@ -111,6 +111,7 @@ func TestGetVolumeCreationCommandAction(_ *testing.T) {
 	set.String("access-mode", "ReadWriteOnce", "volume access mode")
 	set.String("timeout", "10s", "volume creation timeout")
 	set.String("cooldown", "10s", "volume creation cooldown")
+	set.String("observer-type", "event", "observer type")
 	ctx := cli.NewContext(nil, set, nil)
 	command := getVolumeCreationCommand([]cli.Flag{})
 	// Call the action function
