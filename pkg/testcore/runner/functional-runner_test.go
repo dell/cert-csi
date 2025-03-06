@@ -218,6 +218,46 @@ func TestRunFunctionalSuites(t *testing.T) {
 			},
 			wantErr: true,
 		},
+		{
+			name: "Save test run error test run",
+			suites: func() []suites.Interface {
+				suite := runnermocks.NewMockInterface(gomock.NewController(t))
+				suite.EXPECT().GetName().AnyTimes().Return("test run 5")
+				suite.EXPECT().GetNamespace().AnyTimes().Return("")
+				suite.EXPECT().GetClients(gomock.Any(), gomock.Any()).AnyTimes().Return(&k8sclient.Clients{}, nil)
+				suite.EXPECT().GetObservers(gomock.Any()).AnyTimes().Return([]observer.Interface{})
+				suite.EXPECT().Run(gomock.Any(), gomock.Any(), gomock.Any()).AnyTimes().Return(nil, nil)
+				return []suites.Interface{suite}
+			},
+
+			tr: &store.TestRun{
+				Name:           "test run 5",
+				StartTimestamp: time.Now(),
+				StorageClass:   "sc1",
+				ClusterAddress: "localhost",
+			},
+			wantErr: true,
+		},
+		{
+			name: "Successful test run error test run",
+			suites: func() []suites.Interface {
+				suite := runnermocks.NewMockInterface(gomock.NewController(t))
+				suite.EXPECT().GetName().AnyTimes().Return("test run 5")
+				suite.EXPECT().GetNamespace().AnyTimes().Return("")
+				suite.EXPECT().GetClients(gomock.Any(), gomock.Any()).AnyTimes().Return(&k8sclient.Clients{}, nil)
+				suite.EXPECT().GetObservers(gomock.Any()).AnyTimes().Return([]observer.Interface{})
+				suite.EXPECT().Run(gomock.Any(), gomock.Any(), gomock.Any()).AnyTimes().Return(nil, nil)
+				return []suites.Interface{suite}
+			},
+
+			tr: &store.TestRun{
+				Name:           "test run 5",
+				StartTimestamp: time.Now(),
+				StorageClass:   "sc1",
+				ClusterAddress: "localhost",
+			},
+			wantErr: true,
+		},
 	}
 
 	for _, tt := range tests {
@@ -320,7 +360,44 @@ func TestRunFunctionalSuites(t *testing.T) {
 
 				fr.RunFunctionalSuites(tt.suites())
 			}
+			if tt.name == "Save test run error test run" {
+				mockRunner.EXPECT().GetClients(gomock.Any(), gomock.Any()).AnyTimes().Return(&k8sclient.Clients{}, nil)
+				mockRunner.EXPECT().GetObservers(gomock.Any()).AnyTimes().Return([]observer.Interface{})
+				mockStore.EXPECT().SaveTestCase(gomock.Any()).AnyTimes().Return(nil)
+				mockStore.EXPECT().SaveTestRun(gomock.Any()).AnyTimes().Return(fmt.Errorf("new error"))
+				mockStore.EXPECT().SuccessfulTestCase(gomock.Any(), gomock.Any()).AnyTimes().Return(nil)
+				mockRunner.EXPECT().Run(gomock.Any(), gomock.Any(), gomock.Any()).AnyTimes().Return(nil, nil)
+				mockRunner.EXPECT().GetName().AnyTimes().Return("test run 5")
+				mockRunner.EXPECT().GetNamespace().AnyTimes().Return("")
+				mockKubeClient.EXPECT().CreateNamespaceWithSuffix(gomock.Any(), gomock.Any()).AnyTimes().Return(newNameSpace, nil)
+				mockKubeClient.EXPECT().DeleteNamespace(gomock.Any(), gomock.Any()).AnyTimes().Return(nil)
+				r := &Runner{
+					Config:     &rest.Config{},
+					KubeClient: mockKubeClient,
+				}
+				fr.Runner = r
 
+				fr.RunFunctionalSuites(tt.suites())
+			}
+			if tt.name == "Successful test run error test run" {
+				mockRunner.EXPECT().GetClients(gomock.Any(), gomock.Any()).AnyTimes().Return(&k8sclient.Clients{}, nil)
+				mockRunner.EXPECT().GetObservers(gomock.Any()).AnyTimes().Return([]observer.Interface{})
+				mockStore.EXPECT().SaveTestCase(gomock.Any()).AnyTimes().Return(nil)
+				mockStore.EXPECT().SaveTestRun(gomock.Any()).AnyTimes().Return(nil)
+				mockStore.EXPECT().SuccessfulTestCase(gomock.Any(), gomock.Any()).AnyTimes().Return(fmt.Errorf("new error"))
+				mockRunner.EXPECT().Run(gomock.Any(), gomock.Any(), gomock.Any()).AnyTimes().Return(nil, nil)
+				mockRunner.EXPECT().GetName().AnyTimes().Return("test run 6")
+				mockRunner.EXPECT().GetNamespace().AnyTimes().Return("")
+				mockKubeClient.EXPECT().CreateNamespaceWithSuffix(gomock.Any(), gomock.Any()).AnyTimes().Return(newNameSpace, nil)
+				mockKubeClient.EXPECT().DeleteNamespace(gomock.Any(), gomock.Any()).AnyTimes().Return(nil)
+				r := &Runner{
+					Config:     &rest.Config{},
+					KubeClient: mockKubeClient,
+				}
+				fr.Runner = r
+
+				fr.RunFunctionalSuites(tt.suites())
+			}
 			r := &Runner{
 				Config:     &rest.Config{},
 				KubeClient: mockKubeClient,

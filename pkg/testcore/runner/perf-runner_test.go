@@ -463,7 +463,7 @@ func TestRunSuites(t *testing.T) {
 				StorageClass:   "sc1",
 				ClusterAddress: "localhost",
 			},
-			Duration:            0,
+			Duration:            10 * time.Second,
 			sequentialExecution: false,
 		},
 
@@ -491,7 +491,7 @@ func TestRunSuites(t *testing.T) {
 				StorageClass:   "sc1",
 				ClusterAddress: "localhost",
 			},
-			Duration:            1,
+			Duration:            10 * time.Second,
 			sequentialExecution: true,
 		},
 	}
@@ -515,7 +515,6 @@ func TestRunSuites(t *testing.T) {
 			} else {
 				mockStore.EXPECT().SaveTestRun(gomock.Any()).AnyTimes().Return(nil)
 			}
-			// mockStore.EXPECT().SaveTestRun(gomock.Any()).AnyTimes().Return(nil)
 			mockStore.EXPECT().SaveTestCase(gomock.Any()).AnyTimes().Return(nil)
 			mockStore.EXPECT().SuccessfulTestCase(gomock.Any(), gomock.Any()).AnyTimes().Return(nil)
 			mockStore.EXPECT().GetTestRuns(gomock.Any(), gomock.Any(), gomock.Any()).AnyTimes().Return([]store.TestRun{
@@ -596,14 +595,12 @@ func TestRunSuite(t *testing.T) {
 			name: "Test case with valid parameters",
 			suite: func() suites.Interface {
 				suite := runnermocks.NewMockInterface(gomock.NewController(t))
-				// suite.EXPECT().Run(gomock.Any(), gomock.Any(), gomock.Any()).AnyTimes().Return(nil, nil)
 				suite.EXPECT().GetName().AnyTimes().Return("test run 1")
 				suite.EXPECT().GetNamespace().AnyTimes().Return("driver-namespace")
 				suite.EXPECT().GetClients(gomock.Any(), gomock.Any()).AnyTimes().Return(&k8sclient.Clients{}, nil)
 				suite.EXPECT().GetObservers(gomock.Any()).AnyTimes().Return([]observer.Interface{})
 				suite.EXPECT().Run(gomock.Any(), gomock.Any(), gomock.Any()).AnyTimes().Return(nil, nil)
 
-				// suite.EXPECT().Parameters().Times(1).Return("param1,param2")
 				return suite
 			},
 			sr:           &SuiteRunner{},
@@ -646,7 +643,6 @@ func TestRunSuite(t *testing.T) {
 				suite.EXPECT().GetClients(gomock.Any(), gomock.Any()).AnyTimes().Return(&k8sclient.Clients{}, nil)
 				suite.EXPECT().GetObservers(gomock.Any()).AnyTimes().Return([]observer.Interface{})
 
-				// suite.EXPECT().Parameters().Times(1).Return("param1,param2")
 				return suite
 			},
 			sr:           &SuiteRunner{},
@@ -661,14 +657,12 @@ func TestRunSuite(t *testing.T) {
 			name: "Test case with delete namespace error",
 			suite: func() suites.Interface {
 				suite := runnermocks.NewMockInterface(gomock.NewController(t))
-				// suite.EXPECT().Run(gomock.Any(), gomock.Any(), gomock.Any()).AnyTimes().Return(nil, nil)
 				suite.EXPECT().GetName().AnyTimes().Return("test run 1")
 				suite.EXPECT().GetNamespace().AnyTimes().Return("driver-namespace")
 				suite.EXPECT().GetClients(gomock.Any(), gomock.Any()).AnyTimes().Return(&k8sclient.Clients{}, nil)
 				suite.EXPECT().GetObservers(gomock.Any()).AnyTimes().Return([]observer.Interface{})
 				suite.EXPECT().Run(gomock.Any(), gomock.Any(), gomock.Any()).AnyTimes().Return(nil, nil)
 
-				// suite.EXPECT().Parameters().Times(1).Return("param1,param2")
 				return suite
 			},
 			sr:           &SuiteRunner{},
@@ -682,14 +676,11 @@ func TestRunSuite(t *testing.T) {
 			name: "Test case with failed namespace creation",
 			suite: func() suites.Interface {
 				suite := runnermocks.NewMockInterface(gomock.NewController(t))
-				// suite.EXPECT().Run(gomock.Any(), gomock.Any(), gomock.Any()).AnyTimes().Return(nil, nil)
 				suite.EXPECT().GetName().AnyTimes().Return("test run 1")
 				suite.EXPECT().GetNamespace().AnyTimes().Return("driver-namespace")
-				// suite.EXPECT().GetClients(gomock.Any(), gomock.Any()).AnyTimes().Return(nil, fmt.Errorf("Mock Error"))
 				suite.EXPECT().GetObservers(gomock.Any()).AnyTimes().Return([]observer.Interface{})
 				suite.EXPECT().Run(gomock.Any(), gomock.Any(), gomock.Any()).AnyTimes().Return(nil, nil)
 
-				// suite.EXPECT().Parameters().Times(1).Return("param1,param2")
 				return suite
 			},
 			sr:           &SuiteRunner{},
@@ -703,14 +694,12 @@ func TestRunSuite(t *testing.T) {
 			name: "Test case with invalid starthook",
 			suite: func() suites.Interface {
 				suite := runnermocks.NewMockInterface(gomock.NewController(t))
-				// suite.EXPECT().Run(gomock.Any(), gomock.Any(), gomock.Any()).AnyTimes().Return(nil, nil)
 				suite.EXPECT().GetName().AnyTimes().Return("test run 1")
 				suite.EXPECT().GetNamespace().AnyTimes().Return("driver-namespace")
 				suite.EXPECT().GetClients(gomock.Any(), gomock.Any()).AnyTimes().Return(&k8sclient.Clients{}, nil)
 				suite.EXPECT().GetObservers(gomock.Any()).AnyTimes().Return([]observer.Interface{})
 				suite.EXPECT().Run(gomock.Any(), gomock.Any(), gomock.Any()).AnyTimes().Return(nil, nil)
 
-				// suite.EXPECT().Parameters().Times(1).Return("param1,param2")
 				return suite
 			},
 			sr:           &SuiteRunner{},
@@ -725,14 +714,12 @@ func TestRunSuite(t *testing.T) {
 			name: "Test case with invalid finishhook",
 			suite: func() suites.Interface {
 				suite := runnermocks.NewMockInterface(gomock.NewController(t))
-				// suite.EXPECT().Run(gomock.Any(), gomock.Any(), gomock.Any()).AnyTimes().Return(nil, nil)
 				suite.EXPECT().GetName().AnyTimes().Return("test run 1")
 				suite.EXPECT().GetNamespace().AnyTimes().Return("driver-namespace")
 				suite.EXPECT().GetClients(gomock.Any(), gomock.Any()).AnyTimes().Return(&k8sclient.Clients{}, nil)
 				suite.EXPECT().GetObservers(gomock.Any()).AnyTimes().Return([]observer.Interface{})
 				suite.EXPECT().Run(gomock.Any(), gomock.Any(), gomock.Any()).AnyTimes().Return(nil, nil)
 
-				// suite.EXPECT().Parameters().Times(1).Return("param1,param2")
 				return suite
 			},
 			sr:           &SuiteRunner{},
@@ -748,14 +735,12 @@ func TestRunSuite(t *testing.T) {
 			name: "Test case with invalid readyhook",
 			suite: func() suites.Interface {
 				suite := runnermocks.NewMockInterface(gomock.NewController(t))
-				// suite.EXPECT().Run(gomock.Any(), gomock.Any(), gomock.Any()).AnyTimes().Return(nil, nil)
 				suite.EXPECT().GetName().AnyTimes().Return("test run 1")
 				suite.EXPECT().GetNamespace().AnyTimes().Return("driver-namespace")
 				suite.EXPECT().GetClients(gomock.Any(), gomock.Any()).AnyTimes().Return(&k8sclient.Clients{}, nil)
 				suite.EXPECT().GetObservers(gomock.Any()).AnyTimes().Return([]observer.Interface{})
 				suite.EXPECT().Run(gomock.Any(), gomock.Any(), gomock.Any()).AnyTimes().Return(nil, nil)
 
-				// suite.EXPECT().Parameters().Times(1).Return("param1,param2")
 				return suite
 			},
 			sr:           &SuiteRunner{},
@@ -770,14 +755,12 @@ func TestRunSuite(t *testing.T) {
 			name: "Test case with error delfunc",
 			suite: func() suites.Interface {
 				suite := runnermocks.NewMockInterface(gomock.NewController(t))
-				// suite.EXPECT().Run(gomock.Any(), gomock.Any(), gomock.Any()).AnyTimes().Return(nil, nil)
 				suite.EXPECT().GetName().AnyTimes().Return("test run 1")
 				suite.EXPECT().GetNamespace().AnyTimes().Return("driver-namespace")
 				suite.EXPECT().GetClients(gomock.Any(), gomock.Any()).AnyTimes().Return(&k8sclient.Clients{}, nil)
 				suite.EXPECT().GetObservers(gomock.Any()).AnyTimes().Return([]observer.Interface{})
 				suite.EXPECT().Run(gomock.Any(), gomock.Any(), gomock.Any()).AnyTimes().Return(mockFunction, nil)
 
-				// suite.EXPECT().Parameters().Times(1).Return("param1,param2")
 				return suite
 			},
 			sr:           &SuiteRunner{},
@@ -793,10 +776,8 @@ func TestRunSuite(t *testing.T) {
 			name: "Test case with failed observer",
 			suite: func() suites.Interface {
 				suite := runnermocks.NewMockInterface(gomock.NewController(t))
-				// suite.EXPECT().Run(gomock.Any(), gomock.Any(), gomock.Any()).AnyTimes().Return(nil, nil)
 				suite.EXPECT().GetName().AnyTimes().Return("test run 1")
 				suite.EXPECT().GetNamespace().AnyTimes().Return("driver-namespace")
-				// suite.EXPECT().GetClients(gomock.Any(), gomock.Any()).AnyTimes().Return(nil, fmt.Errorf("Mock Error"))
 				suite.EXPECT().GetClients(gomock.Any(), gomock.Any()).AnyTimes().Return(&k8sclient.Clients{
 					PVCClient: &pvc.Client{
 						ClientSet: client,
@@ -805,7 +786,6 @@ func TestRunSuite(t *testing.T) {
 				suite.EXPECT().GetObservers(gomock.Any()).AnyTimes().Return([]observer.Interface{})
 				suite.EXPECT().Run(gomock.Any(), gomock.Any(), gomock.Any()).AnyTimes().Return(nil, nil)
 
-				// suite.EXPECT().Parameters().Times(1).Return("param1,param2")
 				return suite
 			},
 			sr:           &SuiteRunner{},

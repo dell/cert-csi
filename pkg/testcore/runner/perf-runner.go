@@ -25,7 +25,6 @@ import (
 	"os/signal"
 	"path/filepath"
 	"strconv"
-	"sync"
 	"syscall"
 	"time"
 
@@ -68,8 +67,6 @@ const (
 	// Threshold represents threshold value
 	Threshold = 0.9
 )
-
-var mu sync.Mutex
 
 func checkValidNamespace(driverNs string, runner *Runner) {
 	// Check if driver namespace exists
@@ -239,12 +236,6 @@ func ExecuteSuite(iterCtx context.Context, num int, suites map[string][]suites.I
 
 // RunSuites runs test suites
 func (sr *SuiteRunner) RunSuites(suites map[string][]suites.Interface) {
-	mu.Lock()
-
-	defer func() {
-		mu.Unlock()
-	}()
-
 	sr.SucceededSuites = 0.0
 	defer func() {
 		totalNumberOfSuites := 0
