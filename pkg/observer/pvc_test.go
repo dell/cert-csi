@@ -191,7 +191,7 @@ func TestPvcObserver_StartWatching_WatchError(t *testing.T) {
 	obs := &PvcObserver{}
 
 	// Set the watch reactor to return an error
-	pvcClient.ClientSet.(*fake.Clientset).PrependWatchReactor("*", func(action test.Action) (handled bool, ret watch.Interface, err error) {
+	pvcClient.ClientSet.(*fake.Clientset).PrependWatchReactor("*", func(_ test.Action) (handled bool, ret watch.Interface, err error) {
 		return true, nil, fmt.Errorf("test error")
 	})
 

@@ -111,7 +111,7 @@ func TestPvcListObserver_StartWatching(t *testing.T) {
 			if test.pvcList != nil {
 				pvcListWg.Add(1)
 				originalGetPvcsList := getPvcsList
-				getPvcsList = func(ctx context.Context, client *k8sclientV1.Client, opts metav1.ListOptions) (*v1.PersistentVolumeClaimList, error) {
+				getPvcsList = func(_ context.Context, _ *k8sclientV1.Client, _ metav1.ListOptions) (*v1.PersistentVolumeClaimList, error) {
 					pvcListWg.Done()
 
 					return test.pvcList, nil

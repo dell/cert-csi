@@ -139,7 +139,7 @@ func TestVaListObserver_StartWatching(t *testing.T) {
 	}
 
 	for _, test := range tests {
-		t.Run(test.name, func(t *testing.T) {
+		t.Run(test.name, func(_ *testing.T) {
 			test.runner.PvcShare.Store(pvName, &store.Entity{})
 			test.runner.PvcShare.Store("test-pv-2", &store.Entity{})
 
@@ -167,9 +167,8 @@ func TestVaListObserver_StartWatching(t *testing.T) {
 				}
 				if test.shouldAddedVABeTrue != nil {
 					return *test.shouldAddedVABeTrue
-				} else {
-					return originalGetBoolValueFromMapWithKey(m, key)
 				}
+				return originalGetBoolValueFromMapWithKey(m, key)
 			}
 			defer func() {
 				vaClient.Interface.Create(ctx, attachedVA, metav1.CreateOptions{})

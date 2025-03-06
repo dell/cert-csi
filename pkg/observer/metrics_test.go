@@ -146,7 +146,7 @@ func TestContainerMetricsObserver_StartWatching(t *testing.T) {
 			if test.metricsList != nil {
 				metricListWg.Add(1)
 				originalGetMetricsList := getMetricsList
-				getMetricsList = func(mc *metrics.Client, driverNamespace string, ctx context.Context, opts metav1.ListOptions) (*v1beta1.PodMetricsList, error) {
+				getMetricsList = func(_ *metrics.Client, _ string, _ context.Context, _ metav1.ListOptions) (*v1beta1.PodMetricsList, error) {
 					metricListWg.Done()
 
 					return test.metricsList, nil
@@ -173,7 +173,7 @@ func TestContainerMetricsObserver_StartWatching(t *testing.T) {
 	}
 }
 
-func TestContainerMetricsObserver_StopWatching(t *testing.T) {
+func TestContainerMetricsObserver_StopWatching(_ *testing.T) {
 	cmo := &ContainerMetricsObserver{}
 
 	cmo.finished = make(chan bool)

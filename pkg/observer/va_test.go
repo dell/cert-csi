@@ -303,7 +303,7 @@ func TestVaObserver_StartWatching_WatchError(t *testing.T) {
 
 	obs := &VaObserver{}
 
-	pvcClient.ClientSet.(*fake.Clientset).PrependWatchReactor("*", func(action test.Action) (handled bool, ret watch.Interface, err error) {
+	pvcClient.ClientSet.(*fake.Clientset).PrependWatchReactor("*", func(_ test.Action) (handled bool, ret watch.Interface, err error) {
 		return true, nil, fmt.Errorf("test error")
 	})
 

@@ -57,7 +57,7 @@ type SimpleStore struct {
 	events   []*store.Event
 }
 
-func (s *SimpleStore) SaveEntities(entity []*store.Entity) error {
+func (s *SimpleStore) SaveEntities(_ []*store.Entity) error {
 	return nil
 }
 
@@ -75,15 +75,15 @@ func (s *SimpleStore) NumberEntities() []*store.NumberEntities {
 	return s.entities
 }
 
-func (s *SimpleStore) SaveTestRun(tr *store.TestRun) error {
+func (s *SimpleStore) SaveTestRun(_ *store.TestRun) error {
 	return nil
 }
 
-func (s *SimpleStore) GetTestRuns(whereConditions store.Conditions, orderBy string, limit int) ([]store.TestRun, error) {
+func (s *SimpleStore) GetTestRuns(_ store.Conditions, _ string, _ int) ([]store.TestRun, error) {
 	return nil, nil
 }
 
-func (s *SimpleStore) SaveResourceUsage(resUsages []*store.ResourceUsage) error {
+func (s *SimpleStore) SaveResourceUsage(_ []*store.ResourceUsage) error {
 	return nil
 }
 
@@ -268,7 +268,7 @@ func (f *FakeDatabase) Close() error {
 type FakePVC struct{}
 
 // List is a mock implementation of the List method
-func (f *FakePVC) List(ctx context.Context, opts metav1.ListOptions) (*v1.PersistentVolumeClaimList, error) {
+func (f *FakePVC) List(_ context.Context, _ metav1.ListOptions) (*v1.PersistentVolumeClaimList, error) {
 	return &v1.PersistentVolumeClaimList{}, nil
 }
 
@@ -276,7 +276,7 @@ func (f *FakePVC) List(ctx context.Context, opts metav1.ListOptions) (*v1.Persis
 type FakePod struct{}
 
 // List is a mock implementation of the List method
-func (f *FakePod) List(ctx context.Context, opts metav1.ListOptions) (*v1.PodList, error) {
+func (f *FakePod) List(_ context.Context, _ metav1.ListOptions) (*v1.PodList, error) {
 	return &v1.PodList{}, nil
 }
 
