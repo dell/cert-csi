@@ -10,7 +10,6 @@ import (
 	"github.com/dell/cert-csi/pkg/store"
 
 	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/mock"
 	v1 "k8s.io/api/core/v1"
 	storagev1 "k8s.io/api/storage/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -179,59 +178,4 @@ func TestPodObserver_MakeChannel(t *testing.T) {
 	po.MakeChannel()
 
 	assert.NotNil(t, po.finished)
-}
-
-// Mock implementation of PodClient
-type mockPodClient struct {
-	mock.Mock
-}
-
-func (m *mockPodClient) Watch(ctx context.Context, opts metav1.ListOptions) (watch.Interface, error) {
-	args := m.Called(ctx, opts)
-	return args.Get(0).(watch.Interface), args.Error(1)
-}
-
-func (m *mockDatabase) SaveEntities(entities []*store.Entity) error {
-	args := m.Called(entities)
-	return args.Error(0)
-}
-
-func (m *mockDatabase) SaveEvents(events []*store.Event) error {
-	args := m.Called(events)
-	return args.Error(0)
-}
-
-// Mock implementation of Pod
-type mockPod struct {
-	mock.Mock
-}
-
-func (m *mockPod) GetName() string {
-	args := m.Called()
-	return args.String(0)
-}
-
-func (m *mockPod) GetUID() string {
-	args := m.Called()
-	return args.String(0)
-}
-
-func (m *mockPod) GetDeletionTimestamp() *metav1.Time {
-	args := m.Called()
-	return args.Get(0).(*metav1.Time)
-}
-
-func (m *mockPod) IsReady() bool {
-	args := m.Called()
-	return args.Bool(0)
-}
-
-// Mock implementation of kubepod
-type mockKubePod struct {
-	mock.Mock
-}
-
-func (m *mockKubePod) IsPodReady(pod *v1.Pod) bool {
-	args := m.Called(pod)
-	return args.Bool(0)
 }

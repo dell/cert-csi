@@ -7,14 +7,12 @@ import (
 	"time"
 
 	"github.com/dell/cert-csi/pkg/k8sclient"
-	"github.com/dell/cert-csi/pkg/k8sclient/resources/va"
 	"github.com/dell/cert-csi/pkg/store"
 	storagev1 "k8s.io/api/storage/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/rest"
 
 	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/mock"
 )
 
 func TestVaListObserver_StartWatching(t *testing.T) {
@@ -226,30 +224,4 @@ func TestVaListObserver_MakeChannel(t *testing.T) {
 	obs.MakeChannel()
 
 	assert.NotNil(t, obs.finished)
-}
-
-// Mock implementation of VaClient
-type mockVAClient struct {
-	va.Client
-	mock.Mock
-}
-
-func (m *mockVAClient) List(ctx context.Context, opts metav1.ListOptions) (*storagev1.VolumeAttachmentList, error) {
-	args := m.Called(ctx, opts)
-	return args.Get(0).(*storagev1.VolumeAttachmentList), args.Error(1)
-}
-
-// Mock implementation of Database
-type mockDatabase struct {
-	mock.Mock
-}
-
-// Mock implementation of PvcShare
-type mockPvcShare struct {
-	mock.Mock
-}
-
-func (m *mockPvcShare) Load(key interface{}) (value interface{}, ok bool) {
-	args := m.Called(key)
-	return args.Get(0), args.Bool(1)
 }

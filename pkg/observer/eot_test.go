@@ -7,7 +7,6 @@ import (
 	"time"
 
 	"github.com/dell/cert-csi/pkg/k8sclient"
-	"github.com/dell/cert-csi/pkg/k8sclient/resources/pod"
 	k8stesting "k8s.io/client-go/testing"
 
 	"github.com/dell/cert-csi/pkg/store"
@@ -97,11 +96,6 @@ func NewSimpleStore() *SimpleStore {
 	return &SimpleStore{}
 }
 
-func (m *mockPodClient) List(ctx context.Context, opts metav1.ListOptions) (*v1.PodList, error) {
-	args := m.Called(ctx, opts)
-	return args.Get(0).(*v1.PodList), args.Error(1)
-}
-
 func TestCheckPodsandPvcs(t *testing.T) {
 
 	ctx := context.Background()
@@ -173,17 +167,6 @@ func TestCheckPodsandPvcs(t *testing.T) {
 		}
 		return true, pod, nil
 	})
-
-	// Create a mock Clients instance
-	mockClients := &MockClients{}
-
-	// Set up the mock behavior for the CreatePodClient method
-	mockClients.On("CreatePodClient", "test-namespace").Return(
-		&pod.Client{
-			Interface: clientSet.CoreV1().Pods("test-namespace"),
-		},
-		nil,
-	)
 
 	pvcClient, _ := kubeClient.CreatePVCClient("test-namespace")
 	podClient, _ := kubeClient.CreatePodClient("test-namespace")

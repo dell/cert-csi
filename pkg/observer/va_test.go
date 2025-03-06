@@ -164,11 +164,6 @@ func TestVaObserver_MakeChannel(t *testing.T) {
 	assert.NotNil(t, obs.finished)
 }
 
-func (m *mockVAClient) Watch(ctx context.Context, opts metav1.ListOptions) (watch.Interface, error) {
-	args := m.Called(ctx, opts)
-	return args.Get(0).(watch.Interface), args.Error(1)
-}
-
 func TestVaObserver_StartWatching_ShouldExit(t *testing.T) {
 	// Test case: Watching volume attachments
 	ctx := context.Background()
