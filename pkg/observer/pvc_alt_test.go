@@ -19,7 +19,6 @@ import (
 )
 
 func TestPvcListObserver_StartWatching(t *testing.T) {
-
 	ctx := context.Background()
 
 	storageClass := &storagev1.StorageClass{
@@ -156,7 +155,6 @@ func TestPvcListObserver_StopWatching(t *testing.T) {
 }
 
 func TestPvcListObserver_GetName(t *testing.T) {
-
 	obs := &PvcListObserver{}
 
 	name := obs.GetName()
@@ -165,7 +163,6 @@ func TestPvcListObserver_GetName(t *testing.T) {
 }
 
 func TestPvcListObserver_MakeChannel(t *testing.T) {
-
 	obs := &PvcListObserver{}
 
 	obs.MakeChannel()

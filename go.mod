@@ -3,6 +3,7 @@ module github.com/dell/cert-csi
 go 1.23
 
 require (
+	github.com/DATA-DOG/go-sqlmock v1.5.2
 	github.com/cheggaaa/pb/v3 v3.1.5
 	github.com/dell/csi-volumegroup-snapshotter v1.7.0
 	github.com/dell/csm-replication v1.9.0
@@ -32,10 +33,7 @@ require (
 	sigs.k8s.io/yaml v1.4.0
 )
 
-require (
-	github.com/stretchr/objx v0.5.2 // indirect
-	golang.org/x/tools v0.22.0 // indirect
-)
+require github.com/stretchr/objx v0.5.2 // indirect
 
 replace (
 	k8s.io/cloud-provider => k8s.io/cloud-provider v1.31.2
@@ -180,6 +178,7 @@ require (
 	go.opentelemetry.io/otel/metric v1.28.0 // indirect
 	go.opentelemetry.io/otel/trace v1.28.0 // indirect
 	go.starlark.net v0.0.0-20230525235612-a134d8f9ddca // indirect
+	go.uber.org/mock v0.5.0
 	go.uber.org/multierr v1.11.0 // indirect
 	golang.org/x/crypto v0.31.0 // indirect
 	golang.org/x/exp v0.0.0-20230905200255-921286631fa9 // indirect

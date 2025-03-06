@@ -138,7 +138,7 @@ func (*PostgresqlSuite) GetObservers(obsType observer.Type) []observer.Interface
 }
 
 // GetClients creates and returns pvc, pod, va, metrics clients
-func (*PostgresqlSuite) GetClients(namespace string, client *k8sclient.KubeClient) (*k8sclient.Clients, error) {
+func (*PostgresqlSuite) GetClients(namespace string, client k8sclient.KubeClientInterface) (*k8sclient.Clients, error) {
 	pvcClient, pvcErr := client.CreatePVCClient(namespace)
 	if pvcErr != nil {
 		return nil, pvcErr

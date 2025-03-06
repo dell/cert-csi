@@ -72,7 +72,8 @@ func (c *Client) cordonUnCordon(ctx context.Context, nodename string, cordon boo
 	if patchErr == nil {
 		patchOptions := metav1.PatchOptions{}
 		_, err = c.Interface.Patch(ctx, node.Name, types.StrategicMergePatchType, patchBytes, patchOptions)
-	} else {
+	}
+	if patchErr != nil || err != nil {
 		updateOptions := metav1.UpdateOptions{}
 		_, err = c.Interface.Update(ctx, node, updateOptions)
 	}

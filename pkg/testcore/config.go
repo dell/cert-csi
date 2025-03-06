@@ -123,7 +123,7 @@ func IoWritePodConfig(pvcNames []string, podName string, containerImage string) 
 	}
 }
 
-// BlockSnapPodConfig config to use in blocksnap suite
+// BlockSnapPodConfig config to use in blockvolsnapshot suite
 func BlockSnapPodConfig(pvcNames []string, containerImage string) *pod.Config {
 	return &pod.Config{
 		NamePrefix:     "bs-test-",
@@ -237,7 +237,7 @@ func GetAccessMode(AccessMode string) []v1.PersistentVolumeAccessMode {
 	return accessMode
 }
 
-// VolumeGroupSnapConfig config for volume group snapshot
+// VolumeGroupSnapConfig config for volume group blockvolsnapshot
 func VolumeGroupSnapConfig(vgsName, driver, reclaimPolicy, snapClass, volumeLabel, namespace string) *volumegroupsnapshot.Config {
 	if vgsName == "" {
 		// we will generate random name

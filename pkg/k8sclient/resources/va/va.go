@@ -124,7 +124,7 @@ func (c *Client) DeleteVaBasedOnPVName(ctx context.Context, pvName string) error
 	for _, va := range vaList.Items {
 		if *va.Spec.Source.PersistentVolumeName == pvName {
 			log.Debugf("Waiting for the volume-attachment to be deleted for :%s", pvName)
-			err = c.Interface.Delete(ctx, *va.Spec.Source.PersistentVolumeName, metav1.DeleteOptions{})
+			err = c.Interface.Delete(ctx, va.Name, metav1.DeleteOptions{})
 			if err != nil {
 				return err
 			}

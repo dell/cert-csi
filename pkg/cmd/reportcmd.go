@@ -72,7 +72,7 @@ func GetReportCommand() cli.Command {
 		Action: func(c *cli.Context) error {
 			var scDBs []*store.StorageClassDB
 			for _, testRun := range testRunNames {
-				db, name := parseTestRun(testRun)
+				db, name := ParseTestRun(testRun)
 				if db == "" {
 					db = c.GlobalString("db")
 				}
@@ -141,7 +141,7 @@ func GetReportCommand() cli.Command {
 	return reportCmd
 }
 
-func parseTestRun(tr string) (db string, name string) {
+func ParseTestRun(tr string) (db string, name string) {
 	s := strings.Split(tr, ":")
 	if len(s) == 1 {
 		name = s[0]

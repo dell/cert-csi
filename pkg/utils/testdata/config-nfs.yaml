@@ -4,7 +4,7 @@
 StorageClass:
   FromExistingClassName: powerstore-nfs  # Storage class name we want to test the driver with
 SnapshotClass:
-  FromExistingClassName: powerstore-snapclass  # snapshot class name
+  FromExistingClassName: powerstore-snapclass  # blockvolsnapshot class name
 DriverInfo:
   Name: csi-powerstore.dellemc.com  # Driver name
   SupportedSizeRange:

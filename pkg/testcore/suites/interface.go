@@ -28,7 +28,7 @@ type Interface interface {
 	Run(ctx context.Context, storageClass string, clients *k8sclient.Clients) (delFunc func() error, e error)
 	GetName() string
 	GetObservers(obsType observer.Type) []observer.Interface
-	GetClients(string, *k8sclient.KubeClient) (*k8sclient.Clients, error)
+	GetClients(string, k8sclient.KubeClientInterface) (*k8sclient.Clients, error)
 	GetNamespace() string
 	Parameters() string
 }
