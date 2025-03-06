@@ -43,45 +43,6 @@ func TestGetTestImage(t *testing.T) {
 	}
 }
 
-/*
-	func Test_readImageConfig(t *testing.T) {
-		//type args struct {
-		//	configFilePath string
-		//}
-		tests := []struct {
-			name        string
-			configFile  string
-			expected    testcore.Images
-			expectedErr error
-		}{
-			// TODO: Add test cases.
-			{
-				name:       "Valid config file",
-				configFile: "../k8sclient/testdata/config.yaml",
-				expected: testcore.Images{
-					Images: []testcore.Image{
-						{
-							Test:     "test-image-1",
-							Postgres: "postgres-image-1",
-						},
-					},
-				},
-				expectedErr: nil,
-			},
-		}
-		for _, tt := range tests {
-			t.Run(tt.name, func(t *testing.T) {
-				got, err := readImageConfig(tt.configFile)
-				if !reflect.DeepEqual(got, tt.expected) {
-					t.Errorf("readImageConfig() = %v, want %v", got, tt.expected)
-				}
-				if !reflect.DeepEqual(got, tt.expectedErr) {
-					t.Errorf("readImageConfig() = %v, want %v", err, tt.expectedErr)
-				}
-			})
-		}
-	}
-*/
 func TestReadImageConfig(t *testing.T) {
 	// Test case: Valid config file path
 	t.Run("No config file path", func(t *testing.T) {
