@@ -14,7 +14,7 @@ require (
 	github.com/rifflock/lfshook v0.0.0-20180920164130-b9218ef580f5
 	github.com/sirupsen/logrus v1.9.3
 	github.com/spf13/viper v1.18.2
-	github.com/stretchr/testify v1.9.0
+	github.com/stretchr/testify v1.10.0
 	github.com/urfave/cli v1.22.15
 	github.com/x-cray/logrus-prefixed-formatter v0.5.2
 	golang.org/x/sync v0.10.0
@@ -30,6 +30,11 @@ require (
 	k8s.io/metrics v0.30.0
 	sigs.k8s.io/controller-runtime v0.14.6
 	sigs.k8s.io/yaml v1.4.0
+)
+
+require (
+	github.com/stretchr/objx v0.5.2 // indirect
+	golang.org/x/tools v0.22.0 // indirect
 )
 
 replace (
