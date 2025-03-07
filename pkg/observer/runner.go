@@ -44,6 +44,7 @@ const (
 	EVENT Type = "EVENT"
 )
 
+// Set as global var for test purposes
 var RunnerTimeout = 2 * time.Minute
 
 // Runner contains configuration to run the testcases
