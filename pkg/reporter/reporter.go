@@ -1,6 +1,6 @@
 /*
  *
- * Copyright © 2022-2023 Dell Inc. or its subsidiaries. All Rights Reserved.
+ * Copyright © 2022-2025 Dell Inc. or its subsidiaries. All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -207,9 +207,9 @@ func getPlotStageMetricHistogramPath(tc collector.TestCaseMetrics, stage interfa
 
 func getPlotStageBoxPath(tc collector.TestCaseMetrics, stage interface{}, reportName string) *PlotPath {
 	var fileName string
-	switch stage.(type) {
+	switch stage := stage.(type) {
 	case collector.PVCStage:
-		fileName = fmt.Sprintf("%s.png", stage.(collector.PVCStage)+"_boxplot")
+		fileName = fmt.Sprintf("%s.png", stage+"_boxplot")
 	default:
 		fileName = fmt.Sprintf("%s.png", stage.(collector.PodStage)+"_boxplot")
 	}

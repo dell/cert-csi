@@ -1,6 +1,6 @@
 /*
  *
- * Copyright © 2022-2023 Dell Inc. or its subsidiaries. All Rights Reserved.
+ * Copyright © 2022-2025 Dell Inc. or its subsidiaries. All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -43,6 +43,9 @@ const (
 	// EVENT Type
 	EVENT Type = "EVENT"
 )
+
+// Set as global var for test purposes
+var RunnerTimeout = 2 * time.Minute
 
 // Runner contains configuration to run the testcases
 type Runner struct {
@@ -93,7 +96,7 @@ func (runner *Runner) Stop() error {
 	})
 
 	// Wait for all of observers to complete
-	if runner.waitTimeout(2 * time.Minute) {
+	if runner.waitTimeout(RunnerTimeout) {
 		// If we are here, then some of observers haven't received ending events
 		// Check if any volumeattachments remain
 		mismatch := false
