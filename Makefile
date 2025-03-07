@@ -1,6 +1,6 @@
 #
 #
-# Copyright © 2022-2023 Dell Inc. or its subsidiaries. All Rights Reserved.
+# Copyright © 2022-2025 Dell Inc. or its subsidiaries. All Rights Reserved.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -43,8 +43,8 @@ gocyclo:
 test:
 	(go test -race -v -coverprofile=c.out ./...)
 
-gocover:
-	go tool cover -html=c.out
+coverage:
+	go tool cover -html=c.out -o coverage.html
 
 build:
 	go build -ldflags "-s -w" ./cmd/cert-csi

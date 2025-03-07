@@ -1,6 +1,6 @@
 /*
  *
- * Copyright © 2022-2023 Dell Inc. or its subsidiaries. All Rights Reserved.
+ * Copyright © 2022-2025 Dell Inc. or its subsidiaries. All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -61,9 +61,10 @@ func (c *Client) Get(ctx context.Context, name string) *StorageClass {
 	newSC, err := c.Interface.Get(ctx, name, metav1.GetOptions{})
 	if err != nil {
 		funcErr = err
+	} else {
+		log.Debugf("Got Storage Class %s", newSC.GetName())
 	}
 
-	log.Debugf("Got Storage Class %s", newSC.GetName())
 	return &StorageClass{
 		Client:  c,
 		Object:  newSC,
