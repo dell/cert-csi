@@ -19,12 +19,16 @@
 package utils
 
 import (
+	"context"
 	"flag"
-	"fmt"
+	"io/ioutil"
 	"os"
+	"os/exec"
 	"path/filepath"
 	"reflect"
 	"testing"
+
+	"github.com/stretchr/testify/assert"
 
 	"github.com/urfave/cli"
 )
@@ -213,13 +217,14 @@ func TestPrerequisites(t *testing.T) {
 		args    args
 		wantErr bool
 	}{
-		{"check with valid version", args{"v1.25.0"}, false},
-		{"check with invalid version", args{"v1.2.0"}, true},
+		{"binary exists", args{"v1.25.0"}, false},
+		{"binary does not exist", args{"v1.31.0"}, false},
+		{"binary does not exist and fails to download", args{"v1.2.0"}, true},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			if err := Prerequisites(tt.args.version); (err != nil) != tt.wantErr {
-				t.Errorf("Prerequisites() error = %v, wantErr %v", err, tt.wantErr)
+			if got := Prerequisites(tt.args.version); (got != nil) != tt.wantErr {
+				t.Errorf("Prerequisites() error = %v, wantErr %v", got, tt.wantErr)
 			}
 		})
 	}
@@ -234,7 +239,8 @@ func TestReadTestDriverConfig(t *testing.T) {
 		args args
 		want string
 	}{
-		{"get storage class name", args{"testdata/config-nfs.yaml"}, "powerstore-nfs"},
+		{"get storage class name from valid config", args{"testdata/config-nfs.yaml"}, "powerstore-nfs"},
+		{"get storage class name from invalid config", args{"testdata/invalid-config.yaml"}, ""},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -255,7 +261,8 @@ func TestSkipTests(t *testing.T) {
 		want    string
 		wantErr bool
 	}{
-		{"get skip tests", args{"ignore.yaml"}, "Generic Ephemeral-volume|\\[Feature:|\\[Disruptive\\]", false},
+		{"get skip tests from valid file", args{"ignore.yaml"}, "Generic Ephemeral-volume|\\[Feature:|\\[Disruptive\\]", false},
+		{"get skip tests from invalid file", args{"testdata/invalid-config.yaml"}, "", true},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -278,9 +285,33 @@ func TestBuildE2eCommand(t *testing.T) {
 	set := flag.NewFlagSet("test", 0)
 	set.String("driver-config", "config.yaml", "driver config file")
 	x1 := cli.NewContext(nil, set, nil)
-	set1 := flag.NewFlagSet("test", 0)
-	set1.String("driver-config", "testdata/config-nfs.yaml", "driver config file")
-	x2 := cli.NewContext(nil, set1, nil)
+
+	set2 := flag.NewFlagSet("test", 0)
+	set2.String("driver-config", "testdata/config-nfs.yaml", "driver config file")
+	x2 := cli.NewContext(nil, set2, nil)
+
+	set3 := flag.NewFlagSet("test", 0)
+	set3.String("driver-config", "testdata/config-nfs.yaml", "driver config file")
+	set3.String("skip", "skip", "skip string")
+	set3.String("focus", "focus", "focus string")
+	set3.String("focus-file", "focus-file", "focus file")
+	set3.String("skip-file", "skip-file", "skip file")
+	set3.String("skip-tests", "skip-tests", "skip tests")
+	set3.String("timeout", "1", "timeout")
+	x3 := cli.NewContext(nil, set3, nil)
+
+	defaultDir := os.Getenv("HOME") + "/reports/"
+
+	set4 := flag.NewFlagSet("test", 0)
+	set4.String("driver-config", "testdata/config-nfs.yaml", "driver config file")
+	set4.String("reportPath", defaultDir+"test/execution_powerstore-nfs.xml", "report path")
+	x4 := cli.NewContext(nil, set4, nil)
+
+	set5 := flag.NewFlagSet("test", 0)
+	set5.String("driver-config", "testdata/config-nfs.yaml", "driver config file")
+	set5.String("reportPath", defaultDir, "report path")
+	x5 := cli.NewContext(nil, set5, nil)
+
 	tests := []struct {
 		name    string
 		args    args
@@ -296,7 +327,39 @@ func TestBuildE2eCommand(t *testing.T) {
 		{
 			name:    "send good config file",
 			args:    args{ctx: x2},
-			want:    []string{"-kubeconfig", "/root/.kube/config", "-storage.testdriver", "testdata/config-nfs.yaml", "--ginkgo.junit-report", fmt.Sprintf("%s/reports/execution_powerstore-nfs.xml", Home)},
+			want:    []string{"-kubeconfig", "/root/.kube/config", "-storage.testdriver", "testdata/config-nfs.yaml", "--ginkgo.junit-report", defaultDir + "execution_powerstore-nfs.xml"},
+			wantErr: false,
+		},
+		{
+			name: "send good config file with extra params",
+			args: args{ctx: x3},
+			want: []string{
+				"-kubeconfig", "/root/.kube/config", "-storage.testdriver", "testdata/config-nfs.yaml",
+				"--ginkgo.focus", "focus",
+				"--ginkgo.skip", "skip",
+				"--ginkgo.focus-file", "focus-file",
+				"--ginkgo.skip-file", "skip-file",
+				"--ginkgo.timeout", "1",
+				"--ginkgo.junit-report", defaultDir + "execution_powerstore-nfs.xml",
+			},
+			wantErr: false,
+		},
+		{
+			name:    "send good config file with report path",
+			args:    args{ctx: x4},
+			want:    []string{"-kubeconfig", "/root/.kube/config", "-storage.testdriver", "testdata/config-nfs.yaml", "--ginkgo.junit-report", defaultDir + "test/execution_powerstore-nfs.xml"},
+			wantErr: false,
+		},
+		{
+			name:    "send good config file with report path again to test remove",
+			args:    args{ctx: x4},
+			want:    []string{"-kubeconfig", "/root/.kube/config", "-storage.testdriver", "testdata/config-nfs.yaml", "--ginkgo.junit-report", defaultDir + "test/execution_powerstore-nfs.xml"},
+			wantErr: false,
+		},
+		{
+			name:    "send good config file with invalid report path",
+			args:    args{ctx: x5},
+			want:    []string{"-kubeconfig", "/root/.kube/config", "-storage.testdriver", "testdata/config-nfs.yaml", "--ginkgo.junit-report", defaultDir},
 			wantErr: false,
 		},
 	}
@@ -333,6 +396,22 @@ func TestExecuteE2ECommand(t *testing.T) {
 			},
 			wantErr: false,
 		},
+		{
+			name: "execute with nil signal returns early",
+			args: args{
+				args: []string{"-kubeconfig", "/root/.kube/config", "-storage.testdriver", "testdata/config-nfs.yaml", "--ginkgo.skip", ".*"},
+				ch:   nil,
+			},
+			wantErr: false,
+		},
+		{
+			name: "throws for invalid file",
+			args: args{
+				args: []string{"-kubeconfig", "/root/.kube/config", "-storage.testdriver", "testdata/config-nfs.y/aml", "--ginkgo.skip", ".*"},
+				ch:   nil,
+			},
+			wantErr: true,
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -358,4 +437,40 @@ func TestGenerateReport(t *testing.T) {
 			GenerateReport(tt.args.report)
 		})
 	}
+}
+
+func TestTerminateProgramNoInput(t *testing.T) {
+	t.Run("Should send interrupt signal to the process", func(t *testing.T) {
+		ctx, cancel := context.WithCancel(context.Background())
+		defer cancel()
+
+		cmd := exec.CommandContext(ctx, "sleep", "5")
+		err := cmd.Start()
+		assert.NoError(t, err)
+		content := []byte("n\n")
+		tmpfile, err := ioutil.TempFile("", "example")
+		assert.NoError(t, err)
+
+		defer os.Remove(tmpfile.Name()) // clean up
+
+		if _, err := tmpfile.Write(content); err != nil {
+			assert.NoError(t, err)
+		}
+
+		if _, err := tmpfile.Seek(0, 0); err != nil {
+			assert.NoError(t, err)
+		}
+
+		oldStdin := os.Stdin
+		defer func() { os.Stdin = oldStdin }() // Restore original Stdin
+
+		os.Stdin = tmpfile
+
+		terminateProgram(cmd)
+
+		waitErr := cmd.Wait()
+		exitError, ok := waitErr.(*exec.ExitError)
+		assert.False(t, ok)
+		assert.Nil(t, exitError)
+	})
 }

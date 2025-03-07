@@ -1,6 +1,6 @@
 #
 #
-# Copyright © 2022-2023 Dell Inc. or its subsidiaries. All Rights Reserved.
+# Copyright © 2022-2025 Dell Inc. or its subsidiaries. All Rights Reserved.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -43,19 +43,15 @@ gocyclo:
 test:
 	(go test -race -v -coverprofile=c.out ./...)
 
-gocover:
-	go tool cover -html=c.out
+coverage:
+	go tool cover -html=c.out -o coverage.html
 
 build:
 	go build -ldflags "-s -w" ./cmd/cert-csi
 
 docker: download-csm-common
 	$(eval include csm-common.mk)
-	@echo "Building base image from $(DEFAULT_BASEIMAGE) and loading dependencies..."
-	./scripts/build_ubi_micro.sh $(DEFAULT_BASEIMAGE)
-	@echo "Base image build: SUCCESS"
-	$(eval BASEIMAGE=cert-ubimicro:latest)
-	$(BUILDER) build -t cert-csi:latest --build-arg BASEIMAGE=$(BASEIMAGE) --build-arg GOIMAGE=$(DEFAULT_GOIMAGE) .
+	$(BUILDER) build --pull -t cert-csi:latest --build-arg BASEIMAGE=$(CSM_BASEIMAGE) --build-arg GOIMAGE=$(DEFAULT_GOIMAGE) .
 
 # build-statically-linked : used for building a standalone binary with statically linked glibc
 # this command should be used when building the binary for distributing it to customer/user
