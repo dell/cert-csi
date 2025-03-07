@@ -272,6 +272,7 @@ func (c *Client) DeleteAll(ctx context.Context) error {
 // Exec runs the pod
 func (c *Client) Exec(ctx context.Context, pod *v1.Pod, command []string, stdout, stderr io.Writer, quiet bool) error {
 	log := utils.GetLoggerFromContext(ctx)
+	executor := DefaultRemoteExecutor{}
 	restClient := c.ClientSet.CoreV1().RESTClient()
 	if !quiet {
 		log.Infof("Executing command: %v", command)
@@ -292,7 +293,8 @@ func (c *Client) Exec(ctx context.Context, pod *v1.Pod, command []string, stdout
 		TTY:       true,
 	}, scheme.ParameterCodec)
 
-	return c.RemoteExecutor.Execute("POST", req.URL(), c.Config, nil, stdout, stderr, false, nil)
+	//return c.RemoteExecutor.Execute("POST", req.URL(), c.Config, nil, stdout, stderr, false, nil)
+	return executor.Execute("POST", req.URL(), c.Config, nil, stdout, stderr, false, nil)
 }
 
 // ReadyPodsCount returns the number of Pods in Ready state
@@ -526,7 +528,7 @@ type RemoteExecutor interface {
 }
 
 // Execute executes remote command
-func (DefaultRemoteExecutor) Execute(method string, url *url.URL, config *restclient.Config, stdin io.Reader, stdout, stderr io.Writer, tty bool, terminalSizeQueue remotecommand.TerminalSizeQueue) error {
+func (*DefaultRemoteExecutor) Execute(method string, url *url.URL, config *restclient.Config, stdin io.Reader, stdout, stderr io.Writer, tty bool, terminalSizeQueue remotecommand.TerminalSizeQueue) error {
 	exec, err := remotecommand.NewSPDYExecutor(config, method, url)
 	if err != nil {
 		return err
@@ -767,7 +769,13 @@ func (c *commandExecutor) Execute(name string, arg ...string) ([]byte, error) {
 func (c *Client) IsOCP() (bool, error) {
 	isOCP := false
 	// Run the command and capture the output
-	output, err := c.LocalExecutor.Execute("oc", "get", "clusterversion")
+	/*output, err := c.LocalExecutor.Execute("oc", "get", "clusterversion")
+	if err != nil {
+		// Return false and the error encountered while executing the command
+		return false, err
+	}*/
+	cmd := exec.Command("oc", "get", "clusterversion")
+	output, err := cmd.CombinedOutput()
 	if err != nil {
 		// Return false and the error encountered while executing the command
 		return false, err
