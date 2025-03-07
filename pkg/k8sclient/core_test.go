@@ -237,7 +237,7 @@ func (suite *CoreTestSuite) TestCreateClients() {
 	})
 
 	// Rg client and vgs client creation returns error becuase of connection errors
-	ClientNewFunc = func(config *rest.Config, options client.Options) (client.Client, error) {
+	ClientNewFunc = func(_ *rest.Config, _ client.Options) (client.Client, error) {
 		scheme := runtime.NewScheme()
 		initObjs := []client.Object{
 			&unstructured.Unstructured{
