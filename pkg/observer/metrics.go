@@ -1,6 +1,6 @@
 /*
  *
- * Copyright © 2022-2023 Dell Inc. or its subsidiaries. All Rights Reserved.
+ * Copyright © 2022-2025 Dell Inc. or its subsidiaries. All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -21,11 +21,13 @@ import (
 	"sync"
 	"time"
 
+	"github.com/dell/cert-csi/pkg/k8sclient/resources/metrics"
 	"github.com/dell/cert-csi/pkg/store"
 
 	log "github.com/sirupsen/logrus"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/wait"
+	v1beta1 "k8s.io/metrics/pkg/apis/metrics/v1beta1"
 )
 
 const (
@@ -58,6 +60,10 @@ func (cmo *ContainerMetricsObserver) Interrupted() bool {
 	return cmo.interrupted
 }
 
+var getMetricsList = func(mc *metrics.Client, driverNamespace string, ctx context.Context, opts metav1.ListOptions) (*v1beta1.PodMetricsList, error) {
+	return mc.Interface.MetricsV1beta1().PodMetricses(driverNamespace).List(ctx, opts)
+}
+
 // StartWatching starts watching container metrics
 func (cmo *ContainerMetricsObserver) StartWatching(_ context.Context, runner *Runner) {
 	defer runner.WaitGroup.Done()
@@ -86,7 +92,7 @@ func (cmo *ContainerMetricsObserver) StartWatching(_ context.Context, runner *Ru
 			break
 		}
 
-		metricList, err := mc.Interface.MetricsV1beta1().PodMetricses(runner.DriverNamespace).List(context.Background(), metav1.ListOptions{})
+		metricList, err := getMetricsList(mc, runner.DriverNamespace, context.Background(), metav1.ListOptions{})
 		if err != nil {
 			log.Errorf("Can't watch metricsClient. error = %v", err)
 			log.Warnf("Please use instruction in README to install metrics-server")

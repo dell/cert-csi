@@ -1,0 +1,13 @@
+.idea
+*.out
+*.db
+*.db-*
+coverage_results.txt
+*.log
+*.test
+*.tar.gz
+bin
+
+pkg/cmd/logs/
+pkg/cmd/report.path
+pkg/reporter/report.path
