@@ -208,7 +208,6 @@ func (ss *SQLiteStore) GetTestRuns(whereConditions Conditions, orderBy string, l
 	if err = rows.Err(); err != nil {
 		return nil, err
 	}
-	logrus.Infof("GetTestRuns: %v", testRuns)
 
 	return testRuns, nil
 }
@@ -299,7 +298,6 @@ func (ss *SQLiteStore) GetEvents(whereConditions Conditions, orderBy string, lim
 	if err = rows.Err(); err != nil {
 		return nil, err
 	}
-	logrus.Infof("GetEvents: %v", events)
 
 	return events, nil
 }
@@ -346,7 +344,6 @@ func (ss *SQLiteStore) GetEntitiesWithEventsByTestCaseAndEntityType(
 	if err = rows.Err(); err != nil {
 		return nil, err
 	}
-	logrus.Infof("GetEntitiesWithEventsByTestCaseAndEntityType: %v", ewe)
 
 	return ewe, nil
 }
@@ -395,7 +392,6 @@ func (ss *SQLiteStore) GetTestCases(whereConditions Conditions, orderBy string, 
 	if err = rows.Err(); err != nil {
 		return nil, err
 	}
-	logrus.Infof("GetTestCases: %v", testCases)
 
 	return testCases, nil
 }
@@ -417,7 +413,6 @@ func (ss *SQLiteStore) SuccessfulTestCase(ts *TestCase, endTimestamp time.Time) 
 	if err := ss.updateStatusTestCase(ts); err != nil {
 		return err
 	}
-	logrus.Infof("SuccessfulTestCase: %v", ts)
 	return nil
 }
 
@@ -429,7 +424,6 @@ func (ss *SQLiteStore) FailedTestCase(ts *TestCase, endTimestamp time.Time, errM
 	if err := ss.updateStatusTestCase(ts); err != nil {
 		return err
 	}
-	logrus.Infof("FailedTestCase: %v", ts)
 	return nil
 }
 
@@ -481,7 +475,6 @@ func (ss *SQLiteStore) GetEntities(whereConditions Conditions, orderBy string, l
 	if err = rows.Err(); err != nil {
 		return nil, err
 	}
-	logrus.Infof("GetEntities: %v", entities)
 
 	return entities, nil
 }
@@ -562,7 +555,6 @@ func (ss *SQLiteStore) GetNumberEntities(
 	if err = rows.Err(); err != nil {
 		return nil, err
 	}
-	logrus.Infof("GetNumberEntities: %v", nEntities)
 	return nEntities, nil
 }
 
@@ -639,7 +631,6 @@ func (ss *SQLiteStore) GetResourceUsage(
 	if err = rows.Err(); err != nil {
 		return nil, err
 	}
-	logrus.Infof("GetResourceUsage: %v", resUsage)
 	return resUsage, nil
 }
 
@@ -686,7 +677,6 @@ func (ss *SQLiteStore) GetEntityRelations(entity Entity) ([]Entity, error) {
 	if err = rows.Err(); err != nil {
 		return nil, err
 	}
-	logrus.Infof("GetEntityRelations: %v", entities)
 
 	return entities, nil
 }

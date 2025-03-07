@@ -1,6 +1,6 @@
 /*
  *
- * Copyright © 2022-2023 Dell Inc. or its subsidiaries. All Rights Reserved.
+ * Copyright © 2022-2025 Dell Inc. or its subsidiaries. All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -484,32 +484,6 @@ func (pvc *PersistentVolumeClaim) WaitToBeBound(ctx context.Context) error {
 	log.Debugf("All PVCs in %s are bound in %s", pvc.Object.Namespace, yellow.Sprint(time.Since(startTime)))
 	return nil
 }
-
-/*func watchUntilAllGone(ctx context.Context, finished chan bool, pvcNum int, pvcClient tcorev1.PersistentVolumeClaimInterface) {
-	logrus.Debug("Watcher: started watching")
-	watch, watchErr := pvcClient.Watch(ctx, metav1.ListOptions{})
-	if watchErr != nil {
-		logrus.Errorf("Can't watch pvcClient; error = %v", watchErr)
-		return
-	}
-	defer watch.Stop()
-
-	cnt := 0
-	for {
-		data := <-watch.ResultChan()
-		event := data.Type
-
-		if event == "DELETED" {
-			cnt++
-		}
-
-		if cnt == pvcNum {
-			break
-		}
-	}
-	logrus.Debug("Watcher: finished watching")
-	finished <- true
-}*/
 
 func (pvc *PersistentVolumeClaim) PollWait(ctx context.Context) (bool, error) {
 	log := utils.GetLoggerFromContext(ctx)
