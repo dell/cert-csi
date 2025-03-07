@@ -1,6 +1,6 @@
 /*
  *
- * Copyright © 2022-2023 Dell Inc. or its subsidiaries. All Rights Reserved.
+ * Copyright © 2022-2025 Dell Inc. or its subsidiaries. All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -43,7 +43,7 @@ type FunctionalSuiteRunner struct {
 
 // NewFunctionalSuiteRunner creates functional suite runner instance
 func NewFunctionalSuiteRunner(configPath, namespace string, timeout int, noCleanup, noCleanupOnFail bool, noreport bool,
-	scDB *store.StorageClassDB,
+	scDB *store.StorageClassDB, k8s K8sClientInterface,
 ) *FunctionalSuiteRunner {
 	const observerType = "event"
 	r := getSuiteRunner(
@@ -54,6 +54,7 @@ func NewFunctionalSuiteRunner(configPath, namespace string, timeout int, noClean
 		noCleanup,
 		noCleanupOnFail,
 		noreport,
+		k8s,
 	)
 	generateTestRunDetails(scDB, r.KubeClient, r.Config.Host)
 
@@ -97,7 +98,10 @@ func (sr *FunctionalSuiteRunner) RunFunctionalSuites(suites []suites.Interface) 
 
 		startTime := time.Now()
 
-		testResult := runFunctionalSuite(suite, sr, testCase, db, sr.ScDB.StorageClass)
+		testResult, err := runFunctionalSuite(suite, sr, testCase, db, sr.ScDB.StorageClass)
+		if err != nil {
+			log.Error(err)
+		}
 		var result string
 
 		if testResult == SUCCESS {
@@ -123,7 +127,7 @@ func (sr *FunctionalSuiteRunner) RunFunctionalSuites(suites []suites.Interface) 
 		}
 	}
 
-	var kubeClient *k8sclient.KubeClient
+	var kubeClient k8sclient.KubeClientInterface
 	for {
 		var kubeErr error
 		log.Infof("Trying to connect to cluster...")
@@ -139,7 +143,7 @@ func (sr *FunctionalSuiteRunner) RunFunctionalSuites(suites []suites.Interface) 
 	sr.SucceededSuites = sr.SucceededSuites / float64(len(suites))
 }
 
-func runFunctionalSuite(suite suites.Interface, sr *FunctionalSuiteRunner, testCase *store.TestCase, db *store.SQLiteStore, storageClass string) (res TestResult) {
+func runFunctionalSuite(suite suites.Interface, sr *FunctionalSuiteRunner, testCase *store.TestCase, db store.Store, storageClass string) (res TestResult, resErr error) {
 	iterCtx, cancelIter := context.WithCancel(context.Background())
 	startTime := time.Now()
 	defer func() {
@@ -181,7 +185,7 @@ func runFunctionalSuite(suite suites.Interface, sr *FunctionalSuiteRunner, testC
 	namespace, err := sr.KubeClient.CreateNamespaceWithSuffix(iterCtx, suite.GetNamespace())
 	if err != nil {
 		log.Errorf("can't create namespace %s: %v", namespace, err)
-		return FAILURE
+		return FAILURE, fmt.Errorf("can't create namespace; error=%s", err.Error())
 	}
 
 	// Cleanup namespace after test
@@ -201,7 +205,7 @@ func runFunctionalSuite(suite suites.Interface, sr *FunctionalSuiteRunner, testC
 	clients, clientErr := suite.GetClients(namespace.Name, sr.KubeClient)
 	if clientErr != nil {
 		log.Errorf("Can't get suite's clients; error=%v", clientErr)
-		return FAILURE
+		return FAILURE, fmt.Errorf("can't get suite's clients; error=%s", clientErr.Error())
 	}
 
 	var obs *observer.Runner
@@ -210,7 +214,7 @@ func runFunctionalSuite(suite suites.Interface, sr *FunctionalSuiteRunner, testC
 	obs = observer.NewObserverRunner(observers, clients, db, testCase, sr.DriverNamespace, false)
 	if obsErr := obs.Start(iterCtx); obsErr != nil {
 		log.Errorf("Error creating observer; error=%v", obsErr)
-		return FAILURE
+		return FAILURE, fmt.Errorf("can't create observer; error=%s", obsErr.Error())
 	}
 
 	defer func() {
@@ -232,11 +236,11 @@ func runFunctionalSuite(suite suites.Interface, sr *FunctionalSuiteRunner, testC
 	if _, err := suite.Run(iterCtx, storageClass, clients); err != nil {
 		sr.runTime += time.Since(runTime)
 		log.Errorf("Suite %s failed; error=%v", suite.GetName(), err)
-		return FAILURE
+		return FAILURE, fmt.Errorf("suite %s failed; error=%s", suite.GetName(), err.Error())
 	}
 	sr.runTime += time.Since(runTime)
 
-	return SUCCESS
+	return SUCCESS, nil
 }
 
 // IsStopped returns true if test suite run has stopped
@@ -254,7 +258,7 @@ func (sr *FunctionalSuiteRunner) Close() {
 	if sr.SucceededSuites > Threshold {
 		log.Infof("During this run %.1f%% of suites succeeded", sr.SucceededSuites*100)
 	} else {
-		log.Fatalf("During this run %.1f%% of suites succeeded", sr.SucceededSuites*100)
+		log.Errorf("During this run %.1f%% of suites succeeded", sr.SucceededSuites*100)
 	}
 }
 

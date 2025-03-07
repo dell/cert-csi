@@ -1,6 +1,6 @@
 /*
  *
- * Copyright © 2022-2023 Dell Inc. or its subsidiaries. All Rights Reserved.
+ * Copyright © 2022-2025 Dell Inc. or its subsidiaries. All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -123,7 +123,7 @@ func IoWritePodConfig(pvcNames []string, podName string, containerImage string) 
 	}
 }
 
-// BlockSnapPodConfig config to use in blocksnap suite
+// BlockSnapPodConfig config to use in blockvolsnapshot suite
 func BlockSnapPodConfig(pvcNames []string, containerImage string) *pod.Config {
 	return &pod.Config{
 		NamePrefix:     "bs-test-",
@@ -237,7 +237,7 @@ func GetAccessMode(AccessMode string) []v1.PersistentVolumeAccessMode {
 	return accessMode
 }
 
-// VolumeGroupSnapConfig config for volume group snapshot
+// VolumeGroupSnapConfig config for volume group blockvolsnapshot
 func VolumeGroupSnapConfig(vgsName, driver, reclaimPolicy, snapClass, volumeLabel, namespace string) *volumegroupsnapshot.Config {
 	if vgsName == "" {
 		// we will generate random name

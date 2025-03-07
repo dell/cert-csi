@@ -1,6 +1,6 @@
 /*
  *
- * Copyright © 2022-2023 Dell Inc. or its subsidiaries. All Rights Reserved.
+ * Copyright © 2022-2025 Dell Inc. or its subsidiaries. All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -72,7 +72,7 @@ func GetReportCommand() cli.Command {
 		Action: func(c *cli.Context) error {
 			var scDBs []*store.StorageClassDB
 			for _, testRun := range testRunNames {
-				db, name := parseTestRun(testRun)
+				db, name := ParseTestRun(testRun)
 				if db == "" {
 					db = c.GlobalString("db")
 				}
@@ -141,7 +141,7 @@ func GetReportCommand() cli.Command {
 	return reportCmd
 }
 
-func parseTestRun(tr string) (db string, name string) {
+func ParseTestRun(tr string) (db string, name string) {
 	s := strings.Split(tr, ":")
 	if len(s) == 1 {
 		name = s[0]
