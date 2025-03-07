@@ -313,6 +313,10 @@ func (c *KubeClient) CreateMetricsClient(namespace string) (*metrics.Client, err
 	return mc, nil
 }
 
+var ClientNewFunc = func(config *rest.Config, options client.Options) (client.Client, error) {
+	return client.New(config, options)
+}
+
 // CreateRGClient creates a new instance of replication group client
 func (c *KubeClient) CreateRGClient() (*rg.Client, error) {
 	scheme := runtime.NewScheme()
@@ -321,9 +325,9 @@ func (c *KubeClient) CreateRGClient() (*rg.Client, error) {
 	utilruntime.Must(apiExtensionsv1.AddToScheme(scheme))
 	utilruntime.Must(replv1.AddToScheme(scheme))
 
-	k8sClient, err := client.New(c.Config, client.Options{Scheme: scheme})
+	k8sClient, err := ClientNewFunc(c.Config, client.Options{Scheme: scheme})
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("failed to create k8s client: %v", err)
 	}
 
 	rgc := &rg.Client{
@@ -344,9 +348,9 @@ func (c *KubeClient) CreateVGSClient() (*volumegroupsnapshot.Client, error) {
 	utilruntime.Must(apiExtensionsv1.AddToScheme(scheme))
 	utilruntime.Must(vgsAlpha.AddToScheme(scheme))
 
-	k8sClient, err := client.New(c.Config, client.Options{Scheme: scheme})
+	k8sClient, err := ClientNewFunc(c.Config, client.Options{Scheme: scheme})
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("failed to create k8s client: %v", err)
 	}
 
 	vgs := &volumegroupsnapshot.Client{
