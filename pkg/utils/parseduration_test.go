@@ -1,6 +1,6 @@
 /*
  *
- * Copyright © 2022-2023 Dell Inc. or its subsidiaries. All Rights Reserved.
+ * Copyright © 2022-2025 Dell Inc. or its subsidiaries. All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -28,13 +28,14 @@ func TestParse(t *testing.T) {
 		n        string
 		expected time.Duration
 		wantErr  bool
+		errMsg   string
 	}
 
 	parseTests := []parseTest{
-		{"2w3d4m14h", time.Duration(1519440000000000), false},
-		{"1w", time.Duration(604800000000000), false},
-		{"1H3w2M5s", time.Duration(1818125000000000), false},
-		{"343", time.Duration(0), true},
+		{"2w3d4m14h", time.Duration(1519440000000000), false, ""},
+		{"1w", time.Duration(604800000000000), false, ""},
+		{"1H3w2M5s", time.Duration(1818125000000000), false, ""},
+		{"343", time.Duration(0), true, "duration string is not in the correct format"},
 	}
 
 	for _, tt := range parseTests {
@@ -44,7 +45,8 @@ func TestParse(t *testing.T) {
 			actual = ext.Duration()
 		}
 		if tt.wantErr {
-			assert.Error(t, err, "Wrong formatted")
+			assert.Error(t, err)
+			assert.Equal(t, tt.errMsg, err.Error())
 			continue
 		}
 		assert.NoError(t, err)

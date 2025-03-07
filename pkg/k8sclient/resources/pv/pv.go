@@ -1,6 +1,6 @@
 /*
  *
- * Copyright © 2022-2023 Dell Inc. or its subsidiaries. All Rights Reserved.
+ * Copyright © 2022-2025 Dell Inc. or its subsidiaries. All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -125,14 +125,15 @@ func (c *Client) DeleteAll(ctx context.Context) error {
 
 // Get uses client interface to make API call for getting provided PersistentVolume
 func (c *Client) Get(ctx context.Context, name string) *PersistentVolume {
-	log := utils.GetLoggerFromContext(ctx)
+	loggerFromContext := utils.GetLoggerFromContext(ctx)
 	var funcErr error
 	newPV, err := c.Interface.Get(ctx, name, metav1.GetOptions{})
 	if err != nil {
 		funcErr = err
+	} else {
+		loggerFromContext.Debugf("Got PV %s", newPV.GetName())
 	}
 
-	log.Debugf("Got PV %s", newPV.GetName())
 	return &PersistentVolume{
 		Client:  c,
 		Object:  newPV,

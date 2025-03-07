@@ -1,6 +1,6 @@
 /*
  *
- * Copyright © 2022-2023 Dell Inc. or its subsidiaries. All Rights Reserved.
+ * Copyright © 2022-2025 Dell Inc. or its subsidiaries. All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,6 +17,7 @@
 package collector
 
 import (
+	"reflect"
 	"testing"
 	"time"
 
@@ -42,6 +43,7 @@ func (suite *CollectorTestSuit) SetupSuite() {
 		StorageClass:   "default",
 		ClusterAddress: "localhost",
 	}
+
 	_ = suite.db.SaveTestRun(testRun)
 
 	testCase := &store.TestCase{
@@ -49,6 +51,7 @@ func (suite *CollectorTestSuit) SetupSuite() {
 		StartTimestamp: time.Now(),
 		RunID:          testRun.ID,
 	}
+
 	_ = suite.db.SaveTestCase(testCase)
 
 	entityPVC1 := &store.Entity{
@@ -251,8 +254,49 @@ func (suite *CollectorTestSuit) TestCollectMetrics() {
 	suite.Equal(tc.StageMetrics[PodCreation].Max.Seconds(), float64(7))
 	suite.Equal(tc.StageMetrics[PodCreation].Min.Seconds(), float64(7))
 	suite.Equal(tc.StageMetrics[PodCreation].Avg.Seconds(), float64(7))
+
+	mc, err = suite.collector.Collect("test run 2")
+	suite.NotNil(err)
+	suite.Nil(mc)
 }
 
 func TestCollectorTestSuite(t *testing.T) {
 	suite.Run(t, new(CollectorTestSuit))
+}
+
+func TestCollect(t *testing.T) {
+	type args struct {
+		runName string
+	}
+
+	tests := []struct {
+		name    string
+		mc      *MetricsCollector
+		args    args
+		want    *MetricsCollection
+		wantErr bool
+	}{
+		{
+			name: "Database is nil",
+			args: args{
+				runName: "test-run",
+			},
+			mc:      &MetricsCollector{db: nil},
+			want:    nil,
+			wantErr: true,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got, err := tt.mc.Collect(tt.args.runName)
+			if (err != nil) != tt.wantErr {
+				t.Errorf("Collect() error = %v, wantErr %v", err, tt.wantErr)
+				return
+			}
+			if !reflect.DeepEqual(got, tt.want) {
+				t.Errorf("Collect() = %v, want %v", got, tt.want)
+			}
+		})
+	}
 }

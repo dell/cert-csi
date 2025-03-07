@@ -1,6 +1,6 @@
 /*
  *
- * Copyright © 2022-2023 Dell Inc. or its subsidiaries. All Rights Reserved.
+ * Copyright © 2022-2025 Dell Inc. or its subsidiaries. All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -159,10 +159,16 @@ func (c *Client) UpdateRepositories() error {
 	return nil
 }
 
+var (
+	actionNewInstall        = action.NewInstall
+	actionCheckDependencies = action.CheckDependencies
+	loaderLoad              = loader.Load
+)
+
 // InstallChart installs chart with provided repository and values map
 func (c *Client) InstallChart(releaseName, repo, chart string, vals map[string]interface{}) error {
 	log.Info("Installing chart")
-	client := action.NewInstall(c.actionConfig)
+	client := actionNewInstall(c.actionConfig)
 
 	if client.Version == "" && client.Devel {
 		client.Version = ">0.0.0-0"
@@ -183,7 +189,7 @@ func (c *Client) InstallChart(releaseName, repo, chart string, vals map[string]i
 	p := getter.All(c.settings)
 
 	// Check chart dependencies to make sure all are present in /charts
-	chartRequested, err := loader.Load(cp)
+	chartRequested, err := loaderLoad(cp)
 	if err != nil {
 		return err
 	}
@@ -194,7 +200,7 @@ func (c *Client) InstallChart(releaseName, repo, chart string, vals map[string]i
 	}
 
 	if req := chartRequested.Metadata.Dependencies; req != nil {
-		if err := action.CheckDependencies(chartRequested, req); err != nil {
+		if err := actionCheckDependencies(chartRequested, req); err != nil {
 			if client.DependencyUpdate {
 				man := &downloader.Manager{
 					Out:              os.Stdout,

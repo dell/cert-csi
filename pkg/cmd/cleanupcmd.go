@@ -1,6 +1,6 @@
 /*
  *
- * Copyright © 2022-2023 Dell Inc. or its subsidiaries. All Rights Reserved.
+ * Copyright © 2022-2025 Dell Inc. or its subsidiaries. All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -87,7 +87,7 @@ func GetCleanupCommand() cli.Command {
 				return kubeErr
 			}
 
-			nsList, nsErr := kubeClient.ClientSet.CoreV1().Namespaces().List(context.Background(), metav1.ListOptions{})
+			nsList, nsErr := kubeClient.GetClientSet().CoreV1().Namespaces().List(context.Background(), metav1.ListOptions{})
 			if nsErr != nil {
 				return nsErr
 			}

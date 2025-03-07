@@ -1,6 +1,6 @@
 /*
  *
- * Copyright © 2022-2023 Dell Inc. or its subsidiaries. All Rights Reserved.
+ * Copyright © 2022-2025 Dell Inc. or its subsidiaries. All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -192,8 +192,9 @@ func (c *Client) Create(ctx context.Context, pvc *v1.PersistentVolumeClaim, _ ..
 	if err != nil {
 		funcErr = err
 	}
-
-	log.Debugf("Created PVC %s", newPVC.GetName())
+	if newPVC != nil {
+		log.Debugf("Created PVC %s", newPVC.GetName())
+	}
 	return &PersistentVolumeClaim{
 		Client:  c,
 		Object:  newPVC,
@@ -209,9 +210,10 @@ func (c *Client) Get(ctx context.Context, name string) *PersistentVolumeClaim {
 	newPVC, err := c.Interface.Get(ctx, name, metav1.GetOptions{})
 	if err != nil {
 		funcErr = err
+	} else {
+		log.Debugf("Got PVC %s", newPVC.GetName())
 	}
 
-	log.Debugf("Got PVC %s", newPVC.GetName())
 	return &PersistentVolumeClaim{
 		Client:  c,
 		Object:  newPVC,
@@ -483,33 +485,7 @@ func (pvc *PersistentVolumeClaim) WaitToBeBound(ctx context.Context) error {
 	return nil
 }
 
-func watchUntilAllGone(ctx context.Context, finished chan bool, pvcNum int, pvcClient tcorev1.PersistentVolumeClaimInterface) {
-	logrus.Debug("Watcher: started watching")
-	watch, watchErr := pvcClient.Watch(ctx, metav1.ListOptions{})
-	if watchErr != nil {
-		logrus.Errorf("Can't watch pvcClient; error = %v", watchErr)
-		return
-	}
-	defer watch.Stop()
-
-	cnt := 0
-	for {
-		data := <-watch.ResultChan()
-		event := data.Type
-
-		if event == "DELETED" {
-			cnt++
-		}
-
-		if cnt == pvcNum {
-			break
-		}
-	}
-	logrus.Debug("Watcher: finished watching")
-	finished <- true
-}
-
-func (pvc *PersistentVolumeClaim) pollWait(ctx context.Context) (bool, error) {
+func (pvc *PersistentVolumeClaim) PollWait(ctx context.Context) (bool, error) {
 	log := utils.GetLoggerFromContext(ctx)
 	select {
 	case <-ctx.Done():
@@ -538,7 +514,7 @@ func (pvc *PersistentVolumeClaim) WaitUntilGone(ctx context.Context) error {
 	}
 
 	pollErr := wait.PollImmediate(Poll, timeout/100*95, func() (done bool, err error) {
-		done, err = pvc.pollWait(ctx)
+		done, err = pvc.PollWait(ctx)
 		return done, err
 	})
 	if pollErr != nil {
@@ -554,7 +530,7 @@ func (pvc *PersistentVolumeClaim) WaitUntilGone(ctx context.Context) error {
 			return er
 		}
 		pollErr = wait.PollImmediate(Poll, timeout/2, func() (done bool, err error) {
-			done, err = pvc.pollWait(ctx)
+			done, err = pvc.PollWait(ctx)
 			return done, err
 		})
 

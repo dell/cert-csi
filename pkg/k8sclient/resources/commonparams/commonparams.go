@@ -1,6 +1,6 @@
 /*
  *
- * Copyright © 2022-2023 Dell Inc. or its subsidiaries. All Rights Reserved.
+ * Copyright © 2022-2025 Dell Inc. or its subsidiaries. All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -21,14 +21,8 @@ const (
 	RemoteClusterID = "replication.storage.dell.com/remoteClusterID"
 	// ReplicationGroupName represents replication group name
 	ReplicationGroupName = "replication.storage.dell.com/replicationGroupName"
-	// RemotePV represents remove PV
-	RemotePV = "replication.storage.dell.com/remotePV"
 	// RemoteStorageClassName represents remote storage class
 	RemoteStorageClassName = "replication.storage.dell.com/remoteStorageClassName"
-	// RemoteVolume represents remote volume
-	RemoteVolume = "replication.storage.dell.com/remoteVolume"
-	// DriverName represents driver name
-	DriverName = "replication.storage.dell.com/driverName"
 )
 
 var (
@@ -45,3 +39,48 @@ var (
 	// RemotePVLabels represents remote PV labels
 	RemotePVLabels = []string{ReplicationGroupName}
 )
+
+// GetRemoteClusterID returns the value of RemoteClusterID
+func GetRemoteClusterID() string {
+	return RemoteClusterID
+}
+
+// GetReplicationGroupName returns the value of ReplicationGroupName
+func GetReplicationGroupName() string {
+	return ReplicationGroupName
+}
+
+// GetRemoteStorageClassName returns the value of RemoteStorageClassName
+func GetRemoteStorageClassName() string {
+	return RemoteStorageClassName
+}
+
+// GetLocalPVCAnnotations returns the value of LocalPVCAnnotations
+func GetLocalPVCAnnotations() []string {
+	return LocalPVCAnnotations
+}
+
+// GetLocalPVCLabels returns the value of LocalPVCLabels
+func GetLocalPVCLabels() []string {
+	return LocalPVCLabels
+}
+
+// GetLocalPVAnnotation returns the value of LocalPVAnnotation
+func GetLocalPVAnnotation() []string {
+	return LocalPVAnnotation
+}
+
+// GetLocalPVLabels returns the value of LocalPVLabels
+func GetLocalPVLabels() []string {
+	return LocalPVLabels
+}
+
+// GetRemotePVAnnotations returns the value of RemotePVAnnotations
+func GetRemotePVAnnotations() []string {
+	return RemotePVAnnotations
+}
+
+// GetRemotePVLabels returns the value of RemotePVLabels
+func GetRemotePVLabels() []string {
+	return RemotePVLabels
+}

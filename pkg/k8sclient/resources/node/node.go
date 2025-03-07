@@ -1,6 +1,6 @@
 /*
  *
- * Copyright © 2022-2023 Dell Inc. or its subsidiaries. All Rights Reserved.
+ * Copyright © 2022-2025 Dell Inc. or its subsidiaries. All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -72,7 +72,8 @@ func (c *Client) cordonUnCordon(ctx context.Context, nodename string, cordon boo
 	if patchErr == nil {
 		patchOptions := metav1.PatchOptions{}
 		_, err = c.Interface.Patch(ctx, node.Name, types.StrategicMergePatchType, patchBytes, patchOptions)
-	} else {
+	}
+	if patchErr != nil || err != nil {
 		updateOptions := metav1.UpdateOptions{}
 		_, err = c.Interface.Update(ctx, node, updateOptions)
 	}
