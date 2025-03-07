@@ -269,11 +269,13 @@ func (c *KubeClient) CreatePodClient(namespace string) (*pod.Client, error) {
 		return nil, fmt.Errorf("namespace cannot be empty")
 	}
 	podc := &pod.Client{
-		Interface: c.ClientSet.CoreV1().Pods(namespace),
-		ClientSet: c.ClientSet,
-		Config:    c.Config,
-		Namespace: namespace,
-		Timeout:   c.timeout,
+		Interface:      c.ClientSet.CoreV1().Pods(namespace),
+		ClientSet:      c.ClientSet,
+		Config:         c.Config,
+		Namespace:      namespace,
+		Timeout:        c.timeout,
+		RemoteExecutor: &pod.DefaultRemoteExecutor{},
+		LocalExecutor:  &pod.CommandExecutor{},
 	}
 	logrus.Debugf("Created Pod client in %s namespace", namespace)
 	return podc, nil

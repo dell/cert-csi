@@ -272,7 +272,6 @@ func (c *Client) DeleteAll(ctx context.Context) error {
 // Exec runs the pod
 func (c *Client) Exec(ctx context.Context, pod *v1.Pod, command []string, stdout, stderr io.Writer, quiet bool) error {
 	log := utils.GetLoggerFromContext(ctx)
-	executor := DefaultRemoteExecutor{}
 	restClient := c.ClientSet.CoreV1().RESTClient()
 	if !quiet {
 		log.Infof("Executing command: %v", command)
@@ -293,7 +292,7 @@ func (c *Client) Exec(ctx context.Context, pod *v1.Pod, command []string, stdout
 		TTY:       true,
 	}, scheme.ParameterCodec)
 
-	return executor.Execute("POST", req.URL(), c.Config, nil, stdout, stderr, false, nil)
+	return c.RemoteExecutor.Execute("POST", req.URL(), c.Config, nil, stdout, stderr, false, nil)
 }
 
 // ReadyPodsCount returns the number of Pods in Ready state
@@ -758,9 +757,9 @@ type LocalExecutor interface {
 	Execute(name string, arg ...string) ([]byte, error)
 }
 
-type commandExecutor struct{}
+type CommandExecutor struct{}
 
-func (c *commandExecutor) Execute(name string, arg ...string) ([]byte, error) {
+func (c *CommandExecutor) Execute(name string, arg ...string) ([]byte, error) {
 	cmd := exec.Command(name, arg...)
 	return cmd.CombinedOutput()
 }
@@ -768,8 +767,7 @@ func (c *commandExecutor) Execute(name string, arg ...string) ([]byte, error) {
 func (c *Client) IsOCP() (bool, error) {
 	isOCP := false
 	// Run the command and capture the output
-	cmd := exec.Command("oc", "get", "clusterversion")
-	output, err := cmd.CombinedOutput()
+	output, err := c.LocalExecutor.Execute("oc", "get", "clusterversion")
 	if err != nil {
 		// Return false and the error encountered while executing the command
 		return false, err
