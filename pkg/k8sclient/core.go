@@ -269,11 +269,13 @@ func (c *KubeClient) CreatePodClient(namespace string) (*pod.Client, error) {
 		return nil, fmt.Errorf("namespace cannot be empty")
 	}
 	podc := &pod.Client{
-		Interface: c.ClientSet.CoreV1().Pods(namespace),
-		ClientSet: c.ClientSet,
-		Config:    c.Config,
-		Namespace: namespace,
-		Timeout:   c.timeout,
+		Interface:      c.ClientSet.CoreV1().Pods(namespace),
+		ClientSet:      c.ClientSet,
+		Config:         c.Config,
+		Namespace:      namespace,
+		Timeout:        c.timeout,
+		RemoteExecutor: &pod.DefaultRemoteExecutor{},
+		LocalExecutor:  &pod.CommandExecutor{},
 	}
 	logrus.Debugf("Created Pod client in %s namespace", namespace)
 	return podc, nil
@@ -311,6 +313,10 @@ func (c *KubeClient) CreateMetricsClient(namespace string) (*metrics.Client, err
 	return mc, nil
 }
 
+var ClientNewFunc = func(config *rest.Config, options client.Options) (client.Client, error) {
+	return client.New(config, options)
+}
+
 // CreateRGClient creates a new instance of replication group client
 func (c *KubeClient) CreateRGClient() (*rg.Client, error) {
 	scheme := runtime.NewScheme()
@@ -319,9 +325,9 @@ func (c *KubeClient) CreateRGClient() (*rg.Client, error) {
 	utilruntime.Must(apiExtensionsv1.AddToScheme(scheme))
 	utilruntime.Must(replv1.AddToScheme(scheme))
 
-	k8sClient, err := client.New(c.Config, client.Options{Scheme: scheme})
+	k8sClient, err := ClientNewFunc(c.Config, client.Options{Scheme: scheme})
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("failed to create k8s client: %v", err)
 	}
 
 	rgc := &rg.Client{
@@ -342,9 +348,9 @@ func (c *KubeClient) CreateVGSClient() (*volumegroupsnapshot.Client, error) {
 	utilruntime.Must(apiExtensionsv1.AddToScheme(scheme))
 	utilruntime.Must(vgsAlpha.AddToScheme(scheme))
 
-	k8sClient, err := client.New(c.Config, client.Options{Scheme: scheme})
+	k8sClient, err := ClientNewFunc(c.Config, client.Options{Scheme: scheme})
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("failed to create k8s client: %v", err)
 	}
 
 	vgs := &volumegroupsnapshot.Client{
@@ -455,43 +461,50 @@ func (c *KubeClient) DeleteNamespace(ctx context.Context, namespace string) erro
 		timeout = time.Duration(c.Timeout()) * time.Second
 	}
 
-	pollErr := wait.PollImmediate(NamespacePoll, timeout, func() (bool, error) {
-		select {
-		case <-ctx.Done():
-			return true, fmt.Errorf("namespace deletion interrupted, stopped waiting to delete namespace")
-		default:
-			// Continue to check namespace status
-		}
-
-		nsExists, err := c.ClientSet.CoreV1().Namespaces().Get(ctx, namespace, metav1.GetOptions{})
-		if nsExists == nil {
-			if apierrs.IsNotFound(err) {
-				vaClient, err := c.CreateVaClient(namespace)
-				if err != nil {
-					return false, err
-				}
-
-				pvClient, err := c.CreatePVClient()
-				if err != nil {
-					return false, err
-				}
-
-				if err := pvClient.DeleteAllPV(ctx, namespace, vaClient); err != nil {
-					log.Errorf("Failed to delete some PVs: %v", err)
-				}
-
-				return true, nil
+	pollErr := wait.PollImmediate(NamespacePoll, timeout,
+		func() (bool, error) {
+			select {
+			case <-ctx.Done():
+				log.Infof("Namespace deletion interrupted")
+				return true, fmt.Errorf("stopped waiting to delete ns")
+			default:
+				break
 			}
 
-			return false, fmt.Errorf("failed to delete namespace: %v", err)
-		}
-
-		return false, nil
-	})
+			if _, err := c.ClientSet.CoreV1().Namespaces().Get(ctx, namespace, metav1.GetOptions{}); err != nil {
+				if apierrs.IsNotFound(err) {
+					// c.CreateVaClient()
+					vaClient, err := c.CreateVaClient(namespace)
+					if err != nil {
+						return false, err
+					}
+					// in case if somehow some PVs are left even after namespace got deleted, try to clean them.
+					pvClient, err := c.CreatePVClient()
+					if err != nil {
+						return false, err
+					}
+					err = pvClient.DeleteAllPV(ctx, namespace, vaClient)
+					if err != nil {
+						log.Errorf("Failed to delete some PVs")
+					}
+					return true, nil
+				}
+				log.Errorf("Error while waiting for namespace to be terminated: %v", err)
+				return false, err
+			}
+			return false, nil
+		})
 
 	if pollErr != nil {
-		if err := c.ForceDeleteNamespace(ctx, namespace); err != nil {
-			return err
+		select {
+		case <-ctx.Done():
+			return pollErr
+		default:
+			log.Errorf("Failed to delete namespace: %v", pollErr)
+			err := c.ForceDeleteNamespace(ctx, namespace)
+			if err != nil {
+				return err
+			}
 		}
 	}
 

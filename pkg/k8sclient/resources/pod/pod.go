@@ -526,7 +526,7 @@ type RemoteExecutor interface {
 }
 
 // Execute executes remote command
-func (DefaultRemoteExecutor) Execute(method string, url *url.URL, config *restclient.Config, stdin io.Reader, stdout, stderr io.Writer, tty bool, terminalSizeQueue remotecommand.TerminalSizeQueue) error {
+func (*DefaultRemoteExecutor) Execute(method string, url *url.URL, config *restclient.Config, stdin io.Reader, stdout, stderr io.Writer, tty bool, terminalSizeQueue remotecommand.TerminalSizeQueue) error {
 	exec, err := remotecommand.NewSPDYExecutor(config, method, url)
 	if err != nil {
 		return err
@@ -757,9 +757,9 @@ type LocalExecutor interface {
 	Execute(name string, arg ...string) ([]byte, error)
 }
 
-type commandExecutor struct{}
+type CommandExecutor struct{}
 
-func (c *commandExecutor) Execute(name string, arg ...string) ([]byte, error) {
+func (c *CommandExecutor) Execute(name string, arg ...string) ([]byte, error) {
 	cmd := exec.Command(name, arg...)
 	return cmd.CombinedOutput()
 }

@@ -26,11 +26,15 @@ import (
 	v1 "k8s.io/api/core/v1"
 	storagev1 "k8s.io/api/storage/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
+	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/version"
 	discovery "k8s.io/client-go/discovery/fake"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/kubernetes/fake"
 	"k8s.io/client-go/rest"
+	"sigs.k8s.io/controller-runtime/pkg/client"
+	fakeclient "sigs.k8s.io/controller-runtime/pkg/client/fake"
 )
 
 type CoreTestSuite struct {
@@ -50,15 +54,15 @@ func (suite *CoreTestSuite) SetupSuite() {
 	}
 }
 
-type clientTestContext struct {
-	testNamespace    string
-	namespaceDeleted bool
-	t                *testing.T
-}
-
 func (suite *CoreTestSuite) TestNewKubeClient() {
 	suite.Run("nil config - fail case", func() {
 		client, err := NewKubeClient(nil, 0)
+		suite.Error(err)
+		suite.Nil(client)
+	})
+
+	suite.Run("mock config - fail case", func() {
+		client, err := NewKubeClient(&rest.Config{Host: "localhost"}, 0)
 		suite.Error(err)
 		suite.Nil(client)
 	})
@@ -222,15 +226,43 @@ func (suite *CoreTestSuite) TestCreateClients() {
 		suite.Error(err)
 	})
 
-	// Rg client and vgs client creation returns error becuase of connection errors
-	suite.Run("rg client", func() {
+	suite.Run("rg client - error case", func() {
 		_, err := suite.kubeClient.CreateRGClient()
 		suite.Error(err)
 	})
 
-	suite.Run("vgs client", func() {
+	suite.Run("vgs client - error case", func() {
 		_, err := suite.kubeClient.CreateVGSClient()
 		suite.Error(err)
+	})
+
+	// Rg client and vgs client creation returns error becuase of connection errors
+	ClientNewFunc = func(_ *rest.Config, _ client.Options) (client.Client, error) {
+		scheme := runtime.NewScheme()
+		initObjs := []client.Object{
+			&unstructured.Unstructured{
+				Object: map[string]interface{}{
+					"apiVersion": "v1",
+					"kind":       "Pod",
+					"metadata": map[string]interface{}{
+						"name":      "example-pod",
+						"namespace": "default",
+					},
+				},
+			},
+		}
+		fakeClient := fakeclient.NewClientBuilder().WithScheme(scheme).WithObjects(initObjs...).Build()
+		return fakeClient, nil
+	}
+
+	suite.Run("vgs client - success", func() {
+		_, err := suite.kubeClient.CreateVGSClient()
+		suite.NoError(err)
+	})
+
+	suite.Run("rg client - success", func() {
+		_, err := suite.kubeClient.CreateRGClient()
+		suite.NoError(err)
 	})
 }
 
@@ -438,6 +470,11 @@ func (suite *CoreTestSuite) TestStorageExists() {
 	exists, err := suite.kubeClient.StorageClassExists(context.Background(), storageClass.Name)
 	suite.NoError(err)
 	suite.Equal(true, exists)
+
+	exists, err = suite.kubeClient.StorageClassExists(context.Background(), "non-existing-storage-class")
+	suite.Error(err)
+	suite.Equal(false, exists)
+
 	exists, err = suite.kubeClient.StorageClassExists(context.Background(), "")
 	suite.Error(err)
 	suite.Equal(false, exists)
