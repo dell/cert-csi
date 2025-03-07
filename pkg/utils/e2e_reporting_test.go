@@ -1,6 +1,6 @@
 /*
  *
- * Copyright © 2023 Dell Inc. or its subsidiaries. All Rights Reserved.
+ * Copyright © 2023-2025 Dell Inc. or its subsidiaries. All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -41,6 +41,9 @@ func TestE2eReportParser(t *testing.T) {
 		wantErr bool
 	}{
 		{"Check generated config", args{"testdata/execution_powerstore-nfs.xml"}, preResult, false},
+		{"Check generated config with external storage", args{"testdata/execution_powerstore-nfs-external.xml"}, preResult, false},
+		{"Fake file", args{"testdata/fake.xml"}, nil, true},
+		{"Invalid file", args{"testdata/invalid-file.xml"}, nil, true},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
