@@ -51,11 +51,7 @@ build:
 
 docker: download-csm-common
 	$(eval include csm-common.mk)
-	@echo "Building base image from $(DEFAULT_BASEIMAGE) and loading dependencies..."
-	./scripts/build_ubi_micro.sh $(DEFAULT_BASEIMAGE)
-	@echo "Base image build: SUCCESS"
-	$(eval BASEIMAGE=cert-ubimicro:latest)
-	$(BUILDER) build -t cert-csi:latest --build-arg BASEIMAGE=$(BASEIMAGE) --build-arg GOIMAGE=$(DEFAULT_GOIMAGE) .
+	$(BUILDER) build --pull -t cert-csi:latest --build-arg BASEIMAGE=$(CSM_BASEIMAGE) --build-arg GOIMAGE=$(DEFAULT_GOIMAGE) .
 
 # build-statically-linked : used for building a standalone binary with statically linked glibc
 # this command should be used when building the binary for distributing it to customer/user
