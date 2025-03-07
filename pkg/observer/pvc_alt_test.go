@@ -126,14 +126,14 @@ func TestPvcListObserver_StartWatching(t *testing.T) {
 
 			if test.pvcList != nil {
 				pvcListWg.Add(1)
-				originalGetPvcsList := getPvcsList
-				getPvcsList = func(_ context.Context, _ *k8sclientV1.Client, _ metav1.ListOptions) (*v1.PersistentVolumeClaimList, error) {
+				originalGetPvcsList := getPVCListFunc
+				getPVCListFunc = func(_ context.Context, _ *k8sclientV1.Client, _ metav1.ListOptions) (*v1.PersistentVolumeClaimList, error) {
 					pvcListWg.Done()
 
 					return test.pvcList, nil
 				}
 				defer func() {
-					getPvcsList = originalGetPvcsList
+					getPVCListFunc = originalGetPvcsList
 				}()
 			}
 

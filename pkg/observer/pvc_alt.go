@@ -36,7 +36,7 @@ type PvcListObserver struct {
 	finished chan bool
 }
 
-var getPvcsList = func(ctx context.Context, client *pvc.Client, _ metav1.ListOptions) (*v1.PersistentVolumeClaimList, error) {
+var getPVCListFunc = func(ctx context.Context, client *pvc.Client, _ metav1.ListOptions) (*v1.PersistentVolumeClaimList, error) {
 	return client.Interface.List(ctx, metav1.ListOptions{})
 }
 
@@ -76,7 +76,7 @@ func (obs *PvcListObserver) StartWatching(ctx context.Context, runner *Runner) {
 
 		currentState := make(map[string]bool)
 
-		pvcList, err := getPvcsList(ctx, client, metav1.ListOptions{})
+		pvcList, err := getPVCListFunc(ctx, client, metav1.ListOptions{})
 		if err != nil {
 			return false, err
 		}
