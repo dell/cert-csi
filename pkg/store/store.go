@@ -1,6 +1,6 @@
 /*
  *
- * Copyright © 2022-2023 Dell Inc. or its subsidiaries. All Rights Reserved.
+ * Copyright © 2022-2025 Dell Inc. or its subsidiaries. All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -27,6 +27,8 @@ import (
 type Conditions map[string]interface{}
 
 // Store is a generic interface for stores
+//
+//go:generate mockgen -destination=mocks/storeinterface.go -package=mocks github.com/dell/cert-csi/pkg/store Store
 type Store interface {
 	SaveTestRun(tr *TestRun) error
 	GetTestRuns(whereConditions Conditions, orderBy string, limit int) ([]TestRun, error)

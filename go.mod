@@ -3,6 +3,7 @@ module github.com/dell/cert-csi
 go 1.23
 
 require (
+	github.com/DATA-DOG/go-sqlmock v1.5.2
 	github.com/cheggaaa/pb/v3 v3.1.5
 	github.com/dell/csi-volumegroup-snapshotter v1.7.0
 	github.com/dell/csm-replication v1.9.0
@@ -14,7 +15,7 @@ require (
 	github.com/rifflock/lfshook v0.0.0-20180920164130-b9218ef580f5
 	github.com/sirupsen/logrus v1.9.3
 	github.com/spf13/viper v1.18.2
-	github.com/stretchr/testify v1.9.0
+	github.com/stretchr/testify v1.10.0
 	github.com/urfave/cli v1.22.15
 	github.com/x-cray/logrus-prefixed-formatter v0.5.2
 	golang.org/x/sync v0.10.0
@@ -31,6 +32,8 @@ require (
 	sigs.k8s.io/controller-runtime v0.14.6
 	sigs.k8s.io/yaml v1.4.0
 )
+
+require github.com/stretchr/objx v0.5.2 // indirect
 
 replace (
 	k8s.io/cloud-provider => k8s.io/cloud-provider v1.31.2
@@ -175,6 +178,7 @@ require (
 	go.opentelemetry.io/otel/metric v1.28.0 // indirect
 	go.opentelemetry.io/otel/trace v1.28.0 // indirect
 	go.starlark.net v0.0.0-20230525235612-a134d8f9ddca // indirect
+	go.uber.org/mock v0.5.0
 	go.uber.org/multierr v1.11.0 // indirect
 	golang.org/x/crypto v0.31.0 // indirect
 	golang.org/x/exp v0.0.0-20230905200255-921286631fa9 // indirect
