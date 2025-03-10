@@ -277,7 +277,7 @@ func (sr *SuiteRunner) RunSuites(suites map[string][]suites.Interface) {
 			if sr.stop {
 				logrus.Infof("Stopping execution as duration has elapsed.")
 				break
-			}			
+			}
 			select {
 			case <-iterCtx.Done():
 				if sr.stop {
