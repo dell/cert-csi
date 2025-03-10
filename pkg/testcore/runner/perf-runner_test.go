@@ -480,6 +480,33 @@ func TestRunSuites(t *testing.T) {
 			Duration:            10 * time.Second,
 			sequentialExecution: false,
 		},
+		{
+			name: "Enter stop",
+			suites: func() map[string][]suites.Interface {
+				suite := mocks.NewMockInterface(gomock.NewController(t))
+				suite.EXPECT().GetName().AnyTimes().Return("test run 1")
+				suite.EXPECT().Parameters().Times(1).Return("param1,param2")
+				suite.EXPECT().GetNamespace().AnyTimes().Return("test-namespace")
+				suite.EXPECT().GetClients(gomock.Any(), gomock.Any()).AnyTimes().Return(&k8sclient.Clients{}, nil)
+				suite.EXPECT().GetObservers(gomock.Any()).AnyTimes().Return([]observer.Interface{})
+				suite.EXPECT().Run(gomock.Any(), gomock.Any(), gomock.Any()).AnyTimes().Return(nil, nil)
+
+				return map[string][]suites.Interface{
+					"sc1": {
+						suite,
+					},
+				}
+			},
+
+			tr: &store.TestRun{
+				Name:           "test run 1",
+				StartTimestamp: time.Now(),
+				StorageClass:   "sc1",
+				ClusterAddress: "localhost",
+			},
+			Duration:            10 * time.Second,
+			sequentialExecution: false,
+		},
 
 		{
 			name: "Failure test run",
@@ -568,6 +595,10 @@ func TestRunSuites(t *testing.T) {
 				sequentialExecution: tt.sequentialExecution,
 			}
 			sr.Runner = r
+			if tt.name == "Enter stop" {
+				sr.Duration = 1 * time.Nanosecond
+
+			}
 
 			clientCtx := &clientTestContext{t: t}
 
@@ -1071,8 +1102,8 @@ func TestRunHook(t *testing.T) {
 	defer os.Remove(script.Name())
 	// Write the desired script content to the file
 	scriptContent := `#!/bin/bash
-echo "Hello, World!"
-`
+ echo "Hello, World!"
+ `
 	_, err = script.Write([]byte(scriptContent))
 	if err != nil {
 		t.Fatal(err)
