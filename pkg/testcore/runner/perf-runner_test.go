@@ -597,7 +597,6 @@ func TestRunSuites(t *testing.T) {
 			sr.Runner = r
 			if tt.name == "Enter stop" {
 				sr.Duration = 1 * time.Nanosecond
-
 			}
 
 			clientCtx := &clientTestContext{t: t}
