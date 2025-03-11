@@ -87,16 +87,27 @@ func TestCheckValidNamespace(t *testing.T) {
 			}(),
 			wantErr: false,
 		},
+		{
+			name:     "error checking namespace",
+			driverNs: "error-namespace",
+			k8s: func() k8sclient.KubeClientInterface {
+				mockKubeClient := mocks.NewMockKubeClientInterface(gomock.NewController(t))
+				mockKubeClient.EXPECT().NamespaceExists(context.Background(), "error-namespace").Times(1).Return(false, errors.New("mock error"))
+				return mockKubeClient
+			}(),
+			wantErr: true,
+		},
 	}
 
 	for _, tt := range tests {
-		runner := &Runner{
-			KubeClient: tt.k8s,
-		}
-		// TODO return an error from checkValidNamespace to validate if it was found or not?
+		t.Run(tt.name, func(_ *testing.T) {
+			runner := &Runner{
+				KubeClient: tt.k8s,
+			}
+			// TODO return an error from checkValidNamespace to validate if it was found or not?
 
-		checkValidNamespace(tt.driverNs, runner)
-
+			checkValidNamespace(tt.driverNs, runner)
+		})
 	}
 }
 
@@ -162,26 +173,25 @@ func TestNewSuiteRunner(t *testing.T) {
 	if len(runner.ScDBs) != len(scDBs) {
 		t.Errorf("Expected ScDBs to have length %d, got %d", len(scDBs), len(runner.ScDBs))
 	}
+
 	// Test case: Error in storage class existence check
-	configPath = "config.yaml"
-	driverNs = "driver-namespace"
-	observerType = "EVENT"
-	longevity = "1h"
-	driverNSHealthMetrics = "driver-namespace-health-metrics"
-	timeout = 30
-	cooldown = 10
-	sequentialExecution = true
-	noCleanup = true
-	noCleanupOnFail = true
-	noMetrics = true
-	noReport = true
-	scDBs = []*store.StorageClassDB{{StorageClass: "sc1"}}
-	runner = NewSuiteRunner(configPath, driverNs, startHook, readyHook, finishHook, observerType, longevity, driverNSHealthMetrics,
-		timeout, cooldown, sequentialExecution, noCleanup, noCleanupOnFail, noMetrics, noReport, scDBs, mock)
-	if runner.ScDBs[0].StorageClass != "sc1" {
-		t.Errorf("Expected StorageClass to be %s, got %s", "sc1", runner.ScDBs[0].StorageClass)
+	mockKubeErr := mocks.NewMockKubeClientInterface(gomock.NewController(t))
+	mockKubeErr.EXPECT().StorageClassExists(gomock.Any(), gomock.Any()).AnyTimes().Return(false, errors.New("mock error"))
+	mockKubeErr.EXPECT().NamespaceExists(gomock.Any(), gomock.Any()).AnyTimes().Return(true, nil)
+	mockErr := mocks.NewMockK8sClientInterface(gomock.NewController(t))
+	mockErr.EXPECT().GetConfig(gomock.Any()).AnyTimes().Return(&rest.Config{
+		Host: "localhost",
+	}, nil)
+	mockErr.EXPECT().NewKubeClient(gomock.Any(), gomock.Any()).AnyTimes().Return(mockKubeErr, nil)
+
+	scDBsErr := []*store.StorageClassDB{{StorageClass: "sc1"}}
+	runnerErr := NewSuiteRunner(configPath, driverNs, startHook, readyHook, finishHook, observerType, longevity, driverNSHealthMetrics,
+		timeout, cooldown, sequentialExecution, noCleanup, noCleanupOnFail, noMetrics, noReport, scDBsErr, mockErr)
+	if runnerErr.ScDBs[0].StorageClass != "sc1" {
+		t.Errorf("Expected StorageClass to be %s, got %s", "sc1", runnerErr.ScDBs[0].StorageClass)
 	}
-	// Test case: Error in storage class check  and wrong format longevity
+
+	// Test case: Error in storage class check and wrong format longevity
 	configPath = "config.yaml"
 	driverNs = "driver-namespace"
 	observerType = "EVENT"
@@ -200,6 +210,7 @@ func TestNewSuiteRunner(t *testing.T) {
 	if len(runner.ScDBs) != len(scDBs) {
 		t.Errorf("Expected ScDBs to have length %d, got %d", len(scDBs)-1, len(runner.ScDBs))
 	}
+
 	// Test case: Error in namespace check and cover nil longevity
 	configPath = "config.yaml"
 	driverNs = "driver-namespace"
@@ -568,7 +579,6 @@ func TestRunSuites(t *testing.T) {
 				sequentialExecution: tt.sequentialExecution,
 			}
 			sr.Runner = r
-
 			clientCtx := &clientTestContext{t: t}
 
 			k8sclient.FuncNewClientSet = func(_ *rest.Config) (kubernetes.Interface, error) {
@@ -1071,8 +1081,8 @@ func TestRunHook(t *testing.T) {
 	defer os.Remove(script.Name())
 	// Write the desired script content to the file
 	scriptContent := `#!/bin/bash
-echo "Hello, World!"
-`
+  echo "Hello, World!"
+  `
 	_, err = script.Write([]byte(scriptContent))
 	if err != nil {
 		t.Fatal(err)
