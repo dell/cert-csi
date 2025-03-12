@@ -1534,29 +1534,6 @@ func (ss *SnapSuite) Run(ctx context.Context, storageClass string, clients *k8sc
 	return delFunc, nil
 }
 
-func getSnapshotSize(ctx context.Context, snapshotName string, client *snapv1client.SnapshotClient) (string, error) {
-	log := logrus.WithContext(ctx)
-	log.Debugf("Retrieving snapshot size for snapshot: %s", snapshotName)
-
-	// Retrieve the VolumeSnapshot resource
-	snapshot, err := client.Interface.Get(ctx, snapshotName, metav1.GetOptions{})
-	if err != nil {
-		log.Errorf("Failed to get VolumeSnapshot: %v", err)
-		return "",fmt.Errorf("failed to get VolumeSnapshot") // Default size in case of error
-	}
-	log.Debugf("VolumeSnapshot resource: %v", snapshot)
-
-	// Directly access the restore size from the VolumeSnapshot object
-	restoreSize := snapshot.Status.RestoreSize
-	if restoreSize == nil {
-		log.Warnf("Restore size is empty")
-		return "", fmt.Errorf("restore size is empty") // Default size in case of error
-	}
-	log.Debugf("Snapshot restore size: %v", restoreSize)
-
-	return restoreSize.String(),nil
-}
-
 func validateCustomSnapName(name string, snapshotAmount int) bool {
 	// If no. of snapshots is only 1 then we will take custom name else no.
 	if snapshotAmount == 1 && len(name) != 0 {
