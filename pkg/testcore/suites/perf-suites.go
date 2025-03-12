@@ -1386,12 +1386,9 @@ func (ss *SnapSuite) Run(ctx context.Context, storageClass string, clients *k8sc
 	vcconf := testcore.VolumeCreationConfig(storageClass, ss.VolumeSize, snapvolname, ss.AccessModeOriginal)
 	volTmpl := pvcClient.MakePVC(vcconf)
 	pvc := pvcClient.Create(ctx, volTmpl)
-	
 	if pvc.HasError() {
 		return delFunc, pvc.GetError()
 	}
-
-
 	pvcNameList = append(pvcNameList, pvc.Object.Name)
 	if !firstConsumer {
 		err := pvcClient.WaitForAllToBeBound(ctx)
@@ -1642,7 +1639,6 @@ func (rs *ReplicationSuite) Run(ctx context.Context, storageClass string, client
 	pvcClient := clients.PVCClient
 	podClient := clients.PodClient
 	rgClient := clients.RgClient
-	snapClient := clients.SnapClientGA
 
 	if rs.VolumeNumber <= 0 {
 		log.Info("Using default number of volumes")
@@ -1697,7 +1693,7 @@ func (rs *ReplicationSuite) Run(ctx context.Context, storageClass string, client
 	log.Info("Creating a snapshot on each of the volumes")
 	var snapNameList []string
 	var volumeSize resource.Quantity
-	if snapClient != nil {
+	if clients.SnapClientGA != nil {
 		lenPvcList := len(allPvcNames)
 		iters := lenPvcList / 10
 		if lenPvcList%10 != 0 {
@@ -1722,7 +1718,7 @@ func (rs *ReplicationSuite) Run(ctx context.Context, storageClass string, client
 				
 				snapName := fmt.Sprintf("snap-%s", gotPvc.Name)
 				snapNameList = append(snapNameList, snapName)
-				createSnap := snapClient.Create(ctx,
+				createSnap := clients.SnapClientGA.Create(ctx,
 					&snapv1.VolumeSnapshot{
 						ObjectMeta: metav1.ObjectMeta{
 							Name:         snapName,
@@ -1740,7 +1736,7 @@ func (rs *ReplicationSuite) Run(ctx context.Context, storageClass string, client
 					return delFunc, createSnap.GetError()
 				}
 			}
-			snapReadyError := snapClient.WaitForAllToBeReady(ctx)
+			snapReadyError := clients.SnapClientGA.WaitForAllToBeReady(ctx)
 			if snapReadyError != nil {
 				return delFunc, snapReadyError
 			}
@@ -1757,8 +1753,8 @@ func (rs *ReplicationSuite) Run(ctx context.Context, storageClass string, client
 			vcconf := testcore.VolumeCreationConfig(storageClass, rs.VolumeSize, "", "")
 			vcconf.SnapName = snapNameList[j+(i*rs.VolumeNumber)]
 			vcconf.ClaimSize = rs.VolumeSize
-			log.Debugf("+++++++++++++Claim size: %s", vcconf.ClaimSize)
 			volTmpl := pvcClient.MakePVC(vcconf)
+
 			pvc := pvcClient.Create(ctx, volTmpl)
 			if pvc.HasError() {
 				return delFunc, pvc.GetError()
