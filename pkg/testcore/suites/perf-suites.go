@@ -1485,8 +1485,7 @@ func (ss *SnapSuite) Run(ctx context.Context, storageClass string, clients *k8sc
 	accessModeRestoredVolume := testcore.GetAccessMode(ss.AccessModeRestored)
 	vcconf.AccessModes = accessModeRestoredVolume
 	log.Infof("Creating pvc %s", vcconf.Name)
-	namespace := snaps[n].Client.Namespace
-	snapshotSize := getSnapshotSize(ctx, vcconf.SnapName, namespace)
+	snapshotSize := getSnapshotSize(ctx, vcconf.SnapName, snaps[n].Client)
 	// Set the claim size in the volume configuration
 	vcconf.ClaimSize = snapshotSize
 	volRestored := pvcClient.MakePVC(vcconf)
@@ -1527,29 +1526,27 @@ func (ss *SnapSuite) Run(ctx context.Context, storageClass string, clients *k8sc
 	return delFunc, nil
 }
 
-func getSnapshotSize(ctx context.Context, snapshotName, namespace string) string {
+func getSnapshotSize(ctx context.Context, snapshotName string, client *snapv1client.SnapshotClient) string {
 	log := logrus.WithContext(ctx)
 	log.Debugf("Retrieving snapshot size for snapshot: %s", snapshotName)
-	// Execute the kubectl command
-	cmd := exec.Command("kubectl", "get", "volumesnapshot", snapshotName, "-n", namespace, "-o", "json")
-	output, err := cmd.Output()
+
+	// Retrieve the VolumeSnapshot resource
+	snapshot, err := client.Interface.Get(ctx, snapshotName, metav1.GetOptions{})
 	if err != nil {
-		log.Errorf("Failed to execute kubectl command: %v", err)
+		log.Errorf("Failed to get VolumeSnapshot: %v", err)
 		return "4Gi" // Default size in case of error
 	}
-	log.Debugf("kubectl command output: %s", output)
-	// Parse the JSON output using jq
-	cmd = exec.Command("jq", "-r", ".status.restoreSize")
-	cmd.Stdin = strings.NewReader(string(output))
-	sizeOutput, err := cmd.Output()
-	if err != nil {
-		log.Errorf("Failed to parse JSON output: %v", err)
+	log.Debugf("VolumeSnapshot resource: %v", snapshot)
+
+	// Directly access the restore size from the VolumeSnapshot object
+	restoreSize := snapshot.Status.RestoreSize
+	if restoreSize == nil {
+		log.Errorf("Restore size is empty")
 		return "4Gi" // Default size in case of error
 	}
-	log.Debugf("jq command output: %s", sizeOutput)
-	snapshotSize := strings.TrimSpace(string(sizeOutput))
-	log.Debugf("Snapshot restore size: %s", snapshotSize)
-	return snapshotSize
+	log.Debugf("Snapshot restore size: %v", restoreSize)
+
+	return restoreSize.String()
 }
 
 func validateCustomSnapName(name string, snapshotAmount int) bool {
@@ -1660,6 +1657,7 @@ func (rs *ReplicationSuite) Run(ctx context.Context, storageClass string, client
 	pvcClient := clients.PVCClient
 	podClient := clients.PodClient
 	rgClient := clients.RgClient
+	snapClient := clients.SnapClientGA
 
 	if rs.VolumeNumber <= 0 {
 		log.Info("Using default number of volumes")
@@ -1713,7 +1711,7 @@ func (rs *ReplicationSuite) Run(ctx context.Context, storageClass string, client
 	}
 	log.Info("Creating a snapshot on each of the volumes")
 	var snapNameList []string
-	if clients.SnapClientGA != nil {
+	if snapClient != nil {
 		lenPvcList := len(allPvcNames)
 		iters := lenPvcList / 10
 		if lenPvcList%10 != 0 {
@@ -1732,7 +1730,7 @@ func (rs *ReplicationSuite) Run(ctx context.Context, storageClass string, client
 				}
 				snapName := fmt.Sprintf("snap-%s", gotPvc.Name)
 				snapNameList = append(snapNameList, snapName)
-				createSnap := clients.SnapClientGA.Create(ctx,
+				createSnap := snapClient.Create(ctx,
 					&snapv1.VolumeSnapshot{
 						ObjectMeta: metav1.ObjectMeta{
 							Name:         snapName,
@@ -1750,7 +1748,7 @@ func (rs *ReplicationSuite) Run(ctx context.Context, storageClass string, client
 					return delFunc, createSnap.GetError()
 				}
 			}
-			snapReadyError := clients.SnapClientGA.WaitForAllToBeReady(ctx)
+			snapReadyError := snapClient.WaitForAllToBeReady(ctx)
 			if snapReadyError != nil {
 				return delFunc, snapReadyError
 			}
@@ -1766,14 +1764,7 @@ func (rs *ReplicationSuite) Run(ctx context.Context, storageClass string, client
 			// Restore PVCs
 			vcconf := testcore.VolumeCreationConfig(storageClass, rs.VolumeSize, "", "")
 			vcconf.SnapName = snapNameList[j+(i*rs.VolumeNumber)]
-			pvcName := allPvcNames[j+(i*rs.VolumeNumber)]
-			gotPvc, err := pvcClient.Interface.Get(ctx, pvcName, metav1.GetOptions{})
-			if err != nil {
-				log.Errorf("Error getting pvc: %s", err)
-				return delFunc, err
-			}
-			namespace := gotPvc.Namespace
-			snapshotSize := getSnapshotSize(ctx, vcconf.SnapName, namespace) // Replace this with the actual size retrieved from the snapshot
+			snapshotSize := getSnapshotSize(ctx, vcconf.SnapName, snapClient) // Use the snapshot client to get the actual size
 			vcconf.ClaimSize = snapshotSize
 			volTmpl := pvcClient.MakePVC(vcconf)
 			pvc := pvcClient.Create(ctx, volTmpl)
