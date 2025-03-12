@@ -1386,9 +1386,12 @@ func (ss *SnapSuite) Run(ctx context.Context, storageClass string, clients *k8sc
 	vcconf := testcore.VolumeCreationConfig(storageClass, ss.VolumeSize, snapvolname, ss.AccessModeOriginal)
 	volTmpl := pvcClient.MakePVC(vcconf)
 	pvc := pvcClient.Create(ctx, volTmpl)
+	
 	if pvc.HasError() {
 		return delFunc, pvc.GetError()
 	}
+
+
 	pvcNameList = append(pvcNameList, pvc.Object.Name)
 	if !firstConsumer {
 		err := pvcClient.WaitForAllToBeBound(ctx)
@@ -1431,6 +1434,10 @@ func (ss *SnapSuite) Run(ctx context.Context, storageClass string, clients *k8sc
 		return delFunc, err
 	}
 
+	volumeSize := gotPvc.Status.Capacity[v1.ResourceStorage]
+
+
+	log.Debugf("**********Actual Volume size: %s", volumeSize.String())
 	snapPrefix := DefaultSnapPrefix
 
 	if ss.CustomSnapName != "" {
@@ -1485,9 +1492,30 @@ func (ss *SnapSuite) Run(ctx context.Context, storageClass string, clients *k8sc
 	accessModeRestoredVolume := testcore.GetAccessMode(ss.AccessModeRestored)
 	vcconf.AccessModes = accessModeRestoredVolume
 	log.Infof("Creating pvc %s", vcconf.Name)
-	snapshotSize := getSnapshotSize(ctx, vcconf.SnapName, snaps[n].Client)
+	log.Debugf("StorageClass: %v", storageClass )
+
+	// storageClassObj, err := pvcClient.ClientSet.StorageV1().StorageClasses().Get(ctx, storageClass, metav1.GetOptions{})
+	// if err != nil {
+	// 	log.Error("Error fetching storage class: ", err)
+	// 	return nil, err
+	// }
+
+	// Get the driver name from the storage class
+	// driverName := storageClassObj.Provisioner
+
+	// log.Debugf("Driver name: %s", driverName)
+	// snapshotSize,err := getSnapshotSize(ctx, vcconf.SnapName, snaps[n].Client)
+	// if err != nil {
+	// 	return delFunc, err
+	// }
 	// Set the claim size in the volume configuration
-	vcconf.ClaimSize = snapshotSize
+
+	if(ss.VolumeSize <= volumeSize.String()){
+		log.Debugf("**********Actual Volume size: %s", volumeSize.String())
+		log.Debugf("Claimed Volume size: %s", ss.VolumeSize)
+		vcconf.ClaimSize = volumeSize.String()
+	}
+	
 	volRestored := pvcClient.MakePVC(vcconf)
 	pvcRestored := pvcClient.Create(ctx, volRestored)
 	if pvcRestored.HasError() {
@@ -1526,7 +1554,7 @@ func (ss *SnapSuite) Run(ctx context.Context, storageClass string, clients *k8sc
 	return delFunc, nil
 }
 
-func getSnapshotSize(ctx context.Context, snapshotName string, client *snapv1client.SnapshotClient) string {
+func getSnapshotSize(ctx context.Context, snapshotName string, client *snapv1client.SnapshotClient) (string, error) {
 	log := logrus.WithContext(ctx)
 	log.Debugf("Retrieving snapshot size for snapshot: %s", snapshotName)
 
@@ -1534,19 +1562,19 @@ func getSnapshotSize(ctx context.Context, snapshotName string, client *snapv1cli
 	snapshot, err := client.Interface.Get(ctx, snapshotName, metav1.GetOptions{})
 	if err != nil {
 		log.Errorf("Failed to get VolumeSnapshot: %v", err)
-		return "4Gi" // Default size in case of error
+		return "",fmt.Errorf("failed to get VolumeSnapshot") // Default size in case of error
 	}
 	log.Debugf("VolumeSnapshot resource: %v", snapshot)
 
 	// Directly access the restore size from the VolumeSnapshot object
 	restoreSize := snapshot.Status.RestoreSize
 	if restoreSize == nil {
-		log.Errorf("Restore size is empty")
-		return "4Gi" // Default size in case of error
+		log.Warnf("Restore size is empty")
+		return "", fmt.Errorf("restore size is empty") // Default size in case of error
 	}
 	log.Debugf("Snapshot restore size: %v", restoreSize)
 
-	return restoreSize.String()
+	return restoreSize.String(),nil
 }
 
 func validateCustomSnapName(name string, snapshotAmount int) bool {
@@ -1658,6 +1686,15 @@ func (rs *ReplicationSuite) Run(ctx context.Context, storageClass string, client
 	podClient := clients.PodClient
 	rgClient := clients.RgClient
 	snapClient := clients.SnapClientGA
+	
+	storageClassObj, err := pvcClient.ClientSet.StorageV1().StorageClasses().Get(ctx, storageClass, metav1.GetOptions{})
+	if err != nil {
+		log.Error("Error fetching storage class: ", err)
+		return nil, err
+	}
+
+	// Get the driver name from the storage class
+	driverName := storageClassObj.Provisioner
 
 	if rs.VolumeNumber <= 0 {
 		log.Info("Using default number of volumes")
@@ -1711,6 +1748,7 @@ func (rs *ReplicationSuite) Run(ctx context.Context, storageClass string, client
 	}
 	log.Info("Creating a snapshot on each of the volumes")
 	var snapNameList []string
+	var volumeSize resource.Quantity
 	if snapClient != nil {
 		lenPvcList := len(allPvcNames)
 		iters := lenPvcList / 10
@@ -1728,6 +1766,8 @@ func (rs *ReplicationSuite) Run(ctx context.Context, storageClass string, client
 				if err != nil {
 					return delFunc, err
 				}
+				volumeSize = (gotPvc.Status.Capacity[v1.ResourceStorage])
+				log.Debugf("**********Actual Volume size: %s", volumeSize.String())
 				snapName := fmt.Sprintf("snap-%s", gotPvc.Name)
 				snapNameList = append(snapNameList, snapName)
 				createSnap := snapClient.Create(ctx,
@@ -1764,8 +1804,20 @@ func (rs *ReplicationSuite) Run(ctx context.Context, storageClass string, client
 			// Restore PVCs
 			vcconf := testcore.VolumeCreationConfig(storageClass, rs.VolumeSize, "", "")
 			vcconf.SnapName = snapNameList[j+(i*rs.VolumeNumber)]
-			snapshotSize := getSnapshotSize(ctx, vcconf.SnapName, snapClient) // Use the snapshot client to get the actual size
-			vcconf.ClaimSize = snapshotSize
+			log.Debugf("StorageClass: %v", storageClass )
+			log.Debugf("Driver : %v", driverName)
+			// snapshotSize,err := getSnapshotSize(ctx, vcconf.SnapName, snapClient) // Use the snapshot client to get the actual size
+			// if err != nil {
+			// 	return delFunc, err
+			// }
+			// vcconf.ClaimSize = snapshotSize
+
+			if(rs.VolumeSize <= volumeSize.String()){
+				log.Debugf("**********Actual Volume size: %s", volumeSize.String())
+				log.Debugf("Claimed Volume size: %s", rs.VolumeSize)
+				vcconf.ClaimSize = volumeSize.String()
+			}
+			vcconf.ClaimSize = volumeSize.String()
 			volTmpl := pvcClient.MakePVC(vcconf)
 			pvc := pvcClient.Create(ctx, volTmpl)
 			if pvc.HasError() {
