@@ -1486,8 +1486,7 @@ func (ss *SnapSuite) Run(ctx context.Context, storageClass string, clients *k8sc
 	accessModeRestoredVolume := testcore.GetAccessMode(ss.AccessModeRestored)
 	vcconf.AccessModes = accessModeRestoredVolume
 	if ss.VolumeSize != volumeSize.String() {
-		log.Debugf("Volume size created in array: %s", volumeSize.String())
-		// ss.VolumeSize = volumeSize.String()
+		log.Debugf("Actual Volume size created in array: %s", volumeSize.String())
 		vcconf.ClaimSize = volumeSize.String()
 	}
 	log.Infof("Creating pvc %s", vcconf.Name)
@@ -1709,7 +1708,6 @@ func (rs *ReplicationSuite) Run(ctx context.Context, storageClass string, client
 					return delFunc, err
 				}
 				volumeSize = (gotPvc.Status.Capacity[v1.ResourceStorage])
-
 				snapName := fmt.Sprintf("snap-%s", gotPvc.Name)
 				snapNameList = append(snapNameList, snapName)
 				createSnap := clients.SnapClientGA.Create(ctx,
@@ -1747,9 +1745,8 @@ func (rs *ReplicationSuite) Run(ctx context.Context, storageClass string, client
 			vcconf := testcore.VolumeCreationConfig(storageClass, rs.VolumeSize, "", "")
 			vcconf.SnapName = snapNameList[j+(i*rs.VolumeNumber)]
 			if rs.VolumeSize != volumeSize.String() {
-				// rs.VolumeSize = volumeSize.String()
 				vcconf.ClaimSize = volumeSize.String()
-				log.Debugf("Volume size in from array: %s", volumeSize.String())
+				log.Debugf("Actual Volume size created in array: %s", volumeSize.String())
 			}
 			volTmpl := pvcClient.MakePVC(vcconf)
 
