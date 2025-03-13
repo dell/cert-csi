@@ -1432,12 +1432,12 @@ func (ss *SnapSuite) Run(ctx context.Context, storageClass string, clients *k8sc
 	}
 
 	volumeSize := gotPvc.Status.Capacity[v1.ResourceStorage]
-	
-	if(ss.VolumeSize != volumeSize.String()){
+
+	if ss.VolumeSize != volumeSize.String() {
 		log.Debugf("Volume size created in array: %s", volumeSize.String())
-		ss.VolumeSize = volumeSize.String()	
+		ss.VolumeSize = volumeSize.String()
 	}
-	
+
 	snapPrefix := DefaultSnapPrefix
 
 	if ss.CustomSnapName != "" {
@@ -1711,11 +1711,11 @@ func (rs *ReplicationSuite) Run(ctx context.Context, storageClass string, client
 					return delFunc, err
 				}
 				volumeSize = (gotPvc.Status.Capacity[v1.ResourceStorage])
-				if(rs.VolumeSize != volumeSize.String()) {
+				if rs.VolumeSize != volumeSize.String() {
 					rs.VolumeSize = volumeSize.String()
 					log.Debugf("Volume size in from array: %s", volumeSize.String())
 				}
-				
+
 				snapName := fmt.Sprintf("snap-%s", gotPvc.Name)
 				snapNameList = append(snapNameList, snapName)
 				createSnap := clients.SnapClientGA.Create(ctx,
