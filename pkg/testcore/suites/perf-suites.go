@@ -1431,6 +1431,7 @@ func (ss *SnapSuite) Run(ctx context.Context, storageClass string, clients *k8sc
 		return delFunc, err
 	}
 
+	volumeSize := gotPvc.Status.Capacity[v1.ResourceStorage]
 	snapPrefix := DefaultSnapPrefix
 
 	if ss.CustomSnapName != "" {
@@ -1484,11 +1485,15 @@ func (ss *SnapSuite) Run(ctx context.Context, storageClass string, clients *k8sc
 	vcconf.Name = vcconf.SnapName + "-restore"
 	accessModeRestoredVolume := testcore.GetAccessMode(ss.AccessModeRestored)
 	vcconf.AccessModes = accessModeRestoredVolume
+	if ss.VolumeSize != volumeSize.String() {
+		log.Debugf("Actual Volume size created in array: %s", volumeSize.String())
+		vcconf.ClaimSize = volumeSize.String()
+	}
 	log.Infof("Creating pvc %s", vcconf.Name)
 	volRestored := pvcClient.MakePVC(vcconf)
 	pvcRestored := pvcClient.Create(ctx, volRestored)
-	if pvc.HasError() {
-		return delFunc, pvc.GetError()
+	if pvcRestored.HasError() {
+		return delFunc, pvcRestored.GetError()
 	}
 	pvcFromSnapNameList = append(pvcFromSnapNameList, pvcRestored.Object.Name)
 	if !firstConsumer {
@@ -1684,6 +1689,7 @@ func (rs *ReplicationSuite) Run(ctx context.Context, storageClass string, client
 	}
 	log.Info("Creating a snapshot on each of the volumes")
 	var snapNameList []string
+	var volumeSize resource.Quantity
 	if clients.SnapClientGA != nil {
 		lenPvcList := len(allPvcNames)
 		iters := lenPvcList / 10
@@ -1701,6 +1707,7 @@ func (rs *ReplicationSuite) Run(ctx context.Context, storageClass string, client
 				if err != nil {
 					return delFunc, err
 				}
+				volumeSize = (gotPvc.Status.Capacity[v1.ResourceStorage])
 				snapName := fmt.Sprintf("snap-%s", gotPvc.Name)
 				snapNameList = append(snapNameList, snapName)
 				createSnap := clients.SnapClientGA.Create(ctx,
@@ -1737,6 +1744,10 @@ func (rs *ReplicationSuite) Run(ctx context.Context, storageClass string, client
 			// Restore PVCs
 			vcconf := testcore.VolumeCreationConfig(storageClass, rs.VolumeSize, "", "")
 			vcconf.SnapName = snapNameList[j+(i*rs.VolumeNumber)]
+			if rs.VolumeSize != volumeSize.String() {
+				vcconf.ClaimSize = volumeSize.String()
+				log.Debugf("Actual Volume size created in array: %s", volumeSize.String())
+			}
 			volTmpl := pvcClient.MakePVC(vcconf)
 
 			pvc := pvcClient.Create(ctx, volTmpl)
