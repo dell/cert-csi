@@ -1098,7 +1098,7 @@ func (vis *VolumeIoSuite) Run(ctx context.Context, storageClass string, clients 
 					}
 				}
 				ddRes := bytes.NewBufferString("")
-				if err := podClient.Exec(ctx, writerPod.Object, []string{"/bin/bash", "-c", "dd if=/dev/urandom bs=1M count=128 oflag=sync > " + file}, ddRes, os.Stderr, false); err != nil {
+				if err := podClient.Exec(ctx, writerPod.Object, []string{"/bin/bash", "-c", "dd if=/dev/urandom bs=1M count=1280 oflag=sync > " + file}, ddRes, os.Stderr, false); err != nil {
 					log.Info(err)
 					return err
 				}
@@ -1107,6 +1107,9 @@ func (vis *VolumeIoSuite) Run(ctx context.Context, storageClass string, clients 
 				if err := podClient.Exec(ctx, writerPod.Object, []string{"/bin/bash", "-c", "sha512sum " + file + " > " + sum}, os.Stdout, os.Stderr, false); err != nil {
 					return err
 				}
+
+				time.Sleep(300 * time.Millisecond)
+
 				podClient.Delete(ctx, writerPod.Object).Sync(errCtx)
 				if writerPod.HasError() {
 					return writerPod.GetError()
