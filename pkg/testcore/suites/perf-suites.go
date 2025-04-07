@@ -1091,6 +1091,21 @@ func (vis *VolumeIoSuite) Run(ctx context.Context, storageClass string, clients 
 					if err := podClient.Exec(ctx, writerPod.Object, []string{"/bin/bash", "-c", "sha512sum -c " + sum}, writer, os.Stderr, false); err != nil {
 						return err
 					}
+
+					// Oliver: Read and print the file content
+					fileContentInside := bytes.NewBufferString("")
+					if err := podClient.Exec(ctx, p.Object, []string{"cat", file}, fileContentInside, os.Stderr, false); err != nil {
+						return delFunc, err
+					}
+					log.Infof("Content of file inside %s:\n%s", file, fileContentInside.String())
+
+					// Oliver: Read and print the sum content
+					sumContentInside := bytes.NewBufferString("")
+					if err := podClient.Exec(ctx, p.Object, []string{"cat", sum}, sumContentInside, os.Stderr, false); err != nil {
+						return delFunc, err
+					}
+					log.Infof("Content of sum inside %s:\n%s", sum, sumContentInside.String())
+
 					if strings.Contains(writer.String(), "OK") {
 						log.Info("Hashes match")
 					} else {
@@ -1104,12 +1119,26 @@ func (vis *VolumeIoSuite) Run(ctx context.Context, storageClass string, clients 
 					return err
 				}
 
+				// Oliver: Read and print the file content
+				fileContent := bytes.NewBufferString("")
+				if err := podClient.Exec(ctx, p.Object, []string{"cat", file}, fileContent, os.Stderr, false); err != nil {
+					return delFunc, err
+				}
+				log.Infof("Content of file outside %s:\n%s", file, fileContent.String())
+
 				log.Debug(ddRes.String())
 				if err := podClient.Exec(ctx, writerPod.Object, []string{"/bin/bash", "-c", "sha512sum " + file + " > " + sum}, os.Stdout, os.Stderr, false); err != nil {
 					return err
 				}
 
 				time.Sleep(300 * time.Millisecond)
+
+				// Oliver: Read and print the sum content
+				sumContent := bytes.NewBufferString("")
+				if err := podClient.Exec(ctx, p.Object, []string{"cat", sum}, sumContent, os.Stderr, false); err != nil {
+					return delFunc, err
+				}
+				log.Infof("Content of sum outside %s:\n%s", sum, sumContent.String())
 
 				podClient.Delete(ctx, writerPod.Object).Sync(errCtx)
 				if writerPod.HasError() {
@@ -2714,7 +2743,6 @@ func (mas *MultiAttachSuite) Run(ctx context.Context, storageClass string, clien
 		log.Info("Checking hash sum on all of the other pods")
 		for _, p := range newPods {
 			newHash := bytes.NewBufferString("")
-			fileContent := bytes.NewBufferString("")
 
 			if err := podClient.Exec(ctx, p.Object, []string{"blockdev", "--flushbufs", device}, os.Stdout, os.Stderr, false); err != nil {
 				return delFunc, err
@@ -2723,7 +2751,8 @@ func (mas *MultiAttachSuite) Run(ctx context.Context, storageClass string, clien
 				return delFunc, err
 			}
 
-			// Read and print the file content
+			// Oliver: Read and print the file content
+			fileContent := bytes.NewBufferString("")
 			if err := podClient.Exec(ctx, p.Object, []string{"cat", file}, fileContent, os.Stderr, false); err != nil {
 				return delFunc, err
 			}
