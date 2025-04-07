@@ -2714,12 +2714,21 @@ func (mas *MultiAttachSuite) Run(ctx context.Context, storageClass string, clien
 		log.Info("Checking hash sum on all of the other pods")
 		for _, p := range newPods {
 			newHash := bytes.NewBufferString("")
+			fileContent := bytes.NewBufferString("")
+
 			if err := podClient.Exec(ctx, p.Object, []string{"blockdev", "--flushbufs", device}, os.Stdout, os.Stderr, false); err != nil {
 				return delFunc, err
 			}
 			if err := podClient.Exec(ctx, p.Object, []string{"dd", "if=" + device, "of=" + file, "bs=1M", "count=128"}, os.Stdout, os.Stderr, false); err != nil {
 				return delFunc, err
 			}
+
+			// Read and print the file content
+			if err := podClient.Exec(ctx, p.Object, []string{"cat", file}, fileContent, os.Stderr, false); err != nil {
+				return delFunc, err
+			}
+			log.Infof("Content of file %s:\n%s", file, fileContent.String())
+
 			if err := podClient.Exec(ctx, p.Object, []string{"sha512sum", file}, newHash, os.Stderr, false); err != nil {
 				return delFunc, err
 			}
