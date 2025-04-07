@@ -1094,14 +1094,14 @@ func (vis *VolumeIoSuite) Run(ctx context.Context, storageClass string, clients 
 
 					// Oliver: Read and print the file content
 					fileContentInside := bytes.NewBufferString("")
-					if err := podClient.Exec(ctx, p.Object, []string{"head", "-n", "10", file}, fileContentInside, os.Stderr, false); err != nil {
+					if err := podClient.Exec(ctx, writerPod.Object, []string{"head", "-n", "10", file}, fileContentInside, os.Stderr, false); err != nil {
 						return delFunc, err
 					}
 					log.Infof("Content of file inside %s:\n%s", file, fileContentInside.String())
 
 					// Oliver: Read and print the sum content
 					sumContentInside := bytes.NewBufferString("")
-					if err := podClient.Exec(ctx, p.Object, []string{"head", "-n", "10", sum}, sumContentInside, os.Stderr, false); err != nil {
+					if err := podClient.Exec(ctx, writerPod.Object, []string{"head", "-n", "10", sum}, sumContentInside, os.Stderr, false); err != nil {
 						return delFunc, err
 					}
 					log.Infof("Content of sum inside %s:\n%s", sum, sumContentInside.String())
@@ -1121,7 +1121,7 @@ func (vis *VolumeIoSuite) Run(ctx context.Context, storageClass string, clients 
 
 				// Oliver: Read and print the file content
 				fileContent := bytes.NewBufferString("")
-				if err := podClient.Exec(ctx, p.Object, []string{"head", "-n", "10", file}, fileContent, os.Stderr, false); err != nil {
+				if err := podClient.Exec(ctx, writerPod.Object, []string{"head", "-n", "10", file}, fileContent, os.Stderr, false); err != nil {
 					return delFunc, err
 				}
 				log.Infof("Content of file outside %s:\n%s", file, fileContent.String())
@@ -1135,7 +1135,7 @@ func (vis *VolumeIoSuite) Run(ctx context.Context, storageClass string, clients 
 
 				// Oliver: Read and print the sum content
 				sumContent := bytes.NewBufferString("")
-				if err := podClient.Exec(ctx, p.Object, []string{"head", "-n", "10", sum}, sumContent, os.Stderr, false); err != nil {
+				if err := podClient.Exec(ctx, writerPod.Object, []string{"head", "-n", "10", sum}, sumContent, os.Stderr, false); err != nil {
 					return delFunc, err
 				}
 				log.Infof("Content of sum outside %s:\n%s", sum, sumContent.String())
