@@ -1094,7 +1094,7 @@ func (vis *VolumeIoSuite) Run(ctx context.Context, storageClass string, clients 
 					if strings.Contains(writer.String(), "OK") {
 						log.Info("Hashes match")
 					} else {
-						log.Errorf("Hashes don't match. Writer content: %s", writer.String())
+						log.Errorf("Hashes don't match. Writer content: %s, Sum file: %s", writer.String(), sum)
 						return fmt.Errorf("hashes don't match")
 					}
 				}
