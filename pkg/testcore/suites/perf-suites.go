@@ -1091,23 +1091,9 @@ func (vis *VolumeIoSuite) Run(ctx context.Context, storageClass string, clients 
 					if err := podClient.Exec(ctx, writerPod.Object, []string{"/bin/bash", "-c", "sha512sum -w -c " + sum}, writer, os.Stderr, false); err != nil {
 						return err
 					}
-
-					// Oliver: Read and print the file content
-					fileContentInside := bytes.NewBufferString("")
-					if err := podClient.Exec(ctx, writerPod.Object, []string{"head", "-c", "10", file}, fileContentInside, os.Stderr, false); err != nil {
-						return err
-					}
-					log.Infof("Content of file inside %s:\n%s", file, fileContentInside.String())
-
-					// Oliver: Read and print the sum content
-					sumContentInside := bytes.NewBufferString("")
-					if err := podClient.Exec(ctx, writerPod.Object, []string{"head", "-c", "10", sum}, sumContentInside, os.Stderr, false); err != nil {
-						return err
-					}
-					log.Infof("Content of sum inside %s:\n%s", sum, sumContentInside.String())
-
 					if strings.Contains(writer.String(), "OK") {
 						log.Info("Hashes match")
+						log.Infof("Hashes match. Writer content: %s, Sum file: %s", writer.String(), sum)
 					} else {
 						log.Errorf("Hashes don't match. Writer content: %s, Sum file: %s", writer.String(), sum)
 						return fmt.Errorf("hashes don't match")
