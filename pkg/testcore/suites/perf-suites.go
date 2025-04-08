@@ -1127,7 +1127,7 @@ func (vis *VolumeIoSuite) Run(ctx context.Context, storageClass string, clients 
 				log.Infof("Content of file outside %s:\n%s", file, fileContent.String())
 
 				log.Debug(ddRes.String())
-				if err := podClient.Exec(ctx, writerPod.Object, []string{"/bin/bash", "-c", "sha512sum -w " + file + " > " + sum}, os.Stdout, os.Stderr, false); err != nil {
+				if err := podClient.Exec(ctx, writerPod.Object, []string{"/bin/bash", "-c", "sha512sum " + file + " > " + sum}, os.Stdout, os.Stderr, false); err != nil {
 					return err
 				}
 
@@ -2758,7 +2758,7 @@ func (mas *MultiAttachSuite) Run(ctx context.Context, storageClass string, clien
 			}
 			log.Infof("Content of file %s:\n%s", file, fileContent.String())
 
-			if err := podClient.Exec(ctx, p.Object, []string{"sha512sum -w", file}, newHash, os.Stderr, false); err != nil {
+			if err := podClient.Exec(ctx, p.Object, []string{"sha512sum", file}, newHash, os.Stderr, false); err != nil {
 				return delFunc, err
 			}
 
