@@ -1032,7 +1032,7 @@ func (vis *VolumeIoSuite) Run(ctx context.Context, storageClass string, clients 
 
 	if vis.ChainLength <= 0 {
 		log.Info("Using default length of chains")
-		vis.ChainLength = 5
+		vis.ChainLength = 10
 	}
 
 	if vis.Image == "" {
@@ -1088,7 +1088,7 @@ func (vis *VolumeIoSuite) Run(ctx context.Context, storageClass string, clients 
 
 				if i != 0 {
 					writer := bytes.NewBufferString("")
-					if err := podClient.Exec(ctx, writerPod.Object, []string{"/bin/bash", "-c", "sha512sum -c " + sum}, writer, os.Stderr, false); err != nil {
+					if err := podClient.Exec(ctx, writerPod.Object, []string{"/bin/bash", "-c", "sha512sum -w -c " + sum}, writer, os.Stderr, false); err != nil {
 						return err
 					}
 
@@ -1127,7 +1127,7 @@ func (vis *VolumeIoSuite) Run(ctx context.Context, storageClass string, clients 
 				log.Infof("Content of file outside %s:\n%s", file, fileContent.String())
 
 				log.Debug(ddRes.String())
-				if err := podClient.Exec(ctx, writerPod.Object, []string{"/bin/bash", "-c", "sha512sum " + file + " > " + sum}, os.Stdout, os.Stderr, false); err != nil {
+				if err := podClient.Exec(ctx, writerPod.Object, []string{"/bin/bash", "-c", "sha512sum -w " + file + " > " + sum}, os.Stdout, os.Stderr, false); err != nil {
 					return err
 				}
 
@@ -2602,9 +2602,9 @@ func (mas *MultiAttachSuite) Run(ctx context.Context, storageClass string, clien
 	podClient := clients.PodClient
 	nodeClient := clients.NodeClient
 
-	if mas.PodNumber <= 0 {
+	if mas.PodNumber >= 0 {
 		log.Info("Using default number of pods")
-		mas.PodNumber = 2
+		mas.PodNumber = 10
 	}
 	if mas.Image == "" {
 		mas.Image = "quay.io/centos/centos:latest"
@@ -2758,7 +2758,7 @@ func (mas *MultiAttachSuite) Run(ctx context.Context, storageClass string, clien
 			}
 			log.Infof("Content of file %s:\n%s", file, fileContent.String())
 
-			if err := podClient.Exec(ctx, p.Object, []string{"sha512sum", file}, newHash, os.Stderr, false); err != nil {
+			if err := podClient.Exec(ctx, p.Object, []string{"sha512sum -w", file}, newHash, os.Stderr, false); err != nil {
 				return delFunc, err
 			}
 
