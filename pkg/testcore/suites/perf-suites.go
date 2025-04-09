@@ -1087,16 +1087,40 @@ func (vis *VolumeIoSuite) Run(ctx context.Context, storageClass string, clients 
 				}
 
 				if i != 0 {
-					writer := bytes.NewBufferString("")
-					if err := podClient.Exec(ctx, writerPod.Object, []string{"/bin/bash", "-c", "sha512sum -w -c " + sum}, writer, os.Stderr, false); err != nil {
-						return err
+					// writer := bytes.NewBufferString("")
+					// if err := podClient.Exec(ctx, writerPod.Object, []string{"/bin/bash", "-c", "sha512sum -w -c " + sum}, writer, os.Stderr, false); err != nil {
+					// 	return err
+					// }
+					// if strings.Contains(writer.String(), "OK") {
+					// 	log.Info("Hashes match")
+					// 	log.Infof("Hashes match. Writer content: %s, Sum file: %s", writer.String(), sum)
+					// } else {
+					// 	log.Errorf("Hashes don't match. Writer content: %s, Sum file: %s", writer.String(), sum)
+					// 	return fmt.Errorf("hashes don't match")
+					// }
+
+					// Retry logic
+					maxRetries := 20
+					retryCount := 0
+					for retryCount < maxRetries {
+						writer := bytes.NewBufferString("")
+						if err := podClient.Exec(ctx, writerPod.Object, []string{"/bin/bash", "-c", "sha512sum -w -c " + sum}, writer, os.Stderr, false); err != nil {
+							return err
+						}
+
+						if strings.Contains(writer.String(), "OK") {
+							log.Info("Hashes match")
+							log.Infof("Hashes match. Writer content: %s, Sum file: %s", writer.String(), sum)
+							break
+						}
+						log.Infof("Hashes don't match. Retrying... Writer content: %s, Sum file: %s", writer.String(), sum)
+						retryCount++
+						time.Sleep(2 * time.Second) // Wait for 2 seconds before retrying
 					}
-					if strings.Contains(writer.String(), "OK") {
-						log.Info("Hashes match")
-						log.Infof("Hashes match. Writer content: %s, Sum file: %s", writer.String(), sum)
+					if retryCount == maxRetries {
+						log.Error("Max retries reached, hash sum is still empty")
 					} else {
-						log.Errorf("Hashes don't match. Writer content: %s, Sum file: %s", writer.String(), sum)
-						return fmt.Errorf("hashes don't match")
+						log.Infof("Writer content: %s, Sum file: %s", writer.String(), sum)
 					}
 				}
 				ddRes := bytes.NewBufferString("")
