@@ -2738,18 +2738,54 @@ func (mas *MultiAttachSuite) Run(ctx context.Context, storageClass string, clien
 			}
 
 			// Oliver: Read and print the file content
-			fileContent := bytes.NewBufferString("")
-			if err := podClient.Exec(ctx, p.Object, []string{"head", "-c", "10", file}, fileContent, os.Stderr, false); err != nil {
+			fileHeadContent := bytes.NewBufferString("")
+			if err := podClient.Exec(ctx, p.Object, []string{"head", "-c", "10", file}, fileHeadContent, os.Stderr, false); err != nil {
 				return delFunc, err
 			}
-			log.Infof("Content of file %s:\n%s", file, fileContent.String())
-
-			if err := podClient.Exec(ctx, p.Object, []string{"sha512sum", file}, newHash, os.Stderr, false); err != nil {
+			log.Infof("Head content of file %s:\n%s", file, fileHeadContent.String())
+			fileTailContent := bytes.NewBufferString("")
+			if err := podClient.Exec(ctx, p.Object, []string{"tail", "-c", "10", file}, fileTailContent, os.Stderr, false); err != nil {
 				return delFunc, err
 			}
+			log.Infof("Tail content of file %s:\n%s", file, fileTailContent.String())
+			lsContent := bytes.NewBufferString("")
+			if err := podClient.Exec(ctx, p.Object, []string{"ls", "-la", file}, lsContent, os.Stderr, false); err != nil {
+				return delFunc, err
+			}
+			log.Infof("ls content of file %s:\n%s", file, lsContent.String())
 
-			log.Info("Pod: ", p.Object.GetName())
-			log.Info("hash sum is:", newHash.String())
+			// if err := podClient.Exec(ctx, p.Object, []string{"sha512sum", file}, newHash, os.Stderr, false); err != nil {
+			// 	return delFunc, err
+			// }
+
+			// log.Info("Pod: ", p.Object.GetName())
+			// log.Info("hash sum is:", newHash.String())
+
+			// Retry logic
+			maxRetries := 20
+			retryCount := 0
+			for retryCount < maxRetries {
+				if err := podClient.Exec(ctx, p.Object, []string{"sha512sum", file}, newHash, os.Stderr, false); err != nil {
+					return delFunc, err
+				}
+
+				if newHash.String() != "" {
+					break
+				}
+
+				log.Info("Pod: ", p.Object.GetName())
+				log.Info("hash sum is empty, retrying...")
+
+				retryCount++
+				time.Sleep(2 * time.Second) // Wait for 2 seconds before retrying
+			}
+
+			if retryCount == maxRetries {
+				log.Error("Max retries reached, hash sum is still empty")
+			} else {
+				log.Info("hash sum is:", newHash.String())
+			}
+
 
 			if newHash.String() == hash.String() {
 				log.Info("Hashes match")
