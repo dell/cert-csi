@@ -1025,7 +1025,7 @@ func (vis *VolumeIoSuite) Run(ctx context.Context, storageClass string, clients 
 		vis.VolumeNumber = 1
 	}
 
-	if vis.ChainNumber >= 0 {
+	if vis.ChainNumber <= 0 {
 		log.Info("Using default number of chains")
 		vis.ChainNumber = 5
 	}
