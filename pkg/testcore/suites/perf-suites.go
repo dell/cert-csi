@@ -1087,39 +1087,25 @@ func (vis *VolumeIoSuite) Run(ctx context.Context, storageClass string, clients 
 				}
 
 				if i != 0 {
-					// writer := bytes.NewBufferString("")
-					// if err := podClient.Exec(ctx, writerPod.Object, []string{"/bin/bash", "-c", "sha512sum -w -c " + sum}, writer, os.Stderr, false); err != nil {
-					// 	return err
-					// }
-					// if strings.Contains(writer.String(), "OK") {
-					// 	log.Info("Hashes match")
-					// 	log.Infof("Hashes match. Writer content: %s, Sum file: %s", writer.String(), sum)
-					// } else {
-					// 	log.Errorf("Hashes don't match. Writer content: %s, Sum file: %s", writer.String(), sum)
-					// 	return fmt.Errorf("hashes don't match")
-					// }
-
-					// Retry logic
-					maxRetries := 20
+					// Occasionally the sha512sum function returns empty even when the driver has correctly written data. This retry logic allows the sha512sum function to run again and correctly calculate the hash value.
+					maxRetries := 3
 					retryCount := 0
 					for retryCount < maxRetries {
-						log.Infof("CHAIN %d: Try number: %d", i, retryCount)
 						writer := bytes.NewBufferString("")
-						if err := podClient.Exec(ctx, writerPod.Object, []string{"/bin/bash", "-c", "sha512sum -w -c " + sum}, writer, os.Stderr, false); err != nil {
+						if err := podClient.Exec(ctx, writerPod.Object, []string{"/bin/bash", "-c", "sha512sum -c " + sum}, writer, os.Stderr, false); err != nil {
 							return err
 						}
 
 						if strings.Contains(writer.String(), "OK") {
-							log.Infof("CHAIN %d: Hashes match", i)
-							log.Infof("CHAIN %d: Hashes match. Writer content: %s, Sum file: %s", i, writer.String(), sum)
+							log.Infof("Hashes match. Writer content: %s, Sum file: %s", writer.String(), sum)
 							break
 						}
-						log.Infof("CHAIN %d: Hashes don't match. Retrying... Writer content: %s, Sum file: %s", i, writer.String(), sum)
+						log.Infof("Hashes don't match. Retrying... Writer content: %s, Sum file: %s", writer.String(), sum)
 						retryCount++
-						time.Sleep(2 * time.Second) // Wait for 2 seconds before retrying
+						time.Sleep(2 * time.Second) 
 					}
 					if retryCount == maxRetries {
-						log.Errorf("CHAIN %d: Max retries reached, hash sum is still empty", i)
+						return fmt.Errorf("Max number of retries reached, hashes don't match")
 					} 
 				}
 				ddRes := bytes.NewBufferString("")
