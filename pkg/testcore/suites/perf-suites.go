@@ -1103,22 +1103,23 @@ func (vis *VolumeIoSuite) Run(ctx context.Context, storageClass string, clients 
 					maxRetries := 20
 					retryCount := 0
 					for retryCount < maxRetries {
+						log.Infof("CHAIN %d: Try number: %d", i, retryCount)
 						writer := bytes.NewBufferString("")
 						if err := podClient.Exec(ctx, writerPod.Object, []string{"/bin/bash", "-c", "sha512sum -w -c " + sum}, writer, os.Stderr, false); err != nil {
 							return err
 						}
 
 						if strings.Contains(writer.String(), "OK") {
-							log.Info("Hashes match")
-							log.Infof("Hashes match. Writer content: %s, Sum file: %s", writer.String(), sum)
+							log.Infof("CHAIN %d: Hashes match", i)
+							log.Infof("CHAIN %d: Hashes match. Writer content: %s, Sum file: %s", i, writer.String(), sum)
 							break
 						}
-						log.Infof("Hashes don't match. Retrying... Writer content: %s, Sum file: %s", writer.String(), sum)
+						log.Infof("CHAIN %d: Hashes don't match. Retrying... Writer content: %s, Sum file: %s", i, writer.String(), sum)
 						retryCount++
 						time.Sleep(2 * time.Second) // Wait for 2 seconds before retrying
 					}
 					if retryCount == maxRetries {
-						log.Error("Max retries reached, hash sum is still empty")
+						log.Errorf("CHAIN %d: Max retries reached, hash sum is still empty", i)
 					} 
 				}
 				ddRes := bytes.NewBufferString("")
