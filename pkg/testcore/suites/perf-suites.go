@@ -1119,9 +1119,7 @@ func (vis *VolumeIoSuite) Run(ctx context.Context, storageClass string, clients 
 					}
 					if retryCount == maxRetries {
 						log.Error("Max retries reached, hash sum is still empty")
-					} else {
-						log.Infof("Writer content: %s, Sum file: %s", writer.String(), sum)
-					}
+					} 
 				}
 				ddRes := bytes.NewBufferString("")
 				if err := podClient.Exec(ctx, writerPod.Object, []string{"/bin/bash", "-c", "dd if=/dev/urandom bs=1M count=1280 oflag=sync > " + file}, ddRes, os.Stderr, false); err != nil {
