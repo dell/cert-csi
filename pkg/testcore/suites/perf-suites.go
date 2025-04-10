@@ -1540,7 +1540,7 @@ func (ss *SnapSuite) Run(ctx context.Context, storageClass string, clients *k8sc
 	writer := bytes.NewBufferString("")
 	log.Info("Checker pod: ", writerPod.Object.GetName())
 
-	// Retry logic
+	// Occasionally the sha512sum function returns empty even when the driver has correctly written data. This retry logic allows the sha512sum function to run again and correctly calculate the hash value.
 	maxRetries := 20
 	retryCount := 0
 	for retryCount < maxRetries {
@@ -1556,7 +1556,7 @@ func (ss *SnapSuite) Run(ctx context.Context, storageClass string, clients *k8sc
 		}
 		log.Infof("Hashes don't match. Retrying... Writer content: %s, Sum file: %s", writer.String(), sum)
 		retryCount++
-		time.Sleep(2 * time.Second) // Wait for 2 seconds before retrying
+		time.Sleep(2 * time.Second) 
 	}
 	if retryCount == maxRetries {
 		log.Error("Max retries reached, hash sum is still empty")
@@ -2742,12 +2742,10 @@ func (mas *MultiAttachSuite) Run(ctx context.Context, storageClass string, clien
 			return delFunc, err
 		}
 
-		// Retry logic for initial hash
-		maxRetries2 := 20
-		retryCount2 := 0
-		for retryCount2 < maxRetries2 {
-			log.Infof("Iteration %d", retryCount2)
-
+		// Occasionally the sha512sum function returns empty even when the driver has correctly written data. This retry logic allows the sha512sum function to run again and correctly calculate the hash value.
+		maxRetries := 3
+		retryCount := 0
+		for retryCount < maxRetries {
 			// Calculate hash sum of that file
 			if err := podClient.Exec(ctx, originalPod.Object, []string{"sha512sum", file}, hash, os.Stderr, false); err != nil {
 				return delFunc, err
@@ -2761,14 +2759,12 @@ func (mas *MultiAttachSuite) Run(ctx context.Context, storageClass string, clien
 
 			log.Info("hash sum is empty, retrying...")
 
-			retryCount2++
-			time.Sleep(2 * time.Second) // Wait for 2 seconds before retrying
+			retryCount++
+			time.Sleep(2 * time.Second) 
 		}
 
-		if retryCount2 == maxRetries2 {
-			log.Error("Max retries reached, hash sum is still empty")
-		} else {
-			log.Info("hash sum is:", hash.String())
+		if retryCount == maxRetries {
+			return delFunc, fmt.Errorf("max number of retries reached, original hash is empty")
 		}
 
 		log.Info("Checking hash sum on all of the other pods")
@@ -2788,26 +2784,9 @@ func (mas *MultiAttachSuite) Run(ctx context.Context, storageClass string, clien
 				return delFunc, err
 			}
 			log.Infof("Head content of file %s:\n%s", file, fileHeadContent.String())
-			fileTailContent := bytes.NewBufferString("")
-			if err := podClient.Exec(ctx, p.Object, []string{"tail", "-c", "10", file}, fileTailContent, os.Stderr, false); err != nil {
-				return delFunc, err
-			}
-			log.Infof("Tail content of file %s:\n%s", file, fileTailContent.String())
-			lsContent := bytes.NewBufferString("")
-			if err := podClient.Exec(ctx, p.Object, []string{"ls", "-la", file}, lsContent, os.Stderr, false); err != nil {
-				return delFunc, err
-			}
-			log.Infof("ls content of file %s:\n%s", file, lsContent.String())
 
-			// if err := podClient.Exec(ctx, p.Object, []string{"sha512sum", file}, newHash, os.Stderr, false); err != nil {
-			// 	return delFunc, err
-			// }
-
-			// log.Info("Pod: ", p.Object.GetName())
-			// log.Info("hash sum is:", newHash.String())
-
-			// Retry logic
-			maxRetries := 20
+			// Occasionally the sha512sum function returns empty even when the driver has correctly written data. This retry logic allows the sha512sum function to run again and correctly calculate the hash value.
+			maxRetries := 3
 			retryCount := 0
 			for retryCount < maxRetries {
 				if err := podClient.Exec(ctx, p.Object, []string{"sha512sum", file}, newHash, os.Stderr, false); err != nil {
@@ -2822,15 +2801,12 @@ func (mas *MultiAttachSuite) Run(ctx context.Context, storageClass string, clien
 				log.Info("hash sum is empty, retrying...")
 
 				retryCount++
-				time.Sleep(2 * time.Second) // Wait for 2 seconds before retrying
+				time.Sleep(2 * time.Second) 
 			}
 
 			if retryCount == maxRetries {
-				log.Error("Max retries reached, hash sum is still empty")
-			} else {
-				log.Info("hash sum is:", newHash.String())
+				return delFunc, fmt.Errorf("max number of retries reached, hashes don't match")
 			}
-
 
 			if newHash.String() == hash.String() {
 				log.Info("Hashes match")
