@@ -2742,12 +2742,35 @@ func (mas *MultiAttachSuite) Run(ctx context.Context, storageClass string, clien
 		if err := podClient.Exec(ctx, originalPod.Object, []string{"dd", "if=" + device, "of=" + file, "bs=1M", "count=128"}, os.Stdout, os.Stderr, false); err != nil {
 			return delFunc, err
 		}
-		// Calculate hash sum of that file
-		if err := podClient.Exec(ctx, originalPod.Object, []string{"sha512sum", file}, hash, os.Stderr, false); err != nil {
-			return delFunc, err
+
+		// Retry logic for initial hash
+		maxRetries2 := 20
+		retryCount2 := 0
+		for retryCount2 < maxRetries2 {
+			log.Infof("Iteration %d", retryCount2)
+
+			// Calculate hash sum of that file
+			if err := podClient.Exec(ctx, originalPod.Object, []string{"sha512sum", file}, hash, os.Stderr, false); err != nil {
+				return delFunc, err
+			}
+
+			if hash.String() != "" {
+				log.Info("OriginalPod: ", originalPod.Object.GetName())
+				log.Info("hash sum is:", hash.String())
+				break
+			}
+
+			log.Info("hash sum is empty, retrying...")
+
+			retryCount2++
+			time.Sleep(2 * time.Second) // Wait for 2 seconds before retrying
 		}
-		log.Info("OriginalPod: ", originalPod.Object.GetName())
-		log.Info("hash sum is:", hash.String())
+
+		if retryCount2 == maxRetries2 {
+			log.Error("Max retries reached, hash sum is still empty")
+		} else {
+			log.Info("hash sum is:", hash.String())
+		}
 
 		log.Info("Checking hash sum on all of the other pods")
 		for _, p := range newPods {
