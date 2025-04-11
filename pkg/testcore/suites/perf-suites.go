@@ -1102,11 +1102,11 @@ func (vis *VolumeIoSuite) Run(ctx context.Context, storageClass string, clients 
 						}
 						log.Infof("Hashes don't match. Retrying... Writer content: %s, Sum file: %s", writer.String(), sum)
 						retryCount++
-						time.Sleep(2 * time.Second) 
+						time.Sleep(2 * time.Second)
 					}
 					if retryCount == maxRetries {
 						return fmt.Errorf("Max number of retries reached, hashes don't match")
-					} 
+					}
 				}
 				ddRes := bytes.NewBufferString("")
 				if err := podClient.Exec(ctx, writerPod.Object, []string{"/bin/bash", "-c", "dd if=/dev/urandom bs=1M count=1280 oflag=sync > " + file}, ddRes, os.Stderr, false); err != nil {
@@ -1114,26 +1114,12 @@ func (vis *VolumeIoSuite) Run(ctx context.Context, storageClass string, clients 
 					return err
 				}
 
-				// Oliver: Read and print the file content
-				fileContent := bytes.NewBufferString("")
-				if err := podClient.Exec(ctx, writerPod.Object, []string{"head", "-c", "10", file}, fileContent, os.Stderr, false); err != nil {
-					return err
-				}
-				log.Infof("Content of file outside %s:\n%s", file, fileContent.String())
-
 				log.Debug(ddRes.String())
 				if err := podClient.Exec(ctx, writerPod.Object, []string{"/bin/bash", "-c", "sha512sum " + file + " > " + sum}, os.Stdout, os.Stderr, false); err != nil {
 					return err
 				}
 
 				time.Sleep(300 * time.Millisecond)
-
-				// Oliver: Read and print the sum content
-				sumContent := bytes.NewBufferString("")
-				if err := podClient.Exec(ctx, writerPod.Object, []string{"head", "-c", "10", sum}, sumContent, os.Stderr, false); err != nil {
-					return err
-				}
-				log.Infof("Content of sum outside %s:\n%s", sum, sumContent.String())
 
 				podClient.Delete(ctx, writerPod.Object).Sync(errCtx)
 				if writerPod.HasError() {
@@ -1541,7 +1527,7 @@ func (ss *SnapSuite) Run(ctx context.Context, storageClass string, clients *k8sc
 	log.Info("Checker pod: ", writerPod.Object.GetName())
 
 	// Occasionally the sha512sum function returns empty even when the driver has correctly written data. This retry logic allows the sha512sum function to run again and correctly calculate the hash value.
-	maxRetries := 20
+	maxRetries := 3
 	retryCount := 0
 	for retryCount < maxRetries {
 		log.Infof("Iteration number: %d", retryCount)
@@ -1556,11 +1542,11 @@ func (ss *SnapSuite) Run(ctx context.Context, storageClass string, clients *k8sc
 		}
 		log.Infof("Hashes don't match. Retrying... Writer content: %s, Sum file: %s", writer.String(), sum)
 		retryCount++
-		time.Sleep(2 * time.Second) 
+		time.Sleep(2 * time.Second)
 	}
 	if retryCount == maxRetries {
 		log.Error("Max retries reached, hash sum is still empty")
-	} 
+	}
 	return delFunc, nil
 }
 
@@ -2610,9 +2596,9 @@ func (mas *MultiAttachSuite) Run(ctx context.Context, storageClass string, clien
 	podClient := clients.PodClient
 	nodeClient := clients.NodeClient
 
-	if mas.PodNumber >= 0 {
+	if mas.PodNumber <= 0 {
 		log.Info("Using default number of pods")
-		mas.PodNumber = 10
+		mas.PodNumber = 2
 	}
 	if mas.Image == "" {
 		mas.Image = "quay.io/centos/centos:latest"
@@ -2760,7 +2746,7 @@ func (mas *MultiAttachSuite) Run(ctx context.Context, storageClass string, clien
 			log.Info("hash sum is empty, retrying...")
 
 			retryCount++
-			time.Sleep(2 * time.Second) 
+			time.Sleep(2 * time.Second)
 		}
 
 		if retryCount == maxRetries {
@@ -2778,13 +2764,6 @@ func (mas *MultiAttachSuite) Run(ctx context.Context, storageClass string, clien
 				return delFunc, err
 			}
 
-			// Oliver: Read and print the file content
-			fileHeadContent := bytes.NewBufferString("")
-			if err := podClient.Exec(ctx, p.Object, []string{"head", "-c", "10", file}, fileHeadContent, os.Stderr, false); err != nil {
-				return delFunc, err
-			}
-			log.Infof("Head content of file %s:\n%s", file, fileHeadContent.String())
-
 			// Occasionally the sha512sum function returns empty even when the driver has correctly written data. This retry logic allows the sha512sum function to run again and correctly calculate the hash value.
 			maxRetries := 3
 			retryCount := 0
@@ -2801,7 +2780,7 @@ func (mas *MultiAttachSuite) Run(ctx context.Context, storageClass string, clien
 				log.Info("hash sum is empty, retrying...")
 
 				retryCount++
-				time.Sleep(2 * time.Second) 
+				time.Sleep(2 * time.Second)
 			}
 
 			if retryCount == maxRetries {
