@@ -1087,7 +1087,7 @@ func (vis *VolumeIoSuite) Run(ctx context.Context, storageClass string, clients 
 				}
 
 				if i != 0 {
-					if err := RetrySha512Sum(ctx, podClient, writerPod.Object, sum, 3); err != nil {
+					if err := RetrySha512SumWithCheck(ctx, podClient, writerPod, sum, 3); err != nil {
 						log.Errorf("Error during hash validation: %v", err)
 						return err
 					}
@@ -1176,7 +1176,8 @@ func (vis *VolumeIoSuite) Parameters() string {
 }
 
 // Occasionally the sha512sum function returns empty even when the driver has correctly written data. This retry logic allows the sha512sum function to run again and correctly calculate the hash value.
-func RetrySha512SumWithCheck(ctx context.Context, podClient PodClient, podObject Pod, sum string, maxRetries int) error {
+func RetrySha512SumWithCheck(ctx context.Context, podClient *pod.Client, pod *pod.Pod, sum string, maxRetries int) error {
+	log := utils.GetLoggerFromContext(ctx)
 	retryCount := 0
 
 	for retryCount < maxRetries {
@@ -1184,7 +1185,7 @@ func RetrySha512SumWithCheck(ctx context.Context, podClient PodClient, podObject
 		log.Infof("Iteration number: %d", retryCount)
 
 		// Execute the sha512sum command on the pod
-		if err := podClient.Exec(ctx, podObject, []string{"/bin/bash", "-c", "sha512sum -c " + sum}, writer, os.Stderr, false); err != nil {
+		if err := podClient.Exec(ctx, pod.Object, []string{"/bin/bash", "-c", "sha512sum -c " + sum}, writer, os.Stderr, false); err != nil {
 			log.Infof("Error executing command: %v", err)
 			return err
 		}
@@ -1538,10 +1539,9 @@ func (ss *SnapSuite) Run(ctx context.Context, storageClass string, clients *k8sc
 
 	// Check if hash sum is correct
 	sum = fmt.Sprintf("%s0/writer-%d.sha512", podRestored.MountPath, 0)
-	writer := bytes.NewBufferString("")
 	log.Info("Checker pod: ", writerPod.Object.GetName())
 
-	if err := RetrySha512Sum(ctx, podClient, writerPod.Object, sum, 3); err != nil {
+	if err := RetrySha512SumWithCheck(ctx, podClient, writerPod, sum, 3); err != nil {
 		log.Errorf("Error during hash validation: %v", err)
 		return delFunc, err
 	}
@@ -2841,20 +2841,21 @@ func (mas *MultiAttachSuite) Parameters() string {
 }
 
 // Retry logic for hash calculation using sha512sum and a file as input
-func RetrySha512Sum(ctx context.Context, podClient PodClient, podObject PodObject, file string, hash *bytes.Buffer, maxRetries int) error {
+func RetrySha512Sum(ctx context.Context, podClient *pod.Client, pod *pod.Pod, file string, hash *bytes.Buffer, maxRetries int) error {
+	log := utils.GetLoggerFromContext(ctx)
 	retryCount := 0
 
 	for retryCount < maxRetries {
-		if err := podClient.Exec(ctx, podObject.Object, []string{"sha512sum", file}, hash, os.Stderr, false); err != nil {
+		if err := podClient.Exec(ctx, pod.Object, []string{"sha512sum", file}, hash, os.Stderr, false); err != nil {
 			return fmt.Errorf("hash calculation failed: %w", err)
 		}
 
 		if hash.String() != "" {
-			log.Infof("Pod: %s, hash sum is: %s", podObject.Object.GetName(), hash.String())
+			log.Infof("Pod: %s, hash sum is: %s", pod.Object.GetName(), hash.String())
 			return nil
 		}
 
-		log.Infof("Pod: %s, hash sum is empty, retrying...", podObject.Object.GetName())
+		log.Infof("Pod: %s, hash sum is empty, retrying...", pod.Object.GetName())
 		retryCount++
 		time.Sleep(2 * time.Second)
 	}
