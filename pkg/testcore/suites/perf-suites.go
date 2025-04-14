@@ -1541,27 +1541,6 @@ func (ss *SnapSuite) Run(ctx context.Context, storageClass string, clients *k8sc
 	writer := bytes.NewBufferString("")
 	log.Info("Checker pod: ", writerPod.Object.GetName())
 
-	// Occasionally the sha512sum function returns empty even when the driver has correctly written data. This retry logic allows the sha512sum function to run again and correctly calculate the hash value.
-	// maxRetries := 3
-	// retryCount := 0
-	// for retryCount < maxRetries {
-	// 	log.Infof("Iteration number: %d", retryCount)
-
-	// 	if err := podClient.Exec(ctx, writerPod.Object, []string{"/bin/bash", "-c", "sha512sum -c " + sum}, writer, os.Stderr, false); err != nil {
-	// 		return delFunc, err
-	// 	}
-
-	// 	if strings.Contains(writer.String(), "OK") {
-	// 		log.Infof("Hashes match. Writer content: %s, Sum file: %s", writer.String(), sum)
-	// 		break
-	// 	}
-	// 	log.Infof("Hashes don't match. Retrying... Writer content: %s, Sum file: %s", writer.String(), sum)
-	// 	retryCount++
-	// 	time.Sleep(2 * time.Second)
-	// }
-	// if retryCount == maxRetries {
-	// 	log.Error("Max retries reached, hash sum is still empty")
-	// }
 	if err := RetrySha512Sum(ctx, podClient, writerPod.Object, sum, 3); err != nil {
 		log.Errorf("Error during hash validation: %v", err)
 		return delFunc, err
