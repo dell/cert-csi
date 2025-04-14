@@ -1206,7 +1206,6 @@ func RetrySha512SumWithCheck(ctx context.Context, podClient *pod.Client, pod *po
 	return fmt.Errorf("Max number of retries reached, hashes don't match")
 }
 
-
 // VolumeGroupSnapSuite is used to manage volume group snap test suite
 type VolumeGroupSnapSuite struct {
 	SnapClass       string
