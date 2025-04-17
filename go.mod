@@ -1,6 +1,8 @@
 module github.com/dell/cert-csi
 
-go 1.23
+go 1.24
+
+toolchain go1.24.2
 
 require (
 	github.com/DATA-DOG/go-sqlmock v1.5.2
@@ -18,7 +20,7 @@ require (
 	github.com/stretchr/testify v1.10.0
 	github.com/urfave/cli v1.22.15
 	github.com/x-cray/logrus-prefixed-formatter v0.5.2
-	golang.org/x/sync v0.10.0
+	golang.org/x/sync v0.13.0
 	gonum.org/v1/plot v0.14.0
 	gopkg.in/yaml.v3 v3.0.1
 	helm.sh/helm/v3 v3.15.3
@@ -188,7 +190,7 @@ require (
 	golang.org/x/image v0.18.0 // indirect
 	golang.org/x/net v0.33.0 // indirect
 	golang.org/x/oauth2 v0.21.0 // indirect
-	golang.org/x/sys v0.28.0 // indirect
+	golang.org/x/sys v0.29.0 // indirect
 	golang.org/x/term v0.27.0 // indirect
 	golang.org/x/text v0.21.0 // indirect
 	golang.org/x/time v0.5.0 // indirect
