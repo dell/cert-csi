@@ -105,9 +105,7 @@ func TestGetAction(t *testing.T) {
 	set.String("timeout", "10s", "timeout")
 	set.String("volumeSnapshotClass", "fake", "volumeSnapshotClass")
 	set.String("observer-type", "event", "observer type")
-	set.String("vgs-volume-label", "fake-label", "vgs volume label")
 	set.String("driver-name", "fake", "")
-	set.String("vgs-name", "fake", "")
 
 	ctx := cli.NewContext(app, set, nil)
 	ExecuteRunSuite = func(_ *runner.SuiteRunner, _ map[string][]suites.Interface) {}

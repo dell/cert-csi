@@ -323,31 +323,6 @@ func TestGetSnapCommandAction(t *testing.T) {
 	actionFunc(ctx)
 }
 
-func TestGetVolumeGroupSnapCommandAction(t *testing.T) {
-	// Default context
-	kubeConfig, _ := createDummyKubeConfig(t.TempDir(), t)
-	set := flag.NewFlagSet("test", 0)
-	set.String("volumeSnapshotClass", "test-vsc", "volumeSnapshotClass to be used")
-	set.String("volumeSize", "3Gi", "volume size to be created")
-	set.String("volumeLabel", "test-label", "volume label to be used")
-	set.String("volumeGroupName", "test-group", "name of the volume group/snapshot")
-	set.String("driver", "test-driver", "name of the driver")
-	set.String("reclaimPolicy", "Retain", "reclaim policy of the volume group/snapshot")
-	set.String("accessMode", "ReadWriteOnce", "access mode of the volume group/snapshot")
-	set.Int("volumeNumber", 5, "number of volume to create for the group")
-	set.String("config", kubeConfig, "config for connecting to kubernetes")
-	set.String("timeout", "10s", "volume creation timeout")
-	set.String("cooldown", "10s", "volume creation cooldown")
-	set.String("observer-type", "event", "observer type")
-	ctx := cli.NewContext(nil, set, nil)
-	command := getVolumeGroupSnapCommand([]cli.Flag{})
-	// Call the action function
-	action := command.Action
-	actionFunc := action.(func(c *cli.Context) error)
-	ExecuteRunCmdSuite = func(_ *runner.SuiteRunner, _ map[string][]suites.Interface) {}
-	actionFunc(ctx)
-}
-
 func TestGetBlockSnapCommandAction(t *testing.T) {
 	// Default context
 	kubeConfig, _ := createDummyKubeConfig(t.TempDir(), t)

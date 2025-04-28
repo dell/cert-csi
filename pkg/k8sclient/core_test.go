@@ -231,12 +231,7 @@ func (suite *CoreTestSuite) TestCreateClients() {
 		suite.Error(err)
 	})
 
-	suite.Run("vgs client - error case", func() {
-		_, err := suite.kubeClient.CreateVGSClient()
-		suite.Error(err)
-	})
-
-	// Rg client and vgs client creation returns error becuase of connection errors
+	// Rg client creation returns error becuase of connection errors
 	ClientNewFunc = func(_ *rest.Config, _ client.Options) (client.Client, error) {
 		scheme := runtime.NewScheme()
 		initObjs := []client.Object{
@@ -254,11 +249,6 @@ func (suite *CoreTestSuite) TestCreateClients() {
 		fakeClient := fakeclient.NewClientBuilder().WithScheme(scheme).WithObjects(initObjs...).Build()
 		return fakeClient, nil
 	}
-
-	suite.Run("vgs client - success", func() {
-		_, err := suite.kubeClient.CreateVGSClient()
-		suite.NoError(err)
-	})
 
 	suite.Run("rg client - success", func() {
 		_, err := suite.kubeClient.CreateRGClient()

@@ -24,7 +24,6 @@ import (
 	"github.com/dell/cert-csi/pkg/k8sclient/resources/pod"
 	"github.com/dell/cert-csi/pkg/k8sclient/resources/pvc"
 	"github.com/dell/cert-csi/pkg/k8sclient/resources/statefulset"
-	"github.com/dell/cert-csi/pkg/k8sclient/resources/volumegroupsnapshot"
 	v1 "k8s.io/api/core/v1"
 )
 
@@ -498,73 +497,6 @@ func TestVolumeMigrateStsConfig(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			if got := VolumeMigrateStsConfig(tt.storageclass, tt.claimSize, tt.volumeNumber, tt.podNumber, tt.podPolicy, tt.containerImage); !reflect.DeepEqual(got, tt.want) {
 				t.Errorf("VolumeMigrateStsConfig() = %v, want %v", got, tt.want)
-			}
-		})
-	}
-}
-
-func TestVolumeGroupSnapConfig(t *testing.T) {
-	tests := []struct {
-		name          string
-		vgsName       string
-		driver        string
-		reclaimPolicy string
-		snapClass     string
-		volumeLabel   string
-		namespace     string
-		want          *volumegroupsnapshot.Config
-	}{
-		{
-			name:          "Test with provided vgsName",
-			vgsName:       "vgs-test-1",
-			driver:        "test-driver-1",
-			reclaimPolicy: "Retain",
-			snapClass:     "snap-class-1",
-			volumeLabel:   "volume-label-1",
-			namespace:     "namespace-1",
-			want: &volumegroupsnapshot.Config{
-				Name:          "vgs-test-1",
-				DriverName:    "test-driver-1",
-				ReclaimPolicy: "Retain",
-				SnapClass:     "snap-class-1",
-				VolumeLabel:   "volume-label-1",
-				Namespace:     "namespace-1",
-			},
-		},
-		{
-			name:          "Test with empty vgsName",
-			vgsName:       "",
-			driver:        "test-driver-2",
-			reclaimPolicy: "Delete",
-			snapClass:     "snap-class-2",
-			volumeLabel:   "volume-label-2",
-			namespace:     "namespace-2",
-			want: &volumegroupsnapshot.Config{
-				DriverName:    "test-driver-2",
-				ReclaimPolicy: "Delete",
-				SnapClass:     "snap-class-2",
-				VolumeLabel:   "volume-label-2",
-				Namespace:     "namespace-2",
-			},
-		},
-	}
-
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			got := VolumeGroupSnapConfig(tt.vgsName, tt.driver, tt.reclaimPolicy, tt.snapClass, tt.volumeLabel, tt.namespace)
-			if tt.vgsName == "" {
-				if got.Name == "" || !reflect.DeepEqual(got.DriverName, tt.want.DriverName) || !reflect.DeepEqual(got.ReclaimPolicy, tt.want.ReclaimPolicy) || !reflect.DeepEqual(got.SnapClass, tt.want.SnapClass) || !reflect.DeepEqual(got.VolumeLabel, tt.want.VolumeLabel) || !reflect.DeepEqual(got.Namespace, tt.want.Namespace) {
-					t.Errorf("VolumeGroupSnapConfig() = %v, want %v", got, tt.want)
-				} else {
-					// Check if the generated name follows the expected pattern
-					if got.Name[:9] != "vgs-test-" {
-						t.Errorf("Generated name %v does not follow the expected pattern", got.Name)
-					}
-				}
-			} else {
-				if !reflect.DeepEqual(got, tt.want) {
-					t.Errorf("VolumeGroupSnapConfig() = %v, want %v", got, tt.want)
-				}
 			}
 		})
 	}

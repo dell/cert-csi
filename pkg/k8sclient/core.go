@@ -36,12 +36,10 @@ import (
 	"github.com/dell/cert-csi/pkg/k8sclient/resources/sc"
 	"github.com/dell/cert-csi/pkg/k8sclient/resources/statefulset"
 	"github.com/dell/cert-csi/pkg/k8sclient/resources/va"
-	"github.com/dell/cert-csi/pkg/k8sclient/resources/volumegroupsnapshot"
 	snapv1 "github.com/dell/cert-csi/pkg/k8sclient/resources/volumesnapshot"
 	contentv1 "github.com/dell/cert-csi/pkg/k8sclient/resources/volumesnapshotcontent"
 	"github.com/dell/cert-csi/pkg/utils"
 
-	vgsAlpha "github.com/dell/csi-volumegroup-snapshotter/api/v1"
 	replv1 "github.com/dell/csm-replication/api/v1"
 	"github.com/fatih/color"
 	apiExtensionsv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
@@ -90,7 +88,6 @@ type KubeClientInterface interface {
 	CreateCSISCClient(namespace string) (*csistoragecapacity.Client, error)
 	CreateSnapshotGAClient(namespace string) (*snapv1.SnapshotClient, error)
 	SnapshotClassExists(snapClass string) (bool, error)
-	CreateVGSClient() (*volumegroupsnapshot.Client, error)
 	CreatePVClient() (*pv.Client, error)
 	CreateNodeClient() (*node.Client, error)
 	GetClientSet() kubernetes.Interface
@@ -120,7 +117,6 @@ type Clients struct {
 	NodeClient             *node.Client
 	SCClient               *sc.Client
 	RgClient               *rg.Client
-	VgsClient              *volumegroupsnapshot.Client
 	KubeClient             KubeClientInterface
 	CSISCClient            *csistoragecapacity.Client
 }
@@ -338,29 +334,6 @@ func (c *KubeClient) CreateRGClient() (*rg.Client, error) {
 	logrus.Debugf("Created new replication group client")
 
 	return rgc, nil
-}
-
-// CreateVGSClient creates a new instance of volume group snapshot client
-func (c *KubeClient) CreateVGSClient() (*volumegroupsnapshot.Client, error) {
-	scheme := runtime.NewScheme()
-
-	utilruntime.Must(clientgoscheme.AddToScheme(scheme))
-	utilruntime.Must(apiExtensionsv1.AddToScheme(scheme))
-	utilruntime.Must(vgsAlpha.AddToScheme(scheme))
-
-	k8sClient, err := ClientNewFunc(c.Config, client.Options{Scheme: scheme})
-	if err != nil {
-		return nil, fmt.Errorf("failed to create k8s client: %v", err)
-	}
-
-	vgs := &volumegroupsnapshot.Client{
-		Interface: k8sClient,
-		Timeout:   c.timeout,
-	}
-
-	logrus.Debugf("Created new volume group snapshot client")
-
-	return vgs, nil
 }
 
 // CreateSnapshotGAClient creates a new instance of snapshot client

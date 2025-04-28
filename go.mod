@@ -7,7 +7,6 @@ toolchain go1.24.2
 require (
 	github.com/DATA-DOG/go-sqlmock v1.5.2
 	github.com/cheggaaa/pb/v3 v3.1.5
-	github.com/dell/csi-volumegroup-snapshotter v1.7.0
 	github.com/dell/csm-replication v1.9.0
 	github.com/fatih/color v1.17.0
 	github.com/gofrs/flock v0.8.1
