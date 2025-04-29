@@ -17,14 +17,9 @@
 package testcore
 
 import (
-	"crypto/rand"
-	"fmt"
-
 	"github.com/dell/cert-csi/pkg/k8sclient/resources/pod"
 	"github.com/dell/cert-csi/pkg/k8sclient/resources/pvc"
 	"github.com/dell/cert-csi/pkg/k8sclient/resources/statefulset"
-	"github.com/dell/cert-csi/pkg/k8sclient/resources/volumegroupsnapshot"
-
 	v1 "k8s.io/api/core/v1"
 )
 
@@ -235,21 +230,4 @@ func GetAccessMode(AccessMode string) []v1.PersistentVolumeAccessMode {
 		accessMode = []v1.PersistentVolumeAccessMode{v1.ReadWriteOnce}
 	}
 	return accessMode
-}
-
-// VolumeGroupSnapConfig config for volume group blockvolsnapshot
-func VolumeGroupSnapConfig(vgsName, driver, reclaimPolicy, snapClass, volumeLabel, namespace string) *volumegroupsnapshot.Config {
-	if vgsName == "" {
-		// we will generate random name
-		p, _ := rand.Prime(rand.Reader, 16)
-		vgsName = fmt.Sprintf("%s%d", "vgs-test-", p)
-	}
-	return &volumegroupsnapshot.Config{
-		Name:          vgsName,
-		DriverName:    driver,
-		ReclaimPolicy: reclaimPolicy,
-		SnapClass:     snapClass,
-		VolumeLabel:   volumeLabel,
-		Namespace:     namespace,
-	}
 }

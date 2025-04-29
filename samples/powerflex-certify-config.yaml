@@ -23,7 +23,6 @@ storageClasses:
     snapshot: true
     RWX: false
     volumeHealth: true
-    VGS: true
     ephemeral:
       driver: csi-vxflexos.dellemc.com
       fstype: ext4

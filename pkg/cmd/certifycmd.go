@@ -55,7 +55,6 @@ type Entry struct {
 	RWX              bool              `yaml:"RWX"`
 	RWOP             bool              `yaml:"RWOP"`
 	VolumeHealth     bool              `yaml:"volumeHealth"`
-	VGS              bool              `yaml:"VGS"`
 	Ephemeral        *EphemeralParams  `yaml:"ephemeral"`
 	CapacityTracking *CapacityTracking `yaml:"capacityTracking"`
 }
@@ -159,18 +158,6 @@ func GetCertifyCommand() cli.Command {
 			cli.StringFlag{
 				Name:  "driver-namespace, driver-ns",
 				Usage: "specify the driver namespace to find the driver resources for the volume health metrics suite",
-			},
-			cli.StringFlag{
-				Name:  "driver-name, driver",
-				Usage: "specify the driver for volume group snapshot",
-			},
-			cli.StringFlag{
-				Name:  "vgs-volume-label",
-				Usage: "specify the volume label for VGS",
-			},
-			cli.StringFlag{
-				Name:  "vgs-name",
-				Usage: "specify the volume group name",
 			},
 		},
 		Before: updatePath,
@@ -346,35 +333,6 @@ func getAction(c *cli.Context) error {
 			})
 		}
 
-		if sc.VGS {
-			snapClass := c.String("volumeSnapshotClass")
-			if snapClass == "" {
-				return errors.New("volume snapshot class required to verify `snapshot` capability")
-			}
-			label := c.String("vgs-volume-label")
-			if label == "" {
-				return errors.New("vgs-volume-label required to verify volume group snapshot")
-			}
-			driverName := c.String("driver-name")
-			if driverName == "" {
-				return errors.New("driver-name required to verify volume group snapshot")
-			}
-			vgsName := c.String("vgs-name")
-			if vgsName == "" {
-				return errors.New("vgs-name required to verify volume group snapshot")
-			}
-			s = append(s, &suites.VolumeGroupSnapSuite{
-				SnapClass:       snapClass,
-				VolumeSize:      minSize,
-				AccessMode:      "ReadWriteOnce",
-				VolumeLabel:     label,
-				ReclaimPolicy:   "Delete",
-				VolumeNumber:    2,
-				Driver:          driverName,
-				VolumeGroupName: vgsName,
-				Image:           testImage,
-			})
-		}
 		if sc.CapacityTracking != nil {
 			s = append(s, &suites.CapacityTrackingSuite{
 				DriverNamespace: sc.CapacityTracking.DriverNamespace,

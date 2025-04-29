@@ -130,7 +130,6 @@ func GetTestCommand() cli.Command {
 			getScalingCommand(globalFlags),
 			getVolumeIoCommand(globalFlags),
 			getSnapCommand(globalFlags),
-			getVolumeGroupSnapCommand(globalFlags),
 			getReplicationCommand(globalFlags),
 			getCloneVolumeCommand(globalFlags),
 			getMultiAttachVolCommand(globalFlags),
@@ -825,85 +824,6 @@ func getSnapCommand(globalFlags []cli.Flag) cli.Command {
 					SnapAmount: snapshotAmount,
 					VolumeSize: size,
 					Image:      testImage,
-				},
-			}
-
-			sr, ss := createSuiteRunner(c, s)
-			ExecuteRunCmdSuite(sr, ss)
-
-			return nil
-		},
-	}
-}
-
-func getVolumeGroupSnapCommand(globalFlags []cli.Flag) cli.Command {
-	return cli.Command{
-		Name:      "volume-group-snapshot",
-		ShortName: "vgs",
-		Usage:     "test volume group snapshot",
-		Category:  "test",
-		Flags: append(
-			[]cli.Flag{
-				cli.StringFlag{
-					Name:  "volumeSnapshotClass, vsc",
-					Usage: "define your volumeSnapshotClass",
-				},
-				cli.StringFlag{
-					Name:  "volumeSize",
-					Usage: "volume size to be created",
-				},
-				cli.StringFlag{
-					Name:  "volumeLabel",
-					Usage: "label to be added for the volumes",
-				},
-				cli.StringFlag{
-					Name:  "volumeGroupName",
-					Usage: "name of the volume group/snapshot",
-				},
-				cli.StringFlag{
-					Name:  "driver",
-					Usage: "driver name to be used",
-				},
-				cli.StringFlag{
-					Name:  "reclaimPolicy",
-					Usage: "set the member reclaim policy, Delete, Retain",
-				},
-				cli.StringFlag{
-					Name:  "accessMode",
-					Usage: "set the volume access mode",
-				},
-				cli.IntFlag{
-					Name:  "volumeNumber",
-					Usage: "number of volume to create for the group",
-				},
-			},
-			globalFlags...,
-		),
-		Before: updatePath,
-		Action: func(c *cli.Context) error {
-			snapClass := c.String("volumeSnapshotClass")
-			volSize := c.String("volumeSize")
-			volumeLabel := c.String("volumeLabel")
-			vgsName := c.String("volumeGroupName")
-			reclaimPolicy := c.String("reclaimPolicy")
-			accessMode := c.String("accessMode")
-			numberOfVols := c.Int("volumeNumber")
-			driver := c.String("driver")
-			testImage, err := getTestImage(c.String("image-config"))
-			if err != nil {
-				return fmt.Errorf("failed to get test image: %s", err)
-			}
-			s := []suites.Interface{
-				&suites.VolumeGroupSnapSuite{
-					SnapClass:       snapClass,
-					VolumeSize:      volSize,
-					AccessMode:      accessMode,
-					VolumeGroupName: vgsName,
-					VolumeLabel:     volumeLabel,
-					ReclaimPolicy:   reclaimPolicy,
-					VolumeNumber:    numberOfVols,
-					Driver:          driver,
-					Image:           testImage,
 				},
 			}
 

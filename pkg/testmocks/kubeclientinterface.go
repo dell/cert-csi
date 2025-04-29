@@ -39,7 +39,6 @@ import (
 	sc "github.com/dell/cert-csi/pkg/k8sclient/resources/sc"
 	statefulset "github.com/dell/cert-csi/pkg/k8sclient/resources/statefulset"
 	va "github.com/dell/cert-csi/pkg/k8sclient/resources/va"
-	volumegroupsnapshot "github.com/dell/cert-csi/pkg/k8sclient/resources/volumegroupsnapshot"
 	v1 "github.com/dell/cert-csi/pkg/k8sclient/resources/volumesnapshot"
 	gomock "go.uber.org/mock/gomock"
 	v10 "k8s.io/api/core/v1"
@@ -248,21 +247,6 @@ func (m *MockKubeClientInterface) CreateStatefulSetClient(namespace string) (*st
 func (mr *MockKubeClientInterfaceMockRecorder) CreateStatefulSetClient(namespace any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CreateStatefulSetClient", reflect.TypeOf((*MockKubeClientInterface)(nil).CreateStatefulSetClient), namespace)
-}
-
-// CreateVGSClient mocks base method.
-func (m *MockKubeClientInterface) CreateVGSClient() (*volumegroupsnapshot.Client, error) {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "CreateVGSClient")
-	ret0, _ := ret[0].(*volumegroupsnapshot.Client)
-	ret1, _ := ret[1].(error)
-	return ret0, ret1
-}
-
-// CreateVGSClient indicates an expected call of CreateVGSClient.
-func (mr *MockKubeClientInterfaceMockRecorder) CreateVGSClient() *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CreateVGSClient", reflect.TypeOf((*MockKubeClientInterface)(nil).CreateVGSClient))
 }
 
 // CreateVaClient mocks base method.

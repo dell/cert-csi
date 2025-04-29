@@ -473,3 +473,13 @@ func (m *MockSuite) Parameters() string {
 	args := m.Called()
 	return args.String(0)
 }
+
+func (suite *FunctionalSuiteRunnerTestSuite) TestStopSetsIsStoppedTrue() {
+	suite.runner.Stop()
+	suite.True(suite.runner.IsStopped(), "Expected IsStopped() to return true after Stop() is called")
+}
+
+func (suite *FunctionalSuiteRunnerTestSuite) TestNoCleaningSetsFlag() {
+	suite.runner.NoCleaning()
+	suite.True(suite.runner.noCleaning, "Expected noCleaning to be true after NoCleaning() is called")
+}

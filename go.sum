@@ -120,8 +120,6 @@ github.com/davecgh/go-spew v1.1.0/go.mod h1:J7Y8YcW2NihsgmVo/mv3lAwl/skON4iLHjSs
 github.com/davecgh/go-spew v1.1.1/go.mod h1:J7Y8YcW2NihsgmVo/mv3lAwl/skON4iLHjSsI+c5H38=
 github.com/davecgh/go-spew v1.1.2-0.20180830191138-d8f796af33cc h1:U9qPSI2PIWSS1VwoXQT9A3Wy9MM3WgvqSxFWenqJduM=
 github.com/davecgh/go-spew v1.1.2-0.20180830191138-d8f796af33cc/go.mod h1:J7Y8YcW2NihsgmVo/mv3lAwl/skON4iLHjSsI+c5H38=
-github.com/dell/csi-volumegroup-snapshotter v1.7.0 h1:VASQ4NnrW7zNwZSfQsMfrQ7C+8IqF4TY65D5dyG5nVo=
-github.com/dell/csi-volumegroup-snapshotter v1.7.0/go.mod h1:MUKP9tg9JKhl9AhdyPq7So8rAnWQgB+nXpytySi5Ekk=
 github.com/dell/csm-replication v1.9.0 h1:usB1skevSqlDHiStCrVUpE5D1IPddGmkaUXSABkFrpc=
 github.com/dell/csm-replication v1.9.0/go.mod h1:d5UUC2CEAt0EkY8h5PbhXfDkF+Igg+sWeJLvgKBbhzc=
 github.com/dgrijalva/jwt-go v3.2.0+incompatible/go.mod h1:E3ru+11k8xSBh+hMPgOLZmtrrCbhqsmaPHjLKYnJCaQ=

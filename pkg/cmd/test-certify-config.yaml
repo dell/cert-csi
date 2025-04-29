@@ -23,7 +23,6 @@ storageClasses:
     snapshot: true
     RWX: true
     volumeHealth: true
-    VGS: true
     RWOP: true
     ephemeral:
       driver: csi-fake.dellemc.com
