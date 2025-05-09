@@ -51,7 +51,7 @@ func init() {
 func main() {
 	app := cli.NewApp()
 	app.Name = "cert-csi"
-	app.Version = "1.6.0"
+	app.Version = "1.8.0"
 	app.Usage = "unified method of benchmarking and certification of csi drivers"
 	app.EnableBashCompletion = true
 	app.Flags = []cli.Flag{
