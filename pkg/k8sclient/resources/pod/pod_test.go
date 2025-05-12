@@ -202,7 +202,7 @@ func (suite *PodTestSuite) TestCreatePod() {
 				suite.NotNil(p)
 				suite.NotNil(p.Object)
 				suite.Equal("", p.Object.Name)
-				suite.Equal("", p.Object.Namespace) // ← Fix here
+				suite.Equal("", p.Object.Namespace)
 				suite.NotNil(p.GetError())
 			},
 		},
