@@ -295,7 +295,7 @@ func (suite *CoreTestSuite) TestCreateNamespace() {
 		{
 			name: "create empty",
 			fields: fields{
-				ClientSet:   fake.NewSimpleClientset(), // use fresh client
+				ClientSet:   fake.NewSimpleClientset(),
 				Config:      suite.kubeClient.Config,
 				VersionInfo: suite.kubeClient.VersionInfo,
 				timeout:     1,
