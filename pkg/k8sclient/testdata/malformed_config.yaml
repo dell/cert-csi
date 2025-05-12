@@ -1,0 +1,15 @@
+apiVersion: ""  # Missing a valid API version
+clusters:
+  - name: ""
+    cluster:
+      server: "https://invalid.server"
+      certificate-authority-data: ""  # Missing the certificate authority data
+contexts: []
+current-context: ""
+kind: Config
+preferences: {}
+users:
+  - name: ""
+    user:
+      client-certificate-data: ""  # Missing the client certificate data
+      client-key-data: ""  # Missing the client key data
