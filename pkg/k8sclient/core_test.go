@@ -18,9 +18,10 @@ package k8sclient
 
 import (
 	"context"
+	"testing"
+
 	"github.com/pkg/errors"
 	k8stesting "k8s.io/client-go/testing"
-	"testing"
 
 	vs "github.com/kubernetes-csi/external-snapshotter/client/v4/apis/volumesnapshot/v1"
 	snapclient "github.com/kubernetes-csi/external-snapshotter/client/v4/clientset/versioned"
@@ -356,7 +357,7 @@ func (suite *CoreTestSuite) TestCreateNamespace() {
 			// Special handling for "create error" test case
 			if tt.name == "create error" {
 				client := fake.NewSimpleClientset()
-				client.PrependReactor("create", "namespaces", func(action k8stesting.Action) (bool, runtime.Object, error) {
+				client.PrependReactor("create", "namespaces", func(_ k8stesting.Action) (bool, runtime.Object, error) {
 					return true, nil, errors.New("simulated create error")
 				})
 				fields.ClientSet = client
@@ -565,7 +566,6 @@ func (suite *CoreTestSuite) TestGetConfig() {
 	errConf, err = GetConfig("testdata/empty_config.yaml")
 	suite.Error(err)
 	suite.Nil(errConf)
-
 }
 
 func TestCoreTestSuite(t *testing.T) {
