@@ -261,6 +261,19 @@ func (suite *CoreTestSuite) TestCreateClients() {
 	})
 }
 
+func (suite *CoreTestSuite) TestGetMinor() {
+	client := &KubeClient{Minor: 25} // Example minor version
+	minor := client.GetMinor()
+	suite.Equal(25, minor, "Expected minor version to match")
+}
+
+func (suite *CoreTestSuite) TestGetClientSet() {
+	mockClientSet := new(fake.Clientset)
+	client := &KubeClient{ClientSet: mockClientSet}
+	returnedClientSet := client.GetClientSet()
+	suite.Equal(mockClientSet, returnedClientSet, "Expected ClientSet to match")
+}
+
 func (suite *CoreTestSuite) TestCreateNamespace() {
 	type fields struct {
 		ClientSet   kubernetes.Interface
