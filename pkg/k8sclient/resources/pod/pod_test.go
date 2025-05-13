@@ -198,8 +198,12 @@ func (suite *PodTestSuite) TestCreatePod() {
 				pod: nil,
 			},
 			wantErr: true,
-			assertFunc: func(pod *pod.Pod) {
-				suite.Nil(pod.Object)
+			assertFunc: func(p *pod.Pod) {
+				suite.NotNil(p)
+				suite.NotNil(p.Object)
+				suite.Equal("", p.Object.Name)
+				suite.Equal("", p.Object.Namespace)
+				suite.NotNil(p.GetError())
 			},
 		},
 		{

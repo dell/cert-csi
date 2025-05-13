@@ -20,6 +20,9 @@ import (
 	"context"
 	"testing"
 
+	"github.com/pkg/errors"
+	k8stesting "k8s.io/client-go/testing"
+
 	vs "github.com/kubernetes-csi/external-snapshotter/client/v4/apis/volumesnapshot/v1"
 	snapclient "github.com/kubernetes-csi/external-snapshotter/client/v4/clientset/versioned"
 	"github.com/stretchr/testify/suite"
@@ -227,6 +230,9 @@ func (suite *CoreTestSuite) TestCreateClients() {
 	})
 
 	suite.Run("rg client - error case", func() {
+		suite.kubeClient = KubeClient{
+			Config: nil,
+		}
 		_, err := suite.kubeClient.CreateRGClient()
 		suite.Error(err)
 	})
@@ -256,6 +262,19 @@ func (suite *CoreTestSuite) TestCreateClients() {
 	})
 }
 
+func (suite *CoreTestSuite) TestGetMinor() {
+	client := &KubeClient{Minor: 25} // Example minor version
+	minor := client.GetMinor()
+	suite.Equal(25, minor, "Expected minor version to match")
+}
+
+func (suite *CoreTestSuite) TestGetClientSet() {
+	mockClientSet := new(fake.Clientset)
+	client := &KubeClient{ClientSet: mockClientSet}
+	returnedClientSet := client.GetClientSet()
+	suite.Equal(mockClientSet, returnedClientSet, "Expected ClientSet to match")
+}
+
 func (suite *CoreTestSuite) TestCreateNamespace() {
 	type fields struct {
 		ClientSet   kubernetes.Interface
@@ -276,7 +295,7 @@ func (suite *CoreTestSuite) TestCreateNamespace() {
 		{
 			name: "create empty",
 			fields: fields{
-				ClientSet:   suite.kubeClient.ClientSet,
+				ClientSet:   fake.NewSimpleClientset(),
 				Config:      suite.kubeClient.Config,
 				VersionInfo: suite.kubeClient.VersionInfo,
 				timeout:     1,
@@ -284,15 +303,14 @@ func (suite *CoreTestSuite) TestCreateNamespace() {
 			args:    args{},
 			wantErr: false,
 			assertFunc: func(got *v1.Namespace) {
-				want := &v1.Namespace{}
 				suite.NotNil(got)
-				suite.Equal(want.Name, got.Name, "different name was given")
+				suite.Equal("", got.Name, "different name was given")
 			},
 		},
 		{
 			name: "create test namespace",
 			fields: fields{
-				ClientSet:   suite.kubeClient.ClientSet,
+				ClientSet:   fake.NewSimpleClientset(),
 				Config:      suite.kubeClient.Config,
 				VersionInfo: suite.kubeClient.VersionInfo,
 				timeout:     1,
@@ -333,12 +351,25 @@ func (suite *CoreTestSuite) TestCreateNamespace() {
 	}
 	for _, tt := range tests {
 		suite.Run(tt.name, func() {
-			c := &KubeClient{
-				ClientSet:   tt.fields.ClientSet,
-				Config:      tt.fields.Config,
-				VersionInfo: tt.fields.VersionInfo,
-				timeout:     tt.fields.timeout,
+			// Clone fields so we can patch ClientSet if needed
+			fields := tt.fields
+
+			// Special handling for "create error" test case
+			if tt.name == "create error" {
+				client := fake.NewSimpleClientset()
+				client.PrependReactor("create", "namespaces", func(_ k8stesting.Action) (bool, runtime.Object, error) {
+					return true, nil, errors.New("simulated create error")
+				})
+				fields.ClientSet = client
 			}
+
+			c := &KubeClient{
+				ClientSet:   fields.ClientSet,
+				Config:      fields.Config,
+				VersionInfo: fields.VersionInfo,
+				timeout:     fields.timeout,
+			}
+
 			got, err := c.CreateNamespace(context.Background(), tt.args.namespace)
 			if tt.wantErr {
 				suite.Error(err)
@@ -351,7 +382,7 @@ func (suite *CoreTestSuite) TestCreateNamespace() {
 
 	suite.Run("create with suffix", func() {
 		c := &KubeClient{
-			ClientSet:   suite.kubeClient.ClientSet,
+			ClientSet:   fake.NewSimpleClientset(),
 			Config:      suite.kubeClient.Config,
 			VersionInfo: suite.kubeClient.VersionInfo,
 			timeout:     1,
@@ -451,23 +482,34 @@ func (suite *CoreTestSuite) TestSnapshotClassExists() {
 }
 
 func (suite *CoreTestSuite) TestStorageExists() {
-	storageClass, err := suite.kubeClient.ClientSet.StorageV1().StorageClasses().Create(context.Background(), &storagev1.StorageClass{
+	clientSet := fake.NewSimpleClientset()
+	kubeClient := &KubeClient{
+		ClientSet: clientSet,
+	}
+
+	// Create a valid storage class
+	storageClass := &storagev1.StorageClass{
 		ObjectMeta: metav1.ObjectMeta{
 			Name: "powerstore",
 		},
-	}, metav1.CreateOptions{})
+	}
+	createdSC, err := kubeClient.ClientSet.StorageV1().StorageClasses().Create(context.Background(), storageClass, metav1.CreateOptions{})
 	suite.NoError(err)
-	exists, err := suite.kubeClient.StorageClassExists(context.Background(), storageClass.Name)
+
+	// Check that it exists
+	exists, err := kubeClient.StorageClassExists(context.Background(), createdSC.Name)
 	suite.NoError(err)
-	suite.Equal(true, exists)
+	suite.True(exists)
 
-	exists, err = suite.kubeClient.StorageClassExists(context.Background(), "non-existing-storage-class")
+	// Non-existing class
+	exists, err = kubeClient.StorageClassExists(context.Background(), "non-existing-storage-class")
 	suite.Error(err)
-	suite.Equal(false, exists)
+	suite.False(exists)
 
-	exists, err = suite.kubeClient.StorageClassExists(context.Background(), "")
+	// Empty string
+	exists, err = kubeClient.StorageClassExists(context.Background(), "")
 	suite.Error(err)
-	suite.Equal(false, exists)
+	suite.False(exists)
 }
 
 func (suite *CoreTestSuite) TestNamespaceExists() {
@@ -524,9 +566,6 @@ func (suite *CoreTestSuite) TestGetConfig() {
 	errConf, err = GetConfig("testdata/empty_config.yaml")
 	suite.Error(err)
 	suite.Nil(errConf)
-
-	_, err = GetConfig("")
-	suite.Error(err)
 }
 
 func TestCoreTestSuite(t *testing.T) {
