@@ -1088,10 +1088,12 @@ func (vis *VolumeIoSuite) Run(ctx context.Context, storageClass string, clients 
 		}
 
 		pvName := gotPvc.Spec.VolumeName
+
+		log.Infof("PVC: %+v, PV: %s", pvc.Object.Spec, pvName)
 		// Create Pod, and attach PVC
 		podconf := testcore.IoWritePodConfig(pvcNameList, "", vis.Image)
 		podTmpl := podClient.MakePod(podconf)
-		func(index int, podImpl *v1.Pod, pvName string) {
+		func(index int, podImpl *v1.Pod, pvcName string) {
 			errs.Go(func() error {
 				for i := range vis.ChainLength {
 					file := fmt.Sprintf("%s0/writer-%d.data", podconf.MountPath, j)
@@ -1101,8 +1103,15 @@ func (vis *VolumeIoSuite) Run(ctx context.Context, storageClass string, clients 
 						return writerPod.GetError()
 					}
 
+					gotPvc, err := pvcClient.Interface.Get(ctx, pvcName, metav1.GetOptions{})
+					if err != nil {
+						return err
+					}
+
+					pvName := gotPvc.Spec.VolumeName
+
 					if i != 0 {
-						log.Infof("[Validating Hash Sum] For POD: %s, File: %s, Check Count: %d", writerPod.Object.Name, file, i)
+						log.Infof("[Validating Hash Sum] For POD: %s, Name: %s, Check Count: %d", writerPod.Object.Name, pvName, i)
 						if err := RetrySha512SumWithCheck(ctx, podClient, writerPod, sum, 3); err != nil {
 							log.Errorf("Error during hash validation: %v", err)
 							return err
@@ -1128,7 +1137,7 @@ func (vis *VolumeIoSuite) Run(ctx context.Context, storageClass string, clients 
 
 					log.Info("sync response: ", ddRes.String())
 
-					log.Infof("[Wrote Hash Sum] For POD: %s, File: %s, Length: %d", writerPod.Object.Name, file, i)
+					log.Infof("[Wrote Hash Sum] For POD: %s, Name: %s, Length: %d", writerPod.Object.Name, pvName, i)
 
 					// Wait for volume to sync.
 					time.Sleep(syncTimeout)
@@ -1150,7 +1159,7 @@ func (vis *VolumeIoSuite) Run(ctx context.Context, storageClass string, clients 
 				}
 				return nil
 			})
-		}(j, podTmpl, pvName)
+		}(j, podTmpl, pvc.Object.Name)
 	}
 
 	return delFunc, errs.Wait()
