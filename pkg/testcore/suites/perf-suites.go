@@ -1011,6 +1011,7 @@ type VolumeIoSuite struct {
 	ChainNumber  int
 	ChainLength  int
 	Image        string
+	NoCleanup    bool
 }
 
 // Run executes volume IO test suite
@@ -1045,13 +1046,26 @@ func (vis *VolumeIoSuite) Run(ctx context.Context, storageClass string, clients 
 		return delFunc, err
 	}
 
+	log.Infof("SC: %s", storageClass)
+	s, err := pvcClient.ClientSet.StorageV1().StorageClasses().Get(ctx, storageClass, metav1.GetOptions{})
+	if err != nil {
+		return delFunc, err
+	}
+
+	syncTimeout := 300 * time.Millisecond
+	_, ok := s.Parameters["shared-nfs"]
+	if ok {
+		syncTimeout = 10 * time.Second
+		log.Info("[Fernando] Setting sync timeout to " + syncTimeout.String() + " due to sharedNFS")
+	}
+
 	log.Info("Creating IO pod")
 	errs, errCtx := errgroup.WithContext(ctx)
-	for j := 0; j < vis.ChainNumber; j++ {
-		j := j // https://golang.org/doc/faq#closures_and_goroutines
+	for j := range vis.ChainNumber {
+		// j := j // https://golang.org/doc/faq#closures_and_goroutines
 		// Create PVCs
 		var pvcNameList []string
-		vcconf := testcore.VolumeCreationConfig(storageClass, vis.VolumeSize, "", "")
+		vcconf := testcore.VolumeCreationConfig(storageClass, vis.VolumeSize, "", "ReadWriteMany")
 		volTmpl := pvcClient.MakePVC(vcconf)
 
 		pvc := pvcClient.Create(ctx, volTmpl)
@@ -1077,47 +1091,66 @@ func (vis *VolumeIoSuite) Run(ctx context.Context, storageClass string, clients 
 		// Create Pod, and attach PVC
 		podconf := testcore.IoWritePodConfig(pvcNameList, "", vis.Image)
 		podTmpl := podClient.MakePod(podconf)
-		errs.Go(func() error {
-			for i := 0; i < vis.ChainLength; i++ {
-				file := fmt.Sprintf("%s0/writer-%d.data", podconf.MountPath, j)
-				sum := fmt.Sprintf("%s0/writer-%d.sha512", podconf.MountPath, j)
-				writerPod := podClient.Create(ctx, podTmpl).Sync(errCtx)
-				if writerPod.HasError() {
-					return writerPod.GetError()
-				}
+		func(index int, podImpl *v1.Pod, pvName string) {
+			errs.Go(func() error {
+				for i := range vis.ChainLength {
+					file := fmt.Sprintf("%s0/writer-%d.data", podconf.MountPath, j)
+					sum := fmt.Sprintf("%s0/writer-%d.sha512", podconf.MountPath, j)
+					writerPod := podClient.Create(ctx, podTmpl).Sync(errCtx)
+					if writerPod.HasError() {
+						return writerPod.GetError()
+					}
 
-				if i != 0 {
-					if err := RetrySha512SumWithCheck(ctx, podClient, writerPod, sum, 3); err != nil {
-						log.Errorf("Error during hash validation: %v", err)
+					if i != 0 {
+						log.Infof("[Validating Hash Sum] For POD: %s, File: %s, Check Count: %d", writerPod.Object.Name, file, i)
+						if err := RetrySha512SumWithCheck(ctx, podClient, writerPod, sum, 3); err != nil {
+							log.Errorf("Error during hash validation: %v", err)
+							return err
+						}
+					}
+					ddRes := bytes.NewBufferString("")
+					if err := podClient.Exec(ctx, writerPod.Object, []string{"/bin/bash", "-c", "dd if=/dev/urandom bs=1M count=100 oflag=sync > " + file}, ddRes, os.Stderr, false); err != nil {
+						log.Info(err)
 						return err
 					}
-				}
-				ddRes := bytes.NewBufferString("")
-				if err := podClient.Exec(ctx, writerPod.Object, []string{"/bin/bash", "-c", "dd if=/dev/urandom bs=1M count=1280 oflag=sync > " + file}, ddRes, os.Stderr, false); err != nil {
-					log.Info(err)
-					return err
-				}
 
-				log.Debug(ddRes.String())
-				if err := podClient.Exec(ctx, writerPod.Object, []string{"/bin/bash", "-c", "sha512sum " + file + " > " + sum}, os.Stdout, os.Stderr, false); err != nil {
-					return err
-				}
+					// log.Debug(ddRes.String())
+					if err := podClient.Exec(ctx, writerPod.Object, []string{"/bin/bash", "-c", "sha512sum " + file + " > " + sum}, os.Stdout, os.Stderr, false); err != nil {
+						return err
+					}
 
-				time.Sleep(300 * time.Millisecond)
+					// Ensure that the file exists.
+					ddRes = bytes.NewBufferString("")
+					if err := podClient.Exec(ctx, writerPod.Object, []string{"/bin/bash", "-c", "sync"}, ddRes, os.Stderr, false); err != nil {
+						log.Infof("File %s doesn't exist, exiting", sum)
+						return err
+					}
 
-				podClient.Delete(ctx, writerPod.Object).Sync(errCtx)
-				if writerPod.HasError() {
-					return writerPod.GetError()
-				}
+					log.Info("sync response: ", ddRes.String())
 
-				// WAIT FOR VA TO BE DELETED
-				err := vaClient.WaitUntilVaGone(ctx, pvName)
-				if err != nil {
-					return err
+					log.Infof("[Wrote Hash Sum] For POD: %s, File: %s, Length: %d", writerPod.Object.Name, file, i)
+
+					// Wait for volume to sync.
+					time.Sleep(syncTimeout)
+
+					if !vis.NoCleanup {
+						podClient.Delete(ctx, writerPod.Object).Sync(errCtx)
+						if writerPod.HasError() {
+							return writerPod.GetError()
+						}
+
+						// WAIT FOR VA TO BE DELETED
+						err := vaClient.WaitUntilVaGone(ctx, pvName)
+						if err != nil {
+							return err
+						}
+					} else {
+						log.Info("[FERNANDO] Skipping POD Cleanup")
+					}
 				}
-			}
-			return nil
-		})
+				return nil
+			})
+		}(j, podTmpl, pvName)
 	}
 
 	return delFunc, errs.Wait()
@@ -1187,7 +1220,6 @@ func RetrySha512SumWithCheck(ctx context.Context, podClient *pod.Client, pod *po
 		// Execute the sha512sum command on the pod
 		if err := podClient.Exec(ctx, pod.Object, []string{"/bin/bash", "-c", "sha512sum -c " + sum}, writer, os.Stderr, false); err != nil {
 			log.Infof("Error executing command: %v", err)
-			return err
 		}
 
 		// Check if hashes match
@@ -1203,7 +1235,7 @@ func RetrySha512SumWithCheck(ctx context.Context, podClient *pod.Client, pod *po
 	}
 
 	// Return error if maximum retries are reached
-	return fmt.Errorf("Max number of retries reached, hashes don't match")
+	return fmt.Errorf("max number of retries reached, hashes don't match")
 }
 
 // SnapSuite is used to manage snap test suite

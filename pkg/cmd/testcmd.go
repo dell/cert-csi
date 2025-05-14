@@ -774,6 +774,7 @@ func getVolumeIoCommand(globalFlags []cli.Flag) cli.Command {
 					ChainNumber: chNumber,
 					ChainLength: chLength,
 					Image:       testImage,
+					NoCleanup:   c.Bool("no-cleanup"),
 				},
 			}
 
