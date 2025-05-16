@@ -31,7 +31,7 @@ easy-readable document format, where this metrics will be analyzed
 * [Committer Guide](https://github.com/dell/csm/blob/main/docs/COMMITTER_GUIDE.md)
 * [Contributing Guide](https://github.com/dell/csm/blob/main/docs/CONTRIBUTING.md)
 * [List of Adopters](https://github.com/dell/csm/blob/main/docs/ADOPTERS.md)
-* [Support](https://github.com/dell/csm/blob/main/docs/SUPPORT.md)
+* [Dell support](https://www.dell.com/support/incidents-online/en-us/contactus/product/container-storage-modules)
 * [Security](https://github.com/dell/csm/blob/main/docs/SECURITY.md)
 * [Certification Tool to Validate Drivers](#certification-tool-to-validate-drivers)
 
