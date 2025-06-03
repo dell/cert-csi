@@ -43,4 +43,4 @@ GitHub.
 
 ## Certification Tool to Validate Drivers
 
-Please refer [Cert-CSI Documentation](https://dell.github.io/csm-docs/docs/support/cert-csi/)
+Please refer [Cert-CSI Documentation](https://dell.github.io/csm-docs/docs/tooling/cert-csi/)
