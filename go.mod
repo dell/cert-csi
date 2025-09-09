@@ -1,8 +1,6 @@
 module github.com/dell/cert-csi
 
-go 1.24.0
-
-toolchain go1.24.2
+go 1.25
 
 require (
 	github.com/DATA-DOG/go-sqlmock v1.5.2
