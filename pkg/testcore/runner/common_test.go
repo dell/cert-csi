@@ -28,6 +28,39 @@ import (
 	"go.uber.org/mock/gomock"
 )
 
+func TestK8sClient_GetConfig_Success(t *testing.T) {
+	k := &K8sClient{}
+
+	// This calls k8sclient.GetConfig underneath; may return default kubeconfig
+	cfg, err := k.GetConfig("")
+	assert.NoError(t, err)
+	assert.NotNil(t, cfg)
+}
+
+func TestK8sClient_NewKubeClient_Success(t *testing.T) {
+	k := &K8sClient{}
+
+	cfg, err := k.GetConfig("")
+	assert.NoError(t, err)
+	assert.NotNil(t, cfg)
+
+	client, err := k.NewKubeClient(cfg, 10)
+	assert.NoError(t, err)
+	assert.NotNil(t, client)
+}
+
+func TestRunner_LockUnlock(t *testing.T) {
+	r := &Runner{}
+
+	r.Lock()
+	r.noCleaning = true
+	r.Unlock()
+
+	r.RLock()
+	assert.True(t, r.noCleaning)
+	r.RUnlock()
+}
+
 func TestGetSuiteRunner(t *testing.T) {
 	tests := []struct {
 		name            string
