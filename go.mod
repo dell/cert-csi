@@ -1,8 +1,6 @@
 module github.com/dell/cert-csi
 
-go 1.24.0
-
-toolchain go1.24.2
+go 1.25
 
 require (
 	github.com/DATA-DOG/go-sqlmock v1.5.2
@@ -28,7 +26,7 @@ require (
 	k8s.io/apimachinery v0.32.2
 	k8s.io/cli-runtime v0.32.2
 	k8s.io/client-go v0.32.2
-	k8s.io/kubernetes v1.33.0
+	k8s.io/kubernetes v1.33.4
 	k8s.io/metrics v0.32.2
 	sigs.k8s.io/controller-runtime v0.19.4
 	sigs.k8s.io/yaml v1.4.0
