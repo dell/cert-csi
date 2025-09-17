@@ -5,7 +5,7 @@ go 1.25
 require (
 	github.com/DATA-DOG/go-sqlmock v1.5.2
 	github.com/cheggaaa/pb/v3 v3.1.5
-	github.com/dell/csm-replication v1.12.0
+	github.com/dell/csm-replication v1.13.0
 	github.com/fatih/color v1.18.0
 	github.com/gofrs/flock v0.12.1
 	github.com/kubernetes-csi/external-snapshotter/client/v4 v4.2.0
